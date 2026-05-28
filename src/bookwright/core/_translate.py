@@ -72,6 +72,15 @@ def _translate_validation_error(exc: ValidationError) -> ManifestValidationError
             rejected = ctx["value"]
 
         rule_id = f"{field_path}.{kind}" if field_path else kind
+
+        # A field-level validator (e.g. `_check_authors`) that walks a list
+        # cannot embed the offending index in Pydantic's loc. When it surfaces
+        # `ctx["index"]` we splice the `[N]` suffix here so the public
+        # `field_path` matches the published contract (book.authors[N]) while
+        # `rule_id` stays index-free.
+        if "index" in ctx and isinstance(ctx["index"], int):
+            field_path = f"{field_path}[{ctx['index']}]"
+
         failures.append(
             _FieldFailure(
                 field_path=field_path,

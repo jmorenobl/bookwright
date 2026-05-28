@@ -58,7 +58,7 @@ class ManifestSyntaxError(ManifestError):
         column: int | None,
         message: str,
     ) -> None:
-        self.path = Path(path)
+        self.path = Path(path).resolve()
         self.line = line
         self.column = column
         self.message = message

@@ -93,9 +93,14 @@ def _classify_manifest_version(parsed: int) -> Literal["known", "future"]:
 def _classify_manifest_version_warnings(
     raw: str,
 ) -> tuple[ManifestWarning, ...]:
-    """Return the (possibly empty) warning tuple for a known/future `manifest_version`."""
+    """Return the (possibly empty) warning tuple for a known/future `manifest_version`.
 
-    parsed = _parse_manifest_version(raw)
+    Called only after Pydantic validation accepted `raw`, so `int(raw)` is
+    safe — no need to re-run the regex validator (which raises
+    `PydanticCustomError` outside Pydantic's machinery).
+    """
+
+    parsed = int(raw)
     if _classify_manifest_version(parsed) == "known":
         return ()
     max_known = max(KNOWN_MANIFEST_VERSIONS)
@@ -294,9 +299,20 @@ class Manifest(BaseModel):
     validators: ValidatorsBlock = Field(default_factory=ValidatorsBlock)
     integration: IntegrationBlock
     paths: PathsBlock = Field(default_factory=PathsBlock)
-    warnings: tuple[ManifestWarning, ...] = Field(default=(), exclude=True)
 
     _document: TOMLDocument | None = PrivateAttr(default=None)
+    _warnings: tuple[ManifestWarning, ...] = PrivateAttr(default=())
+
+    @property
+    def warnings(self) -> tuple[ManifestWarning, ...]:
+        """Non-fatal notes attached during `load()`; empty for freshly built manifests.
+
+        Exposed as a read-only property (not a Pydantic field) so a user-authored
+        `[warnings]` block in `manifest.toml` rounds-trips via `extra="allow"`
+        instead of colliding with a declared field.
+        """
+
+        return self._warnings
 
     @model_validator(mode="after")
     def _check_cli_floor(self) -> Manifest:
@@ -310,13 +326,17 @@ class Manifest(BaseModel):
             raise PydanticCustomError(
                 "installed_not_pep440",
                 "installed CLI version '{installed}' is not valid PEP 440",
-                {"installed": installed_raw},
+                {
+                    "value": self.bookwright.cli_version_min,
+                    "installed": installed_raw,
+                },
             ) from exc
         if installed < required:
             raise PydanticCustomError(
                 "installed_too_old",
                 "installed CLI {installed} is older than required {required}",
                 {
+                    "value": self.bookwright.cli_version_min,
                     "installed": installed_raw,
                     "required": self.bookwright.cli_version_min,
                 },
@@ -347,7 +367,7 @@ class Manifest(BaseModel):
         except ValidationError as exc:
             raise _translate_validation_error(exc) from exc
         instance._document = document
-        instance.warnings = _classify_manifest_version_warnings(
+        instance._warnings = _classify_manifest_version_warnings(
             instance.bookwright.manifest_version
         )
         return instance
@@ -382,9 +402,11 @@ class Manifest(BaseModel):
 
         document = self._document
         if document is None:
-            # Should not happen for instances built via load()/build(), but
-            # cover the bare-construction path.
-            document = tomlkit.parse(_render_from_model(self))
+            raise RuntimeError(
+                "Manifest.dump() requires an instance produced by Manifest.load() "
+                "or Manifest.build(); bare constructions have no tomlkit document "
+                "to serialize."
+            )
 
         body = tomlkit.dumps(document)
 
@@ -400,17 +422,20 @@ class Manifest(BaseModel):
                 handle.write(body)
                 handle.flush()
                 os.fsync(handle.fileno())
-            os.replace(tmp_path, target)
+            if overwrite:
+                os.replace(tmp_path, target)
+            else:
+                # `os.link` is atomic: if the target appears between the
+                # early `exists()` check and here, link raises FileExistsError
+                # rather than silently clobbering — closes the TOCTOU race.
+                try:
+                    os.link(tmp_path, target)
+                except FileExistsError as exc:
+                    raise ManifestOverwriteError(target) from exc
+                os.unlink(tmp_path)
         except BaseException:
             with contextlib.suppress(FileNotFoundError):
                 os.unlink(tmp_path)
             raise
 
         return target.resolve()
-
-
-def _render_from_model(manifest: Manifest) -> str:
-    """Last-resort serializer when no underlying tomlkit document is attached."""
-
-    # TOML has no null; drop optional fields whose value is None.
-    return tomlkit.dumps(manifest.model_dump(mode="python", exclude_none=True))

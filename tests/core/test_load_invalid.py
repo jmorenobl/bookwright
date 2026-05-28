@@ -38,7 +38,7 @@ def _failure_for(exc: ManifestValidationError, field_path: str) -> _FieldFailure
         ("invalid_book_authors_empty.toml", "book.authors", "book.authors.empty"),
         (
             "invalid_book_authors_blank_entry.toml",
-            "book.authors",
+            "book.authors[1]",
             "book.authors.entry.empty",
         ),
         ("invalid_book_status_wip.toml", "book.status", "book.status.not_in_enum"),
