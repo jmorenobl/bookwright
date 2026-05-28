@@ -1,0 +1,15 @@
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.0"
+manifest_version = "9"
+uri_base = "https://example.org/future-mv/"
+
+[book]
+title = "Future Manifest"
+type = "novel"
+language = "en"
+authors = ["Forward Thinker"]
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"

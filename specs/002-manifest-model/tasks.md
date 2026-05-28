@@ -158,7 +158,7 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 ### Fixtures for User Story 5
 
-- [ ] T029 [P] [US5] Create [tests/core/fixtures/future_manifest_version.toml](tests/core/fixtures/future_manifest_version.toml) with `manifest_version = "9"` (otherwise valid minimal manifest)
+- [X] T029 [P] [US5] Create [tests/core/fixtures/future_manifest_version.toml](tests/core/fixtures/future_manifest_version.toml) with `manifest_version = "9"` (otherwise valid minimal manifest)
 
 ### Implementation & Tests for User Story 5
 
@@ -166,8 +166,8 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 > last because it imports the module the implementation builds. Run it
 > with `pytest -x` to confirm the failures land where you expect.
 
-- [ ] T030 [US5] Add `manifest_version` classification in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): use the `_parse_manifest_version` and `_classify_manifest_version` helpers introduced in T017; in `Manifest.load`, after the typed `Manifest` is built, classify and attach `ManifestWarning(rule_id="manifest_version.unknown_future", field_path="bookwright.manifest_version", offending_value=raw, message=f"manifest_version {parsed} is newer than this CLI knows about (max known: {max(KNOWN_MANIFEST_VERSIONS)}); load was best-effort")` to `Manifest.warnings` as a tuple; emit nothing for known versions (FR-013, FR-014, SC-006). The model layer MUST NOT write to stdout/stderr.
-- [ ] T031 [US5] Write [tests/core/test_future_version.py](tests/core/test_future_version.py) — Acceptance Scenarios 1–3 (FR-013, FR-014, SC-006): future `manifest_version` produces exactly one warning whose `rule_id` and `offending_value` match, every recognised field is still populated, and capsys/capfd capture no writes from the model layer; known `manifest_version` produces an empty `warnings` tuple; missing/malformed `manifest_version` raises `ManifestValidationError` (delegated to US2's path, asserted here too as a regression guard)
+- [X] T030 [US5] Add `manifest_version` classification in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): use the `_parse_manifest_version` and `_classify_manifest_version` helpers introduced in T017; in `Manifest.load`, after the typed `Manifest` is built, classify and attach `ManifestWarning(rule_id="manifest_version.unknown_future", field_path="bookwright.manifest_version", offending_value=raw, message=f"manifest_version {parsed} is newer than this CLI knows about (max known: {max(KNOWN_MANIFEST_VERSIONS)}); load was best-effort")` to `Manifest.warnings` as a tuple; emit nothing for known versions (FR-013, FR-014, SC-006). The model layer MUST NOT write to stdout/stderr.
+- [X] T031 [US5] Write [tests/core/test_future_version.py](tests/core/test_future_version.py) — Acceptance Scenarios 1–3 (FR-013, FR-014, SC-006): future `manifest_version` produces exactly one warning whose `rule_id` and `offending_value` match, every recognised field is still populated, and capsys/capfd capture no writes from the model layer; known `manifest_version` produces an empty `warnings` tuple; missing/malformed `manifest_version` raises `ManifestValidationError` (delegated to US2's path, asserted here too as a regression guard)
 
 **Checkpoint**: User Story 5 — forward-compat warning behaviour is encoded.
 
