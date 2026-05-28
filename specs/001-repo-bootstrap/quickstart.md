@@ -144,19 +144,38 @@ Tras push o apertura de PR contra `main`:
 | YAML malformado en commit | `git commit` | hook `check-yaml` aborta con línea/motivo |
 | Push sin red en CI | GitHub Actions | `uv sync --frozen` falla, job rojo |
 
-## Definición de "done" para esta iteración
+## Cómo el dev valida la iteración antes de cerrar la PR
 
-Cuando todas las afirmaciones siguientes son verdaderas:
+Procedimiento de validación end-to-end. Cada paso debe terminar como se
+describe; si alguno falla, la PR no está lista para merge.
 
-- [ ] `uv sync` desde clean checkout funciona en < 60 s.
-- [ ] `uv run bookwright --help` lista `version` y `check`.
-- [ ] `uv run bookwright version` y `--json` ambos pasan los smoke tests.
-- [ ] `uv run bookwright check` y `--json` ambos pasan los smoke tests
-      con exit 0 en el entorno del repo.
-- [ ] `uv run pre-commit install` instala hooks; los hooks de ruff,
-      check-toml y check-yaml bloquean commits malformados.
-- [ ] `uv run pytest && uv run ruff check . && uv run ruff format --check
-      . && uv run mypy` pasa local con cero issues.
-- [ ] La pipeline CI corre verde sobre PR contra `main` en < 5 min.
-- [ ] El árbol del repo coincide exactamente con `plan.md § Project
-      Structure → Source Code` (ni un archivo de más, ni uno de menos).
+1. **Cold clone + bootstrap.** Desde un directorio limpio: `git clone
+   <repo-url> bookwright && cd bookwright && uv sync`. El paso `uv sync`
+   debe completar en < 60 s con red disponible (SC-006).
+2. **Superficie CLI.** `uv run bookwright --help` lista `version` y
+   `check` como subcomandos.
+3. **Subcomando `version`.** `uv run bookwright version` imprime la
+   versión del paquete y `unknown` para el schema GOLEM. Con `--json`,
+   `stdout` contiene exactamente un documento JSON conforme a
+   [contracts/version.schema.json](contracts/version.schema.json).
+4. **Subcomando `check`.** `uv run bookwright check` retorna exit 0 en el
+   entorno del repo. Con `--json`, `stdout` cumple
+   [contracts/check.schema.json](contracts/check.schema.json).
+5. **Pre-commit local.** `uv run pre-commit install` instala los hooks.
+   Reproducir los tres casos de `§ Activar pre-commit hooks localmente`
+   (ruff-format, check-toml, check-yaml): cada uno aborta el commit con
+   diagnóstico legible.
+6. **Gates locales en bloque.** `uv run pytest && uv run ruff check . &&
+   uv run ruff format --check . && uv run mypy` termina con cero issues.
+   Esto es exactamente lo que CI ejecuta.
+7. **CI verde sobre la PR.** Tras push, el workflow
+   `.github/workflows/tests.yml` pasa en matriz `python-version: ["3.11",
+   "3.12"]` en < 5 min (SC-008).
+8. **Árbol del repo.** El layout coincide exactamente con `plan.md §
+   Project Structure → Source Code` — ni un archivo de más, ni uno de
+   menos. Verificable con `find src/bookwright -type d` y `find tests
+   -type f`.
+
+Los pasos 1, 7 y la parte "cold" de 5 dependen de red, CI o un clon
+fresco y no se pueden auditar desde un working tree existente; ejecutarlos
+explícitamente antes de pedir review.

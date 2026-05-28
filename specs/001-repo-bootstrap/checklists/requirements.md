@@ -32,5 +32,5 @@
 ## Notes
 
 - Tool names that appear in the spec (`uv`, `ruff`, `mypy`, `pytest`, `pre-commit`, GitHub Actions) are intentionally surfaced because the project Constitution v1.0.0 already locks them as binding stack constraints (Principle II). They are documented in the Assumptions section as inherited from the Constitution, not as new implementation decisions taken in this spec.
-- The 80 % coverage threshold from Constitution Principle VIII is deliberately treated as a non-blocking target for this iteration only: the surface of code introduced by the bootstrap is too small to meaningfully exercise the gate. Subsequent iterations that introduce domain logic will enforce the threshold as a hard gate.
+- Coverage gate: `--cov-fail-under=80` is active in `pyproject.toml` from this iteration and measured at 91.03 % over `src/bookwright/`. An earlier draft of this checklist treated the gate as deferrable; the spec was tightened (FR-020, commit `f2e2dcf`) to align with Constitución §VIII (NON-NEGOTIABLE), and the gate is now enforced in CI and locally from day one.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
