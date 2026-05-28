@@ -14,7 +14,9 @@ from bookwright.commands.check import RUNTIME_MODULES
 def test_check_human(runner: CliRunner) -> None:
     result = runner.invoke(app, ["check"])
     assert result.exit_code == 0
-    assert "OK" in result.stdout
+    assert result.stdout.count("OK") == len(RUNTIME_MODULES) + 1
+    for module_name in RUNTIME_MODULES:
+        assert f"dependency:{module_name}" in result.stdout
 
 
 def test_check_json_byte_exact(runner: CliRunner) -> None:

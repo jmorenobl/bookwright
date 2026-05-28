@@ -11,11 +11,5 @@ app = typer.Typer(
     add_completion=False,
 )
 
-
-@app.callback()
-def _root() -> None:
-    """Bookwright — Spec-driven authoring toolkit."""
-
-
 app.command("version")(version.run)
 app.command("check")(check.run)

@@ -1,10 +1,20 @@
+# The ruff hooks delegate to `uv run ruff` so the ruff version is the one
+# pinned in uv.lock — the same one CI and local `uv run` use. Pinning a
+# separate `rev:` on the upstream ruff-pre-commit repo would let it drift
+# independently of the lockfile.
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.7
+  - repo: local
     hooks:
       - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        name: ruff check
+        entry: uv run ruff check --fix --exit-non-zero-on-fix
+        language: system
+        types_or: [python, pyi]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
