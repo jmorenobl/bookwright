@@ -1,7 +1,7 @@
 # Bookwright — Plan de implementación con Spec Kit
 
 > **Documento complementario a:** `bookwright-design.md`.
-> **Propósito:** secuencia de iteraciones para implementar Bookwright usando Spec Kit como herramienta de desarrollo. Cada iteración tiene un prompt listo para invocar `/speckit.specify`.
+> **Propósito:** secuencia de iteraciones para implementar Bookwright usando Spec Kit como herramienta de desarrollo. Cada iteración tiene un prompt listo para invocar `/speckit-specify`.
 > **Audiencia:** Jorge (o cualquier desarrollador con Spec Kit instalado y `bookwright-design.md` en el root del repo).
 
 ---
@@ -32,10 +32,10 @@ specify init --here --integration claude
 
 ### 1.2 Establecer la constitution del proyecto
 
-Antes de cualquier iteración, ejecuta `/speckit.constitution` con este prompt:
+Antes de cualquier iteración, ejecuta `/speckit-constitution` con este prompt:
 
 ```
-/speckit.constitution
+/speckit-constitution
 
 Bookwright es un toolkit Python para producción de libros (novelas, ensayos, memorias) que aplica Spec-Driven Development al dominio narrativo. El diseño completo está en bookwright-design.md.
 
@@ -80,26 +80,26 @@ Fuera de scope hasta post-v0:
 Consulta bookwright-design.md para el detalle exhaustivo de cualquier punto.
 ```
 
-Tras `/speckit.constitution`, Spec Kit crea `.specify/memory/constitution.md`. Revísalo y ajústalo si hace falta antes de continuar.
+Tras `/speckit-constitution`, Spec Kit crea `.specify/memory/constitution.md`. Revísalo y ajústalo si hace falta antes de continuar.
 
 ### 1.3 Convenciones de iteración
 
 Cada iteración sigue este flujo:
 
 ```
-/speckit.specify <prompt de la iteración>    # crea branch NNN-name + spec.md
-/speckit.clarify                              # responde preguntas, refina spec
-/speckit.plan <pista técnica>                 # genera plan.md con el cómo
-/speckit.tasks                                # desglose en tareas
-/speckit.analyze                              # cross-artifact check
-/speckit.implement                            # ejecuta tareas
+/speckit-specify <prompt de la iteración>    # crea branch NNN-name + spec.md
+/speckit-clarify                              # responde preguntas, refina spec
+/speckit-plan <pista técnica>                 # genera plan.md con el cómo
+/speckit-tasks                                # desglose en tareas
+/speckit-analyze                              # cross-artifact check
+/speckit-implement                            # ejecuta tareas
 ```
 
-**No saltes `/speckit.clarify`**. Es donde se cierran ambigüedades antes de codificar. Si el prompt es muy completo y no genera dudas, di explícitamente "no hay clarificaciones" para desbloquear el siguiente paso.
+**No saltes `/speckit-clarify`**. Es donde se cierran ambigüedades antes de codificar. Si el prompt es muy completo y no genera dudas, di explícitamente "no hay clarificaciones" para desbloquear el siguiente paso.
 
-**En `/speckit.plan` aprovecha el doc de diseño**. El prompt típico es: *"Sigue el stack y la arquitectura definidos en bookwright-design.md, secciones X.Y. Restricciones específicas: [lo que aplique]."*
+**En `/speckit-plan` aprovecha el doc de diseño**. El prompt típico es: *"Sigue el stack y la arquitectura definidos en bookwright-design.md, secciones X.Y. Restricciones específicas: [lo que aplique]."*
 
-**Merge a `main` tras cada iteración completada** (asumiendo tests verdes y `/speckit.analyze` sin issues). Las iteraciones siguientes asumen el código de las previas en `main`.
+**Merge a `main` tras cada iteración completada** (asumiendo tests verdes y `/speckit-analyze` sin issues). Las iteraciones siguientes asumen el código de las previas en `main`.
 
 ---
 
@@ -132,7 +132,7 @@ Estimación total: 6-8 semanas a tiempo parcial, 3-4 semanas a tiempo completo. 
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: Bookwright es un proyecto Python que aún no existe como código. Necesitamos el bootstrap inicial del repositorio para que cualquier desarrollo posterior tenga un entorno consistente, automatizado y verificable.
 
@@ -156,7 +156,7 @@ Calidad y restricciones:
 Referencia: ver bookwright-design.md secciones 6 (estructura del repo), 14 (stack tecnológico) y 15.1 (hito M0).
 ```
 
-**Pista para `/speckit.plan`:** *"Sigue § 6 (árbol del repo) y § 14 (stack) de bookwright-design.md. Crea solo los archivos imprescindibles para el bootstrap: pyproject.toml, src/bookwright/__init__.py con `__version__`, src/bookwright/cli.py con un Typer app que registra `version` y `check`, tests/conftest.py + un test smoke, .github/workflows/tests.yml, .pre-commit-config.yaml, .gitignore, LICENSE Apache-2.0. NO crear todavía los directorios core/, golem/, integrations/, indexers/, validation/."*
+**Pista para `/speckit-plan`:** *"Sigue § 6 (árbol del repo) y § 14 (stack) de bookwright-design.md. Crea solo los archivos imprescindibles para el bootstrap: pyproject.toml, src/bookwright/__init__.py con `__version__`, src/bookwright/cli.py con un Typer app que registra `version` y `check`, tests/conftest.py + un test smoke, .github/workflows/tests.yml, .pre-commit-config.yaml, .gitignore, LICENSE Apache-2.0. NO crear todavía los directorios core/, golem/, integrations/, indexers/, validation/."*
 
 **Criterio de aceptación:** `uv sync && uv run bookwright version` muestra la versión. `uv run pytest` pasa. `uv run pre-commit run --all-files` pasa. CI verde.
 
@@ -169,7 +169,7 @@ Referencia: ver bookwright-design.md secciones 6 (estructura del repo), 14 (stac
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: cada proyecto Bookwright declara su configuración en un manifest.toml en la raíz. El CLI necesita un modelo robusto para leer, validar y escribir ese archivo, con compatibilidad hacia adelante (manifest_version) y validación estricta de campos obligatorios.
 
@@ -200,7 +200,7 @@ Fuera de scope:
 Referencia: ver bookwright-design.md § 8 para la spec completa del manifest.toml.
 ```
 
-**Pista para `/speckit.plan`:** *"Implementa `src/bookwright/core/manifest.py` con Pydantic v2 BaseModel. Usa tomlkit para preservar formato y comentarios al escribir. Tests unitarios exhaustivos para validación de cada campo, incluyendo casos negativos. NO usar tomli/tomli_w; usar tomlkit consistentemente."*
+**Pista para `/speckit-plan`:** *"Implementa `src/bookwright/core/manifest.py` con Pydantic v2 BaseModel. Usa tomlkit para preservar formato y comentarios al escribir. Tests unitarios exhaustivos para validación de cada campo, incluyendo casos negativos. NO usar tomli/tomli_w; usar tomlkit consistentemente."*
 
 **Criterio de aceptación:** `Manifest.load(path)` y `Manifest.dump(path)` funcionan en ambos sentidos sin pérdida de información. Tests cubren al menos 90% del módulo.
 
@@ -213,7 +213,7 @@ Referencia: ver bookwright-design.md § 8 para la spec completa del manifest.tom
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: Bookwright debe poder materializar artefactos (Agent Skills) para distintos agentes IA sin que el código del CLI se acople a un agente específico. El usuario elige el agente al inicializar el proyecto y la integración correspondiente decide dónde y cómo escribir los archivos.
 
@@ -240,7 +240,7 @@ Casos límite:
 Referencia: ver bookwright-design.md § 11 (Sistema de Integration) para la spec completa, incluido el código Python concreto de las dos integraciones.
 ```
 
-**Pista para `/speckit.plan`:** *"Implementa exactamente la estructura de § 11 de bookwright-design.md. La materialización de SKILL.md en setup() puede ser stub en esta iteración (solo crear el directorio); la lógica real llegará en iteración 9. Tests unitarios para el registry y para resolve_skills_dir() de cada integración con varios parsed_options."*
+**Pista para `/speckit-plan`:** *"Implementa exactamente la estructura de § 11 de bookwright-design.md. La materialización de SKILL.md en setup() puede ser stub en esta iteración (solo crear el directorio); la lógica real llegará en iteración 9. Tests unitarios para el registry y para resolve_skills_dir() de cada integración con varios parsed_options."*
 
 **Criterio de aceptación:** `INTEGRATION_REGISTRY["claude"]` y `["generic"]` devuelven las clases correctas. `ClaudeIntegration().resolve_skills_dir() == Path(".claude/skills")`. `GenericIntegration().resolve_skills_dir({"skills_dir": ".cursor/skills"}) == Path(".cursor/skills")`. Parser de `--integration-options` testeado.
 
@@ -253,7 +253,7 @@ Referencia: ver bookwright-design.md § 11 (Sistema de Integration) para la spec
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: el usuario quiere empezar un nuevo libro. Necesita un comando que en un solo paso cree el directorio del proyecto, escriba el manifest, copie todos los templates de la bible y outline, instale la integración del agente IA elegido, e inicialice git con un commit limpio.
 
@@ -288,7 +288,7 @@ Casos límite:
 Referencia: ver bookwright-design.md § 5.2 (flags) y § 7 (estructura del proyecto generado).
 ```
 
-**Pista para `/speckit.plan`:** *"Implementa `src/bookwright/commands/init.py`. Usa `importlib.resources.files()` para leer templates de src/bookwright/resources/. Para esta iteración los templates de bible pueden ser placeholders mínimos (versión completa en iter 7). El commit inicial de git se hace con subprocess; no usar GitPython como dependencia. Tests E2E con tmp_path fixtures que verifiquen la estructura completa generada en varios escenarios."*
+**Pista para `/speckit-plan`:** *"Implementa `src/bookwright/commands/init.py`. Usa `importlib.resources.files()` para leer templates de src/bookwright/resources/. Para esta iteración los templates de bible pueden ser placeholders mínimos (versión completa en iter 7). El commit inicial de git se hace con subprocess; no usar GitPython como dependencia. Tests E2E con tmp_path fixtures que verifiquen la estructura completa generada en varios escenarios."*
 
 **Criterio de aceptación:** ejecutar `bookwright init demo --integration claude` produce un proyecto que pasa todos los checks de § 15.1 del documento de diseño.
 
@@ -301,7 +301,7 @@ Referencia: ver bookwright-design.md § 5.2 (flags) y § 7 (estructura del proye
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: Bookwright necesita representar el modelo de dominio narrativo (personajes, eventos, settings, relaciones, etc.) como objetos Python tipados que sepan cómo serializarse a RDF/Turtle según la ontología GOLEM.
 
@@ -330,7 +330,7 @@ Restricciones:
 Referencia: ver bookwright-design.md § 4 (Modelo de dominio: GOLEM) completo.
 ```
 
-**Pista para `/speckit.plan`:** *"Crea src/bookwright/golem/ con submódulos modules/character.py, modules/relationship.py, modules/event.py, modules/setting.py, modules/narrative.py, modules/inference.py. Cada uno con dataclasses o Pydantic models. namespaces.py centraliza prefijos. base.py contiene la clase base con .uri y .to_triples(). Tests unitarios para URI generation, generación de triples, y serialización round-trip a Turtle."*
+**Pista para `/speckit-plan`:** *"Crea src/bookwright/golem/ con submódulos modules/character.py, modules/relationship.py, modules/event.py, modules/setting.py, modules/narrative.py, modules/inference.py. Cada uno con dataclasses o Pydantic models. namespaces.py centraliza prefijos. base.py contiene la clase base con .uri y .to_triples(). Tests unitarios para URI generation, generación de triples, y serialización round-trip a Turtle."*
 
 **Criterio de aceptación:** un Character con nombre "Manuel de Aparici" y uri_base "https://kola-coca.bookwright.dev/" produce URI "https://kola-coca.bookwright.dev/character/manuel-de-aparici". Tests pasan con coverage > 85%.
 
@@ -343,7 +343,7 @@ Referencia: ver bookwright-design.md § 4 (Modelo de dominio: GOLEM) completo.
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: el grafo de un proyecto Bookwright es la representación consultable de su contenido narrativo. Necesitamos poder construirlo desde los archivos markdown de la bible y manuscrito, y consultarlo desde el CLI o desde los commands.
 
@@ -388,7 +388,7 @@ Fuera de scope:
 Referencia: ver bookwright-design.md § 12 (Sistema de Indexers) y § 5.1 (comandos del CLI).
 ```
 
-**Pista para `/speckit.plan`:** *"Crea src/bookwright/indexers/base.py con el Protocol Indexer, y rdflib_indexer.py con la implementación. src/bookwright/io/turtle.py para serialización. src/bookwright/io/bible.py y io/manuscript.py para parsing de markdown con frontmatter (usar python-frontmatter o parsear YAML manual). src/bookwright/commands/graph.py con subcomandos build y query. Tests con fixture tiny-novel/ minimal."*
+**Pista para `/speckit-plan`:** *"Crea src/bookwright/indexers/base.py con el Protocol Indexer, y rdflib_indexer.py con la implementación. src/bookwright/io/turtle.py para serialización. src/bookwright/io/bible.py y io/manuscript.py para parsing de markdown con frontmatter (usar python-frontmatter o parsear YAML manual). src/bookwright/commands/graph.py con subcomandos build y query. Tests con fixture tiny-novel/ minimal."*
 
 **Criterio de aceptación:** sobre una fixture con 3 personajes, 2 settings y 5 eventos en markdown, `bookwright graph build` produce un graph.ttl con todos los triples esperados. `bookwright graph query "SELECT ?c WHERE { ?c a golem:G1_Character }" --json` devuelve los 3 personajes.
 
@@ -401,7 +401,7 @@ Referencia: ver bookwright-design.md § 12 (Sistema de Indexers) y § 5.1 (coman
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: cada proyecto Bookwright nace con un conjunto de templates en bible/, outline/ y como constitution.md que guían al autor y al agente IA sobre qué información rellenar y en qué formato. Estos templates son la pieza intelectual más visible para el usuario final.
 
@@ -443,7 +443,7 @@ Fuera de scope:
 Referencia: ver bookwright-design.md § 9 (constitution), § 6 (estructura de templates en el repo), § 17.2 (análisis del preset y qué se aprende de él).
 ```
 
-**Pista para `/speckit.plan`:** *"Esta iteración es 90% redacción. Trata cada .tmpl como un artefacto literario-técnico. Para cada uno, primero revisar el equivalente del preset fiction-book-writing (carpeta fiction-book-writing/templates/ del repo de adaumann) para entender qué cubre, y luego adaptar/reescribir para Bookwright con frontmatter que case con el modelo GOLEM de iter 5. Validación: cada template debe poder ser leído por el parser de iter 6 sin errores (test de smoke). Coverage no aplica aquí; los tests son de validación de formato y completitud."*
+**Pista para `/speckit-plan`:** *"Esta iteración es 90% redacción. Trata cada .tmpl como un artefacto literario-técnico. Para cada uno, primero revisar el equivalente del preset fiction-book-writing (carpeta fiction-book-writing/templates/ del repo de adaumann) para entender qué cubre, y luego adaptar/reescribir para Bookwright con frontmatter que case con el modelo GOLEM de iter 5. Validación: cada template debe poder ser leído por el parser de iter 6 sin errores (test de smoke). Coverage no aplica aquí; los tests son de validación de formato y completitud."*
 
 **Criterio de aceptación:** todos los templates existen en src/bookwright/resources/templates/. Tests automatizados validan que cada .tmpl con frontmatter es parseable y que el contenido es no-vacío y no contiene placeholders fundamentales sin reemplazar (ej. `{{TODO}}`).
 
@@ -456,7 +456,7 @@ Referencia: ver bookwright-design.md § 9 (constitution), § 6 (estructura de te
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: cada uno de los 10 commands de Bookwright (constitution, bible, outline, scenes, draft, synopsis, clarify, analyze, continuity, checklist) es un prompt estructurado que el agente IA ejecuta cuando el usuario lo invoca. Son la interfaz creativa principal y deben estar redactados con cuidado.
 
@@ -504,7 +504,7 @@ Fuera de scope:
 Referencia: ver bookwright-design.md § 10 (Sistema de Commands) completo, incluido el ejemplo anotado de bookwright-constitution.md en § 10.1.
 ```
 
-**Pista para `/speckit.plan`:** *"Esta iteración es redacción de prompts. Para cada command, partir del ejemplo de § 10.1 del doc de diseño y adaptar. Crear también src/bookwright/resources/commands/references/ con los archivos auxiliares (golem-character.md, propp-functions.md, etc.) que los commands referencien. Tests: validar que cada .md tiene frontmatter válido, description < 1024 chars, cuerpo no-vacío y < 5000 tokens (medir aproximadamente con tiktoken si está disponible, o por carácter)."*
+**Pista para `/speckit-plan`:** *"Esta iteración es redacción de prompts. Para cada command, partir del ejemplo de § 10.1 del doc de diseño y adaptar. Crear también src/bookwright/resources/commands/references/ con los archivos auxiliares (golem-character.md, propp-functions.md, etc.) que los commands referencien. Tests: validar que cada .md tiene frontmatter válido, description < 1024 chars, cuerpo no-vacío y < 5000 tokens (medir aproximadamente con tiktoken si está disponible, o por carácter)."*
 
 **Criterio de aceptación:** los 10 archivos existen, todos pasan validación de formato. Una lectura manual del prompt de bookwright-constitution muestra que sería ejecutable por Claude Code sin ambigüedades.
 
@@ -517,7 +517,7 @@ Referencia: ver bookwright-design.md § 10 (Sistema de Commands) completo, inclu
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: cuando el usuario ejecuta `bookwright init`, las integraciones deben transformar los commands source en Agent Skills válidos en el directorio destino. Cada SKILL.md generado debe cumplir el estándar agentskills.io y, si la integración soporta capacidades extendidas (como Claude Code), aprovecharlas.
 
@@ -546,7 +546,7 @@ Fuera de scope:
 Referencia: ver bookwright-design.md § 11.4 (Generación de SKILL.md desde commands) y § 11.5 (progressive disclosure).
 ```
 
-**Pista para `/speckit.plan`:** *"Reescribe los setup() de ClaudeIntegration y GenericIntegration. Crea src/bookwright/integrations/base.py::generate_skill_md(command_path, target_dir, integration) como helper compartido. SKILL_DESCRIPTIONS dict vive en base.py. Para tokens (solo {ARGS}), usa string.Template o re. Los SKILL.md generados llaman al CLI bookwright directamente (ej. `bookwright graph build --json`); no hay wrappers Python en .bookwright/scripts/. Tests E2E: ejecutar init en tmp_path, validar que los SKILL.md generados pasan un linter ad-hoc."*
+**Pista para `/speckit-plan`:** *"Reescribe los setup() de ClaudeIntegration y GenericIntegration. Crea src/bookwright/integrations/base.py::generate_skill_md(command_path, target_dir, integration) como helper compartido. SKILL_DESCRIPTIONS dict vive en base.py. Para tokens (solo {ARGS}), usa string.Template o re. Los SKILL.md generados llaman al CLI bookwright directamente (ej. `bookwright graph build --json`); no hay wrappers Python en .bookwright/scripts/. Tests E2E: ejecutar init en tmp_path, validar que los SKILL.md generados pasan un linter ad-hoc."*
 
 **Criterio de aceptación:** tras `bookwright init demo --integration claude`, el directorio demo/.claude/skills/ contiene los 10 subdirectorios con SKILL.md válidos. Validar uno cargándolo en Claude Code real (manual smoke test). `bookwright init demo --integration generic --integration-options="--skills-dir .cursor/skills"` produce skills equivalentes en demo/.cursor/skills/ sin sintaxis Claude-específica.
 
@@ -559,7 +559,7 @@ Referencia: ver bookwright-design.md § 11.4 (Generación de SKILL.md desde comm
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: la calidad de un libro depende de la coherencia interna. Bookwright debe poder detectar automáticamente inconsistencias temporales, presencia de personajes, continuidad de settings y respeto a la focalización declarada. Los validators son código Python que opera sobre el grafo y son deterministas (a diferencia de los chequeos LLM).
 
@@ -591,7 +591,7 @@ Fuera de scope:
 Referencia: ver bookwright-design.md § 13 (Sistema de Validación) completo.
 ```
 
-**Pista para `/speckit.plan`:** *"Crea src/bookwright/validation/base.py con el Protocol, registry.py con autodescubrimiento (entry_points o iterando módulos), y los 4 validators en archivos separados. src/bookwright/commands/validate.py con el comando. Para character_presence, usa expresiones regulares simples sobre menciones por nombre; NER queda fuera de scope. Tests: para cada validator, una fixture con violación inyectada y una sin violación; verificar detección correcta."*
+**Pista para `/speckit-plan`:** *"Crea src/bookwright/validation/base.py con el Protocol, registry.py con autodescubrimiento (entry_points o iterando módulos), y los 4 validators en archivos separados. src/bookwright/commands/validate.py con el comando. Para character_presence, usa expresiones regulares simples sobre menciones por nombre; NER queda fuera de scope. Tests: para cada validator, una fixture con violación inyectada y una sin violación; verificar detección correcta."*
 
 **Criterio de aceptación:** sobre fixtures con violaciones conocidas, `bookwright validate --json` detecta exactamente las violaciones esperadas. Sobre la fixture limpia, devuelve 0 violations. Cobertura > 85% en src/bookwright/validation/.
 
@@ -604,7 +604,7 @@ Referencia: ver bookwright-design.md § 13 (Sistema de Validación) completo.
 **Prompt:**
 
 ```
-/speckit.specify
+/speckit-specify
 
 Necesidad: Bookwright v0.1 está cerca de listo. Antes del primer release necesitamos fixtures realistas para tests E2E, un sitio de documentación navegable, y un changelog que registre qué hay en esta versión.
 
@@ -650,7 +650,7 @@ Fuera de scope:
 Referencia: ver bookwright-design.md § 15.4 (M3) y § 15.5 (post-v0).
 ```
 
-**Pista para `/speckit.plan`:** *"Esta iteración es polish y consolidación. Fixtures son trabajo creativo (escribir un esqueleto de novela, ensayo, memoria) — pueden ser muy cortos pero deben ser coherentes. Tests E2E usan las fixtures como input. MkDocs con tema material; la sección de architecture puede ser un resumen automático con links al doc de diseño completo (que va junto al repo). Validación manual al final con un usuario externo si es posible."*
+**Pista para `/speckit-plan`:** *"Esta iteración es polish y consolidación. Fixtures son trabajo creativo (escribir un esqueleto de novela, ensayo, memoria) — pueden ser muy cortos pero deben ser coherentes. Tests E2E usan las fixtures como input. MkDocs con tema material; la sección de architecture puede ser un resumen automático con links al doc de diseño completo (que va junto al repo). Validación manual al final con un usuario externo si es posible."*
 
 **Criterio de aceptación:** todos los criterios listados en el prompt se cumplen. Release v0.1.0 publicado en GitHub con wheel y sdist adjuntos.
 
@@ -660,11 +660,11 @@ Referencia: ver bookwright-design.md § 15.4 (M3) y § 15.5 (post-v0).
 
 ### 4.1 Manejo de spec rechazadas
 
-Si tras `/speckit.analyze` aparecen issues de consistencia entre spec/plan/tasks, vuelve a `/speckit.clarify` o edita el spec.md directamente, regenera plan y tasks, y vuelve a analizar. No fuerces `/speckit.implement` con análisis con errores.
+Si tras `/speckit-analyze` aparecen issues de consistencia entre spec/plan/tasks, vuelve a `/speckit-clarify` o edita el spec.md directamente, regenera plan y tasks, y vuelve a analizar. No fuerces `/speckit-implement` con análisis con errores.
 
 ### 4.2 Iteraciones que se complican
 
-Si una iteración crece más de lo previsto durante `/speckit.tasks` (más de ~10 tareas), considera dividirla en dos specs. La iteración 4 (bookwright init) y la 7 (templates) son las candidatas más probables para split.
+Si una iteración crece más de lo previsto durante `/speckit-tasks` (más de ~10 tareas), considera dividirla en dos specs. La iteración 4 (bookwright init) y la 7 (templates) son las candidatas más probables para split.
 
 ### 4.3 Cambios en el documento de diseño
 
@@ -672,7 +672,7 @@ Si durante la implementación descubres que algo del diseño no encaja con la re
 
 ### 4.4 Cuándo pedir ayuda al humano
 
-Spec Kit es bueno generando spec/plan/tasks pero puede divagar en decisiones de diseño no triviales. Cuando dudes, ejecuta `/speckit.clarify` o intervén manualmente. Las decisiones registradas en § 16 del doc de diseño son inmutables — si el agente las cuestiona, redirígelo al doc.
+Spec Kit es bueno generando spec/plan/tasks pero puede divagar en decisiones de diseño no triviales. Cuando dudes, ejecuta `/speckit-clarify` o intervén manualmente. Las decisiones registradas en § 16 del doc de diseño son inmutables — si el agente las cuestiona, redirígelo al doc.
 
 ### 4.5 Después de v0.1.0
 
