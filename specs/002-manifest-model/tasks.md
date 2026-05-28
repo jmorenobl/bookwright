@@ -28,7 +28,7 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 **Purpose**: Constitutional amendment + dependency bump + directory skeleton.
 
-- [ ] T001 Amend [.specify/memory/constitution.md](.specify/memory/constitution.md) Technical Constraints section to add `packaging>=23.0` to the runtime dependency list (MINOR amendment per Governance; see plan.md Complexity Tracking row 1)
+- [ ] T001 Amend [.specify/memory/constitution.md](.specify/memory/constitution.md) as a MINOR amendment (1.0.0 → 1.1.0) per Governance: (a) add `packaging>=23.0` to the runtime dependency list in the Technical Constraints section (alphabetical order); (b) bump the `**Version**:` footer line to `1.1.0` and update `**Last Amended**:` to today's date; (c) update the Sync Impact Report header at the top — record the version change, state the bump rationale ("MINOR: addition to runtime dependency list per Principle II / Technical Constraints, required by FR-012 PEP 440 ordering"), and confirm under "Templates requiring updates" that no `.specify/templates/*.md` change is required; (d) scan `.specify/templates/*.md` to verify point (c). See plan.md Complexity Tracking row 1.
 - [ ] T002 Add `packaging>=23.0` to `[project].dependencies` in [pyproject.toml](pyproject.toml) (alphabetical order) and run `uv sync` to refresh `uv.lock`
 - [ ] T003 Update [pyproject.toml](pyproject.toml) `[tool.hatch.build]` and `[tool.hatch.build.targets.wheel]` so the new `src/bookwright/resources/` subtree is included as package data (no exclusion of the template `.toml`)
 - [ ] T004 [P] Create directory skeleton: `src/bookwright/core/` with empty [src/bookwright/core/__init__.py](src/bookwright/core/__init__.py); `src/bookwright/resources/templates/` with empty [src/bookwright/resources/__init__.py](src/bookwright/resources/__init__.py) and [src/bookwright/resources/templates/__init__.py](src/bookwright/resources/templates/__init__.py)
@@ -59,14 +59,16 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 **Independent Test**: Place a fully-populated `manifest.toml` in a temp dir and call `Manifest.load`. Assert every documented attribute is reachable with the right type and value; `manifest.integration` is exposed as data only.
 
-### Tests for User Story 1 ⚠️
-
-> Write these tests FIRST and ensure they FAIL before implementation (T014).
+### Fixtures for User Story 1
 
 - [ ] T012 [P] [US1] Create [tests/core/fixtures/valid_full.toml](tests/core/fixtures/valid_full.toml): every required and optional field from § 8.1 populated (all blocks, opaque keys in `[book.metadata]` and `[integration.options]`); `book.authors` includes a duplicate entry to exercise the Edge Case "legitimate duplicates allowed"
 - [ ] T013 [P] [US1] Create [tests/core/fixtures/valid_minimal.toml](tests/core/fixtures/valid_minimal.toml): only the required fields (`bookwright.cli_version_min`, `schema_version`, `manifest_version`, `uri_base`; `book.title`, `type`, `language`, `authors`; `integration.key`, `skills_dir`)
 
-### Implementation for User Story 1
+### Implementation & Tests for User Story 1
+
+> Ordering: fixtures (above) → implementation → test. The test (T015) is
+> last because it imports the module the implementation builds. Run it
+> with `pytest -x` to confirm the failures land where you expect.
 
 - [ ] T014 [US1] Implement `Manifest.load(cls, path)` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): resolve path, read text, parse via `tomlkit.parse`, build `Manifest` through Pydantic, attach the underlying `_document`, return with `warnings=()` (no version-classification logic yet — that's US5). Use `pathlib.Path` for `path: Path | str`. No file existence or syntax-error handling yet (US2 covers that).
 - [ ] T015 [US1] Write [tests/core/test_load_valid.py](tests/core/test_load_valid.py) — Acceptance Scenarios 1–3 (FR-001, FR-003, FR-022): full-field load returns every value as declared; minimal load returns defaults for optionals; `[integration]` is exposed as data and never re-interpreted; the loaded `book.authors` preserves the duplicate entry verbatim (Edge Case); a parametrized sub-test iterates over every member of `BOOK_TYPES` and `BOOK_STATUSES` and asserts each value loads cleanly (SC-002); a regression-guard sub-test loads a manifest with `vocabularies.active = ["does-not-exist"]` and asserts the load succeeds (FR-023)
@@ -81,13 +83,15 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 **Independent Test**: Load each of nine broken fixtures. Each load raises `ManifestValidationError` whose `failures` list cites the offending field path, the rejected value, and a stable `rule_id`. A multi-error fixture surfaces every failure in one raise.
 
-### Tests for User Story 2 ⚠️
-
-> Write these tests FIRST and ensure they FAIL before implementation (T017–T019).
+### Fixtures for User Story 2
 
 - [ ] T016 [P] [US2] Create the invalid-fixture set under [tests/core/fixtures/](tests/core/fixtures/) — one file per rule (suggested names): `invalid_book_title_missing.toml`, `invalid_book_type_bad.toml`, `invalid_book_language_klingon.toml`, `invalid_book_authors_empty.toml`, `invalid_book_authors_blank_entry.toml`, `invalid_book_status_wip.toml`, `invalid_uri_base_no_scheme.toml`, `invalid_uri_base_no_trailing_slash.toml`, `invalid_uri_base_has_query.toml`, `invalid_uri_base_has_fragment.toml`, `invalid_cli_version_min_v1.toml`, `invalid_manifest_version_dotted.toml`, `invalid_manifest_version_zero.toml`, `invalid_bookwright_missing_uri_base.toml`, `invalid_bookwright_missing_schema_version.toml`, `invalid_bookwright_missing_manifest_version.toml`, `invalid_bookwright_missing_cli_version_min.toml`, `invalid_multi_error.toml` (combines ≥3 independent failures for FR-011)
 
-### Implementation for User Story 2
+### Implementation & Tests for User Story 2
+
+> Ordering: fixture (above) → implementation → test. The test (T020) is
+> last because it imports the module the implementation builds. Run it
+> with `pytest -x` to confirm the failures land where you expect.
 
 - [ ] T017 [US2] Add field/model validators in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): `BookBlock.title` non-empty after `strip()` (FR-004, rule `book.title.empty`/`.missing`); `BookBlock.language` membership in `ISO_639_1_CODES`, exact lowercase (FR-006, rule `book.language.not_iso_639_1`); `BookBlock.authors` list non-empty and every entry non-empty after `strip()` (FR-007, rules `book.authors.empty`/`book.authors[N].entry.empty`); `BookwrightBlock.uri_base` validator using `urllib.parse.urlsplit` per research §R5 with sub-rule ids (`bookwright.uri_base.invalid_uri`/`wrong_scheme`/`empty_host`/`has_query`/`has_fragment`/`no_trailing_slash`); `BookwrightBlock.manifest_version` regex `^[1-9][0-9]*$` (FR-013, rule `bookwright.manifest_version.not_positive_integer_string`); `BookwrightBlock.cli_version_min` PEP 440 parse via `packaging.version.Version` (FR-012, rule `bookwright.cli_version_min.not_pep440`). Expose two private helpers used downstream: `_parse_manifest_version(raw: str) -> int` (applies the same `^[1-9][0-9]*$` regex and returns the parsed integer) and `_classify_manifest_version(parsed: int) -> Literal["known", "future"]` comparing against `KNOWN_MANIFEST_VERSIONS`. Each validator uses Pydantic v2 `field_validator` / `model_validator(mode="after")` so failures accumulate (R2).
 - [ ] T018 [US2] Implement the `pydantic.ValidationError` → `ManifestValidationError` translator in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): convert every Pydantic error into one `_FieldFailure(field_path, rejected_value, rule_id, message)`. Render field paths in dotted/`[N]` form (`book.authors[0]`). Map Pydantic error types/contexts to the stable `rule_id` taxonomy in [contracts/manifest_api.md](specs/002-manifest-model/contracts/manifest_api.md). Wire the translator into `Manifest.load` so all collected failures surface in one raise (FR-011, SC-007).
@@ -104,13 +108,17 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 **Independent Test**: With `cli_version_min = "9999.0.0"` (or by monkey-patching `_installed_version()` lower than the manifest's value), `Manifest.load` raises `ManifestValidationError` citing `bookwright.cli_version_min` and naming both versions in the message.
 
-### Tests for User Story 3 ⚠️
+### Fixtures for User Story 3
 
 - [ ] T021 [P] [US3] Create [tests/core/fixtures/future_cli_version.toml](tests/core/fixtures/future_cli_version.toml) with `cli_version_min = "9999.0.0"` (otherwise valid minimal manifest)
 
-### Implementation for User Story 3
+### Implementation & Tests for User Story 3
 
-- [ ] T022 [US3] Add the model-level installed-vs-required comparison in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py) `BookwrightBlock` (or a `Manifest.model_validator(mode="after")` if it must read `bookwright.__version__` via `_installed_version()`): compare `Version(cli_version_min)` to `Version(_installed_version())` with PEP 440 ordering; raise a Pydantic error mapped to `_FieldFailure(field_path="bookwright.cli_version_min", rule_id="bookwright.cli_version_min.installed_too_old", message="installed CLI {installed} is older than required {required}")` (FR-012, SC-003)
+> Ordering: fixture (above) → implementation → test. The test (T023) is
+> last because it imports the module the implementation builds. Run it
+> with `pytest -x` to confirm the failures land where you expect.
+
+- [ ] T022 [US3] Add the installed-vs-required comparison as a `Manifest.model_validator(mode="after")` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py), reading the installed CLI's version via `_installed_version()`: compare `Version(self.bookwright.cli_version_min)` to `Version(_installed_version())` with PEP 440 ordering; raise a Pydantic error mapped to `_FieldFailure(field_path="bookwright.cli_version_min", rule_id="bookwright.cli_version_min.installed_too_old", message="installed CLI {installed} is older than required {required}")` (FR-012, SC-003). Rationale: same scope as the US5 `manifest_version` classifier, so both checks share the failure-translation path.
 - [ ] T023 [US3] Write [tests/core/test_version_gate.py](tests/core/test_version_gate.py) — Acceptance Scenarios 1–2 (FR-012, SC-003): monkey-patch `_installed_version` to `"0.0.1"` and load `future_cli_version.toml` → expect `ManifestValidationError` whose first-failure message names both `0.0.1` and `9999.0.0`; with `_installed_version` set to `"9999.0.0"` or higher the load succeeds and the rest of validation continues normally
 
 **Checkpoint**: User Story 3 — the CLI version gate is enforced.
@@ -123,13 +131,15 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 **Independent Test**: Build with minimal inputs → assert defaults match FR-017. Dump to a temp file → load it back → byte-identical round-trip on second dump. Refuse-overwrite is enforced. Unknown override kwarg raises `TypeError`; rule-violating override raises `ManifestValidationError`.
 
-### Tests for User Story 4 ⚠️
-
-> Write these tests FIRST and ensure they FAIL before implementation (T024–T026).
+### Preparation for User Story 4
 
 - [ ] T024 [P] [US4] Verify the template authored in T010 ([src/bookwright/resources/templates/manifest.template.toml](src/bookwright/resources/templates/manifest.template.toml)) covers every key listed in the override allowlist of [contracts/manifest_api.md](specs/002-manifest-model/contracts/manifest_api.md) §`Manifest.build`. Add any missing key with its FR-017 default. No-op if T010 is already complete.
 
-### Implementation for User Story 4
+### Implementation & Tests for User Story 4
+
+> Ordering: template check (above) → implementation → tests. T027 and T028
+> are last because they exercise the builder/dump path built in T025–T026.
+> Run them with `pytest -x` to confirm the failures land where you expect.
 
 - [ ] T025 [US4] Implement `Manifest.build(...)` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): (a) enumerate the documented override allowlist from [contracts/manifest_api.md](specs/002-manifest-model/contracts/manifest_api.md) §"Manifest.build"; (b) raise `TypeError("build() got unexpected keyword argument '<name>'")` on any unknown kwarg, before constructing anything (FR-015, SC-004); (c) load the template via `importlib.resources.files("bookwright.resources.templates").joinpath("manifest.template.toml")` as a `tomlkit.TOMLDocument`; (d) overwrite `book.title`, `book.authors`, `integration.key`, `integration.skills_dir` (from `DEFAULT_SKILLS_DIR[integration_key]` unless `integration_skills_dir` override supplied; raise `KeyError`/`TypeError` for unknown integration without explicit override), and `bookwright.cli_version_min` (= installed version); apply FR-017 defaults for every other field; overlay caller overrides; (e) re-parse the resulting document through Pydantic for end-to-end validation (FR-016); on failure raise `ManifestValidationError`; (f) attach `_document` and return.
 - [ ] T026 [US4] Implement `Manifest.dump(self, path, *, overwrite=False)` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): resolve path; if exists and `not overwrite` → raise `ManifestOverwriteError(path=...)` (FR-019); otherwise open `tempfile.NamedTemporaryFile(dir=path.parent, delete=False)`, write `tomlkit.dumps(self._document)`, `flush()`, `os.fsync(fd)`; `os.replace(temp_path, path)` (FR-021, research §R7); on any exception delete the temp file and re-raise without touching `path`; return `path.resolve()`
@@ -146,11 +156,15 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 **Independent Test**: Load a fixture with `manifest_version = "9"` → load succeeds, `manifest.warnings` has exactly one entry with `rule_id="manifest_version.unknown_future"`, and every recognised field is still populated.
 
-### Tests for User Story 5 ⚠️
+### Fixtures for User Story 5
 
 - [ ] T029 [P] [US5] Create [tests/core/fixtures/future_manifest_version.toml](tests/core/fixtures/future_manifest_version.toml) with `manifest_version = "9"` (otherwise valid minimal manifest)
 
-### Implementation for User Story 5
+### Implementation & Tests for User Story 5
+
+> Ordering: fixture (above) → implementation → test. The test (T031) is
+> last because it imports the module the implementation builds. Run it
+> with `pytest -x` to confirm the failures land where you expect.
 
 - [ ] T030 [US5] Add `manifest_version` classification in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): use the `_parse_manifest_version` and `_classify_manifest_version` helpers introduced in T017; in `Manifest.load`, after the typed `Manifest` is built, classify and attach `ManifestWarning(rule_id="manifest_version.unknown_future", field_path="bookwright.manifest_version", offending_value=raw, message=f"manifest_version {parsed} is newer than this CLI knows about (max known: {max(KNOWN_MANIFEST_VERSIONS)}); load was best-effort")` to `Manifest.warnings` as a tuple; emit nothing for known versions (FR-013, FR-014, SC-006). The model layer MUST NOT write to stdout/stderr.
 - [ ] T031 [US5] Write [tests/core/test_future_version.py](tests/core/test_future_version.py) — Acceptance Scenarios 1–3 (FR-013, FR-014, SC-006): future `manifest_version` produces exactly one warning whose `rule_id` and `offending_value` match, every recognised field is still populated, and capsys/capfd capture no writes from the model layer; known `manifest_version` produces an empty `warnings` tuple; missing/malformed `manifest_version` raises `ManifestValidationError` (delegated to US2's path, asserted here too as a regression guard)

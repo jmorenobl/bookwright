@@ -27,6 +27,24 @@ Manifest                       (Pydantic BaseModel; root)
 not written back out by `dump()`. Round-tripping (FR-020) compares the TOML
 file contents, not the warning list.
 
+## Reading the block tables
+
+Each block table has a "Required" and a "Default (FR-017)" column. Their
+interaction is non-obvious — read once:
+
+- **Required: yes** — the load path rejects the manifest when the key is
+  missing (FR-004…FR-010, FR-012, FR-013). The "Default (FR-017)" cell is
+  the value that `Manifest.build(...)` injects when the caller supplies no
+  override; the Pydantic field itself has **no** default, so a missing key
+  at load surfaces as a `ManifestValidationError`.
+- **Required: no** — the key is optional at load. The "Default (FR-017)"
+  cell is the Pydantic field default, applied transparently whether the
+  load path or the builder supplied the value.
+
+The single exception is `bookwright.uri_base`: required at load *and* no
+default at build time — the caller must supply one (see
+[contracts/manifest_api.md](contracts/manifest_api.md) §`Manifest.build`).
+
 ## Top-level entity: `Manifest`
 
 ### Pydantic config
@@ -34,10 +52,13 @@ file contents, not the warning list.
 - `model_config = ConfigDict(extra="allow", strict=True)` at the
   `Manifest` level so unknown top-level keys (e.g. a future
   `[experimental]` block) round-trip unmodified per FR-003.
-- Per-block models use `extra="allow"` for `[book.metadata]` and
-  `[integration.options]` (the two explicitly free-form maps), and
-  `extra="forbid"` everywhere else so unknown keys inside a *known*
-  block are caught as errors rather than silently discarded.
+- Every known block (`BookwrightBlock`, `BookBlock`, `VocabulariesBlock`,
+  `ValidatorsBlock`, `IntegrationBlock`, `PathsBlock`) uses
+  `extra="forbid"` so unknown keys inside a *known* block are caught as
+  errors rather than silently discarded. `BookBlock.metadata` and
+  `IntegrationBlock.options` are `dict[str, Any]` fields, not separate
+  Pydantic block models — they accept arbitrary nested keys by
+  construction and require no `extra="allow"` override.
 - Strict mode (`strict=True`) prevents type coercion (e.g. integer
   passed for a string field is a failure, not a silent str-cast). This
   matches FR-004…FR-010, which all demand "is a string" as part of the
