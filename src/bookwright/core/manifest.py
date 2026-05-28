@@ -14,7 +14,7 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 from urllib.parse import urlsplit
 
 import tomlkit
@@ -48,11 +48,11 @@ _MANIFEST_VERSION_RE = re.compile(r"^[1-9][0-9]*$")
 KNOWN_MANIFEST_VERSIONS: frozenset[int] = frozenset({1})
 """The set of `manifest_version` integers this CLI understands natively."""
 
-BOOK_TYPES: frozenset[str] = frozenset(
-    {"novel", "essay", "memoir", "non-fiction-narrative", "other"}
-)
+BookType = Literal["novel", "essay", "memoir", "non-fiction-narrative", "other"]
+BookStatus = Literal["idea", "structuring", "drafting", "revising", "done"]
 
-BOOK_STATUSES: frozenset[str] = frozenset({"idea", "structuring", "drafting", "revising", "done"})
+BOOK_TYPES: frozenset[str] = frozenset(get_args(BookType))
+BOOK_STATUSES: frozenset[str] = frozenset(get_args(BookStatus))
 
 DEFAULT_SKILLS_DIR: dict[str, str] = {
     "claude": ".claude/skills",
@@ -209,13 +209,13 @@ class BookBlock(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
     title: str
-    type: Literal["novel", "essay", "memoir", "non-fiction-narrative", "other"]
+    type: BookType
     language: str
     authors: list[str]
     subtitle: str = ""
     genre: list[str] = Field(default_factory=list)
     target_length_words: int | None = None
-    status: Literal["idea", "structuring", "drafting", "revising", "done"] = "drafting"
+    status: BookStatus = "drafting"
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("title", mode="after")

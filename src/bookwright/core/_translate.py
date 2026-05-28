@@ -38,10 +38,8 @@ def _format_loc(loc: tuple[Any, ...]) -> str:
     parts: list[str] = []
     for piece in loc:
         if isinstance(piece, int):
-            if parts:
-                parts[-1] = f"{parts[-1]}[{piece}]"
-            else:
-                parts.append(f"[{piece}]")
+            assert parts, "Pydantic loc never starts with an int"
+            parts[-1] = f"{parts[-1]}[{piece}]"
         else:
             parts.append(str(piece))
     return ".".join(parts)
