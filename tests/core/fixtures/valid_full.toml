@@ -1,0 +1,51 @@
+# Fully-populated valid manifest fixture (US1, T012).
+# Every required and optional field from § 8.1 is present.
+# `book.authors` contains a duplicate to exercise the Edge Case (legitimate
+# duplicate co-author entries are allowed).
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.0"
+manifest_version = "1"
+uri_base = "https://example.org/full/"
+indexer = "rdflib"
+
+[book]
+title = "The Full Test"
+type = "novel"
+language = "en"
+authors = ["Alice Author", "Bob Writer", "Alice Author"]
+subtitle = "An Exhaustive Fixture"
+genre = ["literary", "speculative"]
+target_length_words = 90000
+status = "drafting"
+
+[book.metadata]
+isbn_planned = "978-0-00-000000-0"
+arbitrary_key = "kept verbatim"
+
+[book.metadata.nested]
+deeply = "nested too"
+
+[vocabularies]
+active = ["core", "extra"]
+
+[validators]
+enabled = ["title-case"]
+disabled = ["legacy-rule"]
+custom = ["./validators/my_rule.py"]
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+flavor = "default"
+extra_setting = 42
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"

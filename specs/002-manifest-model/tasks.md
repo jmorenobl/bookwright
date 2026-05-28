@@ -61,8 +61,8 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 ### Fixtures for User Story 1
 
-- [ ] T012 [P] [US1] Create [tests/core/fixtures/valid_full.toml](tests/core/fixtures/valid_full.toml): every required and optional field from § 8.1 populated (all blocks, opaque keys in `[book.metadata]` and `[integration.options]`); `book.authors` includes a duplicate entry to exercise the Edge Case "legitimate duplicates allowed"
-- [ ] T013 [P] [US1] Create [tests/core/fixtures/valid_minimal.toml](tests/core/fixtures/valid_minimal.toml): only the required fields (`bookwright.cli_version_min`, `schema_version`, `manifest_version`, `uri_base`; `book.title`, `type`, `language`, `authors`; `integration.key`, `skills_dir`)
+- [X] T012 [P] [US1] Create [tests/core/fixtures/valid_full.toml](tests/core/fixtures/valid_full.toml): every required and optional field from § 8.1 populated (all blocks, opaque keys in `[book.metadata]` and `[integration.options]`); `book.authors` includes a duplicate entry to exercise the Edge Case "legitimate duplicates allowed"
+- [X] T013 [P] [US1] Create [tests/core/fixtures/valid_minimal.toml](tests/core/fixtures/valid_minimal.toml): only the required fields (`bookwright.cli_version_min`, `schema_version`, `manifest_version`, `uri_base`; `book.title`, `type`, `language`, `authors`; `integration.key`, `skills_dir`)
 
 ### Implementation & Tests for User Story 1
 
@@ -70,8 +70,8 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 > last because it imports the module the implementation builds. Run it
 > with `pytest -x` to confirm the failures land where you expect.
 
-- [ ] T014 [US1] Implement `Manifest.load(cls, path)` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): resolve path, read text, parse via `tomlkit.parse`, build `Manifest` through Pydantic, attach the underlying `_document`, return with `warnings=()` (no version-classification logic yet — that's US5). Use `pathlib.Path` for `path: Path | str`. No file existence or syntax-error handling yet (US2 covers that).
-- [ ] T015 [US1] Write [tests/core/test_load_valid.py](tests/core/test_load_valid.py) — Acceptance Scenarios 1–3 (FR-001, FR-003, FR-022): full-field load returns every value as declared; minimal load returns defaults for optionals; `[integration]` is exposed as data and never re-interpreted; the loaded `book.authors` preserves the duplicate entry verbatim (Edge Case); a parametrized sub-test iterates over every member of `BOOK_TYPES` and `BOOK_STATUSES` and asserts each value loads cleanly (SC-002); a regression-guard sub-test loads a manifest with `vocabularies.active = ["does-not-exist"]` and asserts the load succeeds (FR-023)
+- [X] T014 [US1] Implement `Manifest.load(cls, path)` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py): resolve path, read text, parse via `tomlkit.parse`, build `Manifest` through Pydantic, attach the underlying `_document`, return with `warnings=()` (no version-classification logic yet — that's US5). Use `pathlib.Path` for `path: Path | str`. No file existence or syntax-error handling yet (US2 covers that).
+- [X] T015 [US1] Write [tests/core/test_load_valid.py](tests/core/test_load_valid.py) — Acceptance Scenarios 1–3 (FR-001, FR-003, FR-022): full-field load returns every value as declared; minimal load returns defaults for optionals; `[integration]` is exposed as data and never re-interpreted; the loaded `book.authors` preserves the duplicate entry verbatim (Edge Case); a parametrized sub-test iterates over every member of `BOOK_TYPES` and `BOOK_STATUSES` and asserts each value loads cleanly (SC-002); a regression-guard sub-test loads a manifest with `vocabularies.active = ["does-not-exist"]` and asserts the load succeeds (FR-023)
 
 **Checkpoint**: User Story 1 — loading a valid manifest works end-to-end and is testable independently.
 
