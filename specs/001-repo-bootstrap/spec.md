@@ -134,7 +134,7 @@ Después de instalar dependencias o cambiar de máquina, un dev (o un script de 
 
 - **FR-018**: El repo MUST incluir un directorio `tests/` a la raíz con al menos dos tests de smoke: uno que importe el paquete principal y otro que invoque `bookwright version` como un subproceso o equivalente y verifique su salida.
 - **FR-019**: El runner de tests MUST poder ejecutarse localmente con un único comando y reportar resultados en menos de 10 segundos para la suite de smoke.
-- **FR-020**: El runner de tests MUST estar configurado para producir un reporte de cobertura aunque el umbral mínimo aún no se exija como bloqueante en esta iteración. La cobertura se reporta solo localmente: resumen en terminal y artefacto (XML o HTML) adjunto al run de CI; en esta iteración NO se publica a servicios externos (Codecov, Coveralls u otros) ni se introduce ningún token/secreto asociado.
+- **FR-020**: El runner de tests MUST estar configurado para producir un reporte de cobertura y MUST activar el gate constitucional `--cov-fail-under=80` (Principio VIII, NON-NEGOTIABLE) desde esta iteración sin excepciones — la superficie de código del bootstrap (~200 LOC) es trivialmente cubierta por los smoke tests de US1 y US4. La cobertura se reporta solo localmente: resumen en terminal y artefacto (XML o HTML) adjunto al run de CI; en esta iteración NO se publica a servicios externos (Codecov, Coveralls u otros) ni se introduce ningún token/secreto asociado.
 
 **Disciplina de scope**
 

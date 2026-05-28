@@ -177,7 +177,8 @@ bookwright/                                # repo root
 │   ├── __init__.py
 │   ├── conftest.py                        # fixtures comunes (CliRunner, paths)
 │   ├── test_smoke_import.py               # importa bookwright; verifica __version__
-│   ├── test_cli_version.py                # `bookwright version` humano + --json
+│   ├── test_cli_version.py                # `bookwright version` humano + --json (CliRunner)
+│   ├── test_cli_subprocess.py             # `bookwright version --json` end-to-end vía subprocess (Principio IX)
 │   └── test_cli_check.py                  # `bookwright check`   humano + --json
 │
 └── .github/

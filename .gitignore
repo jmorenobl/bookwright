@@ -20,4 +20,8 @@ build/
 .ruff_cache/
 .mypy_cache/
 .coverage
+coverage.xml
 htmlcov/
+
+# Quickstart scratch directory (see specs/001-repo-bootstrap/quickstart.md)
+.scratch/
