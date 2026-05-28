@@ -1,0 +1,21 @@
+# Forward-compat boundary fixture: a future manifest_version paired with
+# an unknown key inside [bookwright]. The unknown key MUST raise
+# bookwright.<key>.unknown_key before manifest_version classification
+# runs, proving that v0 forward-compat is manifest_version-deep only.
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.0"
+manifest_version = "9"
+uri_base = "https://example.org/future-mv-unknown-key/"
+lock_file = "bookwright.lock"
+
+[book]
+title = "Future Manifest With Unknown Key"
+type = "novel"
+language = "en"
+authors = ["Forward Thinker"]
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"

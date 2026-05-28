@@ -76,6 +76,34 @@ def test_round_trip_is_byte_identical(fixture: str, tmp_path: Path) -> None:
     assert source.read_bytes() == target.read_bytes()
 
 
+def test_dump_ignores_post_load_mutation(tmp_path: Path) -> None:
+    """Contract: `dump()` writes the captured tomlkit document, not the model.
+
+    Pins the v0 mutation-semantics limit documented in
+    `contracts/manifest_api.md` §`Manifest.dump`: assignments to model
+    fields after `load()` are syntactically legal (the models are not
+    `frozen=True`) but are NOT reflected in the dumped output.
+    """
+
+    source = load_fixture("valid_minimal.toml")
+    target = tmp_path / "manifest.toml"
+
+    m = Manifest.load(source)
+    assert m.book.title == "Minimal Book"
+
+    m.book.title = "Mutated Title"
+    m.validators.enabled.append("never-persisted")
+
+    m.dump(target, overwrite=False)
+
+    # The dumped file matches the original source byte-for-byte; the
+    # post-load mutations are silently dropped.
+    assert target.read_bytes() == source.read_bytes()
+    body = target.read_text(encoding="utf-8")
+    assert "Mutated Title" not in body
+    assert "never-persisted" not in body
+
+
 def test_dump_atomicity_failure_preserves_prior_contents(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

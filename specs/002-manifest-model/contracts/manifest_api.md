@@ -94,6 +94,22 @@ class Manifest(BaseModel):
 - Returns the built `Manifest` with `.warnings` populated (possibly
   empty).
 
+**Forward-compat boundary (v0 — explicit limit)**: "Best-effort load"
+for a future `manifest_version` applies to changes in the **value** of
+`manifest_version` alone. Adding new keys inside the known blocks
+(`[bookwright]`, `[book]`, `[vocabularies]`, `[validators]`,
+`[integration]`, `[paths]`) is still a hard validation error under
+`extra="forbid"`: each of those block models rejects unknown keys with
+rule id `<block>.<key>.unknown_key`, raised *before*
+`manifest_version` classification runs. Only **new top-level blocks**
+(e.g. an `[experimental]` table) round-trip opaquely, because the root
+`Manifest` model is `extra="allow"`. Key-level forward-compat inside
+known blocks is not in v0 scope; introducing a new key to a known
+block in a future `manifest_version` requires a CLI version that knows
+about it. The negative regression test
+[tests/core/test_future_version.py::test_unknown_key_in_bookwright_still_raises](../../../tests/core/test_future_version.py)
+pins this limit.
+
 **Exceptions**:
 - `ManifestNotFoundError` — file at `path` does not exist.
 - `ManifestSyntaxError` — file exists but is not valid TOML. Carries
@@ -133,6 +149,21 @@ success and failure paths.
 produced by `Manifest.load(p)`,
 `Manifest.load(p).dump(q, overwrite=True)` produces a file at `q` whose
 contents are byte-identical to the file at `p`.
+
+**Mutation semantics (v0 — explicit limit)**: `dump()` serialises the
+underlying `tomlkit` document captured at `load()` or `build()` time,
+NOT the current state of the Pydantic model tree. Mutations applied to
+the model after construction (e.g. `m.book.title = "new"`,
+`m.validators.enabled.append("foo")`) are **not** reflected in the
+dumped output. The Pydantic models are not configured `frozen=True`,
+so such assignments are syntactically legal but silently dropped on
+dump. To change a field and persist it, construct a fresh manifest via
+`Manifest.build(...)` with the desired values (or with overrides) and
+dump that. Editing the on-disk TOML directly and reloading is also
+valid. Direct model mutation followed by `dump()` is not part of the
+v0 contract; the regression test
+[tests/core/test_write.py::test_dump_ignores_post_load_mutation](../../../tests/core/test_write.py)
+pins this behaviour as deliberate.
 
 ### `Manifest.build`
 
@@ -239,7 +270,9 @@ JSON envelope. Any future change to a key name is a breaking change.
   `not_iso_639_1`, `entry.empty`, `entry.not_a_string`,
   `not_pep440`, `not_positive_integer_string`, `invalid_uri`,
   `wrong_scheme`, `has_query`, `has_fragment`, `no_trailing_slash`,
-  `installed_too_old`, `parse_failure`.
+  `installed_too_old`, `parse_failure`, `unknown_key` (raised by
+  `extra="forbid"` blocks for keys not in the known schema; see the
+  "Forward-compat boundary" paragraph above).
 
 ### `ManifestWarning.to_json()`
 

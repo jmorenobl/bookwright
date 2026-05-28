@@ -60,3 +60,27 @@ def test_malformed_manifest_version_raises_validation_error() -> None:
         and f.rule_id == "bookwright.manifest_version.not_positive_integer_string"
         for f in exc_info.value.failures
     )
+
+
+def test_unknown_key_in_bookwright_still_raises() -> None:
+    """Contract: forward-compat is `manifest_version`-deep only.
+
+    A future `manifest_version` paired with an unknown key inside a
+    known block (`[bookwright]`) MUST raise `ManifestValidationError`
+    with rule `bookwright.<key>.unknown_key` — the `extra="forbid"`
+    barrier fires *before* `_classify_manifest_version_warnings` runs,
+    so the documented "best-effort" forward-compat warning never
+    surfaces in this case. Pins the boundary documented in
+    `contracts/manifest_api.md` §`Manifest.load`/Forward-compat.
+    """
+
+    with pytest.raises(ManifestValidationError) as exc_info:
+        Manifest.load(load_fixture("future_manifest_version_unknown_key.toml"))
+    failures_by_path = {f.field_path: f for f in exc_info.value.failures}
+    assert "bookwright.lock_file" in failures_by_path
+    assert failures_by_path["bookwright.lock_file"].rule_id == ("bookwright.lock_file.unknown_key")
+    # Sanity: the model never reaches `_classify_manifest_version_warnings`,
+    # so no forward-compat warning rule sneaks in alongside the hard failure.
+    assert not any(
+        f.rule_id.startswith("manifest_version.unknown_future") for f in exc_info.value.failures
+    )
