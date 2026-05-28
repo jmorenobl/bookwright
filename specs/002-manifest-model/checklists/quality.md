@@ -1,5 +1,5 @@
 # Quality Audit Checklist
 
-Source: review.md (fd9e59e)
+Source: review.md (dceb590)
 
-- [X] No CRITICAL or HIGH findings — prior R1–R4 closed by `7f57f2c`; remaining items are 1 MEDIUM + 5 LOW, non-blocking — see [review.md §3](../review.md). Spec is closable as-is; addressing R1 (BOOK_TYPES / BOOK_STATUSES single source of truth via `typing.get_args`) is the only optional polish worth landing before merge.
+- [X] No CRITICAL, HIGH, or MEDIUM findings — every prior MEDIUM (R1) and every finding from the fresh `/code-review xhigh` against `68f241d` (9 items, 8 net-new + R6 overlap) closed by `9753ebf` and `dceb590`. Remaining items are 2 LOW (1 coverage gap, 1 constitution-housekeeping note), non-blocking — see [review.md §3](../review.md). Spec is closable as-is.

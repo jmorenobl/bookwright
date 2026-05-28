@@ -1,10 +1,10 @@
 # Quality Audit — 002-manifest-model
 
-**Scope:** 51 changed files vs `main` (4 modified + 47 new across `src/bookwright/core/`, `src/bookwright/resources/`, `tests/core/`, `specs/002-manifest-model/`, plus `pyproject.toml`, `uv.lock`)
-**Commit range:** `75e3382` (main) → `fd9e59e` (HEAD)
+**Scope:** 52 changed files vs `main` (4 modified + 48 new across `src/bookwright/core/`, `src/bookwright/resources/`, `tests/core/`, `specs/002-manifest-model/`, plus `pyproject.toml`, `uv.lock`)
+**Commit range:** `75e3382` (main) → `dceb590` (HEAD)
 **Date:** 2026-05-28
 **Conventions discovered:** [.specify/memory/constitution.md](.specify/memory/constitution.md) v1.1.0 (binding), [CLAUDE.md](CLAUDE.md), [specs/002-manifest-model/{spec,plan,tasks,research,data-model,quickstart}.md](specs/002-manifest-model/), [specs/002-manifest-model/contracts/manifest_api.md](specs/002-manifest-model/contracts/manifest_api.md)
-**Prior audits:** earlier reviews flagged R1 (`schema_version` non-empty validator), R2 (`invalid_uri` IPv6 coverage), R3 (`empty_host` fixture coverage), R4 (`Manifest.dump` `RuntimeError` contract gap) as the four open MEDIUM items at `0429b09`. Commit `7f57f2c` closed all four — validator added, both fixtures + parametrised rows added, contract paragraph added. This audit re-runs the four passes against HEAD and confirms the closures, then reports the residual debt.
+**Prior audits:** the audit at `68f241d` (refreshing `fd9e59e`) flagged six findings: R1 (MEDIUM, `BOOK_TYPES`/`BOOK_STATUSES` single source of truth), R2 (LOW, `installed_not_pep440` coverage), R3 (LOW, `os.link` TOCTOU FileExistsError coverage), R4 (LOW, `_format_loc` dead defensive branch), R5 (LOW, constitution Sync Impact wording), R6 (LOW, builder UX for multiple unknown kwargs). Commit `9753ebf` closed R1 (via `typing.get_args`), R2 (test_installed_not_pep440_is_rejected), and R4 (assert in `_format_loc`). A fresh `/code-review xhigh` pass against `68f241d` surfaced nine additional findings — eight net-new plus one overlap with R6. Commit `dceb590` closes all nine of those new findings *and* the overlapping R6. This audit re-runs the four passes against HEAD and reports the residual debt.
 
 ## 1. Summary
 
@@ -12,13 +12,13 @@
 |---|---|
 | CRITICAL | 0 |
 | HIGH | 0 |
-| MEDIUM | 1 |
-| LOW | 5 |
-| **Total** | 6 |
+| MEDIUM | 0 |
+| LOW | 2 |
+| **Total** | 2 |
 
-Coverage gate: **PASS**. `uv run pytest` (74 tests, 0 failures) → 95.72 % project, `bookwright.core` aggregate 95.7 %. Threshold = 80 % ([pyproject.toml:76](pyproject.toml#L76)); local iteration target = 90 %. `ruff check`, `ruff format --check`, `mypy --strict` all green.
+Coverage gate: **PASS**. `uv run pytest` (89 tests, 0 failures) → 96.84 % project, `bookwright.core` aggregate ~97 %. Threshold = 80 % ([pyproject.toml:76](pyproject.toml#L76)); local iteration target = 90 %. `ruff check`, `ruff format --check`, `mypy --strict` all green.
 
-**Headline:** the iteration is functionally complete, the constitutional gate is green, and every prior MEDIUM (R1–R4) is now closed in code with a regression test or contract paragraph. What is left is one MEDIUM single-source-of-truth nit on the two public enum constants (`BOOK_TYPES` / `BOOK_STATUSES`) and five LOW items — three are defensive / unreachable branches that the test suite does not exercise (manifest.py L336-337, L444-445; _translate.py L41-44), one is a small builder UX nit, and one is the prior R6 constitution Sync-Impact wording note. **None of these are spec violations or constitutional MUST failures, and none block closing the spec.** The branch is mergeable as-is; addressing the five LOWs is optional polish.
+**Headline:** the iteration is functionally complete and constitutionally green. Every MEDIUM raised across both audits is closed. What is left is two LOW housekeeping items — R1 (a 2-line coverage gap on the `os.link` FileExistsError race-close, inherited from the prior audit) and R2 (a constitution Sync Impact wording note, also inherited). **None of these are spec violations or constitutional MUST failures, and none block closing the spec or merging the branch.** Closing them is 1-to-5-line edits and pure optional polish.
 
 ## 2. Conventions Compliance Matrix
 
@@ -35,15 +35,15 @@ Rules extracted in Pass A.1 from the discovered convention files. Every MUST is 
 | "Build backend: hatchling. Lockfile: uv.lock committed." | constitution.md Tech Constraints | dependency | PASS | `build-backend = "hatchling.build"` ([pyproject.toml:37](pyproject.toml#L37)); `uv.lock` tracked. |
 | "All production code MUST live under `src/bookwright/`. All tests under `tests/`." | constitution.md §III | layout | PASS | New code only in `src/bookwright/core/`, `src/bookwright/resources/`, `tests/core/`. |
 | "Each CLI subcommand MUST live in its own module under `src/bookwright/commands/<name>.py`." | constitution.md §IV | layout | N/A | Iteration 2 adds no CLI subcommand. |
-| "No source file (production or test) may exceed 500 lines." | constitution.md §IV | module-size | PASS | Largest source: [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py) at 452 lines. Largest test: [tests/core/test_load_valid.py](tests/core/test_load_valid.py) at 195 lines. All under cap. |
+| "No source file (production or test) may exceed 500 lines." | constitution.md §IV | module-size | PASS | Largest source: [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py) at 475 lines. Largest test: [tests/core/test_build.py](tests/core/test_build.py) at 252 lines. All under cap. |
 | "Integrations MUST be subclasses of `SkillsIntegration` registered in `INTEGRATION_REGISTRY`. AGENT_CONFIG-style dispatcher forbidden." | constitution.md §V | plugin-shape | PASS | `[integration]` block read as opaque data (FR-022). `DEFAULT_SKILLS_DIR` is a 2-entry default-table used only inside `Manifest.build`, not a runtime dispatcher. |
 | "Bookwright MUST emit Agent Skills … Writing to `.claude/commands/`, `.agents/commands/` is prohibited." | constitution.md §VI | directory-ban | PASS | `grep -r "\.claude/commands\|\.agents/commands" src/ tests/` returns nothing. |
 | "Every generated SKILL.md MUST satisfy the agentskills.io specification." | constitution.md §VII | frontmatter-constraint | N/A | No SKILL.md emitted in this iteration. |
-| "v0 MUST hold a minimum of 80 % line coverage across `src/bookwright/`. CI MUST run pytest, ruff, mypy strict on every push." | constitution.md §VIII | coverage-threshold | PASS | `uv run pytest` → 95.72 %. CI gate is `--cov-fail-under=80`. Local iteration target ≥ 90 % also met. |
+| "v0 MUST hold a minimum of 80 % line coverage across `src/bookwright/`. CI MUST run pytest, ruff, mypy strict on every push." | constitution.md §VIII | coverage-threshold | PASS | `uv run pytest` → 96.84 %. CI gate is `--cov-fail-under=80`. Local iteration target ≥ 90 % also met. |
 | "Any CLI command meant for an agent MUST accept `--json` and emit a single JSON doc on stdout, nothing else." | constitution.md §IX | io-contract | PASS (shapes only) | No CLI subcommand added. FR-024 only requires the JSON shapes be ready; all five `to_json()` shapes are JSON-clean and verified via `json.dumps` round-trip in [tests/core/test_json_shapes.py](tests/core/test_json_shapes.py). Model layer never writes to stdout/stderr (pinned by `test_future_manifest_version_attaches_one_warning`'s `capsys` assertion). |
 | "Section 16 design axioms MUST NOT be reopened in spec, plan, or task discussions." | constitution.md §X | scope-ban | PASS | Pydantic v2, rdflib (deferred), TOML, Agent Skills, plain text — all honoured; no axiom reopened. |
-| "v0 deliberately defers: Preset / GrafeoIndexer / integrations beyond claude+generic / Extension system / EPUB-PDF export." | constitution.md Scope & Release | scope-ban | PASS | None pulled forward. The `cursor` integration_key exercised at [tests/core/test_build.py:122-146](tests/core/test_build.py#L122-L146) only proves the *unknown-integration_key* failure path, not a plumbing addition. |
-| "Amendments MUST be a dedicated PR that updates constitution.md, bumps the version, updates Sync Impact, and propagates changes." | constitution.md Governance | workflow-step | PASS (cosmetic gap → L5) | Commit `a685b9b` lands the 1.0.0 → 1.1.0 amendment first. Sync Impact wording overstates the delta — see L5. |
+| "v0 deliberately defers: Preset / GrafeoIndexer / integrations beyond claude+generic / Extension system / EPUB-PDF export." | constitution.md Scope & Release | scope-ban | PASS | None pulled forward. |
+| "Amendments MUST be a dedicated PR that updates constitution.md, bumps the version, updates Sync Impact, and propagates changes." | constitution.md Governance | workflow-step | PASS (cosmetic gap → R2) | Commit `a685b9b` lands the 1.0.0 → 1.1.0 amendment first. Sync Impact wording overstates the delta — see R2. |
 
 ### `CLAUDE.md` (project instructions)
 
@@ -59,7 +59,7 @@ Rules extracted in Pass A.1 from the discovered convention files. Every MUST is 
 
 ### A.3 Track-integrity for governance / feature-owned directories
 
-`specs/002-manifest-model/` — `find specs/002-manifest-model -type f | wc -l` == `git ls-files specs/002-manifest-model/ | wc -l` (10 files, all tracked, all in the branch diff or inherited from default). No untracked or `.gitignore`-orphaned governance files. **PASS.**
+`specs/002-manifest-model/` — every file on disk appears in `git ls-files`; no untracked or `.gitignore`-orphaned governance files. **PASS.**
 
 `src/bookwright/core/`, `src/bookwright/resources/`, `tests/core/` — every file present on disk appears in `git diff main...HEAD --name-only` and there is no leftover under those trees that is not in the branch diff. **PASS.**
 
@@ -74,7 +74,7 @@ Spec Kit sequence: `specify → clarify → plan → tasks → analyze → imple
 | plan | plan.md | yes | Constitution Check ✅ all 10, Complexity Tracking, post-design re-check. |
 | tasks | tasks.md | yes | 35 tasks across 8 phases, all `[X]`. |
 | analyze | (no standalone file) | partial | Bundled in commit `017f40b`; `checklists/requirements.md` fully ticked as the actionable output. Acceptable. |
-| implement | `src/bookwright/core/*`, `tests/core/*`, `src/bookwright/resources/templates/manifest.template.toml` | yes | 12 implementation commits (`e7ebaf6` → `fd9e59e`). |
+| implement | `src/bookwright/core/*`, `tests/core/*`, `src/bookwright/resources/templates/manifest.template.toml` | yes | 14 implementation commits (`e7ebaf6` → `dceb590`). |
 
 **PASS.** No downstream-artefact-without-upstream-artefact case detected.
 
@@ -82,33 +82,28 @@ Spec Kit sequence: `specify → clarify → plan → tasks → analyze → imple
 
 | ID | Pass | Severity | Location | Summary | Recommendation |
 |---|---|---|---|---|---|
-| R1 | B | MEDIUM | [src/bookwright/core/manifest.py:51-55](src/bookwright/core/manifest.py#L51-L55), [src/bookwright/core/manifest.py:212](src/bookwright/core/manifest.py#L212), [src/bookwright/core/manifest.py:218](src/bookwright/core/manifest.py#L218) | DRY violation: `BOOK_TYPES` / `BOOK_STATUSES` frozensets are declared at module level **and** the same five-value tuples are inlined into `Literal[...]` annotations on `BookBlock.type` / `BookBlock.status`. Two sources of truth for the same enumeration; a future "add genre `screenplay`" edit can land in one place and not the other, and `mypy --strict` will not catch the drift (the annotation drives type-check, the constant drives `__all__`/public-API consumers). Both constants are re-exported in `bookwright.core.__all__`, so they ARE the public contract. | Pick one source of truth and derive the other. Cheapest shape: `BookType = Literal["novel", "essay", "memoir", "non-fiction-narrative", "other"]`, then `BOOK_TYPES: frozenset[str] = frozenset(typing.get_args(BookType))` at module level; annotate `BookBlock.type: BookType`. Same shape for `BookStatus` / `BOOK_STATUSES`. Public surface unchanged, drift impossible, no tests need updating. |
-| R2 | D | LOW | [src/bookwright/core/manifest.py:334-344](src/bookwright/core/manifest.py#L334-L344) | The `installed_not_pep440` defensive branch in `_check_cli_floor` is uncovered (lines 336-337 in the coverage report). Fires only when the installed CLI's own `__version__` fails PEP 440 parsing — possible during local dev where `bookwright.__version__` is hand-edited to e.g. `"0.0.1-dev"`. Rule id is already in the published taxonomy ([contracts/manifest_api.md:281](specs/002-manifest-model/contracts/manifest_api.md#L281)) under `installed_too_old`-adjacent. Same item as prior R5. | Add a single test in [test_version_gate.py](tests/core/test_version_gate.py): `installed_version("v1")` then `Manifest.load(load_fixture("valid_minimal.toml"))` → expect `ManifestValidationError` with `rule_id == "bookwright.cli_version_min.installed_not_pep440"`. Closes the coverage gap and pins the contract. |
-| R3 | D | LOW | [src/bookwright/core/manifest.py:442-445](src/bookwright/core/manifest.py#L442-L445) | The `os.link` `FileExistsError → ManifestOverwriteError` branch in `dump()` (the TOCTOU close — race between the early `target.exists()` check and the link call) is real safety code, but no test pins it. Coverage shows lines 444-445 uncovered. The "atomicity preserves prior contents" test ([test_write.py:107-135](tests/core/test_write.py#L107-L135)) covers the `os.replace` failure path, not this one. | Optional: add a small test that monkey-patches `os.link` to raise `FileExistsError`, asserts a `ManifestOverwriteError` is raised, and asserts the tmp file was cleaned up. Closes a 2-line coverage gap and pins documented FR-019 behaviour. |
-| R4 | B | LOW | [src/bookwright/core/_translate.py:41-44](src/bookwright/core/_translate.py#L41-L44) | Defensive branch in `_format_loc` for a Pydantic location tuple that starts with an `int` (`if parts: parts[-1] = …; else: parts.append(f"[{piece}]")`). Pydantic never emits this shape — locations always lead with a field/block name string — so the `else` arm is dead. Coverage shows lines 41-44 uncovered. Dead defensive code is technical debt: a future reader cannot tell whether it's reachable, and refactors may carry it forward needlessly. | Delete the `else: parts.append(f"[{piece}]")` branch and replace with `assert parts, "Pydantic loc never starts with an int"`. Or, if you'd rather keep the defensive shape, add a unit test that constructs a `pydantic.ValidationError` with a leading-int loc to pin the contract — but the assert is cheaper and clearer. |
-| R5 | A | LOW | [.specify/memory/constitution.md:9-19](.specify/memory/constitution.md#L9-L19) | The Sync Impact Report for the 1.0.0 → 1.1.0 amendment reads as if all 10 principles are newly defined ("Principles defined (all new, no renames): I. Plain Text … X. Design Document Axioms"). For a MINOR amendment, the Sync Impact should describe the *delta* (added `packaging>=23.0` to Tech Constraints), not the original ratification scope. Cosmetic but confusing for the audit trail. Same item as prior R6. | Trim the "Principles defined / Added sections" subsections in the Sync Impact header to a single line: *"MINOR change: `packaging>=23.0` added to the Technical Constraints runtime dependency list (Principle II), required by FR-012 PEP 440 ordering."* Keep the rest of the constitution body unchanged. |
-| R6 | B | LOW | [src/bookwright/core/_build.py:78-81](src/bookwright/core/_build.py#L78-L81) | When `Manifest.build(...)` receives more than one unknown keyword argument, only the first (in sorted order) is named in the raised `TypeError` — the others are hidden until the first is fixed. Friendlier UX would list all unknowns at once (mirroring FR-011's "surface all errors" stance for `ManifestValidationError`). Minor; not a contract violation (FR-015 only says "raise a programming-error exception immediately"). | One-line change: `raise TypeError(f"build() got unexpected keyword argument(s): {sorted(unknown)}")`. No test change strictly required; the existing assertion `assert "flavor" in str(exc_info.value)` still passes. |
+| R1 | D | LOW | [src/bookwright/core/manifest.py:453-456](src/bookwright/core/manifest.py#L453-L456) | The `os.link` `FileExistsError → ManifestOverwriteError` branch in `dump()` (the TOCTOU close — race between the early `target.exists()` check and the link call) is real safety code, but no test pins it. Coverage shows lines 455-456 uncovered. The "atomicity preserves prior contents" test ([test_write.py:107-135](tests/core/test_write.py#L107-L135)) covers the `os.replace` failure path; `test_dump_no_overwrite_swallows_tmp_unlink_failure` ([test_write.py:159-200](tests/core/test_write.py#L159-L200)) exercises the post-link unlink path. Neither triggers a `FileExistsError` from `os.link` itself. Inherited from prior audit's R3. | Optional: monkey-patch `os.link` to raise `FileExistsError`, assert `ManifestOverwriteError` is raised, and that the tmp file is cleaned up. Closes a 2-line coverage gap and pins documented FR-019 behaviour. |
+| R2 | A | LOW | [.specify/memory/constitution.md:9-19](.specify/memory/constitution.md#L9-L19) | The Sync Impact Report for the 1.0.0 → 1.1.0 amendment reads as if all 10 principles are newly defined ("Principles defined (all new, no renames): I. Plain Text … X. Design Document Axioms"). For a MINOR amendment, the Sync Impact should describe the *delta* (added `packaging>=23.0` to Tech Constraints), not the original ratification scope. Cosmetic but confusing for the audit trail. Inherited from prior audit's R5. | Trim the "Principles defined / Added sections" subsections in the Sync Impact header to a single line: *"MINOR change: `packaging>=23.0` added to the Technical Constraints runtime dependency list (Principle II), required by FR-012 PEP 440 ordering."* Keep the rest of the constitution body unchanged. |
 
-## 4. Remediation Detail
+## 4. Closures recorded since the last audit
 
-No CRITICAL or HIGH findings. R1 is the only MEDIUM. The five LOWs are minor polish — three coverage / dead-branch items, one builder-UX nit, one constitution-housekeeping note. **None of these block closing the spec.**
+Both `9753ebf` (refactor) and `dceb590` (fix) landed since `68f241d`. Together they close every CRITICAL/HIGH/MEDIUM finding raised across the audit history.
 
-### R1 — DRY duplication: BOOK_TYPES / BOOK_STATUSES vs Literal annotations
+### Closed by `9753ebf` (prior audit R1, R2, R4)
+- **R1 MEDIUM (BOOK_TYPES / BOOK_STATUSES single source of truth):** `BookType` / `BookStatus` are now `Literal[...]` and `BOOK_TYPES` / `BOOK_STATUSES` derive from them via `typing.get_args` ([manifest.py:51-55](src/bookwright/core/manifest.py#L51-L55)). Public surface unchanged; drift impossible.
+- **R2 LOW (installed_not_pep440 coverage):** [test_version_gate.py::test_installed_not_pep440_is_rejected](tests/core/test_version_gate.py) pins the contract rule.
+- **R4 LOW (_format_loc dead branch):** Replaced the `else` arm with `assert parts, "Pydantic loc never starts with an int"` ([_translate.py:41](src/bookwright/core/_translate.py#L41)). Defensive shape kept; reader-confusion resolved.
 
-- **Where:** [src/bookwright/core/manifest.py:51-55, 212, 218](src/bookwright/core/manifest.py#L51-L55)
-- **Why it matters:** Two parallel declarations for the same five (resp. five) enum values. Both are part of the public API (`BOOK_TYPES` and `BOOK_STATUSES` are in `bookwright.core.__all__`; the `Literal[…]` annotations drive `mypy --strict`). A future edit to one without the other ships an inconsistent enum to consumers and `mypy` will not catch the drift. The data-model.md already documents both ([specs/002-manifest-model/data-model.md:102, 108](specs/002-manifest-model/data-model.md#L102), [108](specs/002-manifest-model/data-model.md#L108)), so the doc is the third copy.
-- **Suggested change:**
-  ```python
-  from typing import Literal, get_args
-  BookType = Literal["novel", "essay", "memoir", "non-fiction-narrative", "other"]
-  BookStatus = Literal["idea", "structuring", "drafting", "revising", "done"]
-  BOOK_TYPES: frozenset[str] = frozenset(get_args(BookType))
-  BOOK_STATUSES: frozenset[str] = frozenset(get_args(BookStatus))
-  # then in BookBlock:
-  type: BookType
-  status: BookStatus = "drafting"
-  ```
-  Public surface (`BOOK_TYPES`, `BOOK_STATUSES`) unchanged. Drift impossible. No test changes required; `test_load_valid.py::test_load_accepts_every_book_type` already parametrises over `sorted(BOOK_TYPES)`.
+### Closed by `dceb590` (this commit — 9 findings from a fresh `/code-review xhigh` against `68f241d`)
+- **#1 HIGH (None overrides leak `tomlkit.ConvertError`):** [_build.py:99-100](src/bookwright/core/_build.py#L99-L100) filters out `None` values from `overrides` up-front. Eight new parametrised regression cases in [test_build.py::test_none_override_is_treated_as_default](tests/core/test_build.py).
+- **#2 MEDIUM (Windows newline translation breaks FR-020):** [manifest.py:443](src/bookwright/core/manifest.py#L443) passes `newline=""` to `os.fdopen`. Pinned by [test_write.py::test_dump_uses_lf_line_endings](tests/core/test_write.py).
+- **#3 MEDIUM (FR-021 violated when post-`os.link` unlink fails):** Best-effort cleanup with `contextlib.suppress(OSError)` ([manifest.py:464-465](src/bookwright/core/manifest.py#L464-L465)); a failing `os.unlink` after a successful `os.link` no longer raises a phantom failure. Pinned by [test_write.py::test_dump_no_overwrite_swallows_tmp_unlink_failure](tests/core/test_write.py).
+- **#4 MEDIUM (misleading `not_pep440` rule from `build()` when installed CLI is broken):** [_build.py:113-122](src/bookwright/core/_build.py#L113-L122) validates `installed_version` is PEP 440 *before* substituting and raises `RuntimeError` that names the environment. Pinned by [test_build.py::test_non_pep440_installed_version_without_override_raises_runtime_error](tests/core/test_build.py) and the explicit-override counterpart that still surfaces `installed_not_pep440`.
+- **#5 LOW (schema_version accepts surrounding whitespace):** [manifest.py:144-160](src/bookwright/core/manifest.py#L144-L160) adds rule `bookwright.schema_version.whitespace`; new fixture [invalid_bookwright_schema_version_whitespace.toml](tests/core/fixtures/invalid_bookwright_schema_version_whitespace.toml) and a parametrised row in [test_load_invalid.py](tests/core/test_load_invalid.py) pin it.
+- **#6 LOW (cleanup `os.unlink` masks original exception):** [manifest.py:471](src/bookwright/core/manifest.py#L471) widens the suppress from `FileNotFoundError` to `OSError`.
+- **#7 LOW (only first unknown override kwarg surfaced — overlapped with prior R6):** [_build.py:94-97](src/bookwright/core/_build.py#L94-L97) lists every unknown kwarg in one `TypeError`. Pinned by [test_build.py::test_multiple_unknown_overrides_are_all_reported](tests/core/test_build.py).
+- **#8 cleanup (duplicate `_BUILD_OVERRIDE_ALLOWLIST` frozenset):** dropped — the table is now the single source of truth.
+- **#9 efficiency (template re-read on every `build()`):** [_build.py:53-58](src/bookwright/core/_build.py#L53-L58) caches the template text with `@functools.cache`; each call still re-parses for an independent mutable document.
 
 ## 5. Coverage Detail
 
@@ -117,31 +112,31 @@ No CRITICAL or HIGH findings. R1 is the only MEDIUM. The five LOWs are minor pol
 | Module | Stmts | Miss | Branch | Cover | Status | Missing lines |
 |---|---|---|---|---|---|---|
 | `bookwright/core/__init__.py` | 3 | 0 | 0 | 100 % | PASS | — |
-| `bookwright/core/_build.py` | 42 | 0 | 10 | 100 % | PASS | — |
-| `bookwright/core/_translate.py` | 34 | 3 | 14 | 88 % | PASS | 41-44 (R4: dead leading-int branch in `_format_loc`) |
+| `bookwright/core/_build.py` | 51 | 0 | 12 | 100 % | PASS | — |
+| `bookwright/core/_translate.py` | 33 | 2 | 12 | 93 % | PASS | 41-42 (defensive int-loc branch; `assert` + index splice — Pydantic never emits this shape, kept as a contract assertion) |
 | `bookwright/core/errors.py` | 55 | 1 | 2 | 96 % | PASS | 82 (defensive `ValueError` on empty failures tuple; internal callers always pass non-empty) |
 | `bookwright/core/iso639_1.py` | 3 | 0 | 0 | 100 % | PASS | — |
-| `bookwright/core/manifest.py` | 212 | 5 | 38 | 98 % | PASS | 336-337 (R2 `installed_not_pep440`), 416 (RuntimeError on bare-construction dump — unreachable from supported entry points, contract-documented), 444-445 (R3 `os.link` TOCTOU close — race-window only) |
-| **`bookwright.core` aggregate** | **349** | **9** | **64** | **~95.7 %** | **PASS** ≥ 90 % spec target |
+| `bookwright/core/manifest.py` | 218 | 3 | 40 | 98 % | PASS | 423 (RuntimeError on bare-construction dump — unreachable from supported entry points, contract-documented), 455-456 (R1 `os.link` TOCTOU close — race-window only) |
+| **`bookwright.core` aggregate** | **363** | **6** | **66** | **~98 %** | **PASS** ≥ 90 % spec target |
 | Iteration-1 modules (`cli.py`, `commands/check.py`, `commands/version.py`, `__main__.py`) | 65 | 4 | 12 | ~94 % | PASS | (out of this iteration's scope) |
-| **Total `bookwright/`** | **415** | **13** | **76** | **95.72 %** | **PASS** ≥ 80 % CI gate |
+| **Total `bookwright/`** | **429** | **10** | **78** | **96.84 %** | **PASS** ≥ 80 % CI gate |
 
-Every remaining miss is either covered by a finding above (R2, R3, R4) or a defensive / unsupported-call-path branch documented in the contract.
+Every remaining miss is either covered by R1 or a defensive / unsupported-call-path branch documented in the contract or this audit.
 
 ## 6. Inability-to-verify notes
 
 - Could not run the GitHub Actions matrix locally; verified each gate independently (`uv run pytest`, `uv run ruff check`, `uv run ruff format --check`, `uv run mypy --strict`). Per CI `tests.yml`, these are the same four commands the matrix runs.
-- `[integration].key` validity against the future v0 registry (`claude` | `generic`) is intentionally NOT the model's job (FR-022, deferred to iteration 3). The model's "non-empty string is fine" stance is correct here, not a finding.
-- The `RuntimeError` raise site in `Manifest.dump` (line 416) covers an unsupported call path (`Manifest(...)` direct construction); the contract pins it at [contracts/manifest_api.md:145-149](specs/002-manifest-model/contracts/manifest_api.md#L145-L149) as "unreachable from contract-compliant code." Verifying unreachability is a reading of the code, not a test result — but the contract closes the gap to a reader's satisfaction.
+- The Windows newline-translation fix (#2 above) is verified on macOS by asserting the dumped bytes contain no `\r`. The Windows-specific failure mode (`\n` → `\r\n` on text-mode write) cannot be reproduced on this platform; the assertion is the cheapest cross-platform pin.
+- The `RuntimeError` raise site in `Manifest.dump` (line 423) covers an unsupported call path (`Manifest(...)` direct construction); the contract pins it at [contracts/manifest_api.md:145-149](specs/002-manifest-model/contracts/manifest_api.md#L145-L149) as "unreachable from contract-compliant code." Verifying unreachability is a reading of the code, not a test result.
 
 ## 7. Verdict on closing the spec
 
-The user's three closure criteria, evaluated against HEAD (`fd9e59e`):
+The user's three closure criteria, evaluated against HEAD (`dceb590`):
 
 | Criterion | Verdict | Evidence |
 |---|---|---|
-| Implementation follows software-engineering best practices | **MET** | SOLID/DRY/KISS/YAGNI clean except for R1 (single MEDIUM, see §4). Test pyramid present (74 tests, 8 files mirroring source layout). All linters/type-checkers green. Module-size ceiling respected (largest source 452/500 lines). |
-| Implementation adjusts to design or improves it | **MET** | Every FR-001..FR-024 maps to at least one test ([tests/core/](tests/core/)). The `data-model.md:84` schema_version non-empty rule, originally missing in code, is now enforced ([manifest.py:144-153](src/bookwright/core/manifest.py#L144-L153)) — a real improvement over the prior state. The contract (`manifest_api.md`) was tightened with the forward-compat-boundary and dump-mutation-semantics paragraphs as part of this iteration, pinned by regression tests. |
-| No technical debt | **MOSTLY MET** | One MEDIUM (R1, single source of truth for the enum constants) is the only nontrivial residue. The five LOWs are coverage / dead-branch / cosmetic items that are bounded, named, and documented — not silent debt. Strictly speaking they exist, but they are all 1-to-5-line edits and none affect users of the public API. |
+| Implementation follows software-engineering best practices | **MET** | SOLID/DRY/KISS/YAGNI clean. Zero MEDIUM and zero HIGH residue. Test pyramid present (89 tests, 8 files mirroring source layout). All linters/type-checkers green. Module-size ceiling respected (largest source 475/500 lines). |
+| Implementation adjusts to design or improves it | **MET** | Every FR-001..FR-024 maps to at least one test. The forward-compat-boundary and dump-mutation-semantics paragraphs in `contracts/manifest_api.md` were tightened in iteration 2 and remain pinned by regression tests. The `dceb590` fix wave added two new contractual rules (`schema_version.whitespace`, `RuntimeError` on broken installed CLI) and turned three previously latent footguns (None overrides, Windows newline drift, post-link FR-021 violation) into pinned regressions. |
+| No technical debt | **MET (modulo two LOWs)** | Both residual LOWs (R1 `os.link` TOCTOU coverage, R2 constitution Sync Impact wording) are bounded, named, and documented — not silent debt. R1 is a 2-line coverage gap; R2 is a cosmetic note. Strictly speaking they exist, but they are 1-to-5-line edits and neither affects users of the public API. |
 
-**Closing recommendation:** The spec is closable as-is. R1 is worth one extra commit because it touches the *public* enum constants and the fix is mechanical and risk-free (use `typing.get_args`). The five LOWs can be deferred to a follow-up housekeeping pass or addressed alongside iteration 3. If the team wants a strictly zero-debt close, do R1 + R2 + R4 in one tidy commit (≈ 20 lines diff, no API change) and merge.
+**Closing recommendation:** The spec is closable as-is. Both remaining LOWs are 100 % optional polish — R1 closes a defensive coverage gap, R2 is a constitution-housekeeping reword. Either land them in a follow-up tidy commit or merge as-is; the branch is mergeable in either form.
