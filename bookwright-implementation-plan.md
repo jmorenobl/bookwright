@@ -64,7 +64,7 @@ Principios no-negociables:
 Restricciones técnicas:
 
 - Python 3.11+.
-- Dependencias mínimas: typer, rich, rdflib, pydantic, tomlkit, jinja2, python-slugify, platformdirs, uuid7.
+- Dependencias mínimas: typer, rich, rdflib, pydantic, tomlkit, jinja2, python-slugify, platformdirs, uuid-utils.
 - Build: hatchling. Lock: uv.lock.
 - Distribución: PyPI como bookwright-cli. Tags semver v0.X.Y.
 - CI: GitHub Actions con tests + ruff + mypy.
