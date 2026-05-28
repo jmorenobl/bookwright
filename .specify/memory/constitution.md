@@ -1,9 +1,10 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (uninitialized template) → 1.0.0
-Bump rationale: Initial ratification of the Bookwright constitution. No prior
-versioned content existed (file held placeholder tokens only).
+Version change: 1.0.0 → 1.1.0
+Bump rationale: MINOR — addition to runtime dependency list per Principle II /
+Technical Constraints, required by FR-012 (iteration 002-manifest-model) for
+PEP 440 ordering of `cli_version_min` via `packaging.version.Version`.
 
 Principles defined (all new, no renames):
 - I. Plain Text as Source of Truth (NON-NEGOTIABLE)
@@ -26,15 +27,12 @@ Added sections:
 Removed sections: none (template placeholders replaced in place).
 
 Templates requiring updates:
-- ✅ .specify/templates/plan-template.md — aligned (Constitution Check gate is
-  intentionally generic; per-feature checks will reference principles I–X).
-- ✅ .specify/templates/spec-template.md — aligned (no principle-specific
-  language required at spec stage).
-- ✅ .specify/templates/tasks-template.md — aligned (test ordering and
-  parallelism already compatible with Principle VIII).
-- ✅ .specify/templates/checklist-template.md — aligned (generic structure).
-- ✅ .claude/skills/speckit-*/ — no outdated agent-specific references found
-  that conflict with the new principles.
+- ✅ .specify/templates/plan-template.md — no change required (Constitution
+  Check gate is generic; principles I–X unchanged).
+- ✅ .specify/templates/spec-template.md — no change required.
+- ✅ .specify/templates/tasks-template.md — no change required.
+- ✅ .specify/templates/checklist-template.md — no change required.
+- ✅ .claude/skills/speckit-*/ — no change required.
 
 Follow-up TODOs: none. README.md and docs/quickstart.md are not present in the
 repository; if added later, they MUST cite this constitution under a "Project
@@ -189,10 +187,10 @@ require a MINOR (additions) or MAJOR (removals / incompatible swaps)
 constitutional bump.
 
 - **Language**: Python 3.11+ only. No support for 3.10 or earlier.
-- **Runtime dependencies (minimum set)**: `typer`, `rich`, `rdflib`,
-  `pydantic` (v2), `tomlkit`, `jinja2`, `python-slugify`, `platformdirs`,
-  `uuid-utils`. Adding to this list requires a MINOR amendment; removing or
-  swapping requires a MAJOR amendment.
+- **Runtime dependencies (minimum set)**: `jinja2`, `packaging`,
+  `platformdirs`, `pydantic` (v2), `python-slugify`, `rdflib`, `rich`,
+  `tomlkit`, `typer`, `uuid-utils`. Adding to this list requires a MINOR
+  amendment; removing or swapping requires a MAJOR amendment.
 - **Build backend**: `hatchling`. **Lockfile**: `uv.lock` committed to the
   repository.
 - **Distribution**: PyPI package name `bookwright-cli`. Release tags follow
@@ -248,4 +246,4 @@ either the code is fixed or the constitution is amended through the
 procedure above. The CI pipeline (Principle VIII) is the automated half of
 this gate; human review covers the rest.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-05-28
+**Version**: 1.1.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-05-28

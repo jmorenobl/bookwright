@@ -69,6 +69,7 @@ name = "bookwright-cli"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
+    { name = "packaging" },
     { name = "platformdirs" },
     { name = "pydantic" },
     { name = "python-slugify" },
@@ -91,6 +92,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "jinja2", specifier = ">=3.1" },
+    { name = "packaging", specifier = ">=23.0" },
     { name = "platformdirs", specifier = ">=4.2" },
     { name = "pydantic", specifier = ">=2.5" },
     { name = "python-slugify", specifier = ">=8.0" },

@@ -19,6 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "jinja2>=3.1",
+    "packaging>=23.0",
     "platformdirs>=4.2",
     "pydantic>=2.5",
     "python-slugify>=8.0",
@@ -41,6 +42,9 @@ include = ["src/bookwright"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bookwright"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/bookwright/resources" = "bookwright/resources"
 
 [tool.hatch.version]
 path = "src/bookwright/__init__.py"
