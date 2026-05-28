@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bookwright.dev/contracts/cli/check.schema.json",
+  "title": "bookwright check --json output",
+  "description": "Single JSON document emitted to stdout by `bookwright check --json`. Iteration 001-repo-bootstrap, schema v0.0.1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "checks"],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "Aggregate verdict. True iff every entry in `checks` has status == 'ok'. The process exit code is 0 when ok == true, non-zero (1) otherwise."
+    },
+    "checks": {
+      "type": "array",
+      "description": "Ordered list of individual check results. Order matches execution order; non-empty by construction (the python_version check always runs).",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/CheckResult" }
+    }
+  },
+  "$defs": {
+    "CheckResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "status"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Stable identifier for the check. Convention: 'python_version' for the interpreter version check; 'dependency:<module_name>' for each declared runtime dependency import probe.",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*(?::[a-z][a-z0-9_]*)?$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ok", "fail"],
+          "description": "Verdict for this individual check."
+        },
+        "detail": {
+          "type": "string",
+          "description": "Human-readable extra context. Required convention: present when status == 'fail' (describes the failure). May be present when status == 'ok' (e.g. the Python version string for the python_version check).",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "ok": true,
+      "checks": [
+        { "name": "python_version", "status": "ok", "detail": "3.12.3" },
+        { "name": "dependency:typer", "status": "ok" },
+        { "name": "dependency:rich", "status": "ok" }
+      ]
+    },
+    {
+      "ok": false,
+      "checks": [
+        { "name": "python_version", "status": "fail", "detail": "found 3.10.14, requires >=3.11" },
+        { "name": "dependency:typer", "status": "ok" }
+      ]
+    }
+  ]
+}

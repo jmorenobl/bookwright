@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bookwright.dev/contracts/cli/version.schema.json",
+  "title": "bookwright version --json output",
+  "description": "Single JSON document emitted to stdout by `bookwright version --json`. Iteration 001-repo-bootstrap, schema v0.0.1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["package_version", "golem_schema_version"],
+  "properties": {
+    "package_version": {
+      "type": "string",
+      "description": "Semantic version of the bookwright package, read from src/bookwright/__init__.py.__version__.",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "golem_schema_version": {
+      "type": "string",
+      "description": "Version of the frozen GOLEM ontology schema bundled with the package. Reported as the literal string \"unknown\" when the bundled VERSION file at src/bookwright/schemas/golem/VERSION does not exist (case in iteration 001).",
+      "minLength": 1
+    }
+  },
+  "examples": [
+    {
+      "package_version": "0.0.1",
+      "golem_schema_version": "unknown"
+    }
+  ]
+}
