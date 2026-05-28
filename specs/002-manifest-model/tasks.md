@@ -177,10 +177,10 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 **Purpose**: FR-024 JSON shapes, coverage gate, lint/type gates, quickstart smoke.
 
-- [ ] T032 [P] Write [tests/core/test_json_shapes.py](tests/core/test_json_shapes.py) — FR-024: `ManifestValidationError.to_json()`, `ManifestWarning.to_json()`, `ManifestSyntaxError.to_json()`, `ManifestNotFoundError.to_json()`, `ManifestOverwriteError.to_json()` produce dicts whose keys, value types, and shapes match [contracts/manifest_api.md](specs/002-manifest-model/contracts/manifest_api.md) §"Exception JSON shapes" exactly (assert via `json.dumps` round-trip)
-- [ ] T033 Run `uv run pytest tests/core/ --cov=bookwright.core --cov-report=term-missing` and ensure `bookwright.core` package coverage ≥ 90 % (spec acceptance bar). Add small targeted tests if any branch is uncovered.
-- [ ] T034 Run `uv run ruff check`, `uv run ruff format --check`, and `uv run mypy --strict src tests` from the repo root; fix every issue. CI gates from iteration 1 already enforce these on push.
-- [ ] T035 Verify the [quickstart.md](specs/002-manifest-model/quickstart.md) examples end-to-end: `uv sync`; `uv run python -c "from bookwright.core import Manifest, KNOWN_MANIFEST_VERSIONS; print(KNOWN_MANIFEST_VERSIONS)"`; build a manifest, dump it, load it back, confirm byte-identical round-trip on a second dump
+- [X] T032 [P] Write [tests/core/test_json_shapes.py](tests/core/test_json_shapes.py) — FR-024: `ManifestValidationError.to_json()`, `ManifestWarning.to_json()`, `ManifestSyntaxError.to_json()`, `ManifestNotFoundError.to_json()`, `ManifestOverwriteError.to_json()` produce dicts whose keys, value types, and shapes match [contracts/manifest_api.md](specs/002-manifest-model/contracts/manifest_api.md) §"Exception JSON shapes" exactly (assert via `json.dumps` round-trip)
+- [X] T033 Run `uv run pytest tests/core/ --cov=bookwright.core --cov-report=term-missing` and ensure `bookwright.core` package coverage ≥ 90 % (spec acceptance bar). Add small targeted tests if any branch is uncovered.
+- [X] T034 Run `uv run ruff check`, `uv run ruff format --check`, and `uv run mypy --strict src tests` from the repo root; fix every issue. CI gates from iteration 1 already enforce these on push.
+- [X] T035 Verify the [quickstart.md](specs/002-manifest-model/quickstart.md) examples end-to-end: `uv sync`; `uv run python -c "from bookwright.core import Manifest, KNOWN_MANIFEST_VERSIONS; print(KNOWN_MANIFEST_VERSIONS)"`; build a manifest, dump it, load it back, confirm byte-identical round-trip on a second dump
 
 ---
 
