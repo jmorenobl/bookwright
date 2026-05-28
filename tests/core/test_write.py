@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -133,3 +134,67 @@ def test_dump_atomicity_failure_preserves_prior_contents(
     # Temp file cleaned up.
     leftovers = [p for p in tmp_path.iterdir() if p.name.startswith(".manifest.toml.")]
     assert leftovers == []
+
+
+def test_dump_uses_lf_line_endings(tmp_path: Path) -> None:
+    """FR-020: dumped bytes contain no `\\r`, on every platform.
+
+    Pins the `newline=\"\"` fix to `os.fdopen` so a Windows-mode text
+    handle does not silently rewrite LF to CRLF and break the
+    byte-identical round-trip.
+    """
+
+    m = Manifest.build(
+        title="LF",
+        authors=["A"],
+        integration_key="claude",
+        uri_base="https://example.org/lf/",
+    )
+    target = tmp_path / "manifest.toml"
+    m.dump(target)
+    assert b"\r" not in target.read_bytes()
+
+
+def test_dump_no_overwrite_swallows_tmp_unlink_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FR-021: when `os.link` already committed the new content, a failing
+    post-link `os.unlink(tmp)` MUST NOT raise — the user-visible outcome
+    (target written) is the only thing that matters.
+    """
+
+    target = tmp_path / "manifest.toml"
+    assert not target.exists()
+
+    m = Manifest.build(
+        title="X",
+        authors=["A"],
+        integration_key="claude",
+        uri_base="https://example.org/x/",
+    )
+
+    real_link = os.link
+    real_unlink = os.unlink
+    link_calls: list[tuple[str, str]] = []
+
+    def _tracking_link(src: Any, dst: Any, *args: object, **kwargs: object) -> None:
+        link_calls.append((str(src), str(dst)))
+        real_link(src, dst)
+
+    def _selective_unlink(path: Any, *args: object, **kwargs: object) -> None:
+        # Fail only for the post-link tmp cleanup (a path under `tmp_path`
+        # that was linked from). Any other unlink (e.g. the test-runner's
+        # tmp_path cleanup) still works.
+        if link_calls and str(path) == link_calls[-1][0]:
+            raise PermissionError("simulated tmp unlink failure after os.link")
+        real_unlink(path)
+
+    monkeypatch.setattr(os, "link", _tracking_link)
+    monkeypatch.setattr(os, "unlink", _selective_unlink)
+
+    # Should succeed despite the post-link unlink raising.
+    result = m.dump(target, overwrite=False)
+    assert result == target.resolve()
+    # Target was written (the linked-in content).
+    assert target.exists()
+    assert "[bookwright]" in target.read_text(encoding="utf-8")

@@ -8,10 +8,12 @@ See specs/002-manifest-model/contracts/manifest_api.md §`Manifest.build`.
 
 from __future__ import annotations
 
+from functools import cache
 from importlib.resources import files as _resource_files
 from typing import TYPE_CHECKING, Any
 
 import tomlkit
+from packaging.version import InvalidVersion, Version
 from pydantic import ValidationError
 from tomlkit.toml_document import TOMLDocument
 
@@ -47,15 +49,23 @@ _BUILD_OVERRIDE_ALLOWLIST_TABLE: dict[str, tuple[str, str]] = {
     "indexer": ("bookwright", "indexer"),
 }
 
-_BUILD_OVERRIDE_ALLOWLIST: frozenset[str] = frozenset(_BUILD_OVERRIDE_ALLOWLIST_TABLE)
+
+@cache
+def _template_text() -> str:
+    """Cached read of the bundled manifest template (text only)."""
+
+    resource = _resource_files("bookwright.resources.templates").joinpath("manifest.template.toml")
+    return resource.read_text(encoding="utf-8")
 
 
 def _load_template_document() -> TOMLDocument:
-    """Read the bundled manifest template as a fresh tomlkit document."""
+    """Return a fresh tomlkit document parsed from the cached template text.
 
-    resource = _resource_files("bookwright.resources.templates").joinpath("manifest.template.toml")
-    text = resource.read_text(encoding="utf-8")
-    return tomlkit.parse(text)
+    The on-disk read is amortised via `_template_text()`; each call still
+    parses a new document so callers get independent mutable trees.
+    """
+
+    return tomlkit.parse(_template_text())
 
 
 def _build_manifest(  # noqa: PLR0913 — model_cls + 3 user inputs + 2 injected deps; injection breaks an import cycle with manifest.py.
@@ -73,12 +83,21 @@ def _build_manifest(  # noqa: PLR0913 — model_cls + 3 user inputs + 2 injected
     `installed_version` and `default_skills_dir` are injected by the caller
     so this helper does not need to import `bookwright.core.manifest`,
     which would close an import cycle.
+
+    Override semantics: passing an override as `None` is treated as
+    "not supplied" (the template default stands). This keeps conditional
+    propagation patterns (`build(..., subtitle=user_subtitle)` where
+    `user_subtitle` may be None) from leaking tomlkit's
+    `ConvertError` on `NoneType`.
     """
 
-    unknown = set(overrides) - _BUILD_OVERRIDE_ALLOWLIST
+    unknown = set(overrides) - _BUILD_OVERRIDE_ALLOWLIST_TABLE.keys()
     if unknown:
-        name = sorted(unknown)[0]
-        raise TypeError(f"build() got unexpected keyword argument '{name}'")
+        names = ", ".join(repr(n) for n in sorted(unknown))
+        raise TypeError(f"build() got unexpected keyword argument(s): {names}")
+
+    # Drop explicit-None overrides up-front (treated as "not supplied").
+    effective_overrides: dict[str, Any] = {k: v for k, v in overrides.items() if v is not None}
 
     document = _load_template_document()
 
@@ -87,17 +106,29 @@ def _build_manifest(  # noqa: PLR0913 — model_cls + 3 user inputs + 2 injected
     document["book"]["authors"] = list(authors)
     document["integration"]["key"] = integration_key
 
-    # cli_version_min default = installed CLI version.
-    document["bookwright"]["cli_version_min"] = installed_version
+    # cli_version_min default = installed CLI version. When the caller did
+    # NOT override cli_version_min and the installed version isn't valid
+    # PEP 440, fail with a clear message that blames the *environment*,
+    # not a field the user never supplied.
+    if "cli_version_min" not in effective_overrides:
+        try:
+            Version(installed_version)
+        except InvalidVersion as exc:
+            raise RuntimeError(
+                f"installed CLI version {installed_version!r} is not a valid "
+                f"PEP 440 string; cannot derive a cli_version_min default. "
+                f"Pass cli_version_min= explicitly."
+            ) from exc
+        document["bookwright"]["cli_version_min"] = installed_version
 
     # uri_base has no default at build time (data-model.md). If the caller
     # did not override it, surface the missing-field failure.
-    if "uri_base" not in overrides:
+    if "uri_base" not in effective_overrides:
         del document["bookwright"]["uri_base"]
 
     # skills_dir default depends on integration_key (FR-017).
-    if "integration_skills_dir" in overrides:
-        document["integration"]["skills_dir"] = overrides["integration_skills_dir"]
+    if "integration_skills_dir" in effective_overrides:
+        document["integration"]["skills_dir"] = effective_overrides["integration_skills_dir"]
     else:
         try:
             document["integration"]["skills_dir"] = default_skills_dir[integration_key]
@@ -108,7 +139,7 @@ def _build_manifest(  # noqa: PLR0913 — model_cls + 3 user inputs + 2 injected
             ) from exc
 
     # Overlay caller-provided overrides.
-    for kwarg, value in overrides.items():
+    for kwarg, value in effective_overrides.items():
         if kwarg == "integration_skills_dir":
             continue  # already applied above
         target_block, target_key = _BUILD_OVERRIDE_ALLOWLIST_TABLE[kwarg]

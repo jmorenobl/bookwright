@@ -144,10 +144,17 @@ class BookwrightBlock(BaseModel):
     @field_validator("schema_version", mode="after")
     @classmethod
     def _check_schema_version(cls, value: str) -> str:
-        if not value.strip():
+        stripped = value.strip()
+        if not stripped:
             raise PydanticCustomError(
                 "empty",
                 "schema_version must be a non-empty string",
+                {"value": value},
+            )
+        if stripped != value:
+            raise PydanticCustomError(
+                "whitespace",
+                "schema_version must not have leading or trailing whitespace",
                 {"value": value},
             )
         return value
@@ -429,7 +436,11 @@ class Manifest(BaseModel):
             suffix=".tmp",
         )
         try:
-            with os.fdopen(tmp_fd, "w", encoding="utf-8") as handle:
+            # `newline=""` disables Python's universal-newlines translation
+            # so the file we hand-fsynced lands byte-identical on every
+            # platform (Windows would otherwise rewrite `\n` to `\r\n`,
+            # breaking the FR-020 round-trip guarantee).
+            with os.fdopen(tmp_fd, "w", encoding="utf-8", newline="") as handle:
                 handle.write(body)
                 handle.flush()
                 os.fsync(handle.fileno())
@@ -443,9 +454,21 @@ class Manifest(BaseModel):
                     os.link(tmp_path, target)
                 except FileExistsError as exc:
                     raise ManifestOverwriteError(target) from exc
-                os.unlink(tmp_path)
+                # Once `os.link` succeeds, `target` already holds the new
+                # bytes (as a hard link). Failing to remove the tmp side of
+                # the link does NOT undo that commit — raising here would
+                # mislead callers into thinking the write failed and would
+                # violate the FR-021 atomicity contract from the opposite
+                # direction. Best-effort cleanup; leave a leaked tmp file
+                # rather than a phantom failure.
+                with contextlib.suppress(OSError):
+                    os.unlink(tmp_path)
         except BaseException:
-            with contextlib.suppress(FileNotFoundError):
+            # Suppress *all* OSError variants during cleanup so the real
+            # exception (the one that triggered this branch) is not
+            # shadowed by a PermissionError / EBUSY / etc. raised by the
+            # cleanup itself.
+            with contextlib.suppress(OSError):
                 os.unlink(tmp_path)
             raise
 

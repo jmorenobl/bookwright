@@ -78,6 +78,11 @@ def _failure_for(exc: ManifestValidationError, field_path: str) -> _FieldFailure
             "bookwright.schema_version.empty",
         ),
         (
+            "invalid_bookwright_schema_version_whitespace.toml",
+            "bookwright.schema_version",
+            "bookwright.schema_version.whitespace",
+        ),
+        (
             "invalid_cli_version_min_v1.toml",
             "bookwright.cli_version_min",
             "bookwright.cli_version_min.not_pep440",

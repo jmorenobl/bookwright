@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pytest
 
 from bookwright.core import Manifest, ManifestValidationError
@@ -143,3 +145,108 @@ def test_unknown_integration_key_with_explicit_skills_dir_succeeds() -> None:
     )
     assert m.integration.key == "cursor"
     assert m.integration.skills_dir == ".cursor/skills"
+
+
+@pytest.mark.parametrize(
+    "override_name",
+    [
+        "subtitle",
+        "genre",
+        "target_length_words",
+        "book_metadata",
+        "integration_options",
+        "vocabularies_active",
+        "validators_enabled",
+        "indexer",
+    ],
+)
+def test_none_override_is_treated_as_default(override_name: str) -> None:
+    """Passing `None` for an optional override falls back to the template default.
+
+    Regression: previously leaked `tomlkit.exceptions.ConvertError` because
+    `document[block][key] = None` is rejected by tomlkit. Callers doing
+    conditional propagation (`build(..., subtitle=user_subtitle)` where
+    `user_subtitle` may be `None`) MUST get the same result as omitting
+    the kwarg entirely.
+    """
+
+    m_default = Manifest.build(
+        title="X",
+        authors=["A"],
+        integration_key="claude",
+        uri_base="https://example.org/x/",
+    )
+    m_none = Manifest.build(
+        title="X",
+        authors=["A"],
+        integration_key="claude",
+        uri_base="https://example.org/x/",
+        **{override_name: None},
+    )
+    # `None` override produces the same field state as omitting the kwarg.
+    assert m_none.model_dump() == m_default.model_dump()
+
+
+def test_multiple_unknown_overrides_are_all_reported() -> None:
+    """Unknown kwargs accumulate into a single `TypeError` message (no fix-and-retry)."""
+
+    with pytest.raises(TypeError) as exc_info:
+        Manifest.build(
+            title="x",
+            authors=["a"],
+            integration_key="claude",
+            uri_base="https://example.org/x/",
+            flavor="spicy",
+            spice="mild",
+        )
+    msg = str(exc_info.value)
+    assert "'flavor'" in msg
+    assert "'spice'" in msg
+
+
+def test_non_pep440_installed_version_without_override_raises_runtime_error(
+    installed_version: Callable[[str], None],
+) -> None:
+    """`build()` with a non-PEP-440 installed CLI version blames the *environment*.
+
+    Regression: previously surfaced as `ManifestValidationError` with rule
+    `bookwright.cli_version_min.not_pep440`, which is misleading because
+    the caller never supplied `cli_version_min`.
+    """
+
+    installed_version("not-a-version")
+    with pytest.raises(RuntimeError) as exc_info:
+        Manifest.build(
+            title="X",
+            authors=["A"],
+            integration_key="claude",
+            uri_base="https://example.org/x/",
+        )
+    msg = str(exc_info.value)
+    assert "not-a-version" in msg
+    assert "PEP 440" in msg
+    assert "cli_version_min" in msg  # message names the kwarg the user can pass
+
+
+def test_non_pep440_installed_version_with_explicit_override_surfaces_installed_rule(
+    installed_version: Callable[[str], None],
+) -> None:
+    """With an explicit override, the floor check still runs and names *installed*.
+
+    Pins the rule-id distinction: when the user supplied `cli_version_min`,
+    a broken environment surfaces as `installed_not_pep440` (well-named),
+    NOT as `not_pep440` (which would blame the user's input).
+    """
+
+    installed_version("not-a-version")
+    with pytest.raises(ManifestValidationError) as exc_info:
+        Manifest.build(
+            title="X",
+            authors=["A"],
+            integration_key="claude",
+            uri_base="https://example.org/x/",
+            cli_version_min="0.0.1",
+        )
+    failure = exc_info.value.failures[0]
+    assert failure.field_path == "bookwright.cli_version_min"
+    assert failure.rule_id == "bookwright.cli_version_min.installed_not_pep440"
