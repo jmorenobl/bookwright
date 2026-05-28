@@ -296,7 +296,7 @@ files = ["src", "tests"]
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --cov=bookwright --cov-report=term-missing --cov-report=xml"
+addopts = "-ra --cov=bookwright --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
 
 [tool.coverage.run]
 source = ["src/bookwright"]
@@ -308,8 +308,10 @@ branch = true
 - `--cov-report=term-missing` resumen en terminal (Q&A 2026-05-28).
 - `--cov-report=xml` produce `coverage.xml` que CI sube como artefacto.
 - `branch = true` da una métrica más honesta que line-only.
-- **Sin** `--cov-fail-under=N` en esta iteración: la cobertura es meta no
-  bloqueante (spec Assumption + Edge Case).
+- `--cov-fail-under=80` activa el gate constitucional (Principio VIII,
+  NON-NEGOTIABLE) desde día uno. La superficie de código de la iteración
+  (~200 LOC) es trivialmente cubierta por los smoke tests; diferir el gate
+  habría erosionado el principio en la primera iteración.
 
 **Suite de smoke prevista**:
 
@@ -492,16 +494,33 @@ El exit code es `0` si todos pasan, `1` si alguno falla.
 
 ## R13 — Licencia y archivos legales
 
-**Decisión**: Apache-2.0. El archivo `LICENSE` se commitea con el texto
-oficial completo. `pyproject.toml` declara
-`license = { text = "Apache-2.0" }` (SPDX expression simple) y
-`classifiers = ["License :: OSI Approved :: Apache Software License"]`.
+**Decisión**: Apache-2.0 declarada según PEP 639 (SPDX expression). El
+archivo `LICENSE` se obtiene **deterministamente** del texto canónico:
+
+```bash
+curl -fsSL https://www.apache.org/licenses/LICENSE-2.0.txt -o LICENSE
+```
+
+`pyproject.toml` declara:
+
+```toml
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+# NO declarar `License :: OSI Approved :: Apache Software License` en classifiers;
+# la SPDX expression lo sustituye (PEP 639) y duplicar metadata genera warnings.
+```
 
 **Rationale**:
 
 - `bookwright-design.md § 6` lo lista como `LICENSE Apache-2.0`.
 - Apache-2.0 es estándar para herramientas Python con potencial de
   adopción amplia.
+- PEP 639 (aceptado, soportado por `hatchling >= 1.27`) reemplaza tanto
+  `license = {text = "..."}` (deprecado) como el classifier OSI
+  (redundante). Adoptar la sintaxis canónica ahora evita warnings y
+  futuras migraciones.
+- Obtener `LICENSE` con `curl` desde apache.org garantiza el texto oficial
+  exacto sin copy-paste manual.
 
 **Sin `NOTICE`** por ahora — no hay contribuciones externas que requieran
 atribución explícita; se añadirá si y cuando.

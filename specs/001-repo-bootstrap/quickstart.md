@@ -63,20 +63,33 @@ uv run bookwright check --json | jq '.ok, .checks | length'
 uv run pre-commit install      # < 2 min, normalmente segundos
 ```
 
-Probar que los hooks pegan:
+Probar que los hooks pegan, usando un directorio scratch ignorado por git
+(`.scratch/` está en `.gitignore`; el `-f` en `git add` lo fuerza solo
+para el experimento, y al borrar el directorio el repo vuelve a estado
+limpio sin riesgo de mutar `pyproject.toml`):
 
 ```bash
+mkdir -p .scratch
+
 # 1. Test de formato auto-corregible:
-echo "x=1" > tests/_scratch.py
-git add tests/_scratch.py
-git commit -m "test hook"      # ruff-format debe reescribir el archivo y abortar
-rm tests/_scratch.py
+echo "x=1" > .scratch/scratch.py
+git add -f .scratch/scratch.py
+git commit -m "test hook"        # ruff-format reescribe el archivo y aborta
+git restore --staged .scratch/scratch.py
 
 # 2. Test de TOML inválido:
-echo "[broken" >> pyproject.toml
-git add pyproject.toml
-git commit -m "test hook"      # check-toml debe abortar con línea/motivo
-git checkout pyproject.toml
+echo "[broken" > .scratch/scratch.toml
+git add -f .scratch/scratch.toml
+git commit -m "test hook"        # check-toml aborta con línea/motivo
+git restore --staged .scratch/scratch.toml
+
+# 3. Test de YAML inválido:
+printf 'a:\n  b: c\n d: e\n' > .scratch/scratch.yaml
+git add -f .scratch/scratch.yaml
+git commit -m "test hook"        # check-yaml aborta con línea/motivo
+git restore --staged .scratch/scratch.yaml
+
+rm -rf .scratch
 ```
 
 ## Correr la suite de tests (US2 indirecto, SC-005)
