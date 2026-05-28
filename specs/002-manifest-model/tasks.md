@@ -110,7 +110,7 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 
 ### Fixtures for User Story 3
 
-- [ ] T021 [P] [US3] Create [tests/core/fixtures/future_cli_version.toml](tests/core/fixtures/future_cli_version.toml) with `cli_version_min = "9999.0.0"` (otherwise valid minimal manifest)
+- [X] T021 [P] [US3] Create [tests/core/fixtures/future_cli_version.toml](tests/core/fixtures/future_cli_version.toml) with `cli_version_min = "9999.0.0"` (otherwise valid minimal manifest)
 
 ### Implementation & Tests for User Story 3
 
@@ -118,8 +118,8 @@ Single-project layout (Constitution Principle III): `src/bookwright/` for produc
 > last because it imports the module the implementation builds. Run it
 > with `pytest -x` to confirm the failures land where you expect.
 
-- [ ] T022 [US3] Add the installed-vs-required comparison as a `Manifest.model_validator(mode="after")` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py), reading the installed CLI's version via `_installed_version()`: compare `Version(self.bookwright.cli_version_min)` to `Version(_installed_version())` with PEP 440 ordering; raise a Pydantic error mapped to `_FieldFailure(field_path="bookwright.cli_version_min", rule_id="bookwright.cli_version_min.installed_too_old", message="installed CLI {installed} is older than required {required}")` (FR-012, SC-003). Rationale: same scope as the US5 `manifest_version` classifier, so both checks share the failure-translation path.
-- [ ] T023 [US3] Write [tests/core/test_version_gate.py](tests/core/test_version_gate.py) — Acceptance Scenarios 1–2 (FR-012, SC-003): monkey-patch `_installed_version` to `"0.0.1"` and load `future_cli_version.toml` → expect `ManifestValidationError` whose first-failure message names both `0.0.1` and `9999.0.0`; with `_installed_version` set to `"9999.0.0"` or higher the load succeeds and the rest of validation continues normally
+- [X] T022 [US3] Add the installed-vs-required comparison as a `Manifest.model_validator(mode="after")` in [src/bookwright/core/manifest.py](src/bookwright/core/manifest.py), reading the installed CLI's version via `_installed_version()`: compare `Version(self.bookwright.cli_version_min)` to `Version(_installed_version())` with PEP 440 ordering; raise a Pydantic error mapped to `_FieldFailure(field_path="bookwright.cli_version_min", rule_id="bookwright.cli_version_min.installed_too_old", message="installed CLI {installed} is older than required {required}")` (FR-012, SC-003). Rationale: same scope as the US5 `manifest_version` classifier, so both checks share the failure-translation path.
+- [X] T023 [US3] Write [tests/core/test_version_gate.py](tests/core/test_version_gate.py) — Acceptance Scenarios 1–2 (FR-012, SC-003): monkey-patch `_installed_version` to `"0.0.1"` and load `future_cli_version.toml` → expect `ManifestValidationError` whose first-failure message names both `0.0.1` and `9999.0.0`; with `_installed_version` set to `"9999.0.0"` or higher the load succeeds and the rest of validation continues normally
 
 **Checkpoint**: User Story 3 — the CLI version gate is enforced.
 
