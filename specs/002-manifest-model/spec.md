@@ -8,6 +8,16 @@
 
 **Input**: User description: "Cada proyecto Bookwright declara su configuración en un manifest.toml en la raíz. El CLI necesita un modelo robusto para leer, validar y escribir ese archivo, con compatibilidad hacia adelante (manifest_version) y validación estricta de campos obligatorios."
 
+## Clarifications
+
+### Session 2026-05-28
+
+- Q: Where do non-fatal warnings (e.g., unknown future `manifest_version`) surface, given the JSON-over-stdout contract? → A: Loader returns warnings as structured data attached to the loaded manifest; the CLI layer surfaces them on stderr in human mode and as a `warnings` array inside the JSON document in `--json` mode.
+- Q: What counts as a "syntactically valid URI" for `bookwright.uri_base`? → A: An absolute URI with scheme `http` or `https`, a non-empty host (authority), no query and no fragment, and a trailing `/`.
+- Q: How are `cli_version_min` and `manifest_version` compared? → A: `cli_version_min` is a strict PEP 440 version string (`X.Y.Z` + optional pre-release), compared with PEP 440 ordering; `manifest_version` is a strict positive integer encoded as a decimal string (`"1"`, `"2"`, …), compared as integer. Each is rejected at load time if malformed.
+- Q: What constitutes the "closed list" of ISO 639-1 codes accepted for `book.language`? → A: The full ISO 639-1 registry (the complete set of ~184 two-letter codes), sourced from a small constant bundled inside the `bookwright` package; no curation or editorial filtering, no network access at load time.
+- Q: What is the shape of the manifest builder API (FR-015) — strict three-input, typed keyword overrides, or arbitrary partial dict? → A: Three required inputs (`title`, `authors`, `integration_key`) plus keyword overrides for any documented optional manifest field; unknown keyword arguments raise immediately; defaults from FR-017 fill anything still unset; the returned manifest is validated end-to-end (FR-004 through FR-010) before being handed back to the caller.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Load a valid project manifest (Priority: P1)
@@ -43,6 +53,8 @@ A user has a malformed or incomplete `manifest.toml` — a required field is mis
 5. **Given** a manifest where `[bookwright].uri_base` is not a valid URI or does not end with `/`, **When** it is loaded, **Then** the load fails citing `bookwright.uri_base` with the specific rule violated (invalid URI vs missing trailing slash).
 6. **Given** a manifest where `[book].status` is set but not in `{idea, structuring, drafting, revising, done}`, **When** it is loaded, **Then** the load fails citing `book.status`, the rejected value, and the allowed set.
 7. **Given** a manifest with several independent errors, **When** it is loaded, **Then** the failure reports all detected errors together, not just the first one.
+8. **Given** a manifest where `[bookwright].cli_version_min` is not a valid PEP 440 version string (e.g., `"v1"`, `"1.x"`, `"latest"`), **When** it is loaded, **Then** the load fails citing `bookwright.cli_version_min` and the malformed value.
+9. **Given** a manifest where `[bookwright].manifest_version` is not a positive-integer decimal string (e.g., `"1.0"`, `"v2"`, `"01"`, `""`), **When** it is loaded, **Then** the load fails citing `bookwright.manifest_version` and the malformed value.
 
 ---
 
@@ -72,6 +84,8 @@ A user (or a higher-level command, eventually `bookwright init`) has only the ba
 **Acceptance Scenarios**:
 
 1. **Given** the minimal inputs (title, author list, integration key), **When** a new manifest is built, **Then** the resulting object is valid against every rule from Story 2 and exposes documented defaults for `type`, `language`, `status`, `manifest_version`, `schema_version`, `cli_version_min`, `indexer`, `paths.*`, `vocabularies.active`, and `validators.*`.
+1a. **Given** the minimal inputs plus documented keyword overrides (e.g., `language="es"`, `type="memoir"`, `status="structuring"`), **When** a new manifest is built, **Then** the resulting object reflects the overrides where supplied and the FR-017 defaults everywhere else, and still validates end-to-end.
+1b. **Given** a call to the builder with an unknown keyword argument (e.g., `flavor="spicy"`), **When** the builder is invoked, **Then** it raises a programming-error exception naming the unexpected argument, before any object is constructed.
 2. **Given** a built manifest, **When** it is written to disk, **Then** the resulting `.toml` is human-readable (one top-level section per block, comments preserved where the template defines them) and section/key order is deterministic.
 3. **Given** a manifest loaded from disk and immediately written back without modification, **When** the two files are compared byte-for-byte, **Then** they are identical.
 4. **Given** a request to write a manifest to a path that already has a file, **When** the writer is invoked, **Then** it refuses to overwrite unless an explicit overwrite flag is set, and the failure mode is documented (no silent truncation).
@@ -119,23 +133,23 @@ A user opens an old project under a newer CLI, or opens a project authored by a 
 
 - **FR-004**: The system MUST reject manifests where `book.title` is missing, not a string, or empty/whitespace-only, citing the field path in the error.
 - **FR-005**: The system MUST reject manifests where `book.type` is missing or not in `{novel, essay, memoir, non-fiction-narrative, other}`, citing the field path, the rejected value, and the allowed set.
-- **FR-006**: The system MUST reject manifests where `book.language` is missing or not in the closed list of ISO 639-1 two-letter codes, citing the field path and the rejected value.
+- **FR-006**: The system MUST reject manifests where `book.language` is missing, not a string, or not in the **full ISO 639-1 registry** (the complete set of ~184 two-letter codes, sourced from a constant bundled inside the `bookwright` package), citing the field path and the rejected value. The check MUST be exact-case (lowercase) and MUST NOT call the network.
 - **FR-007**: The system MUST reject manifests where `book.authors` is missing, not a list, empty, or contains any non-string or empty/whitespace-only entry, citing the field path and the offending element when applicable.
-- **FR-008**: The system MUST reject manifests where `bookwright.uri_base` is missing, not a string, not a syntactically valid URI, or does not end with `/`, citing the field path and the specific rule violated.
+- **FR-008**: The system MUST reject manifests where `bookwright.uri_base` is missing, not a string, or does not satisfy ALL of: (a) is an absolute URI, (b) has scheme `http` or `https` (case-insensitive), (c) has a non-empty host (authority), (d) carries no query component, (e) carries no fragment component, (f) ends with `/`. The error MUST cite `bookwright.uri_base` and the specific sub-rule that was violated.
 - **FR-009**: The system MUST, when `book.status` is present, reject values not in `{idea, structuring, drafting, revising, done}`, citing the field path, the rejected value, and the allowed set. When absent, the default `drafting` MUST apply.
 - **FR-010**: The system MUST reject manifests where the required-fields block in `[bookwright]` — `cli_version_min`, `schema_version`, `manifest_version`, `uri_base` — is missing any element, citing each missing field.
 - **FR-011**: The system MUST surface all detected validation errors for a single manifest together rather than stopping at the first one.
 
 **Version compatibility**
 
-- **FR-012**: The system MUST compare `bookwright.cli_version_min` against the installed CLI version and fail to load when the installed version is lower, naming both versions in the error.
-- **FR-013**: The system MUST, when `bookwright.manifest_version` declares a value strictly greater than every version the current CLI knows, complete the load best-effort and emit a warning that names the unknown version and recommends upgrading the CLI.
-- **FR-014**: The system MUST, when `bookwright.manifest_version` declares a known value, perform validation under the rules for that version with no warning.
+- **FR-012**: The system MUST treat `bookwright.cli_version_min` as a strict PEP 440 version string (`MAJOR.MINOR.PATCH` with an optional pre-release suffix, e.g., `0.1.0`, `1.2.3rc1`). The system MUST reject the manifest with a field-precise error when the value is missing, not a string, or not a valid PEP 440 version. When valid, the system MUST compare it against the installed CLI version using PEP 440 ordering and fail to load when the installed version is strictly lower, naming both versions in the error.
+- **FR-013**: The system MUST treat `bookwright.manifest_version` as a strict positive-integer decimal string (`"1"`, `"2"`, `"3"`, …; no leading zeros, no `+`/`-` sign, no dots, no `v` prefix, no whitespace). The system MUST reject the manifest with a field-precise error when the value is missing, not a string, or not a positive-integer decimal string. When valid and strictly greater (by integer comparison) than every version the current CLI knows, the system MUST complete the load best-effort and attach a structured warning to the returned manifest object that names the unknown version and recommends upgrading the CLI. The model layer MUST NOT write the warning directly to any output stream; the CLI layer surfaces accumulated warnings on stderr in human mode and as a `warnings` array inside the single JSON document in `--json` mode.
+- **FR-014**: The system MUST, when `bookwright.manifest_version` declares a known value (integer-equal to a member of the known set), perform validation under the rules for that version with no warning.
 
 **Defaults and construction**
 
-- **FR-015**: The system MUST expose a way to build a valid manifest object from a minimal set of inputs — at minimum `title`, `authors` (non-empty list), and `integration_key` — supplying documented defaults for every other field.
-- **FR-016**: Defaults supplied during construction MUST themselves satisfy every validation rule in FR-004 through FR-010 so that "build → validate" never fails on a default-driven build.
+- **FR-015**: The system MUST expose a builder that takes three required inputs — `title`, `authors` (non-empty list), and `integration_key` — and accepts keyword arguments for any documented optional manifest field (at minimum: `language`, `type`, `subtitle`, `genre`, `target_length_words`, `status`, `book_metadata`, `vocabularies_active`, `validators_enabled`, `validators_disabled`, `validators_custom`, `paths_*`, `integration_options`, `manifest_version`, `schema_version`, `cli_version_min`, `indexer`). Unknown keyword arguments MUST raise a programming-error exception immediately (not be silently absorbed into free-form metadata). The builder MUST apply the FR-017 defaults for every field the caller did not override, and MUST run the full validation suite (FR-004 through FR-010) over the resulting object before returning it, surfacing any failure to the caller via the same `ValidationError` channel used by load.
+- **FR-016**: Defaults supplied during construction MUST themselves satisfy every validation rule in FR-004 through FR-010 so that "build → validate" never fails on a default-driven build when no caller overrides are supplied. When caller overrides are supplied, the builder MUST validate the merged result and surface validation failures rather than silently accepting invalid overrides.
 - **FR-017**: The defaults policy MUST be documented inside the spec for this iteration so the implementation has a single source of truth: `type = "novel"`, `language = "en"`, `status = "drafting"`, `manifest_version = "1"`, `schema_version = "golem-1.0"`, `cli_version_min = <current CLI version>`, `indexer = "rdflib"`, `vocabularies.active = []`, `validators.enabled = []`, `validators.disabled = []`, `validators.custom = []`, and the paths block populated with `manuscript = "manuscript/"`, `bible = "bible/"`, `outline = "outline/"`, `graph = "bible/graph.ttl"`, `constitution = "bible/constitution.md"`. The integration block's `skills_dir` default depends on `integration_key` (`claude` → `.claude/skills`, `generic` → `.agents/skills`); `options = {}`.
 
 **Writing**
@@ -155,33 +169,34 @@ A user opens an old project under a newer CLI, or opens a project authored by a 
 
 **Agent-consumable surface**
 
-- **FR-024**: When this iteration's functionality is exposed to a CLI subcommand that supports `--json`, validation failures MUST be representable as a single JSON document on stdout listing the offending field paths, rejected values, and rule messages — keeping the JSON-over-stdout contract usable by skills.
+- **FR-024**: When this iteration's functionality is exposed to a CLI subcommand that supports `--json`, validation failures MUST be representable as a single JSON document on stdout listing the offending field paths, rejected values, and rule messages — keeping the JSON-over-stdout contract usable by skills. Successful loads that produced warnings MUST surface those warnings inside the same JSON document under a `warnings` array (one entry per warning, each naming the rule and the offending value), never on stdout outside the JSON envelope.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Manifest**: The typed in-memory representation of a project's `manifest.toml`. Owns the top-level blocks `[bookwright]`, `[book]`, `[book.metadata]`, `[vocabularies]`, `[validators]`, `[integration]`, `[paths]`. Provides typed access to every field and round-trips through write without information loss.
-- **ManifestVersion**: A semver-major-style string identifying the manifest schema (`"1"`, `"2"`, …). Used to gate validation rules and to drive the future-version warning. Belongs to the Manifest.
-- **CliVersionFloor**: A semver string declared by the manifest as the minimum CLI version required to open the project. Compared at load time against the installed CLI version.
+- **Manifest**: The typed in-memory representation of a project's `manifest.toml`. Owns the top-level blocks `[bookwright]`, `[book]`, `[book.metadata]`, `[vocabularies]`, `[validators]`, `[integration]`, `[paths]`. Provides typed access to every field and round-trips through write without information loss. Carries an attached list of non-fatal warnings produced during load (empty when the load was clean).
+- **ManifestVersion**: A positive-integer decimal string identifying the manifest schema generation (`"1"`, `"2"`, …). Used to gate validation rules and to drive the future-version warning. Belongs to the Manifest. Compared as integer.
+- **CliVersionFloor**: A PEP 440 version string declared by the manifest as the minimum CLI version required to open the project. Compared at load time against the installed CLI version using PEP 440 ordering.
 - **IntegrationRecord**: The serialized record of which integration was used and the `skills_dir` it resolved to. Read and written, never re-interpreted in this iteration.
 - **ValidationError**: A structured error tied to a specific field path (e.g., `book.authors[0]`), the rejected value, and the rule that was violated. Multiple errors can be reported per load. Has a JSON form suitable for `--json` consumers.
+- **ManifestWarning**: A structured, non-fatal advisory tied to a rule (e.g., `manifest_version.unknown_future`), the offending value, and a human-readable message. Attached to a successfully-loaded Manifest. Has a JSON form so it can appear in the `warnings` array of a `--json` response.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: A user given a syntactically broken manifest can identify and fix the offending field in under a minute from the error message alone, with no need to consult external docs.
+- **SC-001**: Every `ManifestValidationError.to_json()` failure entry contains a non-empty `field`, a `value` (possibly `null` for missing-field cases), a stable `rule` identifier, and a human-readable `message` — verified by T032.
 - **SC-002**: Every required field listed in § 8.1 has an explicit validation rule covered by at least one automated test, and every enum has a test for each allowed value plus one rejected value.
 - **SC-003**: Loading a manifest with `cli_version_min` above the installed CLI version produces an error that names both versions in the first sentence.
-- **SC-004**: Building a manifest from the minimum inputs (title, authors, integration key) succeeds in 100% of cases for valid inputs, and the result passes the full validator without exception.
+- **SC-004**: Building a manifest from the minimum inputs (title, authors, integration key) succeeds in 100% of cases for valid inputs, and the result passes the full validator without exception. Building with any combination of documented keyword overrides also succeeds when the overrides are individually valid; building with an unknown keyword raises a programming-error exception that names the unexpected argument.
 - **SC-005**: For any manifest file that loads successfully, a load → write round-trip yields a file byte-identical to the original.
-- **SC-006**: A manifest declaring a `manifest_version` higher than the CLI knows produces exactly one warning per load and still returns a usable typed object.
+- **SC-006**: A manifest declaring a `manifest_version` higher than the CLI knows produces exactly one warning attached to the returned manifest object per load, no writes to stdout/stderr from the model layer itself, and a still-usable typed object.
 - **SC-007**: When a manifest declares multiple independent errors, the user sees all of them in a single load attempt rather than having to fix-retry-fix-retry.
 
 ## Assumptions
 
-- The set of "known" `manifest_version` values is encoded as a closed list inside the CLI and is updated whenever the manifest schema changes incompatibly. For this iteration the known set is `{"1"}`.
-- The closed list of ISO 639-1 language codes is bundled with the CLI (no network call at load time).
-- "Valid URI" follows the same URI rule used elsewhere in the project (RFC 3986). The trailing-slash rule is enforced on top of URI validity, not as a substitute.
+- The set of "known" `manifest_version` values is encoded as a closed set of positive integers inside the CLI and is updated whenever the manifest schema changes incompatibly. For this iteration the known set is `{1}` (matched against the integer parse of the manifest's string value).
+- The closed list of ISO 639-1 language codes is the full registry (~184 codes), bundled with the CLI as an in-package constant. No curation, no network call at load time. Constructed and historical languages (e.g., `eo`, `la`, `cu`) are admitted because they have ISO 639-1 codes.
+- "Valid URI" for `uri_base` is the restricted form defined in FR-008 (absolute `http`/`https`, host present, no query/fragment, trailing `/`). The narrower rule reflects that `uri_base` is the prefix used to mint GOLEM entity IRIs in the Turtle graph (iterations 5–6) and must be safely serializable as a Turtle `@prefix` declaration; RFC 3986 in its full generality (URNs, `file:`, `data:`, relative refs) is intentionally out of scope here.
 - The defaults defined in FR-017 are themselves part of the contract: changing them is a breaking change to the manifest builder and requires bumping `manifest_version` or otherwise being treated as such.
 - The `[book.metadata]` block is free-form by design (§ 8.1). Treating its contents as opaque is intentional, not a gap.
 - Vocabulary-existence checks against `.bookwright/vocabularies/` are explicitly the responsibility of the downstream command (iteration 6+), per the user input. This iteration cannot perform that check because the indexer is not yet present.
