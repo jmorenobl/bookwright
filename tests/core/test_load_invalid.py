@@ -63,6 +63,21 @@ def _failure_for(exc: ManifestValidationError, field_path: str) -> _FieldFailure
             "bookwright.uri_base.has_fragment",
         ),
         (
+            "invalid_uri_base_malformed_ipv6.toml",
+            "bookwright.uri_base",
+            "bookwright.uri_base.invalid_uri",
+        ),
+        (
+            "invalid_uri_base_empty_host.toml",
+            "bookwright.uri_base",
+            "bookwright.uri_base.empty_host",
+        ),
+        (
+            "invalid_bookwright_schema_version_empty.toml",
+            "bookwright.schema_version",
+            "bookwright.schema_version.empty",
+        ),
+        (
             "invalid_cli_version_min_v1.toml",
             "bookwright.cli_version_min",
             "bookwright.cli_version_min.not_pep440",

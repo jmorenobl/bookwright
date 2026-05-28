@@ -141,6 +141,12 @@ document objects are distinct.
 - `OSError` subclasses for I/O failures. On any such failure the
   destination at `path` is **guaranteed** to retain its prior contents
   (FR-021).
+- `RuntimeError` if called on a `Manifest` instance not produced by
+  `Manifest.load(...)` or `Manifest.build(...)` — bare construction
+  (e.g. via `Manifest(...)` or `Manifest.model_construct(...)`) leaves
+  the underlying `tomlkit` document unset and is not part of the v0
+  contract. Supported entry points always attach the document, so this
+  exception is unreachable from contract-compliant code.
 
 **Side effects**: Writes one file. Cleans up its own temp file on both
 success and failure paths.
@@ -269,10 +275,10 @@ JSON envelope. Any future change to a key name is a breaking change.
   `missing`, `empty`, `not_a_string`, `not_a_list`, `not_in_enum`,
   `not_iso_639_1`, `entry.empty`, `entry.not_a_string`,
   `not_pep440`, `not_positive_integer_string`, `invalid_uri`,
-  `wrong_scheme`, `has_query`, `has_fragment`, `no_trailing_slash`,
-  `installed_too_old`, `parse_failure`, `unknown_key` (raised by
-  `extra="forbid"` blocks for keys not in the known schema; see the
-  "Forward-compat boundary" paragraph above).
+  `wrong_scheme`, `empty_host`, `has_query`, `has_fragment`,
+  `no_trailing_slash`, `installed_too_old`, `parse_failure`,
+  `unknown_key` (raised by `extra="forbid"` blocks for keys not in the
+  known schema; see the "Forward-compat boundary" paragraph above).
 
 ### `ManifestWarning.to_json()`
 

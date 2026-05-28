@@ -141,6 +141,17 @@ class BookwrightBlock(BaseModel):
             ) from exc
         return value
 
+    @field_validator("schema_version", mode="after")
+    @classmethod
+    def _check_schema_version(cls, value: str) -> str:
+        if not value.strip():
+            raise PydanticCustomError(
+                "empty",
+                "schema_version must be a non-empty string",
+                {"value": value},
+            )
+        return value
+
     @field_validator("manifest_version", mode="after")
     @classmethod
     def _check_manifest_version(cls, value: str) -> str:
