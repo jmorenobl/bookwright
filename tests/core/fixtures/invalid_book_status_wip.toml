@@ -1,0 +1,16 @@
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.0"
+manifest_version = "1"
+uri_base = "https://example.org/p/"
+
+[book]
+title = "Bad Status"
+type = "novel"
+language = "en"
+authors = ["A"]
+status = "wip"
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"

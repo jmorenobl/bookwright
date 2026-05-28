@@ -1,0 +1,14 @@
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.0"
+manifest_version = "1"
+uri_base = "https://example.org/p/"
+
+[book]
+type = "novel"
+language = "en"
+authors = ["A"]
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"

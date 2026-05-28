@@ -1,0 +1,21 @@
+# Three+ independent failures in one file:
+# - book.title is empty (FR-004)
+# - book.language is not ISO 639-1 (FR-006)
+# - bookwright.uri_base lacks trailing slash (FR-008)
+# - book.type is unknown (FR-005) — bonus
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.0"
+manifest_version = "1"
+uri_base = "https://example.org/no-slash"
+
+[book]
+title = ""
+type = "screenplay"
+language = "zz"
+authors = ["A"]
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
