@@ -66,9 +66,9 @@ def _translate_validation_error(exc: ValidationError) -> ManifestValidationError
         # (PydanticCustomError) carry their `error_type` here verbatim.
         kind = _PYDANTIC_TYPE_TO_KIND.get(err_type, err_type or "validation")
 
-        # For the "authors[N] is empty" case, the location already encodes N
-        # but we want to surface the rejected value the user wrote.
-        if "value" in ctx and rejected is None:
+        # Prefer the offending value the validator named in `ctx["value"]`
+        # (e.g. authors[N] entry) over the validator's whole input.
+        if "value" in ctx:
             rejected = ctx["value"]
 
         rule_id = f"{field_path}.{kind}" if field_path else kind

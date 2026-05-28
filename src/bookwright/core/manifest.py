@@ -234,7 +234,7 @@ class BookBlock(BaseModel):
                 {"value": value},
             )
         for index, entry in enumerate(value):
-            if not isinstance(entry, str) or not entry.strip():
+            if not entry.strip():
                 raise PydanticCustomError(
                     "entry.empty",
                     "authors[{index}] must be a non-empty string",
@@ -300,11 +300,9 @@ class Manifest(BaseModel):
 
     @model_validator(mode="after")
     def _check_cli_floor(self) -> Manifest:
-        try:
-            required = Version(self.bookwright.cli_version_min)
-        except InvalidVersion:
-            # The cli_version_min field validator already surfaced this.
-            return self
+        # cli_version_min was already validated as PEP 440 by its field validator;
+        # field errors short-circuit model_validators, so we never see invalid input here.
+        required = Version(self.bookwright.cli_version_min)
         installed_raw = _installed_version()
         try:
             installed = Version(installed_raw)
@@ -390,7 +388,7 @@ class Manifest(BaseModel):
 
         body = tomlkit.dumps(document)
 
-        parent = target.parent if target.parent != Path("") else Path(".")
+        parent = target.parent
         parent.mkdir(parents=True, exist_ok=True)
         tmp_fd, tmp_path = tempfile.mkstemp(
             dir=str(parent),
@@ -414,4 +412,5 @@ class Manifest(BaseModel):
 def _render_from_model(manifest: Manifest) -> str:
     """Last-resort serializer when no underlying tomlkit document is attached."""
 
-    return tomlkit.dumps(manifest.model_dump(mode="python"))
+    # TOML has no null; drop optional fields whose value is None.
+    return tomlkit.dumps(manifest.model_dump(mode="python", exclude_none=True))

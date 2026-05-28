@@ -35,7 +35,7 @@ class ManifestNotFoundError(ManifestError):
     """The manifest file does not exist."""
 
     def __init__(self, path: Path | str) -> None:
-        self.path = Path(path).resolve() if isinstance(path, (str, Path)) else path
+        self.path = Path(path).resolve()
         message = f"no manifest at {self.path}"
         super().__init__(message)
         self.message = message
@@ -107,7 +107,7 @@ class ManifestOverwriteError(ManifestError):
     """Refuse to overwrite an existing manifest (FR-019)."""
 
     def __init__(self, path: Path | str) -> None:
-        self.path = Path(path).resolve() if isinstance(path, (str, Path)) else path
+        self.path = Path(path).resolve()
         message = (
             f"refuse to overwrite existing manifest at {self.path} (pass overwrite=True to force)"
         )
