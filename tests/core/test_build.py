@@ -7,6 +7,7 @@ from collections.abc import Callable
 import pytest
 
 from bookwright.core import Manifest, ManifestValidationError
+from bookwright.core.manifest import _default_skills_dir_map
 
 
 def test_minimal_build_applies_fr017_defaults() -> None:
@@ -128,9 +129,17 @@ def test_unknown_integration_key_without_skills_dir_raises_type_error() -> None:
         Manifest.build(
             title="x",
             authors=["a"],
-            integration_key="cursor",  # not in DEFAULT_SKILLS_DIR
+            integration_key="cursor",  # not in the integrations registry
             uri_base="https://example.org/x/",
         )
+
+
+def test_default_skills_dir_map_derives_from_integrations_registry() -> None:
+    """Iteration-3 re-rooting: the per-key skills_dir defaults derive from the
+    integrations registry, not a hand-maintained literal dict."""
+
+    derived = _default_skills_dir_map()
+    assert derived == {"claude": ".claude/skills", "generic": ".agents/skills"}
 
 
 def test_unknown_integration_key_with_explicit_skills_dir_succeeds() -> None:

@@ -107,11 +107,11 @@ def setup(
   `SKILL.md`, MUST NOT touch `CLAUDE.md`, MUST NOT write outside the
   resolved skills directory (FR-029). The base implementation is the
   only `setup()` body in v0; no subclass overrides it.
-- `key` is the registry primary key. The base sentinel `""` lets
-  `_register_builtins()` raise an `InvalidOptionDeclarationError`-shaped
-  error (renamed for this site: `_RegistrationError` reusing the same
-  base) if a subclass forgets to declare it. This is a defence-in-depth
-  layer over FR-002 / FR-005.
+- `key` is the registry primary key. The base sentinel `""` exists so
+  a subclass that forgets to declare its own `key` collides with any
+  other forgetful subclass on the empty string, surfacing as the
+  existing `DuplicateRegistrationError` (FR-005). No separate
+  registration-error type is introduced.
 
 **Relationships**: Subclassed by every integration in
 `INTEGRATION_REGISTRY`. Consumed by `parse_options` (reads `cls.options()`),
@@ -246,7 +246,7 @@ and follow the contract of FR-035 / FR-036. Each carries a class-level
 | Field         | Type       | Source            | Notes                                       |
 |---------------|------------|-------------------|---------------------------------------------|
 | `code`        | `str`      | class attribute   | Always `"unknown_integration"`.             |
-| `value`       | `str`      | constructor arg   | The rejected key (may be `""`).             |
+| `value`       | `str \| None` | constructor arg | The rejected key as-is. `None` for `get(None)` calls; empty string for `get("")`. JSON-safe in both cases (`null`, `""`). |
 | `valid`       | `list[str]`| `list_keys()` at raise time | Alphabetically sorted, includes every currently-registered key. |
 | `message`     | `str`      | derived           | `"unknown integration: {value!r}; valid: [a, b, ...]"` |
 
@@ -281,7 +281,7 @@ integration does not declare (FR-018).
 |---------------|------------|-------------------|---------------------------------------------|
 | `code`        | `str`      | class attribute   | Always `"malformed_option"`.                |
 | `rule`        | `str`      | constructor arg   | One of `"missing_value"`, `"unexpected_value"`, `"duplicate_flag"`, `"missing_required"`. |
-| `value`       | `str`      | constructor arg   | The offending flag.                         |
+| `value`       | `str`      | constructor arg   | The offending flag. For `rule="missing_required"` this is the *declared-but-absent* flag (the descriptor's `flag`), NOT a token from the user's input. For the other three rules it is the token from the input that violated the rule. |
 | `message`     | `str`      | derived           | Human-readable, names the rule and the flag. |
 
 **Raised by**: `parse_options(...)` per FR-019, FR-021.

@@ -116,9 +116,13 @@ project_root.mkdir(parents=True, exist_ok=True)
 cls = get("generic")
 parsed = parse_options("--skills-dir .cursor/skills", cls)
 manifest = Manifest.build(
-    title="My Novel", author="Alice", language="en",
-    type_="novel", status="idea", integration_key="generic",
-    # ... other build kwargs filled per iteration-2 contract
+    title="My Novel",
+    authors=["Alice"],
+    integration_key="generic",
+    # overrides (per the iteration-2 _BUILD_OVERRIDE_ALLOWLIST_TABLE):
+    language="en",
+    type="novel",
+    status="idea",
 )
 
 instance = cls()

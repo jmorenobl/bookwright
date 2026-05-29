@@ -25,7 +25,9 @@ the contract end-to-end:
 - An `IntegrationOption` declarative descriptor plus a `parse_options(...)`
   function that turns the raw `--integration-options` string into a typed
   dict against the chosen integration's `options()`, raising structured
-  `UnknownOptionError` / `MalformedOptionError`.
+  `UnknownOptionError`, `MalformedOptionError`, or
+  `InvalidOptionDeclarationError` (the last one on first-introspection
+  detection of a malformed descriptor — FR-015).
 - A structured exception family (`UnknownIntegrationError`,
   `UnknownOptionError`, `MalformedOptionError`, `DuplicateRegistrationError`,
   `InvalidOptionDeclarationError`) each carrying a stable `code` and a
@@ -139,7 +141,7 @@ integration layer's total module budget is well under the Principle IV
 | V. Plugin-Based Integrations | ✅ | This iteration **is** the plugin layer. `SkillsIntegration` + `INTEGRATION_REGISTRY` are exactly the shape the principle mandates; no `AGENT_CONFIG` dispatcher exists or is introduced. |
 | VI. Agent Skills Only — No Legacy Commands (NON-NEGOTIABLE) | ✅ | `setup()` writes only `<skills_dir>/.bookwright-skills-placeholder`. No code path in this iteration writes to `.claude/commands/`, `.agents/commands/`, or any analogous legacy directory. `MarkdownIntegration` is not introduced (FR-032, design § 16.7). |
 | VII. agentskills.io Standard Compliance | ✅ | No `SKILL.md` is generated in this iteration. The two structural constants (`SKILL_NAME_MAX_LENGTH = 64`, `SKILL_DESCRIPTION_MAX_LENGTH = 1024`) are exposed for iteration 9 (FR-033, FR-034, SC-010). |
-| VIII. Test Discipline (NON-NEGOTIABLE) | ✅ | Every FR maps to at least one test in `tests/integrations/`. The CI gate (80 % global, ratcheting upward) and the spec's per-iteration target of ≥ 90 % module coverage are both honoured by the test plan in Project Structure below. |
+| VIII. Test Discipline (NON-NEGOTIABLE) | ✅ | Every FR maps to at least one test in `tests/integrations/`. The CI gate (80 % global, ratcheting upward) and the spec's per-iteration target of ≥ 95 % slice coverage on `bookwright.integrations` are both honoured by the test plan in Project Structure below. |
 | IX. JSON-over-stdout CLI Contract | ✅ | All structured errors expose a `to_dict()` JSON-safe payload (FR-035, FR-036). The layer itself never writes to stdout/stderr (FR-037, SC-009). The iteration-4 `init --json` consumer is the first caller; that wiring is iteration 4's job, not this iteration's. |
 | X. Design Document Axioms | ✅ | The design § 11 class shape is followed exactly. No relitigation: `SkillsIntegration` is the only operative base class (axiom 7); `.agents/skills/` is the generic default (axiom 8); plugin-based integrations from day one (axiom 10). |
 

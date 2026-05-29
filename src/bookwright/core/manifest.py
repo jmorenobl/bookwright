@@ -54,10 +54,21 @@ BookStatus = Literal["idea", "structuring", "drafting", "revising", "done"]
 BOOK_TYPES: frozenset[str] = frozenset(get_args(BookType))
 BOOK_STATUSES: frozenset[str] = frozenset(get_args(BookStatus))
 
-DEFAULT_SKILLS_DIR: dict[str, str] = {
-    "claude": ".claude/skills",
-    "generic": ".agents/skills",
-}
+
+def _default_skills_dir_map() -> dict[str, str]:
+    """Late-imported view of the integrations registry.
+
+    Used by ``_build_manifest`` to fill the per-key skills_dir default
+    (R2). The late import inside the function body keeps ``bookwright.core``
+    importable in isolation; no module-top dependency on
+    ``bookwright.integrations`` exists.
+    """
+
+    # Late import per R2 — keeps bookwright.core importable in isolation
+    # and prevents a load-order cycle between core and integrations.
+    from bookwright.integrations import INTEGRATION_REGISTRY  # noqa: PLC0415
+
+    return {key: cls.default_skills_dir for key, cls in INTEGRATION_REGISTRY.items()}
 
 
 def _installed_version() -> str:
@@ -407,7 +418,7 @@ class Manifest(BaseModel):
             authors=authors,
             integration_key=integration_key,
             installed_version=_installed_version(),
-            default_skills_dir=DEFAULT_SKILLS_DIR,
+            default_skills_dir=_default_skills_dir_map(),
             **overrides,
         )
 

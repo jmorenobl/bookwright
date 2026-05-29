@@ -78,12 +78,16 @@ def get(key: str) -> type[SkillsIntegration]:
 
     Raises:
         UnknownIntegrationError: if `key` is not in INTEGRATION_REGISTRY.
-            The payload contains the rejected key (verbatim) and the
-            alphabetically-sorted list of currently-registered keys.
+            The payload contains the rejected key (verbatim — `str | None`,
+            see data-model § 6.1) and the alphabetically-sorted list of
+            currently-registered keys.
 
     Contract:
         - Non-string input is treated as unknown (the lookup uses dict
-          containment; a non-string is just "not in the dict").
+          containment; a non-string is just "not in the dict"). The
+          UnknownIntegrationError payload's `value` field is therefore
+          typed `str | None` and the test pins `value is None` for the
+          `get(None)` path.
         - Empty string is treated as unknown.
         - The function MUST NOT print to stdout/stderr (FR-037).
     """
@@ -167,7 +171,7 @@ class SkillsIntegration:
         unused in this iteration's body.
 
         Concretely:
-            target = (project_root / self.resolve_skills_dir(parsed_options)).resolve()
+            target = project_root / self.resolve_skills_dir(parsed_options)
             target.mkdir(parents=True, exist_ok=True)
             marker = target / SKILL_PLACEHOLDER_MARKER_NAME
             if not marker.exists():
