@@ -1,0 +1,16 @@
+# Normalize line endings to LF on commit, regardless of contributor OS.
+# Prevents the SHA-256 pin in tests/integrations/test_plugin_contract.py
+# (and any other byte-exact assertion) from spuriously failing on
+# Windows checkouts that have core.autocrlf=true (Git for Windows default).
+* text=auto eol=lf
+
+# Binary file types — never normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary
