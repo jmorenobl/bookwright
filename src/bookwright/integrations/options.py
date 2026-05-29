@@ -91,6 +91,12 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
     # (e.g. `--skills-dir` and `--skills_dir` both → `skills_dir`) would
     # silently last-wins in `result`; detect at declaration time. Build
     # a flag→ident map so the error names BOTH colliding flags.
+    #
+    # R26 — `idents` is the canonical `flag → normalized identifier` map
+    # for the rest of this function: every subsequent ident lookup hits
+    # this dict instead of re-running `_normalize_identifier`, so the
+    # transform has exactly one source of truth and the normalization
+    # rule is in one place.
     idents: dict[str, str] = {}
     for flag in flags:
         ident = _normalize_identifier(flag)
@@ -102,9 +108,16 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
             )
         idents[flag] = ident
 
+    # R28 — single source of truth for the empty-input gate so the
+    # tokenization branch and the FR-021 required-check branch can't
+    # drift on what counts as "empty" (FR-020 wins over FR-021 only
+    # when input is genuinely absent).
+    has_input = raw is not None and raw.strip() != ""
+
     result: dict[str, str | bool] = {}
 
-    if raw is not None and raw.strip() != "":
+    if has_input:
+        assert raw is not None  # narrowed by `has_input` for mypy
         lookup: dict[str, IntegrationOption] = {opt.flag: opt for opt in declared}
         declared_flags = sorted(lookup.keys())
 
@@ -142,6 +155,7 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
             seen.add(flag)
 
             option = lookup[flag]
+            ident = idents[flag]
 
             if option.type == "string":
                 if has_inline_value:
@@ -153,19 +167,19 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
                     # consumer wrapped it as Path('')).
                     if value == "":
                         raise MalformedOptionError(rule="missing_value", value=flag)
-                    result[_normalize_identifier(flag)] = value
+                    result[ident] = value
                     index += 1
                     continue
                 if index + 1 >= len(tokens):
                     raise MalformedOptionError(rule="missing_value", value=flag)
-                result[_normalize_identifier(flag)] = tokens[index + 1]
+                result[ident] = tokens[index + 1]
                 index += 2
                 continue
 
             # type == "flag"
             if has_inline_value:
                 raise MalformedOptionError(rule="unexpected_value", value=flag)
-            result[_normalize_identifier(flag)] = True
+            result[ident] = True
             index += 1
 
     # R8 — apply declared defaults for opts the user did not supply. Runs
@@ -173,7 +187,7 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
     # declares `default='X'` always sees `X` when the flag is omitted.
     for option in declared:
         if option.default is not None:
-            ident = _normalize_identifier(option.flag)
+            ident = idents[option.flag]
             if ident not in result:
                 result[ident] = option.default
 
@@ -181,9 +195,9 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
     # default='x'` is always satisfied (FR-021 only fires for required
     # opts without a default that the user also omitted). Empty-input
     # short-circuit at top of branch skips this — FR-020 wins.
-    if raw is not None and raw.strip() != "":
+    if has_input:
         for option in declared:
-            if option.required and _normalize_identifier(option.flag) not in result:
+            if option.required and idents[option.flag] not in result:
                 raise MalformedOptionError(rule="missing_required", value=option.flag)
 
     return result
