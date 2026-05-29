@@ -48,12 +48,29 @@ def _register(cls: type[SkillsIntegration]) -> None:
     classes (FR-005, research R5). Registering a class whose ``key``
     is empty (the base-class sentinel) raises ``InvalidIntegrationError``
     (R13) — subclasses MUST override ``key`` with a non-empty string.
+    Registering a class whose ``default_skills_dir`` is empty raises
+    ``InvalidIntegrationError`` (R25) for the same reason: an empty
+    default would surface as a misleading ``resolves_to_project_root``
+    error in ``setup()`` because ``Path("")`` collapses to ``Path(".")``.
     """
 
+    new_fqcn = _fqcn(cls)
     if not cls.key:
-        raise InvalidIntegrationError(rule="empty_key", value=_fqcn(cls))
+        raise InvalidIntegrationError(rule="empty_key", value=new_fqcn)
+    if not cls.default_skills_dir:
+        # R25 — symmetric guard to R13. Without this, a forgetful subclass
+        # that overrides `key` but leaves `default_skills_dir` at the
+        # base sentinel ("") would register successfully and then fail
+        # at setup() time with `resolves_to_project_root` (because
+        # `Path("") == Path(".")` collapses to project_root), pointing
+        # the author at the wrong layer.
+        raise InvalidIntegrationError(rule="empty_default_skills_dir", value=new_fqcn)
 
     existing = INTEGRATION_REGISTRY.get(cls.key)
+    if existing is None:
+        INTEGRATION_REGISTRY[cls.key] = cls
+        return
+
     # R12 — compare by fully-qualified class name, not by identity. After
     # `importlib.reload(bookwright.integrations.claude)` the reloaded
     # `ClaudeIntegration` is a NEW class object with different identity
@@ -62,16 +79,18 @@ def _register(cls: type[SkillsIntegration]) -> None:
     # idempotency promise. FQCN equality preserves the duplicate guard
     # for genuinely different classes (different module/qualname) that
     # collide on `key`.
-    if existing is cls or (existing is not None and _fqcn(existing) == _fqcn(cls)):
+    # R27 — compute existing FQCN once and reuse for both the equality
+    # check and the error payload, instead of recomputing on each call
+    # site.
+    existing_fqcn = _fqcn(existing)
+    if existing is cls or existing_fqcn == new_fqcn:
         INTEGRATION_REGISTRY[cls.key] = cls  # rebind to the reloaded class
         return
-    if existing is not None:
-        raise DuplicateRegistrationError(
-            value=cls.key,
-            existing=_fqcn(existing),
-            new=_fqcn(cls),
-        )
-    INTEGRATION_REGISTRY[cls.key] = cls
+    raise DuplicateRegistrationError(
+        value=cls.key,
+        existing=existing_fqcn,
+        new=new_fqcn,
+    )
 
 
 def _register_builtins() -> None:

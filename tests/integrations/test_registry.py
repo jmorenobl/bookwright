@@ -158,3 +158,30 @@ def test_register_forgetful_subclass_raises_invalid_integration(
     with pytest.raises(InvalidIntegrationError) as exc_info:
         _register(ForgetfulIntegration)
     assert exc_info.value.to_dict()["rule"] == "empty_key"
+
+
+def test_register_subclass_without_default_skills_dir_raises_invalid_integration(
+    registry_snapshot: dict[str, type[SkillsIntegration]],
+) -> None:
+    """R25 — a subclass that overrides ``key`` but inherits the empty
+    ``default_skills_dir`` sentinel is rejected at registration time,
+    instead of surfacing as a misleading ``resolves_to_project_root``
+    error in ``setup()`` because ``Path("") == Path(".")`` collapses
+    to the project root.
+    """
+
+    del registry_snapshot
+
+    class HalfForgetfulIntegration(SkillsIntegration):
+        key = "half-forgetful"
+        # `default_skills_dir` deliberately not overridden — inherits the
+        # empty sentinel from `SkillsIntegration`.
+
+    with pytest.raises(InvalidIntegrationError) as exc_info:
+        _register(HalfForgetfulIntegration)
+    payload = exc_info.value.to_dict()
+    assert payload["code"] == "invalid_integration"
+    assert payload["rule"] == "empty_default_skills_dir"
+    assert "HalfForgetfulIntegration" in str(payload["value"])
+    # Nothing was inserted under the would-be key.
+    assert "half-forgetful" not in INTEGRATION_REGISTRY
