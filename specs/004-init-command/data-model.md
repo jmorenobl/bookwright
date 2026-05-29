@@ -262,9 +262,10 @@ warning is one line, prefixed by a stable token so an agent that
 wishes to parse them can:
 
 ```
-bookwright: warning: --ai is deprecated; use --integration
+bookwright: warning: --ai is deprecated; use --integration instead
 bookwright: warning: git not found on PATH; project created without a repository
-bookwright: warning: author could not be resolved from git config or $USER; manifest uses 'Unknown Author'
+bookwright: warning: existing .git/ detected; skipped git init and commit
+bookwright: warning: author could not be resolved from git config or $USER; using 'Unknown Author'
 ```
 
 Errors NEVER go to stderr under `--json` — they are emitted as the

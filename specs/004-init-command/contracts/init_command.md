@@ -186,6 +186,7 @@ remains silent except for the warning lines in § 5.
 | `user_declined_overwrite`     | Interactive `--here` prompt got a negative answer.                                               | 4    | init                                         |
 | `non_interactive_here`        | `--here` + non-empty cwd + non-interactive run (FR-029).                                         | 4    | init                                         |
 | `already_initialized`         | `.bookwright/` exists at the target, even with `--force` (FR-028).                               | 3    | init                                         |
+| `backup_creation_error`       | A pre-overwrite backup copy could not be created (FR-030 last sentence — e.g. permission denied or disk full at the backup target). The overwrite was refused; any prior successful writes still roll back via the ledger. | 6    | init                                         |
 | `filesystem_error`            | Any `OSError` after scaffold began. Backup-ledger rolled back. `details.errno`, `details.path`. | 6    | init                                         |
 | `git_error`                   | `git init` or `git commit` failed and `--no-git` was not set (FR-022 last clause).               | 7    | init                                         |
 | `permission_denied`           | Failed to create the target directory or write the first byte for permission reasons.            | 6    | init                                         |

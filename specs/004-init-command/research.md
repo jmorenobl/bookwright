@@ -27,9 +27,11 @@ first non-empty hit:
    per-repo override wins over the global config; falls back to the global
    when no per-repo entry exists).
 2. `$USER` environment variable.
-3. Sentinel `"Unknown Author"`, with a one-line stderr warning that names
-   the mechanism that ultimately succeeded (or "no source available" when
-   we hit step 3) so the user knows what to edit.
+3. Sentinel `"Unknown Author"`, with the one-line stderr warning
+   canonicalised in [contracts/init_command.md](../contracts/init_command.md)
+   § 5 (Author resolution row) so the user knows what to edit. The text
+   is fixed at the contract layer; this research document does not
+   re-define it.
 
 The warning is emitted whenever step 3 is reached (per FR-016), regardless
 of `--json`. With `--json` the warning still lands on stderr; stdout

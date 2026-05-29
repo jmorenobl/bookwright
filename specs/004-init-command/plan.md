@@ -208,7 +208,7 @@ exception.
 
 | Principle | Re-check | Notes |
 |---|---|---|
-| All | ✅ | Phase 1 artifacts (`research.md`, `data-model.md`, `contracts/init_command.md`, `quickstart.md`) introduce no new dependencies, no new modules beyond those listed in Project Structure below, and no behaviours beyond the FRs / Acceptance Scenarios in `spec.md`. The init-options envelope schema in `contracts/init_command.md` is the single source of truth for FR-034 — no other artifact restates it. |
+| All | ✅ | Phase 1 artifacts (`research.md`, `data-model.md`, `contracts/init_command.md`, `quickstart.md`) introduce no new dependencies, no new modules beyond those listed in Project Structure below, and no behaviours beyond the FRs / Acceptance Scenarios in `spec.md`. The init-options envelope schema is pinned in `data-model.md` § 1 and restated for the external surface in `contracts/init_command.md` § 6 — the contract defers to the data model on disagreements. |
 
 ## Project Structure
 
