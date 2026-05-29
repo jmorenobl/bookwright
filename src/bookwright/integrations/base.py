@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
+from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar
 
 from bookwright.integrations.constants import SKILL_PLACEHOLDER_MARKER_NAME
@@ -30,10 +31,13 @@ class SkillsIntegration:
 
     # Sentinel defaults — every concrete subclass MUST override `key`,
     # `config`, and `default_skills_dir`. The empty-string sentinel on
-    # `key` ensures a forgetful subclass collides with any other forgetful
-    # subclass on the registry, surfacing as DuplicateRegistrationError.
+    # `key` is caught by `_register` (R13). `config`'s default is a
+    # frozen `MappingProxyType` (R19) so a forgetful subclass that
+    # accidentally writes `cls.config['x'] = 'y'` raises TypeError
+    # instead of silently mutating the shared base dict and polluting
+    # every other forgetful subclass.
     key: ClassVar[str] = ""
-    config: ClassVar[dict[str, str | bool]] = {}
+    config: ClassVar[Mapping[str, str | bool]] = MappingProxyType({})
     default_skills_dir: ClassVar[str] = ""
 
     supports_dynamic_context: ClassVar[bool] = False

@@ -39,9 +39,10 @@ _SRC_ROOT = pathlib.Path(__file__).resolve().parents[2] / "src" / "bookwright" /
 # If you intentionally edit any of these files, recompute its sha256 and
 # update the value below; the diff makes the change auditable.
 _PINNED_FILE_HASHES: dict[str, str] = {
-    # base.py refreshed in R6: setup() now also rejects `target == project_root`
-    # (empty / `.` / `./` skills_dir values) with rule `resolves_to_project_root`.
-    "base.py": "ab33fc0c08485bddcbe449de0a5fcfe6bc64593bb1c7daca4997dfedf7875847",
+    # base.py refreshed in R19: `config: ClassVar[dict] = {}` replaced with
+    # `MappingProxyType({})` so a forgetful subclass that mutates the
+    # shared default raises TypeError instead of polluting siblings.
+    "base.py": "ea47db16dd4d11613a66b26b9efb55f2ba59818b9e63674a264388368e52b48f",
     "claude/__init__.py": "cd981edd40b5a2cf2de33600f4935accc07d3d77f06241e6740e8f95e0d39ab5",
     "generic/__init__.py": "eff8e531d559ac3c9512c1987593fd07a6ea777cd2b2ed768659642a2ea3c359",
 }

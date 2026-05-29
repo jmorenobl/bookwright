@@ -51,6 +51,17 @@ def test_base_capability_flags_default_false() -> None:
     assert SkillsIntegration.supports_tool_restrictions is False
 
 
+def test_base_config_default_is_immutable() -> None:
+    """R19 — `SkillsIntegration.config`'s default is a frozen mapping so
+    accidental writes (`cls.config['x'] = 'y'`) raise TypeError instead
+    of silently mutating the shared base dict and polluting every other
+    forgetful subclass for the rest of the process.
+    """
+
+    with pytest.raises(TypeError):
+        SkillsIntegration.config["accidental"] = "write"  # type: ignore[index]
+
+
 # ---------- FR-011 negative assertion: capability flags are pure metadata in v0 ----------
 
 
