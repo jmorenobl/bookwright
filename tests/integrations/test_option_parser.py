@@ -242,9 +242,7 @@ def test_default_applied_on_empty_input(raw: str | None) -> None:
 def test_default_not_overridden_when_user_supplies_value() -> None:
     """R8 — user-supplied value takes precedence over the declared default."""
 
-    assert parse_options("--scope project", _FakeWithDefaultIntegration) == {
-        "scope": "project"
-    }
+    assert parse_options("--scope project", _FakeWithDefaultIntegration) == {"scope": "project"}
 
 
 def test_default_satisfies_required_when_user_omits_flag() -> None:
@@ -257,9 +255,7 @@ def test_default_satisfies_required_when_user_omits_flag() -> None:
         @classmethod
         def options(cls) -> list[IntegrationOption]:
             return [
-                IntegrationOption(
-                    flag="--scope", type="string", required=True, default="all"
-                ),
+                IntegrationOption(flag="--scope", type="string", required=True, default="all"),
                 IntegrationOption(flag="--opt", type="string", required=False),
             ]
 

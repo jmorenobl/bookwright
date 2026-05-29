@@ -41,11 +41,7 @@ class _IntegrationError(Exception):
         return {
             "code": self.code,
             "message": self.message,
-            **{
-                k: v
-                for k, v in vars(self).items()
-                if not k.startswith("_") and k != "message"
-            },
+            **{k: v for k, v in vars(self).items() if not k.startswith("_") and k != "message"},
         }
 
 
