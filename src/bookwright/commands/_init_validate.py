@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from bookwright.commands._init_envelope import emit_error
+
 ProjectNameRule = Literal[
     "empty",
     "path_separator",
@@ -85,3 +87,81 @@ def check_slug_not_reserved(slug: str) -> str:
     if _is_reserved(slug):
         raise InvalidProjectNameError(value=slug, rule="reserved_name")
     return slug
+
+
+def check_mutex(project_name: str | None, here: bool, *, json_output: bool) -> None:
+    """FR-002 — exactly one of ``PROJECT_NAME`` / ``--here`` is required.
+
+    Emits a ``mutually_exclusive`` envelope and exits with code 2 on
+    violation.
+    """
+
+    if project_name is not None and here:
+        emit_error(
+            code="mutually_exclusive",
+            message="PROJECT_NAME and --here are mutually exclusive",
+            details={},
+            exit_code=2,
+            json_output=json_output,
+            rolled_back=False,
+        )
+    if project_name is None and not here:
+        emit_error(
+            code="mutually_exclusive",
+            message="must specify PROJECT_NAME or --here",
+            details={},
+            exit_code=2,
+            json_output=json_output,
+            rolled_back=False,
+        )
+
+
+def parse_named_name(value: str, json_output: bool) -> str:
+    """Run ``validate_project_name`` and translate failures to an envelope."""
+
+    try:
+        return validate_project_name(value)
+    except InvalidProjectNameError as exc:
+        emit_error(
+            code=exc.code,
+            message=str(exc),
+            details={"value": exc.value, "rule": exc.rule},
+            exit_code=2,
+            json_output=json_output,
+            rolled_back=False,
+        )
+
+
+def parse_here_basename(basename: str, json_output: bool) -> str:
+    """Reduced FR-021a check for ``--here``: empty / path-separator / reserved only."""
+
+    if not basename.strip():
+        emit_error(
+            code="invalid_project_name",
+            message="current directory basename is empty",
+            details={"value": basename, "rule": "empty"},
+            exit_code=2,
+            json_output=json_output,
+            rolled_back=False,
+        )
+    if "/" in basename or "\\" in basename:
+        emit_error(
+            code="invalid_project_name",
+            message=f"current directory basename {basename!r} contains a path separator",
+            details={"value": basename, "rule": "path_separator"},
+            exit_code=2,
+            json_output=json_output,
+            rolled_back=False,
+        )
+    try:
+        check_slug_not_reserved(basename)
+    except InvalidProjectNameError as exc:
+        emit_error(
+            code=exc.code,
+            message=str(exc),
+            details={"value": exc.value, "rule": exc.rule},
+            exit_code=2,
+            json_output=json_output,
+            rolled_back=False,
+        )
+    return basename

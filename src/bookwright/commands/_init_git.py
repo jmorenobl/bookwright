@@ -13,8 +13,10 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from bookwright.commands._init_scaffold import BackupLedger
+if TYPE_CHECKING:
+    from bookwright.commands._init_scaffold import BackupLedger
 
 _FALLBACK_EMAIL = "author@bookwright.local"
 

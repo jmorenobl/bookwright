@@ -15,6 +15,7 @@ import contextlib
 import os
 import secrets
 import shutil
+import sys
 import tempfile
 from dataclasses import dataclass
 from importlib.resources import as_file, files
@@ -24,10 +25,21 @@ from typing import TYPE_CHECKING, Any
 
 import jinja2
 
+from bookwright import integrations as _integrations
+from bookwright.commands import _init_envelope, _init_git
+from bookwright.core.manifest import Manifest
+
 if TYPE_CHECKING:
-    from bookwright.core.manifest import Manifest
+    from bookwright.commands._init_envelope import ResolvedInvocation
 
 _BACKUP_SUBDIR = Path(".bookwright/cache/backup")
+
+COMMIT_MESSAGE = "Initial commit from bookwright init"
+
+GIT_MISSING_WARNING = (
+    "bookwright: warning: git not found on PATH; project created without a repository"
+)
+GIT_EXISTING_WARNING = "bookwright: warning: existing .git/ detected; skipped git init and commit"
 
 
 class BackupCreationError(Exception):
@@ -294,3 +306,102 @@ def copy_resource_file(
     with as_file(node) as src:
         payload = Path(src).read_bytes()
     write_bytes_atomic(target, payload, ledger)
+
+
+def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previously-resolved input in one call
+    *,
+    resolved: ResolvedInvocation,
+    integration_cls: type[_integrations.SkillsIntegration],
+    parsed_options: dict[str, str | bool],
+    ledger: BackupLedger,
+    json_output: bool,
+    warnings: list[str],
+    no_git: bool,
+    author_name: str,
+    use_git: bool,
+) -> ResolvedInvocation:
+    """All filesystem mutations + integration setup + git step.
+
+    The orchestrator behind ``bookwright init``'s success path: renders
+    the packaged template tree, dumps the manifest, copies vocabularies,
+    runs the integration's ``setup()`` and finally ``git init + commit``
+    when applicable. Returns ``resolved`` with ``git_status`` filled in.
+    """
+
+    project_root = Path(resolved.project_root)
+
+    template_context = {
+        "title": resolved.title,
+        "project_slug": resolved.project_slug,
+        "author": resolved.authors[0],
+        "language": resolved.language,
+        "integration_key": resolved.integration_key,
+    }
+
+    # 1) Render the packaged template tree.
+    render_resource_tree(project_root, template_context, ledger)
+
+    # 2) Build and dump the manifest.
+    manifest = Manifest.build(
+        title=resolved.title,
+        authors=list(resolved.authors),
+        integration_key=resolved.integration_key,
+        integration_skills_dir=resolved.integration_skills_dir,
+        integration_options=dict(parsed_options),
+        language=resolved.language,
+        type="novel",
+        status="idea",
+        uri_base=f"https://example.org/{resolved.project_slug}/",
+    )
+    dump_manifest_tracked(manifest, project_root / "manifest.toml", ledger)
+
+    # 3) Copy bundled vocabularies into .bookwright/vocabularies/.
+    vocab_target = project_root / ".bookwright" / "vocabularies"
+    mkdir_tracked(vocab_target, ledger)
+    for vocab in ("propp.ttl", "greimas.ttl"):
+        copy_resource_file(
+            "bookwright.resources.vocabularies",
+            vocab,
+            vocab_target / vocab,
+            ledger,
+        )
+
+    # 4) Wire the integration's setup() through the ledger.
+    skills_target = project_root / integration_cls().resolve_skills_dir(parsed_options)
+    mkdir_tracked(skills_target, ledger)
+    marker = skills_target / _integrations.SKILL_PLACEHOLDER_MARKER_NAME
+    if not marker.exists():
+        ledger.record_new_file(marker)
+    integration_cls().setup(project_root, manifest, parsed_options)
+
+    # 5) Write the init-options record. The git_status is filled in below.
+    if no_git:
+        resolved = resolved.model_copy(update={"git_status": "skipped_by_flag"})
+    elif not use_git:
+        resolved = resolved.model_copy(update={"git_status": "skipped_no_binary"})
+    elif _init_git.is_inside_existing_repo(project_root):
+        resolved = resolved.model_copy(update={"git_status": "skipped_existing_repo"})
+    else:
+        resolved = resolved.model_copy(update={"git_status": "initialized"})
+
+    record = _init_envelope.build_options_record(resolved)
+    options_payload = _init_envelope.serialize_options_record(record)
+    write_bytes_atomic(
+        project_root / ".bookwright" / "init-options.json",
+        options_payload,
+        ledger,
+    )
+
+    # 6) Run git init + commit if applicable.
+    if resolved.git_status == "initialized":
+        _init_git.init_and_commit(project_root, COMMIT_MESSAGE, author_name, ledger)
+    elif resolved.git_status == "skipped_existing_repo":
+        warnings.append(GIT_EXISTING_WARNING)
+        if not json_output:
+            sys.stderr.write(GIT_EXISTING_WARNING + "\n")
+    elif resolved.git_status == "skipped_no_binary":
+        warnings.append(GIT_MISSING_WARNING)
+        if not json_output:
+            sys.stderr.write(GIT_MISSING_WARNING + "\n")
+
+    return resolved

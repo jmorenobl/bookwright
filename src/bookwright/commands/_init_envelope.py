@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, NoReturn
 
+import typer
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from bookwright import __version__ as _BOOKWRIGHT_VERSION
@@ -149,17 +151,89 @@ def error_envelope(
 def dump_success_to_stdout(payload: dict[str, Any]) -> None:
     """Write the success envelope to stdout (contract §3.1 encoding)."""
 
-    import sys  # noqa: PLC0415 — keeps the module importable in headless tests
-
     sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
 
 
 def dump_error_to_stdout(payload: dict[str, Any]) -> None:
     """Write the error envelope to stdout (contract §3.2 encoding)."""
 
-    import sys  # noqa: PLC0415 — keeps the module importable in headless tests
-
     sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+
+
+def emit_error(  # noqa: PLR0913 — structured-error envelope demands all six fields
+    *,
+    code: str,
+    message: str,
+    details: dict[str, Any],
+    exit_code: int,
+    json_output: bool,
+    rolled_back: bool,
+) -> NoReturn:
+    """Build and emit the error envelope, then raise ``typer.Exit(exit_code)``.
+
+    JSON callers get a single envelope on stdout (contract §3.2); humans
+    get a single ``bookwright: error: <message>`` line on stderr. Always
+    raises — callers can rely on ``NoReturn`` for control-flow analysis.
+    """
+
+    if json_output:
+        payload = error_envelope(
+            code=code, message=message, details=details, rolled_back=rolled_back
+        )
+        dump_error_to_stdout(payload)
+    else:
+        sys.stderr.write(f"bookwright: error: {message}\n")
+    raise typer.Exit(exit_code)
+
+
+def classify_filesystem_failure(exc: BaseException) -> tuple[str, int, dict[str, Any]]:
+    """Map a scaffold-time exception to ``(code, exit_code, details)`` (contract §4).
+
+    Lazy-imports the scaffold/git exception types to avoid a module-load
+    cycle (scaffold imports this module for the options-record helpers).
+    """
+
+    from bookwright.commands._init_git import GitInitError  # noqa: PLC0415 — break cycle
+    from bookwright.commands._init_scaffold import (  # noqa: PLC0415 — break cycle
+        BackupCreationError,
+        TargetOutsideProjectRootError,
+    )
+
+    if isinstance(exc, BackupCreationError):
+        return (
+            "backup_creation_error",
+            6,
+            {"target": str(exc.target), "reason": exc.reason},
+        )
+    if isinstance(exc, PermissionError):
+        return (
+            "permission_denied",
+            6,
+            {"path": str(getattr(exc, "filename", "") or ""), "errno": exc.errno or 0},
+        )
+    if isinstance(exc, GitInitError):
+        return (
+            "git_error",
+            7,
+            {"stderr": exc.stderr},
+        )
+    if isinstance(exc, TargetOutsideProjectRootError):
+        return (
+            "filesystem_error",
+            6,
+            {"path": str(exc.target), "errno": 0},
+        )
+    if isinstance(exc, OSError):
+        return (
+            "filesystem_error",
+            6,
+            {"path": str(getattr(exc, "filename", "") or ""), "errno": exc.errno or 0},
+        )
+    return (
+        "filesystem_error",
+        6,
+        {"path": "", "errno": 0},
+    )
 
 
 def build_options_record(resolved: ResolvedInvocation) -> InitOptionsRecord:

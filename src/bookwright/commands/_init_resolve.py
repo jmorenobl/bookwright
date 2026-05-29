@@ -14,6 +14,8 @@ from pathlib import Path
 
 from slugify import slugify
 
+from bookwright import integrations as _integrations
+from bookwright.commands._init_envelope import emit_error
 from bookwright.commands._init_validate import (
     InvalidProjectNameError,
     check_slug_not_reserved,
@@ -22,6 +24,11 @@ from bookwright.core.iso639_1 import ISO_639_1_CODES
 
 AUTHOR_SENTINEL = "Unknown Author"
 DEFAULT_LANGUAGE = "es"
+
+AUTHOR_FALLBACK_WARNING = (
+    "bookwright: warning: author could not be resolved from git config or $USER; "
+    "using 'Unknown Author'"
+)
 
 
 def _git_config_user_name(cwd: Path) -> str | None:
@@ -111,3 +118,76 @@ def is_interactive() -> bool:
     """``True`` when stdin AND stdout are both TTYs (research §R7)."""
 
     return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def parse_named_slug(name: str, json_output: bool) -> str:
+    """Run ``derive_slug`` and translate failures to an envelope."""
+
+    try:
+        return derive_slug(name)
+    except InvalidProjectNameError as exc:
+        emit_error(
+            code=exc.code,
+            message=str(exc),
+            details={"value": exc.value, "rule": exc.rule},
+            exit_code=2,
+            json_output=json_output,
+            rolled_back=False,
+        )
+
+
+def resolve_authors_or_warn(
+    project_root: Path,
+    warnings: list[str],
+    *,
+    json_output: bool,
+) -> list[str]:
+    """Resolve authors and emit the FR-016 fallback warning on stderr if used."""
+
+    authors, fellback = resolve_authors(project_root)
+    if fellback:
+        warnings.append(AUTHOR_FALLBACK_WARNING)
+        if not json_output:
+            sys.stderr.write(AUTHOR_FALLBACK_WARNING + "\n")
+    return authors
+
+
+def resolve_integration(
+    key: str,
+    raw_options: str,
+    *,
+    json_output: bool,
+) -> tuple[type[_integrations.SkillsIntegration], dict[str, str | bool]]:
+    """Look up the integration class and parse its options, emitting on failure."""
+
+    try:
+        integration_cls = _integrations.get(key)
+    except _integrations.UnknownIntegrationError as exc:
+        details = {k: v for k, v in exc.to_dict().items() if k not in {"code", "message"}}
+        emit_error(
+            code=exc.code,
+            message=exc.message,
+            details=details,
+            exit_code=5,
+            json_output=json_output,
+            rolled_back=False,
+        )
+
+    try:
+        parsed_options = _integrations.parse_options(raw_options, integration_cls)
+    except (
+        _integrations.UnknownOptionError,
+        _integrations.MalformedOptionError,
+        _integrations.InvalidOptionDeclarationError,
+    ) as exc:
+        details = {k: v for k, v in exc.to_dict().items() if k not in {"code", "message"}}
+        emit_error(
+            code=exc.code,
+            message=exc.message,
+            details=details,
+            exit_code=5,
+            json_output=json_output,
+            rolled_back=False,
+        )
+
+    return integration_cls, parsed_options
