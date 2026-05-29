@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from bookwright.commands._init_envelope import emit_error
+from .envelope import emit_error
 
 ProjectNameRule = Literal[
     "empty",

@@ -36,7 +36,7 @@ def non_interactive_io(monkeypatch: pytest.MonkeyPatch) -> None:
     """Force ``is_interactive()`` to return ``False`` for ``--here`` refusal tests."""
 
     monkeypatch.setattr(
-        "bookwright.commands._init_resolve.is_interactive",
+        "bookwright.commands.init.resolve.is_interactive",
         lambda: False,
     )
 
@@ -46,7 +46,7 @@ def fake_git_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Force ``git_available()`` to return ``False`` regardless of PATH."""
 
     monkeypatch.setattr(
-        "bookwright.commands._init_git.git_available",
+        "bookwright.commands.init.git.git_available",
         lambda: False,
     )
 

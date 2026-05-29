@@ -11,9 +11,9 @@ from pathlib import Path
 
 import typer
 
-from bookwright.commands import _init_resolve
-from bookwright.commands._init_envelope import emit_error
-from bookwright.commands._init_scaffold import BackupLedger
+from . import resolve
+from .envelope import emit_error
+from .scaffold import BackupLedger
 
 
 def apply_named_conflict_matrix(
@@ -74,7 +74,7 @@ def apply_here_conflict_matrix(
         return
     if force:
         return
-    if not _init_resolve.is_interactive() or json_output:
+    if not resolve.is_interactive() or json_output:
         emit_error(
             code="non_interactive_here",
             message="--here in a non-empty directory requires --force in non-interactive runs",

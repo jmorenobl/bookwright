@@ -15,12 +15,13 @@ from pathlib import Path
 from slugify import slugify
 
 from bookwright import integrations as _integrations
-from bookwright.commands._init_envelope import emit_error
-from bookwright.commands._init_validate import (
+from bookwright.core.iso639_1 import ISO_639_1_CODES
+
+from .envelope import emit_error
+from .validate import (
     InvalidProjectNameError,
     check_slug_not_reserved,
 )
-from bookwright.core.iso639_1 import ISO_639_1_CODES
 
 AUTHOR_SENTINEL = "Unknown Author"
 DEFAULT_LANGUAGE = "es"

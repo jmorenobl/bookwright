@@ -182,8 +182,8 @@ find src/bookwright/commands -maxdepth 1 -type f -name '*.py'      # expect: __i
 find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __init__.py, main.py, conflict.py, envelope.py, git.py, resolve.py, scaffold.py, validate.py
 ```
 
-- [ ] T038 Create the new package directory and relocate the Typer entry-point with history-preserving moves: `mkdir src/bookwright/commands/init` then `git mv src/bookwright/commands/init.py src/bookwright/commands/init/main.py`. The file's body is unchanged in this task — only its path moves. Intra-file import rewrites land in T040.
-- [ ] T039 [P] Relocate the six helper modules with history-preserving moves, dropping the `_init_` prefix (the parent `init/` package now provides the namespace per [review.md](review.md) §4 R1 migration map):
+- [X] T038 Create the new package directory and relocate the Typer entry-point with history-preserving moves: `mkdir src/bookwright/commands/init` then `git mv src/bookwright/commands/init.py src/bookwright/commands/init/main.py`. The file's body is unchanged in this task — only its path moves. Intra-file import rewrites land in T040.
+- [X] T039 [P] Relocate the six helper modules with history-preserving moves, dropping the `_init_` prefix (the parent `init/` package now provides the namespace per [review.md](review.md) §4 R1 migration map):
   - `git mv src/bookwright/commands/_init_conflict.py src/bookwright/commands/init/conflict.py`
   - `git mv src/bookwright/commands/_init_envelope.py src/bookwright/commands/init/envelope.py`
   - `git mv src/bookwright/commands/_init_git.py src/bookwright/commands/init/git.py`
@@ -192,7 +192,7 @@ find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __i
   - `git mv src/bookwright/commands/_init_validate.py src/bookwright/commands/init/validate.py`
 
   Six independent moves bundled into one task because each is mechanical and they share the same prerequisite (T038 must have created `init/`). File bodies are unchanged in this task — intra-package import rewrites land in T040 + T042 + T043. Sequential after T038.
-- [ ] T040 [P] Create [src/bookwright/commands/init/__init__.py](src/bookwright/commands/init/__init__.py) as the package's public-surface marker. Body:
+- [X] T040 [P] Create [src/bookwright/commands/init/__init__.py](src/bookwright/commands/init/__init__.py) as the package's public-surface marker. Body:
 
   ```python
   """Public surface for the `bookwright init` subcommand package."""
@@ -202,7 +202,7 @@ find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __i
   ```
 
   This keeps [src/bookwright/cli.py](src/bookwright/cli.py)'s `from bookwright.commands import init` + `app.command(...)(init.run)` + `init.CONTEXT_SETTINGS` registration shape working unchanged. Sequential after T038 (the directory must exist).
-- [ ] T041 [P] Rewrite intra-package imports inside [src/bookwright/commands/init/main.py](src/bookwright/commands/init/main.py):
+- [X] T041 [P] Rewrite intra-package imports inside [src/bookwright/commands/init/main.py](src/bookwright/commands/init/main.py):
   - Replace the absolute-import block
 
     ```python
@@ -228,7 +228,7 @@ find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __i
   - Also remove the line-6 docstring sentence `"git step to the ``_init_*.py`` private siblings."` — replace with `"git step to the package's private sibling modules."` to match the new layout.
 
   Sequential after T038 + T039.
-- [ ] T042 [P] Rewrite cross-helper imports inside the package's siblings (each becomes a relative intra-package import; each file edited independently):
+- [X] T042 [P] Rewrite cross-helper imports inside the package's siblings (each becomes a relative intra-package import; each file edited independently):
   - [src/bookwright/commands/init/conflict.py](src/bookwright/commands/init/conflict.py): `from bookwright.commands import _init_resolve` → `from . import resolve`; `from bookwright.commands._init_envelope import emit_error` → `from .envelope import emit_error`; `from bookwright.commands._init_scaffold import BackupLedger` → `from .scaffold import BackupLedger`. Rename the one body reference `_init_resolve.is_interactive` → `resolve.is_interactive`.
   - [src/bookwright/commands/init/resolve.py](src/bookwright/commands/init/resolve.py): `from bookwright.commands._init_envelope import emit_error` → `from .envelope import emit_error`; `from bookwright.commands._init_validate import (...)` → `from .validate import (...)` (preserve the import-from list verbatim).
   - [src/bookwright/commands/init/validate.py](src/bookwright/commands/init/validate.py): `from bookwright.commands._init_envelope import emit_error` → `from .envelope import emit_error`.
@@ -236,7 +236,7 @@ find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __i
   - [src/bookwright/commands/init/git.py](src/bookwright/commands/init/git.py): the `TYPE_CHECKING` guard at line 19 (`from bookwright.commands._init_scaffold import BackupLedger`) → `from .scaffold import BackupLedger`.
 
   Five independent files (different boundaries from T041); bundled into one task so the search-replace pass runs once. Sequential after T038 + T039.
-- [ ] T043 [P] Drop the lazy-import workaround in [src/bookwright/commands/init/envelope.py](src/bookwright/commands/init/envelope.py) `classify_filesystem_failure(...)` per [review.md](review.md) §3 R2:
+- [X] T043 [P] Drop the lazy-import workaround in [src/bookwright/commands/init/envelope.py](src/bookwright/commands/init/envelope.py) `classify_filesystem_failure(...)` per [review.md](review.md) §3 R2:
   - Move the two function-local imports (lines 196–200)
 
     ```python
@@ -257,7 +257,7 @@ find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __i
   - Drop the two `# noqa: PLC0415 — break cycle` annotations and the function's "Lazy-imports the scaffold/git exception types to avoid a module-load cycle (scaffold imports this module for the options-record helpers)." docstring paragraph — the package layout makes the cycle disappear because Python resolves intra-package submodules without re-entering the parent `bookwright.commands` package. `ruff check` MUST stay green; if `PLC0415` flags any other site in this file after the move, that is a regression to fix at the source.
 
   Sequential after T038 + T039; independent of T041 + T042 (different file).
-- [ ] T044 [P] Rewrite the AST-invariant glob in [tests/commands/test_init_ast_invariants.py](tests/commands/test_init_ast_invariants.py): replace the two-pattern glob at line 17
+- [X] T044 [P] Rewrite the AST-invariant glob in [tests/commands/test_init_ast_invariants.py](tests/commands/test_init_ast_invariants.py): replace the two-pattern glob at line 17
 
   ```python
   _INIT_FILES = sorted(list(_INIT_DIR.glob("init.py")) + list(_INIT_DIR.glob("_init_*.py")))
@@ -270,7 +270,7 @@ find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __i
   ```
 
   The new glob picks up every `.py` inside the `init/` package (including `__init__.py` and `main.py`); FR-015 / FR-006 / contract § 7.3 / § 7.4 invariants are pinned across the whole package surface. The test parametrize IDs (`[p.name for p in _INIT_FILES]`) remain meaningful — they just show the new short names (`main.py`, `envelope.py`, …). Sequential after T038 + T039.
-- [ ] T045 [P] Update helper-import sites across the test suite (mechanical rewrite — every match of `bookwright.commands._init_<X>` becomes `bookwright.commands.init.<X>`, and every Python-level module alias `_init_<X>` becomes `<X>`). Concrete impact (from `grep -n _init_ tests/commands/*.py` at the time of writing):
+- [X] T045 [P] Update helper-import sites across the test suite (mechanical rewrite — every match of `bookwright.commands._init_<X>` becomes `bookwright.commands.init.<X>`, and every Python-level module alias `_init_<X>` becomes `<X>`). Concrete impact (from `grep -n _init_ tests/commands/*.py` at the time of writing):
   - [tests/commands/conftest.py](tests/commands/conftest.py): two `monkeypatch.setattr` string sites (`bookwright.commands._init_resolve.is_interactive`, `bookwright.commands._init_git.git_available`).
   - [tests/commands/test_init_branches.py](tests/commands/test_init_branches.py): four `monkeypatch.setattr` string sites (`_init_resolve._git_config_user_name` ×2, `_init_resolve.is_interactive` ×2).
   - [tests/commands/test_init_helpers.py](tests/commands/test_init_helpers.py): the file-level import block
@@ -317,7 +317,7 @@ find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __i
   ```
 
   Audit the diff manually after — the second pass is broad enough that a stray match would be visible in a `git diff`. Sequential after T039 (the new module paths must exist for `pytest --collect-only` to succeed).
-- [ ] T046 Re-run the iteration-4 quality gate (the same five commands T035 ran, with the new module paths) to confirm zero behavioural drift:
+- [X] T046 Re-run the iteration-4 quality gate (the same five commands T035 ran, with the new module paths) to confirm zero behavioural drift:
 
   ```bash
   uv run pytest --cov=src/bookwright/commands/init --cov-fail-under=95

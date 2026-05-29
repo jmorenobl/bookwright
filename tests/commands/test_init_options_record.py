@@ -13,7 +13,7 @@ from typer.testing import CliRunner
 
 from bookwright import __version__ as _BOOKWRIGHT_VERSION
 from bookwright.cli import app
-from bookwright.commands._init_envelope import InitOptionsRecord, ResolvedInvocation
+from bookwright.commands.init.envelope import InitOptionsRecord, ResolvedInvocation
 
 _ISO_UTC_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 

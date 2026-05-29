@@ -14,7 +14,7 @@ import pytest
 
 _INIT_DIR = Path(__file__).parent.parent.parent / "src" / "bookwright" / "commands"
 
-_INIT_FILES = sorted(list(_INIT_DIR.glob("init.py")) + list(_INIT_DIR.glob("_init_*.py")))
+_INIT_FILES = sorted((_INIT_DIR / "init").glob("*.py"))
 
 _FORBIDDEN_TOMLKIT = {"dumps", "dump", "parse", "loads", "load"}
 

@@ -133,7 +133,7 @@ def test_filesystem_error_rolls_back(
             raise OSError(28, "fake no space")
         real_replace(src, dst)
 
-    monkeypatch.setattr("bookwright.commands._init_scaffold.os.replace", flaky_replace)
+    monkeypatch.setattr("bookwright.commands.init.scaffold.os.replace", flaky_replace)
 
     snapshot = dirhash(scaffold_in_tmp)
 
@@ -181,7 +181,7 @@ def test_backup_creation_error_rolls_back(
     def flaky_copy(src: str, dst: str) -> None:
         raise PermissionError("backup forbidden")
 
-    monkeypatch.setattr("bookwright.commands._init_scaffold.shutil.copy2", flaky_copy)
+    monkeypatch.setattr("bookwright.commands.init.scaffold.shutil.copy2", flaky_copy)
 
     target = scaffold_in_tmp / "mi-libro"
     target.mkdir()
@@ -216,12 +216,12 @@ def test_git_error_rolls_back(
 ) -> None:
     """Forced git failure → git_error + clean rollback."""
 
-    from bookwright.commands import _init_git  # noqa: PLC0415
+    from bookwright.commands.init import git  # noqa: PLC0415
 
     def boom(*args, **kwargs):  # type: ignore[no-untyped-def]
-        raise _init_git.GitInitError(stderr="fake git failure")
+        raise git.GitInitError(stderr="fake git failure")
 
-    monkeypatch.setattr(_init_git, "init_and_commit", boom)
+    monkeypatch.setattr(git, "init_and_commit", boom)
 
     snapshot = dirhash(scaffold_in_tmp)
 

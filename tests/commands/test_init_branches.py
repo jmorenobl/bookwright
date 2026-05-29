@@ -44,7 +44,7 @@ def test_author_fallback_warning_to_stderr(
     """When the author falls back to the sentinel, stderr gets the warning."""
 
     monkeypatch.setattr(
-        "bookwright.commands._init_resolve._git_config_user_name",
+        "bookwright.commands.init.resolve._git_config_user_name",
         lambda _cwd: None,
     )
     monkeypatch.delenv("USER", raising=False)
@@ -65,7 +65,7 @@ def test_author_fallback_warning_non_json_to_stderr(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "bookwright.commands._init_resolve._git_config_user_name",
+        "bookwright.commands.init.resolve._git_config_user_name",
         lambda _cwd: None,
     )
     monkeypatch.delenv("USER", raising=False)
@@ -112,7 +112,7 @@ def test_confirm_accepts_overwrite(
     (subdir / "keep.txt").write_text("keep", encoding="utf-8")
     os.chdir(subdir)
 
-    monkeypatch.setattr("bookwright.commands._init_resolve.is_interactive", lambda: True)
+    monkeypatch.setattr("bookwright.commands.init.resolve.is_interactive", lambda: True)
 
     result = runner.invoke(app, ["init", "--here", "--no-git"], input="y\n")
     assert result.exit_code == 0, result.stdout
@@ -127,7 +127,7 @@ def test_confirm_declines_overwrite(
     (subdir / "keep.txt").write_text("keep", encoding="utf-8")
     os.chdir(subdir)
 
-    monkeypatch.setattr("bookwright.commands._init_resolve.is_interactive", lambda: True)
+    monkeypatch.setattr("bookwright.commands.init.resolve.is_interactive", lambda: True)
 
     result = runner.invoke(app, ["init", "--here", "--no-git"], input="n\n")
     assert result.exit_code == 4

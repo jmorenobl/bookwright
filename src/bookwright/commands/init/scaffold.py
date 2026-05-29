@@ -26,11 +26,12 @@ from typing import TYPE_CHECKING, Any
 import jinja2
 
 from bookwright import integrations as _integrations
-from bookwright.commands import _init_envelope, _init_git
 from bookwright.core.manifest import Manifest
 
+from . import envelope, git
+
 if TYPE_CHECKING:
-    from bookwright.commands._init_envelope import ResolvedInvocation
+    from .envelope import ResolvedInvocation
 
 _BACKUP_SUBDIR = Path(".bookwright/cache/backup")
 
@@ -379,13 +380,13 @@ def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previou
         resolved = resolved.model_copy(update={"git_status": "skipped_by_flag"})
     elif not use_git:
         resolved = resolved.model_copy(update={"git_status": "skipped_no_binary"})
-    elif _init_git.is_inside_existing_repo(project_root):
+    elif git.is_inside_existing_repo(project_root):
         resolved = resolved.model_copy(update={"git_status": "skipped_existing_repo"})
     else:
         resolved = resolved.model_copy(update={"git_status": "initialized"})
 
-    record = _init_envelope.build_options_record(resolved)
-    options_payload = _init_envelope.serialize_options_record(record)
+    record = envelope.build_options_record(resolved)
+    options_payload = envelope.serialize_options_record(record)
     write_bytes_atomic(
         project_root / ".bookwright" / "init-options.json",
         options_payload,
@@ -394,7 +395,7 @@ def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previou
 
     # 6) Run git init + commit if applicable.
     if resolved.git_status == "initialized":
-        _init_git.init_and_commit(project_root, COMMIT_MESSAGE, author_name, ledger)
+        git.init_and_commit(project_root, COMMIT_MESSAGE, author_name, ledger)
     elif resolved.git_status == "skipped_existing_repo":
         warnings.append(GIT_EXISTING_WARNING)
         if not json_output:

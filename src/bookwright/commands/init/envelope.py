@@ -21,6 +21,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from bookwright import __version__ as _BOOKWRIGHT_VERSION
 from bookwright.core.iso639_1 import ISO_639_1_CODES
 
+from .git import GitInitError
+from .scaffold import BackupCreationError, TargetOutsideProjectRootError
+
 SCHEMA_VERSION = 1
 
 _ISO_UTC_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
@@ -187,17 +190,7 @@ def emit_error(  # noqa: PLR0913 — structured-error envelope demands all six f
 
 
 def classify_filesystem_failure(exc: BaseException) -> tuple[str, int, dict[str, Any]]:
-    """Map a scaffold-time exception to ``(code, exit_code, details)`` (contract §4).
-
-    Lazy-imports the scaffold/git exception types to avoid a module-load
-    cycle (scaffold imports this module for the options-record helpers).
-    """
-
-    from bookwright.commands._init_git import GitInitError  # noqa: PLC0415 — break cycle
-    from bookwright.commands._init_scaffold import (  # noqa: PLC0415 — break cycle
-        BackupCreationError,
-        TargetOutsideProjectRootError,
-    )
+    """Map a scaffold-time exception to ``(code, exit_code, details)`` (contract §4)."""
 
     if isinstance(exc, BackupCreationError):
         return (

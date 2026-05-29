@@ -3,7 +3,7 @@
 Owns the Typer signature, the success-path orchestration, and the
 top-level ``try/except/ledger.rollback()`` wrapper. Delegates validation,
 resolution, conflict checks, scaffolding, envelope serialization, and the
-git step to the ``_init_*.py`` private siblings.
+git step to the package's private sibling modules.
 """
 
 from __future__ import annotations
@@ -15,15 +15,8 @@ from typing import Any, Literal
 import typer
 from rich.console import Console
 
-from bookwright.commands import (
-    _init_conflict,
-    _init_envelope,
-    _init_git,
-    _init_resolve,
-    _init_scaffold,
-    _init_validate,
-)
-from bookwright.commands._init_envelope import ResolvedInvocation
+from . import conflict, envelope, git, resolve, scaffold, validate
+from .envelope import ResolvedInvocation
 
 _REMOVED_FLAGS: dict[str, str] = {
     "--ai-skills": ("--ai-skills is no longer accepted; Agent Skills is now the only output mode"),
@@ -47,7 +40,7 @@ def _check_removed_flags(args: list[str], json_output: bool) -> None:
     for raw in args:
         bare = raw.partition("=")[0] if raw.startswith("--") else raw
         if bare in _REMOVED_FLAGS:
-            _init_envelope.emit_error(
+            envelope.emit_error(
                 code="removed_flag",
                 message=_REMOVED_FLAGS[bare],
                 details={"flag": bare, "modern": _REMOVED_FLAG_MODERN[bare]},
@@ -94,7 +87,7 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
 
     raw_args = list(ctx.args) if ctx.args else []
     _check_removed_flags(raw_args, json_output=json_output)
-    _init_validate.check_mutex(project_name, here, json_output=json_output)
+    validate.check_mutex(project_name, here, json_output=json_output)
 
     # Reconcile --ai with --integration.
     deprecated_seen: list[str] = []
@@ -114,30 +107,30 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     if here:
         project_root = Path.cwd().resolve()
         basename = project_root.name
-        _init_validate.parse_here_basename(basename, json_output)
+        validate.parse_here_basename(basename, json_output)
         title = basename
-        project_slug = _init_resolve.parse_named_slug(basename, json_output)
+        project_slug = resolve.parse_named_slug(basename, json_output)
         mode = "here"
         cleanup_project_root = False
     else:
         assert project_name is not None  # narrowed by mutex check
-        title = _init_validate.parse_named_name(project_name, json_output)
-        project_slug = _init_resolve.parse_named_slug(title, json_output)
+        title = validate.parse_named_name(project_name, json_output)
+        project_slug = resolve.parse_named_slug(title, json_output)
         project_root = (Path.cwd() / project_slug).resolve()
         mode = "named"
         cleanup_project_root = not project_root.exists()
 
     # Conflict matrix BEFORE author/integration resolution (which would touch git).
     if here:
-        _init_conflict.apply_here_conflict_matrix(project_root, force, json_output=json_output)
+        conflict.apply_here_conflict_matrix(project_root, force, json_output=json_output)
     else:
-        _init_conflict.apply_named_conflict_matrix(project_root, force, json_output=json_output)
+        conflict.apply_named_conflict_matrix(project_root, force, json_output=json_output)
 
     if not project_root.exists():
         try:
             project_root.mkdir(parents=True, exist_ok=False)
         except PermissionError as exc:
-            _init_envelope.emit_error(
+            envelope.emit_error(
                 code="permission_denied",
                 message=f"could not create {project_root}: {exc}",
                 details={"path": str(project_root), "errno": exc.errno or 0},
@@ -146,7 +139,7 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
                 rolled_back=False,
             )
         except OSError as exc:
-            _init_envelope.emit_error(
+            envelope.emit_error(
                 code="filesystem_error",
                 message=f"could not create {project_root}: {exc}",
                 details={"path": str(project_root), "errno": exc.errno or 0},
@@ -155,14 +148,14 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
                 rolled_back=False,
             )
 
-    authors = _init_resolve.resolve_authors_or_warn(project_root, warnings, json_output=json_output)
-    language = _init_resolve.resolve_language()
-    integration_cls, parsed_options = _init_resolve.resolve_integration(
+    authors = resolve.resolve_authors_or_warn(project_root, warnings, json_output=json_output)
+    language = resolve.resolve_language()
+    integration_cls, parsed_options = resolve.resolve_integration(
         integration, integration_options, json_output=json_output
     )
     skills_dir = integration_cls().resolve_skills_dir(parsed_options).as_posix()
 
-    use_git = _init_git.git_available() and not no_git
+    use_git = git.git_available() and not no_git
 
     resolved = ResolvedInvocation(
         mode=mode,
@@ -181,10 +174,10 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
         deprecated_flags_seen=list(deprecated_seen),
     )
 
-    ledger = _init_conflict.seed_backup_ledger(project_root, cleanup_project_root)
+    ledger = conflict.seed_backup_ledger(project_root, cleanup_project_root)
 
     try:
-        resolved = _init_scaffold.run_scaffold_steps(
+        resolved = scaffold.run_scaffold_steps(
             resolved=resolved,
             integration_cls=integration_cls,
             parsed_options=parsed_options,
@@ -203,8 +196,8 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
             shutil.rmtree(project_root, ignore_errors=True)
         if isinstance(exc, typer.Exit):
             raise
-        code, exit_code, details = _init_envelope.classify_filesystem_failure(exc)
-        _init_envelope.emit_error(
+        code, exit_code, details = envelope.classify_filesystem_failure(exc)
+        envelope.emit_error(
             code=code,
             message=str(exc) or code,
             details=details,
@@ -216,8 +209,8 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     ledger.commit()
 
     if json_output:
-        envelope = _init_envelope.success_envelope(resolved, warnings)
-        _init_envelope.dump_success_to_stdout(envelope)
+        payload = envelope.success_envelope(resolved, warnings)
+        envelope.dump_success_to_stdout(payload)
     else:
         Console(stderr=True, highlight=False, soft_wrap=True).print(
             f"bookwright: created [bold]{project_root}[/bold] "
