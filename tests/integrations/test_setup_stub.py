@@ -12,6 +12,7 @@ from bookwright.integrations import (
     SKILL_PLACEHOLDER_MARKER_NAME,
     ClaudeIntegration,
     GenericIntegration,
+    MalformedOptionError,
 )
 
 MARKER_NAME = SKILL_PLACEHOLDER_MARKER_NAME
@@ -146,6 +147,36 @@ def test_setup_does_not_read_manifest(
     # mypy: type-checker doesn't know setup() doesn't touch the manifest.
     GenericIntegration().setup(tmp_project, sentinel, None)  # type: ignore[arg-type]
     assert (tmp_project / ".agents/skills").is_dir()
+
+
+@pytest.mark.parametrize(
+    "escape_value",
+    [
+        "../escape/skills",
+        "../../etc/foo",
+        "a/../../escape",
+    ],
+)
+def test_generic_setup_rejects_skills_dir_escaping_project_root(
+    escape_value: str,
+    tmp_project: Path,
+    minimal_manifest: Manifest,
+) -> None:
+    """R4 — ``--skills-dir`` whose resolved target escapes ``project_root`` is rejected.
+
+    ``resolve_skills_dir`` still returns a not-absolute path; containment is
+    enforced one layer down in ``setup()`` where the absolute join happens.
+    """
+
+    with pytest.raises(MalformedOptionError) as exc_info:
+        GenericIntegration().setup(tmp_project, minimal_manifest, {"skills_dir": escape_value})
+
+    payload = exc_info.value.to_dict()
+    assert payload["code"] == "malformed_option"
+    assert payload["rule"] == "escapes_project_root"
+    assert payload["value"] == escape_value
+    # Default dir MUST NOT be created either.
+    assert (tmp_project / ".agents/skills").exists() is False
 
 
 @pytest.mark.parametrize(

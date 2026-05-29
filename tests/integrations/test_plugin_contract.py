@@ -39,7 +39,7 @@ _SRC_ROOT = pathlib.Path(__file__).resolve().parents[2] / "src" / "bookwright" /
 # If you intentionally edit any of these files, recompute its sha256 and
 # update the value below; the diff makes the change auditable.
 _PINNED_FILE_HASHES: dict[str, str] = {
-    "base.py": "e858f77903e8cc022caedf811a5306239bdcac73ebf88d6335e62cdae631efc8",
+    "base.py": "ffe99b76965f4ca457ec0c71254d4af999357d79acaa1521a25265159fbb2675",
     "claude/__init__.py": "cd981edd40b5a2cf2de33600f4935accc07d3d77f06241e6740e8f95e0d39ab5",
     "generic/__init__.py": "eff8e531d559ac3c9512c1987593fd07a6ea777cd2b2ed768659642a2ea3c359",
 }

@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
 from bookwright.integrations.constants import SKILL_PLACEHOLDER_MARKER_NAME
+from bookwright.integrations.errors import MalformedOptionError
 from bookwright.integrations.options import IntegrationOption
 
 if TYPE_CHECKING:
@@ -83,7 +84,11 @@ class SkillsIntegration:
         # `manifest` is part of the iteration-9 contract; unused in v0 body.
         del manifest
 
-        target = project_root / self.resolve_skills_dir(parsed_options)
+        resolved = self.resolve_skills_dir(parsed_options)
+        target = (project_root / resolved).resolve()
+        root = project_root.resolve()
+        if not target.is_relative_to(root):
+            raise MalformedOptionError(rule="escapes_project_root", value=str(resolved))
         target.mkdir(parents=True, exist_ok=True)
         marker = target / SKILL_PLACEHOLDER_MARKER_NAME
         if not marker.exists():

@@ -55,7 +55,14 @@ def test_resolved_paths_are_relative(
     integration_cls: type,
     parsed_options: dict[str, object] | None,
 ) -> None:
-    """FR-025 — every returned path is project-relative."""
+    """FR-025 — every returned path is project-relative.
+
+    Note: ``resolve_skills_dir`` only guarantees ``not is_absolute()``;
+    paths that *escape* ``project_root`` via ``..`` components are still
+    relative and pass here. Containment is enforced one layer down in
+    ``SkillsIntegration.setup()`` (see
+    ``test_setup_stub.test_generic_setup_rejects_skills_dir_escaping_project_root``).
+    """
 
     result = integration_cls().resolve_skills_dir(parsed_options)
     assert result.is_absolute() is False
