@@ -142,7 +142,7 @@ pre-invocation state (SC-005).
 class BackupEntry:
     target: Path                    # absolute path that was about to be written
     backup_path: Path | None        # None  → target did not exist (newly created)
-                                    # Path  → target existed; sibling backup file
+                                    # Path  → target existed; backup copy under <root>/.bookwright/cache/backup/<token>/
     was_directory: bool             # True  → mkdir entry; False → file write
 ```
 
@@ -151,9 +151,13 @@ dataclass itself):
 
 - `target` MUST be inside the project root. The writer refuses any
   path outside (FR-014).
-- When `backup_path is not None` it MUST be a sibling of `target`
-  under the project root (no `/tmp/` backups — they would violate
-  FR-014's "no files outside project root").
+- When `backup_path is not None` it MUST live under
+  `<project_root>/.bookwright/cache/backup/<token>/` (no `/tmp/` backups
+  — they would violate FR-014's "no files outside project root"; no
+  sibling backups — they would be staged by `git add .` and pollute the
+  initial commit, breaking FR-022 / SC-004). The `<token>` is a
+  per-overwrite `secrets.token_hex(6)` segment so multiple overwrites
+  of the same path do not collide.
 - The ledger MUST be append-only during scaffolding. The rollback
   routine consumes it in reverse-iteration order.
 
