@@ -342,7 +342,7 @@ Referencia: ver bookwright-design.md § 4 (Modelo de dominio: GOLEM) completo.
 
 **Prompt:**
 
-```
+````
 /speckit-specify
 
 Necesidad: el grafo de un proyecto Bookwright es la representación consultable de su contenido narrativo. Necesitamos poder construirlo desde los archivos markdown de la bible y manuscrito, y consultarlo desde el CLI o desde los commands.
@@ -386,7 +386,7 @@ Fuera de scope:
 - Mutación del grafo desde la línea de comandos (write-back). Solo lectura/build.
 
 Referencia: ver bookwright-design.md § 12 (Sistema de Indexers) y § 5.1 (comandos del CLI).
-```
+````
 
 **Pista para `/speckit-plan`:** *"Crea src/bookwright/indexers/base.py con el Protocol Indexer, y rdflib_indexer.py con la implementación. src/bookwright/io/turtle.py para serialización. src/bookwright/io/bible.py y io/manuscript.py para parsing de markdown con frontmatter (usar python-frontmatter o parsear YAML manual). src/bookwright/commands/graph.py con subcomandos build y query. Tests con fixture tiny-novel/ minimal."*
 
