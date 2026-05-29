@@ -79,6 +79,14 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
     for option in declared:
         _validate_descriptor(option)
 
+    # R14 — two IntegrationOption descriptors with the same flag must not
+    # silently coalesce in the lookup dict; surface the programming error
+    # explicitly so the integration author fixes their options() list.
+    flags = [opt.flag for opt in declared]
+    if len(set(flags)) != len(flags):
+        dup = next(f for f in flags if flags.count(f) > 1)
+        raise InvalidOptionDeclarationError(rule="duplicate_flag", value=dup)
+
     result: dict[str, str | bool] = {}
 
     if raw is not None and raw.strip() != "":

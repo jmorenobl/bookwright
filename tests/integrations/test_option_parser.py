@@ -311,6 +311,29 @@ def test_invalid_descriptor_raises_even_on_empty_input(raw: str | None) -> None:
     assert exc_info.value.to_dict()["rule"] == "bad_flag_prefix"
 
 
+def test_duplicate_flag_declaration_raises_invalid_declaration() -> None:
+    """R14 — two IntegrationOption entries with the same flag in one
+    integration's options() is a programming error, not silent last-wins.
+    """
+
+    class DupFlagIntegration(SkillsIntegration):
+        key: ClassVar[str] = "dup-flag"
+        default_skills_dir: ClassVar[str] = ".dup/skills"
+
+        @classmethod
+        def options(cls) -> list[IntegrationOption]:
+            return [
+                IntegrationOption(flag="--foo", type="string", required=True),
+                IntegrationOption(flag="--foo", type="string", required=False),
+            ]
+
+    with pytest.raises(InvalidOptionDeclarationError) as exc_info:
+        parse_options("--foo x", DupFlagIntegration)
+    payload = exc_info.value.to_dict()
+    assert payload["rule"] == "duplicate_flag"
+    assert payload["value"] == "--foo"
+
+
 def test_invalid_type_in_descriptor_raises_invalid_declaration() -> None:
     class BadTypeIntegration(SkillsIntegration):
         key: ClassVar[str] = "bad-type"
