@@ -8,6 +8,16 @@
 
 **Input**: User description: see the `/speckit-specify` brief preserved in `bookwright-implementation-plan.md` § 3, Iteración 4. Reference: `bookwright-design.md` § 5.2 (flags) and § 7 (generated project structure).
 
+## Clarifications
+
+### Session 2026-05-29
+
+- Q: How should `--here` in a non-empty directory (no `--force`) behave when interactive confirmation is impossible (i.e. `--json` is set, or stdin/stdout is not a TTY)? → A: Refuse with a dedicated non-interactive error; write no files; exit non-zero.
+- Q: What are the validation rules for raw `PROJECT_NAME` (before slugification)? → A: Permissive Unicode (accents allowed); reject empty, path separators (`/`, `\`), `.`/`..`, leading dot, length > 100 characters, and host-OS reserved names.
+- Q: How is the value of `--integration-options` tokenized before it is forwarded to the integration's option parser? → A: POSIX shell-style tokenization (`shlex.split`-equivalent); quoted values with spaces and standard shell escapes are supported; the resulting list is forwarded `argv`-style to the integration.
+- Q: When `--force` or `--here` overwrites a pre-existing file and a later scaffolding step fails, must the original file be restored? → A: Yes — best-effort restore. Each pre-existing file is backed up before being overwritten; on rollback, originals are restored from the backup; on success, the backups are deleted.
+- Q: What schema does `.bookwright/init-options.json` use? → A: Versioned envelope. Top-level object with `schema_version` (integer, currently `1`), `created_at` (ISO 8601 UTC timestamp), `bookwright_version` (string), and `options` (object of resolved invocation values). Readers MUST reject unknown `schema_version` values.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Scaffold a new book project in one command (Priority: P1)
@@ -100,14 +110,15 @@ A user (or a script) carries forward muscle memory or copy/paste from older Spec
 - **`--here` inside an already-initialized Bookwright project** (i.e. `.bookwright/` exists): the command refuses and writes nothing, even with `--force` — `--force` does not override "already initialized".
 - **Both `PROJECT_NAME` and `--here` supplied**: rejected as mutually exclusive.
 - **Neither `PROJECT_NAME` nor `--here` supplied**: rejected with a usage error pointing at both options.
-- **Project name fails validation** (empty string, path separators, leading dot, reserved name on the host OS): rejected with an error that quotes the offending name and lists the rules.
+- **Project name fails validation**: rejected with an error that quotes the offending name and lists the rules. A `PROJECT_NAME` is invalid if it is empty, contains a path separator (`/` or `\`), is exactly `.` or `..`, starts with `.`, exceeds 100 characters, or matches a host-OS reserved name (e.g. on Windows: `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`). Unicode characters, including accented letters such as `á`, `ñ`, `ü`, are accepted in the raw `PROJECT_NAME`; the on-disk directory is derived via slugification (see FR-021).
 - **No write permission on the target path**: fails with a clear "permission denied" message naming the path; nothing is partially written.
-- **Disk write fails partway through scaffolding**: the command must either complete fully or leave nothing behind in the target directory. A half-written project is not an acceptable end state.
+- **Disk write fails partway through scaffolding**: the command must either complete fully or leave the target directory byte-for-byte equivalent to its pre-invocation state. A half-written project is not an acceptable end state. Under `--force`/`--here`, any pre-existing file that the command was about to overwrite MUST be backed up before the overwrite; on rollback, those backups are restored over the partial writes; on success, the backups are deleted. Files newly created by the command (no prior version) MUST be deleted on rollback.
 - **Author cannot be resolved** (no `$USER`, no `git config user.name`): the manifest is still written; the `authors` field is set to a documented sentinel (e.g. `["Unknown Author"]`) and a stderr note tells the user to update it.
 - **Language cannot be detected**: the manifest is written with `language = "es"` per the design's default.
 - **`--no-git` is passed in a directory that already contains a `.git/`**: the command does not touch the existing repository, does not initialize a new one, and does not create a commit. The user's existing git state is preserved.
 - **Git is installed but the initial commit fails** (e.g. global git hook rejects it): the command surfaces the underlying git error verbatim, leaves the working tree as it was after scaffolding, and exits non-zero so the user can recover.
 - **`--json` is requested**: the success report on stdout is a single JSON document describing the result; warnings (deprecation, git-not-found, author-not-detected, etc.) still go to stderr.
+- **`--here` in a non-empty directory under non-interactive conditions** (i.e. `--json` is set, or stdin/stdout is not a TTY): the command does not prompt and does not silently overwrite. It refuses with an error pointing the caller at `--force`, writes nothing, and exits non-zero.
 
 ## Requirements *(mandatory)*
 
@@ -120,7 +131,7 @@ A user (or a script) carries forward muscle memory or copy/paste from older Spec
 - **FR-003**: The command MUST accept `--ai <key>` as a deprecated hidden alias for `--integration <key>`, emit a deprecation warning to stderr when it is used, and otherwise behave identically.
 - **FR-004**: The command MUST reject `--ai-skills` and `--ai-commands-dir` with a non-zero exit code and an error message that names the modern equivalent (`--integration` or `--integration-options="--skills-dir ..."`). It MUST NOT write any files when this happens.
 - **FR-005**: The command MUST default `--integration` to `claude` and MUST default the integration's skills directory according to the design's per-integration table (`claude` → `.claude/skills`, `generic` → `.agents/skills`).
-- **FR-006**: When `--integration-options` is supplied, the command MUST forward its contents to the chosen integration's option parser. If parsing fails or the option is not declared by that integration, the command MUST fail with an error that quotes the offending option and writes no files.
+- **FR-006**: When `--integration-options` is supplied, the command MUST tokenize its value using POSIX shell-style rules (`shlex.split`-equivalent: whitespace separates tokens, single and double quotes group tokens, standard backslash escapes apply) and forward the resulting `argv`-style list to the chosen integration's option parser. If tokenization fails (e.g. unbalanced quotes), or parsing fails, or the option is not declared by that integration, the command MUST fail with an error that quotes the offending option (or, for tokenization errors, the original raw value) and writes no files.
 - **FR-007**: When `--integration <unknown>` is supplied, the command MUST fail with an error that lists the available integration keys and writes no files.
 
 #### Project structure
@@ -142,6 +153,7 @@ A user (or a script) carries forward muscle memory or copy/paste from older Spec
 - **FR-019**: The manifest's `book.status` MUST default to `idea`.
 - **FR-020**: The manifest's `[integration]` section MUST reflect the chosen integration key, the resolved skills directory, and the options that were applied. When `--integration-options` was not supplied, `integration.options` MUST be an empty inline table.
 - **FR-021**: The manifest's `book.title` MUST be derived from the supplied `PROJECT_NAME` (preserving the user's casing/spacing) for the directory-form invocation, and from the current directory's basename for the `--here` invocation. The on-disk project directory name, in the directory-form invocation, MUST be a filesystem-safe slug of the supplied name.
+- **FR-021a**: The command MUST validate `PROJECT_NAME` before any filesystem work and MUST reject it with a non-zero exit and no files written when any of the following hold: it is empty, it contains a path separator (`/` or `\`), it is exactly `.` or `..`, it starts with `.`, it exceeds 100 characters, or it matches a host-OS reserved name (e.g. on Windows: `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`). Unicode characters, including accented Latin letters, MUST be accepted; the slug derivation in FR-021 is responsible for normalising them for the on-disk directory.
 
 #### Git initialization
 
@@ -155,22 +167,22 @@ A user (or a script) carries forward muscle memory or copy/paste from older Spec
 - **FR-026**: When the positional `PROJECT_NAME` resolves to an existing directory that is non-empty, the command MUST refuse to proceed unless `--force` is supplied; the error message MUST name the directory and mention both `--force` and `--here` as alternatives.
 - **FR-027**: When the positional `PROJECT_NAME` resolves to an existing directory that is empty, the command MUST proceed without prompting.
 - **FR-028**: When `--here` is used in a directory that already contains a `.bookwright/`, the command MUST refuse with an "already initialized" error, even if `--force` is supplied.
-- **FR-029**: When `--here` is used in a non-empty directory without `--force`, the command MUST ask for interactive confirmation before writing; a negative answer MUST leave the directory untouched.
-- **FR-030**: If any failure occurs after scaffolding has begun, the command MUST roll back so that no partial project tree remains in the target directory (with the documented exception that pre-existing files in `--here` / `--force` invocations are not deleted by the rollback).
+- **FR-029**: When `--here` is used in a non-empty directory without `--force`, the command MUST ask for interactive confirmation before writing; a negative answer MUST leave the directory untouched. If the run is non-interactive (`--json` is supplied, or stdin/stdout is not a TTY), the command MUST NOT prompt: it MUST refuse with a dedicated error explaining that non-interactive `--here` in a non-empty directory requires `--force`, exit non-zero, and write no files.
+- **FR-030**: If any failure occurs after scaffolding has begun, the command MUST roll back so that the target directory is byte-for-byte equivalent to its pre-invocation state. Files newly created by the command (no prior version on disk) MUST be deleted. Pre-existing files MUST NOT be deleted. Pre-existing files that the command overwrote under `--force` or `--here` MUST be restored from a backup taken immediately before the overwrite; on successful completion the backups MUST be deleted. If a backup cannot be created (e.g. permission denied), the overwrite MUST NOT proceed and the command MUST fail before touching that file.
 - **FR-031**: The command MUST exit non-zero on any of the above error conditions and MUST emit a single, human-readable error line on stderr identifying the failure cause.
 
 #### Output contract
 
 - **FR-032**: When `--json` is supplied, the command MUST write a single JSON document to stdout describing the result (at minimum: status, project root, chosen integration, skills directory, git status) and MUST NOT write any other content to stdout. Human progress messages and warnings MUST go to stderr.
 - **FR-033**: When `--json` is not supplied, the command MAY use a rich human-readable progress display on stderr, but stdout MUST remain quiet (or limited to a final success line) so it can still be redirected without contaminating logs.
-- **FR-034**: Regardless of `--json`, the command MUST record the exact options it was invoked with in `.bookwright/init-options.json` so later commands can introspect them.
+- **FR-034**: Regardless of `--json`, the command MUST record the exact options it was invoked with in `.bookwright/init-options.json` so later commands can introspect them. The file MUST be a JSON object with the following top-level keys: `schema_version` (integer, set to `1` in this iteration), `created_at` (ISO 8601 UTC timestamp of when the record was written), `bookwright_version` (the package version string at init time), and `options` (an object capturing the resolved invocation: project name or `--here` mode, integration key, resolved skills directory, integration options, and the boolean flags `--no-git`, `--force`, `--json`). Consumers of this file MUST validate `schema_version` and reject unknown values.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Project**: the on-disk directory tree produced by `bookwright init`. Identified by its root path. Contains a manifest, a manuscript area, a bible, an outline, a Bookwright metadata directory, and exactly one integration installation. There is one project per root.
 - **Manifest**: the `manifest.toml` file at the project root. Captures the project's identity (title, type, language, authors, status), the active vocabularies, the active validators, and the chosen integration. Mandatory fields are enumerated in `bookwright-design.md` § 8.1.
 - **Integration**: a named adapter that knows where and how to install Agent Skills for a given AI environment. In v0 there are exactly two: `claude` (default skills directory `.claude/skills/`) and `generic` (default skills directory `.agents/skills/`, overridable). Each integration declares its own option schema; `bookwright init` does not interpret integration options itself.
-- **Init Options Record**: the persisted record at `.bookwright/init-options.json` capturing the exact flags and resolved values used at init time, for later introspection by other commands.
+- **Init Options Record**: the persisted record at `.bookwright/init-options.json` capturing the exact flags and resolved values used at init time, for later introspection by other commands. Versioned envelope (see FR-034): `schema_version` (integer, currently `1`), `created_at` (ISO 8601 UTC), `bookwright_version` (string), and `options` (object of resolved invocation values). Readers MUST reject unknown `schema_version`.
 
 ## Success Criteria *(mandatory)*
 
