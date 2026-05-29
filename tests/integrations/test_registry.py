@@ -11,6 +11,7 @@ from bookwright.integrations import (
     ClaudeIntegration,
     DuplicateRegistrationError,
     GenericIntegration,
+    InvalidIntegrationError,
     SkillsIntegration,
     UnknownIntegrationError,
     _register,
@@ -101,3 +102,36 @@ def test_register_different_class_under_existing_key_raises(
     new_name = payload["new"]
     assert isinstance(existing, str) and existing.endswith("ClaudeIntegration")
     assert isinstance(new_name, str) and new_name.endswith("ConflictingClaude")
+
+
+def test_register_base_class_raises_invalid_integration() -> None:
+    """R13 — registering ``SkillsIntegration`` itself (or any subclass that
+    forgot to override ``key``) raises ``InvalidIntegrationError`` instead of
+    silently binding to the empty-string sentinel.
+    """
+
+    with pytest.raises(InvalidIntegrationError) as exc_info:
+        _register(SkillsIntegration)
+    payload = exc_info.value.to_dict()
+    assert payload["code"] == "invalid_integration"
+    assert payload["rule"] == "empty_key"
+    assert "SkillsIntegration" in str(payload["value"])
+    # Nothing was inserted — the empty key sentinel never lands in the
+    # registry.
+    assert "" not in INTEGRATION_REGISTRY
+
+
+def test_register_forgetful_subclass_raises_invalid_integration(
+    registry_snapshot: dict[str, type[SkillsIntegration]],
+) -> None:
+    """R13 — a concrete subclass that forgets ``key`` is also rejected."""
+
+    del registry_snapshot
+
+    class ForgetfulIntegration(SkillsIntegration):
+        # `key` deliberately not overridden — inherits the empty sentinel.
+        default_skills_dir = ".forgetful/skills"
+
+    with pytest.raises(InvalidIntegrationError) as exc_info:
+        _register(ForgetfulIntegration)
+    assert exc_info.value.to_dict()["rule"] == "empty_key"

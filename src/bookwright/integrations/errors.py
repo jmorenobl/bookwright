@@ -152,3 +152,32 @@ class InvalidOptionDeclarationError(_IntegrationError):
             "value": self.value,
             "message": self.message,
         }
+
+
+class InvalidIntegrationError(_IntegrationError):
+    """Raised by ``_register`` when an integration class is malformed.
+
+    Programming-error guard (R13): catches integrations that forgot to
+    override the base ``SkillsIntegration`` sentinel defaults
+    (e.g., ``cls.key = ""``). Never user-facing — the offending
+    integration class needs to be fixed.
+    """
+
+    code = "invalid_integration"
+
+    def __init__(self, *, rule: str, value: str) -> None:
+        self.rule = rule
+        self.value = value
+        message = (
+            f"invalid integration ({rule}): {value!r}; "
+            "this is a programming error in the integration class"
+        )
+        super().__init__(message)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "code": self.code,
+            "rule": self.rule,
+            "value": self.value,
+            "message": self.message,
+        }

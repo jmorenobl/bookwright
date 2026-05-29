@@ -21,6 +21,7 @@ from bookwright.integrations.constants import (
 )
 from bookwright.integrations.errors import (
     DuplicateRegistrationError,
+    InvalidIntegrationError,
     InvalidOptionDeclarationError,
     MalformedOptionError,
     UnknownIntegrationError,
@@ -44,8 +45,13 @@ def _register(cls: type[SkillsIntegration]) -> None:
     Re-registering the same class is a no-op (FR-002 idempotency under
     ``importlib.reload``). Registering a *different* class under an
     existing key raises ``DuplicateRegistrationError`` naming both
-    classes (FR-005, research R5).
+    classes (FR-005, research R5). Registering a class whose ``key``
+    is empty (the base-class sentinel) raises ``InvalidIntegrationError``
+    (R13) — subclasses MUST override ``key`` with a non-empty string.
     """
+
+    if not cls.key:
+        raise InvalidIntegrationError(rule="empty_key", value=_fqcn(cls))
 
     existing = INTEGRATION_REGISTRY.get(cls.key)
     if existing is cls:
@@ -100,6 +106,7 @@ __all__ = [
     "DuplicateRegistrationError",
     "GenericIntegration",
     "IntegrationOption",
+    "InvalidIntegrationError",
     "InvalidOptionDeclarationError",
     "MalformedOptionError",
     "SkillsIntegration",

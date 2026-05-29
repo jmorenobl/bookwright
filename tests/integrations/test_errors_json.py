@@ -8,6 +8,7 @@ import pytest
 
 from bookwright.integrations import (
     DuplicateRegistrationError,
+    InvalidIntegrationError,
     InvalidOptionDeclarationError,
     MalformedOptionError,
     UnknownIntegrationError,
@@ -91,6 +92,21 @@ def test_invalid_option_declaration_error_payload() -> None:
     json.dumps(payload)
 
 
+def test_invalid_integration_error_payload() -> None:
+    err = InvalidIntegrationError(
+        rule="empty_key",
+        value="bookwright.integrations.base.SkillsIntegration",
+    )
+    payload = err.to_dict()
+    assert payload == {
+        "code": "invalid_integration",
+        "rule": "empty_key",
+        "value": "bookwright.integrations.base.SkillsIntegration",
+        "message": err.message,
+    }
+    json.dumps(payload)
+
+
 # ---------- class-level code attribute is the source of truth ----------
 
 
@@ -102,6 +118,7 @@ def test_invalid_option_declaration_error_payload() -> None:
         (MalformedOptionError, "malformed_option"),
         (DuplicateRegistrationError, "duplicate_registration"),
         (InvalidOptionDeclarationError, "invalid_option_declaration"),
+        (InvalidIntegrationError, "invalid_integration"),
     ],
 )
 def test_class_level_code_is_pinned(
@@ -120,6 +137,7 @@ def test_all_error_types_round_trip_through_json_dumps() -> None:
         MalformedOptionError(rule="missing_value", value="--z"),
         DuplicateRegistrationError(value="k", existing="a.A", new="b.B"),
         InvalidOptionDeclarationError(rule="bad_type", value="weird"),
+        InvalidIntegrationError(rule="empty_key", value="some.module.Cls"),
     ]
     for err in instances:
         payload = err.to_dict()
