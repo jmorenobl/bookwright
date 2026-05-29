@@ -19,8 +19,9 @@ from __future__ import annotations
 class _IntegrationError(Exception):
     """Private base for all structured errors raised by the integrations layer.
 
-    Subclasses MUST set a non-empty class-level ``code`` and assign
-    ``self.message`` in ``__init__`` before delegating to ``super().__init__``.
+    Subclasses MUST set a non-empty class-level ``code``, assign
+    ``self.message`` in ``__init__`` before delegating to ``super().__init__``,
+    and override ``to_dict()`` with their structured payload.
     """
 
     code: str = ""
@@ -30,7 +31,9 @@ class _IntegrationError(Exception):
         self.message = message
 
     def to_dict(self) -> dict[str, object]:
-        return {"code": self.code, "message": self.message}
+        raise NotImplementedError(  # pragma: no cover
+            "subclasses must implement to_dict(); _IntegrationError is private and abstract"
+        )
 
 
 class UnknownIntegrationError(_IntegrationError):
