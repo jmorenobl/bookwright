@@ -82,6 +82,16 @@ def test_missing_value_for_string_option() -> None:
     assert payload["value"] == "--skills-dir"
 
 
+def test_inline_empty_value_for_string_option_raises_missing_value() -> None:
+    """R11 — `--flag=` (inline empty) is symmetric with bare `--flag`."""
+
+    with pytest.raises(MalformedOptionError) as exc_info:
+        parse_options("--skills-dir=", GenericIntegration)
+    payload = exc_info.value.to_dict()
+    assert payload["rule"] == "missing_value"
+    assert payload["value"] == "--skills-dir"
+
+
 def test_duplicate_flag_rejected() -> None:
     with pytest.raises(MalformedOptionError) as exc_info:
         parse_options("--skills-dir a --skills-dir b", GenericIntegration)

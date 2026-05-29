@@ -57,7 +57,7 @@ def _normalize_identifier(flag: str) -> str:
     return flag.removeprefix("--").replace("-", "_")
 
 
-def parse_options(  # noqa: PLR0912 — small hand-rolled state machine, one branch per FR-016..FR-021 rule.
+def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine, one branch per FR-016..FR-021 rule.
     raw: str | None,
     integration_cls: type[SkillsIntegration],
 ) -> dict[str, str | bool]:
@@ -122,6 +122,14 @@ def parse_options(  # noqa: PLR0912 — small hand-rolled state machine, one bra
 
             if option.type == "string":
                 if has_inline_value:
+                    # R11 — `--flag=` (empty inline value) is treated as a
+                    # missing value, symmetric with bare `--flag`. Without
+                    # this guard the empty string slipped through to the
+                    # consumer and the failure surfaced later (e.g., as
+                    # `resolves_to_project_root` in setup() when the
+                    # consumer wrapped it as Path('')).
+                    if value == "":
+                        raise MalformedOptionError(rule="missing_value", value=flag)
                     result[_normalize_identifier(flag)] = value
                     index += 1
                     continue
