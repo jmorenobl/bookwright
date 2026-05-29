@@ -65,8 +65,10 @@ def parse_options(  # noqa: PLR0912 — small hand-rolled state machine, one bra
 
     Returns a dict keyed by each captured option's normalized identifier
     (``--skills-dir`` → ``"skills_dir"``). Empty / ``None`` / whitespace
-    input short-circuits to ``{}`` (FR-020, R6). All error paths raise
-    structured exceptions; nothing is written to stdout/stderr.
+    input skips the tokenization loop and the required-flag check (FR-020
+    wins over FR-021), but declared defaults are still applied (R8). All
+    error paths raise structured exceptions; nothing is written to
+    stdout/stderr.
     """
 
     # Validate every declared descriptor up front (FR-015, R9).
@@ -77,68 +79,80 @@ def parse_options(  # noqa: PLR0912 — small hand-rolled state machine, one bra
     for option in declared:
         _validate_descriptor(option)
 
-    if raw is None or raw.strip() == "":
-        return {}
-
-    lookup: dict[str, IntegrationOption] = {opt.flag: opt for opt in declared}
-    declared_flags = sorted(lookup.keys())
-
-    try:
-        tokens = shlex.split(raw, posix=True)
-    except ValueError as exc:
-        # `shlex.split` raises `ValueError("No closing quotation")` on
-        # unbalanced quotes. Translate into the structured-error contract
-        # FR-035 promises — otherwise iteration-4's `--json` envelope sees
-        # a bare ValueError without `code`/`message` keys (R7).
-        raise MalformedOptionError(rule="malformed_shell_syntax", value=raw) from exc
-
     result: dict[str, str | bool] = {}
-    seen: set[str] = set()
 
-    index = 0
-    while index < len(tokens):
-        token = tokens[index]
-        if "=" in token and token.startswith("--"):
-            flag, _, value = token.partition("=")
-            has_inline_value = True
-        else:
-            flag = token
-            value = ""
-            has_inline_value = False
+    if raw is not None and raw.strip() != "":
+        lookup: dict[str, IntegrationOption] = {opt.flag: opt for opt in declared}
+        declared_flags = sorted(lookup.keys())
 
-        if flag not in lookup:
-            raise UnknownOptionError(
-                integration=integration_cls.key,
-                value=flag,
-                valid=declared_flags,
-            )
+        try:
+            tokens = shlex.split(raw, posix=True)
+        except ValueError as exc:
+            # `shlex.split` raises `ValueError("No closing quotation")` on
+            # unbalanced quotes. Translate into the structured-error contract
+            # FR-035 promises — otherwise iteration-4's `--json` envelope sees
+            # a bare ValueError without `code`/`message` keys (R7).
+            raise MalformedOptionError(rule="malformed_shell_syntax", value=raw) from exc
 
-        if flag in seen:
-            raise MalformedOptionError(rule="duplicate_flag", value=flag)
-        seen.add(flag)
+        seen: set[str] = set()
 
-        option = lookup[flag]
+        index = 0
+        while index < len(tokens):
+            token = tokens[index]
+            if "=" in token and token.startswith("--"):
+                flag, _, value = token.partition("=")
+                has_inline_value = True
+            else:
+                flag = token
+                value = ""
+                has_inline_value = False
 
-        if option.type == "string":
-            if has_inline_value:
-                result[_normalize_identifier(flag)] = value
-                index += 1
+            if flag not in lookup:
+                raise UnknownOptionError(
+                    integration=integration_cls.key,
+                    value=flag,
+                    valid=declared_flags,
+                )
+
+            if flag in seen:
+                raise MalformedOptionError(rule="duplicate_flag", value=flag)
+            seen.add(flag)
+
+            option = lookup[flag]
+
+            if option.type == "string":
+                if has_inline_value:
+                    result[_normalize_identifier(flag)] = value
+                    index += 1
+                    continue
+                if index + 1 >= len(tokens):
+                    raise MalformedOptionError(rule="missing_value", value=flag)
+                result[_normalize_identifier(flag)] = tokens[index + 1]
+                index += 2
                 continue
-            if index + 1 >= len(tokens):
-                raise MalformedOptionError(rule="missing_value", value=flag)
-            result[_normalize_identifier(flag)] = tokens[index + 1]
-            index += 2
-            continue
 
-        # type == "flag"
-        if has_inline_value:
-            raise MalformedOptionError(rule="unexpected_value", value=flag)
-        result[_normalize_identifier(flag)] = True
-        index += 1
+            # type == "flag"
+            if has_inline_value:
+                raise MalformedOptionError(rule="unexpected_value", value=flag)
+            result[_normalize_identifier(flag)] = True
+            index += 1
 
-    # Required-flag enforcement runs after tokenization (FR-021).
+    # R8 — apply declared defaults for opts the user did not supply. Runs
+    # in both paths (empty + non-empty input) so an integration that
+    # declares `default='X'` always sees `X` when the flag is omitted.
     for option in declared:
-        if option.required and _normalize_identifier(option.flag) not in result:
-            raise MalformedOptionError(rule="missing_required", value=option.flag)
+        if option.default is not None:
+            ident = _normalize_identifier(option.flag)
+            if ident not in result:
+                result[ident] = option.default
+
+    # Required-flag enforcement runs after defaults so `required=True,
+    # default='x'` is always satisfied (FR-021 only fires for required
+    # opts without a default that the user also omitted). Empty-input
+    # short-circuit at top of branch skips this — FR-020 wins.
+    if raw is not None and raw.strip() != "":
+        for option in declared:
+            if option.required and _normalize_identifier(option.flag) not in result:
+                raise MalformedOptionError(rule="missing_required", value=option.flag)
 
     return result

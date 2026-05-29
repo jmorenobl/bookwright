@@ -24,9 +24,12 @@ from bookwright.integrations import (
 @pytest.mark.parametrize(
     "raw,expected",
     [
-        (None, {}),
-        ("", {}),
-        ("   ", {}),
+        # R8 — GenericIntegration declares `--skills-dir` with
+        # `default='.agents/skills'`; the default fills the dict on empty
+        # input so downstream consumers always see an explicit value.
+        (None, {"skills_dir": ".agents/skills"}),
+        ("", {"skills_dir": ".agents/skills"}),
+        ("   ", {"skills_dir": ".agents/skills"}),
         ("--skills-dir .cursor/skills", {"skills_dir": ".cursor/skills"}),
         ("--skills-dir=.cursor/skills", {"skills_dir": ".cursor/skills"}),
         ('--skills-dir "path with spaces/skills"', {"skills_dir": "path with spaces/skills"}),
@@ -203,6 +206,59 @@ def test_empty_input_short_circuits_even_with_required(raw: str | None) -> None:
     """FR-020 wins over FR-021 when the user supplied no options at all."""
 
     assert parse_options(raw, _FakeRequiredIntegration) == {}
+
+
+# ---------- R8 — declared defaults are applied for omitted opts ----------
+
+
+class _FakeWithDefaultIntegration(SkillsIntegration):
+    """Stub declaring one optional string opt with `default='all'`."""
+
+    key: ClassVar[str] = "fake-with-default"
+    default_skills_dir: ClassVar[str] = ".fake/skills"
+
+    @classmethod
+    def options(cls) -> list[IntegrationOption]:
+        return [IntegrationOption(flag="--scope", type="string", default="all")]
+
+
+@pytest.mark.parametrize("raw", [None, "", "   "])
+def test_default_applied_on_empty_input(raw: str | None) -> None:
+    """R8 — declared `default` is applied even when `raw` is empty."""
+
+    assert parse_options(raw, _FakeWithDefaultIntegration) == {"scope": "all"}
+
+
+def test_default_not_overridden_when_user_supplies_value() -> None:
+    """R8 — user-supplied value takes precedence over the declared default."""
+
+    assert parse_options("--scope project", _FakeWithDefaultIntegration) == {
+        "scope": "project"
+    }
+
+
+def test_default_satisfies_required_when_user_omits_flag() -> None:
+    """R8 — `required=True, default='x'` is satisfied by the default."""
+
+    class FakeRequiredWithDefault(SkillsIntegration):
+        key: ClassVar[str] = "fake-req-default"
+        default_skills_dir: ClassVar[str] = ".fake/skills"
+
+        @classmethod
+        def options(cls) -> list[IntegrationOption]:
+            return [
+                IntegrationOption(
+                    flag="--scope", type="string", required=True, default="all"
+                ),
+                IntegrationOption(flag="--opt", type="string", required=False),
+            ]
+
+    # Non-empty input without --scope; the default fills it and
+    # missing_required is NOT raised.
+    assert parse_options("--opt x", FakeRequiredWithDefault) == {
+        "scope": "all",
+        "opt": "x",
+    }
 
 
 # ---------- FR-015 — programming-error guards ----------

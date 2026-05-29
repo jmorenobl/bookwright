@@ -65,8 +65,11 @@ def test_quickstart_section_2_metadata() -> None:
 def test_quickstart_section_3_parse_options() -> None:
     generic_cls = get("generic")
 
-    assert parse_options(None, generic_cls) == {}
-    assert parse_options("", generic_cls) == {}
+    # R8 — GenericIntegration declares `--skills-dir` with
+    # `default='.agents/skills'`; the default is applied on empty input
+    # so downstream consumers always observe an explicit value.
+    assert parse_options(None, generic_cls) == {"skills_dir": ".agents/skills"}
+    assert parse_options("", generic_cls) == {"skills_dir": ".agents/skills"}
     assert parse_options("--skills-dir .cursor/skills", generic_cls) == {
         "skills_dir": ".cursor/skills"
     }
