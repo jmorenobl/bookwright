@@ -147,7 +147,7 @@ already on disk is not subject to the length cap).
 ## R4. Backup-and-rollback ledger (FR-030)
 
 **Decision**: One in-memory ledger lives for the duration of the command.
-Each filesystem mutation goes through one writer (`_init_scaffold.write`)
+Each filesystem mutation goes through one writer (`commands.init.scaffold.write`)
 that:
 
 1. Resolves the absolute target path (and confirms it is inside the
@@ -307,7 +307,7 @@ If any condition fails and `--force` was not supplied and the directory is
 not empty and `--here` was set, the command refuses with a structured
 "non_interactive_here" error pointing the caller at `--force`, exits
 non-zero, and writes nothing. The TTY check lives in a single helper
-`_init_resolve.is_interactive()` so tests can monkeypatch one symbol.
+`commands.init.resolve.is_interactive()` so tests can monkeypatch one symbol.
 
 **Rationale**:
 
@@ -318,7 +318,7 @@ non-zero, and writes nothing. The TTY check lives in a single helper
   npm) decide whether to prompt: a piped stdin or a redirected stdout
   alike make a prompt useless.
 - A single helper makes the test fixture trivial
-  (`monkeypatch.setattr("bookwright.commands._init_resolve.is_interactive",
+  (`monkeypatch.setattr("bookwright.commands.init.resolve.is_interactive",
   lambda: False)`).
 
 **Alternatives considered**:
@@ -333,7 +333,7 @@ non-zero, and writes nothing. The TTY check lives in a single helper
 
 ## R8. Git interaction without GitPython (FR-022..FR-025)
 
-**Decision**: A thin `_init_git.py` wrapper exposes three functions:
+**Decision**: A thin `commands/init/git.py` wrapper exposes three functions:
 
 ```python
 def git_available() -> bool: ...                    # shutil.which("git") is not None
@@ -446,36 +446,79 @@ time (caught by the rollback wrapper, surfaces as a structured
 
 ---
 
-## R10. Source layout: `commands/init.py` + private siblings
+## R10. Source layout: `commands/init/` package
 
-**Decision**: `commands/init.py` holds the Typer entry point (`def
-run(...)`) and the orchestration top-level function. The five helpers
-(`_init_validate.py`, `_init_resolve.py`, `_init_scaffold.py`,
-`_init_git.py`, `_init_envelope.py`) are private siblings in the same
-package; each is single-purpose and under 200 lines. Names follow the
-iteration-2 precedent (`core/_build.py`, `core/_translate.py` — private
-helpers with leading underscore).
+**Decision** (revised 2026-05-29 after post-implement audit; see
+[review.md](review.md) §3 R1 and §3 R2): `bookwright init` ships as a
+**package** at `src/bookwright/commands/init/`. The package's
+`__init__.py` re-exports `run` and `CONTEXT_SETTINGS` so
+`cli.py`'s `from bookwright.commands import … init …` resolves
+unchanged. The Typer entry point + top-level orchestration live in
+`init/main.py`; six sibling modules (`conflict.py`, `envelope.py`,
+`git.py`, `resolve.py`, `scaffold.py`, `validate.py`) carry the
+delegated work. Sibling modules import each other with relative
+imports (`from .envelope import emit_error`, `from .git import
+GitInitError`).
 
-**Rationale**:
+**Rationale (revised)**:
 
-- Principle IV requires one file per CLI subcommand. The subcommand
-  *is* `init.py`. The helpers are not subcommands; they are
-  implementation detail.
-- A subpackage (`commands/init/`) would technically also satisfy the
-  principle's intent, but it would change the `from
-  bookwright.commands import init` import shape and require an
-  `__init__.py` that re-exports `run`. The flat layout matches the
-  iteration-1 precedent (`commands/check.py`, `commands/version.py` are
-  flat) so a future reader scans the directory and sees every command
-  immediately.
-- Leading-underscore private modules signal "not part of the public
-  surface" without an `__all__` ceremony.
+- Principle IV requires one *module* per subcommand. A Python package
+  is a module — `commands/init/` satisfies the rule literally and
+  matches the codebase's own precedent for "cluster of modules that
+  implement one thing" already in use at
+  `src/bookwright/integrations/{claude,generic}/`. The flat decomposition
+  pushed `commands/` from three at-a-glance subcommand entries to ten
+  (`init.py` + six `_init_*.py` siblings + `check.py` + `version.py` +
+  `__init__.py`), weakening the at-a-glance "what subcommands does
+  this CLI have" reading the principle's "per-command isolation"
+  language was designed to protect.
+- Intra-package relative imports break the cyclic-import workaround
+  the flat layout required. Under flat siblings, `_init_envelope`
+  needed exception types from `_init_scaffold` while
+  `_init_scaffold` already imported `_init_envelope`, so
+  `_init_envelope.classify_filesystem_failure` carried two
+  function-local imports tagged `# noqa: PLC0415 — break cycle`.
+  In the package shape, `envelope.py` imports `from .scaffold import
+  …` and `from .git import …` at module top without re-entering the
+  parent `bookwright.commands` namespace; the cycle disappears and
+  the `noqa` tags go with it.
+- The package layout also collapses the AST-invariant glob from
+  `(_INIT_DIR.glob("init.py") + _INIT_DIR.glob("_init_*.py"))` to a
+  single-directory `(_INIT_DIR / "init").glob("*.py")`.
 
-**Alternatives considered**:
+**Why the original rejection no longer holds**:
 
-- **`commands/init/` subpackage**: rejected as above.
+- *"Changes the `from bookwright.commands import init` import shape"*
+  — false in the package layout chosen here: `init/__init__.py`
+  re-exports `(run, CONTEXT_SETTINGS)`, so the import shape and the
+  attribute access `init.run` / `init.CONTEXT_SETTINGS` are
+  preserved. `cli.py` does not change.
+- *"Flat layout matches the iteration-1 precedent
+  (`commands/check.py`, `commands/version.py`)"* — both of those
+  subcommands stay flat under the revised decision because they are
+  single-file modules. The package shape is reserved for subcommands
+  that legitimately need internal decomposition, exactly the way
+  `integrations/<key>/` is reserved for integrations that legitimately
+  need a registry + a setup module + a marker constant.
+- *"Leading-underscore signals 'not part of the public surface'
+  without `__all__` ceremony"* — sibling modules inside `init/` are
+  not exported by `init/__init__.py` either, so the public surface
+  (`run`, `CONTEXT_SETTINGS`) is identical without any `_` prefix
+  inflation.
+
+**Alternatives considered (revised)**:
+
+- **Keep the flat `_init_*.py` decomposition**: rejected post-audit
+  per the R1/R2 reasoning above; the cycle workaround and the
+  ten-entry `commands/` listing are concrete costs the package
+  layout does not pay.
 - **One 800-line `init.py`**: rejected — would violate Principle IV's
   500-line ceiling.
+- **Extract just the three exception classes
+  (`BackupCreationError`, `TargetOutsideProjectRootError`,
+  `GitInitError`) into an `_init_errors.py`**: rejected — it would
+  resolve R2 alone but adds an eighth file to the flat layout and
+  leaves R1 (directory clutter) entirely untouched.
 - **Helpers under `core/`**: rejected — they are command-specific
   (deprecated-flag handling, JSON envelope shape, init-options record).
   Moving them under `core/` would invert the dependency direction

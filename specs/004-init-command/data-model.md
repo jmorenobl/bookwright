@@ -31,7 +31,7 @@ with, so later commands (introspection, debug bundles, future re-init
 diffs) have a single source of truth (FR-034).
 
 **Shape**: `pydantic.BaseModel` in
-`bookwright.commands._init_envelope`. Lives in-process during the
+`bookwright.commands.init.envelope`. Lives in-process during the
 command run and is serialised to disk via
 `json.dumps(..., indent=2, sort_keys=False)` (insertion order matches
 the schema below — `json.dumps` is stable on Python 3.7+).
@@ -74,7 +74,7 @@ truth for `InitOptionsRecord.options` and also the input the JSON
 envelope (§ 4) serialises on success.
 
 **Shape**: `pydantic.BaseModel` in
-`bookwright.commands._init_envelope`.
+`bookwright.commands.init.envelope`.
 
 | Field                  | Type                        | Required | Notes                                                                                                                                                            |
 |------------------------|-----------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -91,7 +91,7 @@ envelope (§ 4) serialises on success.
 | `no_git`               | `bool`                      | yes      | The `--no-git` flag value (FR-023).                                                                                                                              |
 | `force`                | `bool`                      | yes      | The `--force` flag value (FR-026, FR-028 — `--force` does NOT bypass "already initialized").                                                                     |
 | `json_output`          | `bool`                      | yes      | The `--json` flag value (FR-032, FR-033).                                                                                                                        |
-| `git_status`           | `Literal["initialized", "skipped_by_flag", "skipped_no_binary", "skipped_existing_repo"]` | yes | Records what actually happened at git time (FR-022..FR-025). Populated by `_init_git.init_and_commit` or its skip branches. |
+| `git_status`           | `Literal["initialized", "skipped_by_flag", "skipped_no_binary", "skipped_existing_repo"]` | yes | Records what actually happened at git time (FR-022..FR-025). Populated by `commands.init.git.init_and_commit` or its skip branches. |
 | `deprecated_flags_seen` | `list[str]`                | yes      | Empty unless `--ai` was used (FR-003). Used by the envelope's `warnings` array (§ 4).                                                                            |
 
 **Validation rules**:
@@ -135,7 +135,7 @@ replayed in reverse to restore the project root to byte-for-byte its
 pre-invocation state (SC-005).
 
 **Shape**: simple list of `BackupEntry` dataclass instances in
-`bookwright.commands._init_scaffold`.
+`bookwright.commands.init.scaffold`.
 
 ```python
 @dataclass(frozen=True)
@@ -163,7 +163,7 @@ dataclass itself):
 
 **Lifetime**:
 
-- Created at the start of `_init_scaffold.scaffold(...)`.
+- Created at the start of `commands.init.scaffold.scaffold(...)`.
 - Appended to by every `write(...)`, `mkdir(...)`, and the
   `git init` step (which adds a single `BackupEntry(target=root /
   ".git", backup_path=None, was_directory=True)` before invoking

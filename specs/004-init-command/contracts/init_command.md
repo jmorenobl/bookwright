@@ -276,9 +276,9 @@ by a test in `tests/commands/`.
    parametrized test that snapshots `Path.cwd()` siblings before/after
    for `--here` runs (FR-014).
 3. **No re-implementation of `Manifest` serialisation.** AST scan of
-   `commands/init.py` + helpers MUST show zero `tomlkit.dumps` /
-   `tomlkit.parse` calls; the only path that writes TOML is
-   `Manifest.dump` (FR-015).
+   every `*.py` inside the `commands/init/` package MUST show zero
+   `tomlkit.dumps` / `tomlkit.parse` calls; the only path that writes
+   TOML is `Manifest.dump` (FR-015).
 4. **No re-implementation of integration option parsing.** AST scan
    MUST show zero `shlex.split` calls in `commands/`. Token parsing
    for `--integration-options` is solely the iteration-3

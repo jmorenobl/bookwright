@@ -21,12 +21,22 @@ iteration-4 prompt in `bookwright-implementation-plan.md` § Iteración 4, and
 the iteration-3 contract in
 [`../003-integration-architecture/contracts/integrations_api.md`](../003-integration-architecture/contracts/integrations_api.md)):
 
-- **One Typer subcommand module: `src/bookwright/commands/init.py`** —
-  registers with `app.command("init")`, owns flag parsing, deprecation
-  handling, JSON envelope serialization, and the top-level orchestration
-  (`validate → resolve → scaffold → setup integration → git init+commit →
-  emit`). Stays under the Principle IV 500-line ceiling by delegating to
-  private helpers in the same package (`commands/_init_*.py`).
+- **One Typer subcommand as a package: `src/bookwright/commands/init/`** —
+  `init/__init__.py` re-exports `run` and `CONTEXT_SETTINGS` so
+  `cli.py`'s `from bookwright.commands import … init …` resolves
+  unchanged; the Typer entry point + top-level orchestration live in
+  `init/main.py` (flag parsing, deprecation handling, JSON envelope
+  serialization, `validate → resolve → scaffold → setup integration →
+  git init+commit → emit`). Stays under the Principle IV 500-line
+  ceiling by delegating to sibling modules inside the same package
+  (`init/conflict.py`, `init/envelope.py`, `init/git.py`,
+  `init/resolve.py`, `init/scaffold.py`, `init/validate.py`). The
+  package shape mirrors the iteration-3 precedent at
+  `src/bookwright/integrations/{claude,generic}/` and lets sibling
+  modules use intra-package relative imports (`from .envelope import
+  emit_error`) without re-entering the parent `commands` namespace —
+  that's what resolves the cyclic-import workaround the post-implement
+  audit (review.md §3 R2) flagged in the flat `_init_*.py` layout.
 - **Templates ship as packaged resources** under
   `src/bookwright/resources/project/` and are loaded via
   `importlib.resources.files("bookwright.resources.project")`. A small
@@ -204,7 +214,7 @@ remains the merge gate.
 | I. Plain Text as Source of Truth (NON-NEGOTIABLE) | ✅ | Every file written is Markdown, TOML, JSON, Turtle, or empty placeholder. The two Turtle vocabularies (`propp.ttl`, `greimas.ttl`) are plain text. No binary stores. |
 | II. Modern Python Stack | ✅ | No new runtime dependency. `typer`, `rich`, `jinja2`, `python-slugify`, `tomlkit`, `pydantic` are already locked in the Technical Constraints. Git is invoked via `subprocess.run` against the host's `git` binary — no Python git library is added (per spec Assumption + planning hint). |
 | III. src-layout | ✅ | New code lives under `src/bookwright/commands/init.py` (+ private `_init_*.py` helpers) and `src/bookwright/resources/project/`. Tests under `tests/commands/`. No production code outside `src/bookwright/`. |
-| IV. Modular Command Surface | ✅ | One file per subcommand. `init.py` registers itself with the Typer app and stays ≤ 500 lines by delegating to private helpers (same layout iteration 2 used for `core/_build.py` and `core/_translate.py`). Each helper is ≤ 500 lines. |
+| IV. Modular Command Surface | ✅ | One subcommand surface per directory entry under `commands/`. `init/` is a package whose `__init__.py` exposes the same `(run, CONTEXT_SETTINGS)` pair the prior single-file `init.py` did, so `cli.py`'s registration is unchanged; the Typer entry point lives in `init/main.py` and stays ≤ 500 lines by delegating to sibling modules (`conflict.py`, `envelope.py`, `git.py`, `resolve.py`, `scaffold.py`, `validate.py`). Each sibling is single-purpose and ≤ 500 lines (largest is `scaffold.py` at 407). The package shape matches the iteration-3 precedent at `integrations/{claude,generic}/` and keeps `commands/` itself at three at-a-glance entries (`init/`, `check.py`, `version.py`). |
 | V. Plugin-Based Integrations | ✅ | `init` consumes `bookwright.integrations.{get, parse_options, SkillsIntegration.setup}` exactly. No `AGENT_CONFIG`-style branching by integration key inside the command. The command does not import `ClaudeIntegration` or `GenericIntegration` by name — it uses the registry. |
 | VI. Agent Skills Only — No Legacy Commands (NON-NEGOTIABLE) | ✅ | The only path that writes under the skills directory is `SkillsIntegration.setup()` (iteration 3), which writes one marker file. `init` writes nothing to `.claude/commands/`, `.agents/commands/`, or any analogous legacy directory. FR-004 explicitly rejects `--ai-commands-dir` so users cannot ask for one. |
 | VII. agentskills.io Standard Compliance | ✅ | No `SKILL.md` is generated in this iteration (full materialization is iteration 9). The marker written by `setup()` is not a `SKILL.md` and is exempt from the standard. |
@@ -263,12 +273,15 @@ src/bookwright/
 │   ├── __init__.py                   # (iter 1) — untouched
 │   ├── check.py                      # (iter 1) — untouched
 │   ├── version.py                    # (iter 1) — untouched
-│   ├── init.py                       # NEW — Typer entry + orchestration
-│   ├── _init_validate.py             # NEW — PROJECT_NAME validation (FR-021a)
-│   ├── _init_resolve.py              # NEW — author / language / slug resolution (FR-016, FR-018, FR-021)
-│   ├── _init_scaffold.py             # NEW — template walker + backup ledger (FR-008..FR-014, FR-030)
-│   ├── _init_git.py                  # NEW — subprocess wrapper (FR-022..FR-025)
-│   └── _init_envelope.py             # NEW — success/error JSON envelopes + init-options.json writer (FR-032..FR-034)
+│   └── init/                         # NEW — `bookwright init` as a package (mirrors `integrations/<key>/`)
+│       ├── __init__.py               # re-exports `run`, `CONTEXT_SETTINGS` (keeps `from bookwright.commands import init` working)
+│       ├── main.py                   # Typer entry + top-level orchestration (was `init.py`)
+│       ├── conflict.py               # named/here conflict matrix + backup-ledger seed (was `_init_conflict.py`)
+│       ├── envelope.py               # success/error JSON envelopes + init-options.json record (was `_init_envelope.py`)
+│       ├── git.py                    # subprocess wrapper (FR-022..FR-025) (was `_init_git.py`)
+│       ├── resolve.py                # author / language / slug / integration resolution (was `_init_resolve.py`)
+│       ├── scaffold.py               # template walker + backup ledger (FR-008..FR-014, FR-030) (was `_init_scaffold.py`)
+│       └── validate.py               # PROJECT_NAME validation (FR-021a) (was `_init_validate.py`)
 ├── core/                             # (iter 2) — untouched
 │   └── …
 ├── integrations/                     # (iter 3) — untouched
@@ -333,11 +346,35 @@ tests/
 
 **Structure Decision**:
 
-- **One Typer subcommand module** (`commands/init.py`) per Principle IV.
-  The five private `_init_*.py` siblings are not subcommands — they are
-  the same `commands.init` namespace decomposed for the 500-line ceiling,
-  mirroring the iteration-2 `core/_build.py` + `core/_translate.py`
-  pattern. No module crosses the ceiling; each is single-purpose.
+- **One Typer subcommand as a package** (`commands/init/`) per Principle
+  IV. `init/__init__.py` re-exports the `(run, CONTEXT_SETTINGS)` pair
+  so `cli.py`'s `from bookwright.commands import … init …` registration
+  is unchanged; the Typer entry point lives in `init/main.py` and
+  delegates to six single-purpose siblings (`conflict.py`, `envelope.py`,
+  `git.py`, `resolve.py`, `scaffold.py`, `validate.py`). The package
+  shape mirrors the iteration-3 precedent at
+  `src/bookwright/integrations/{claude,generic}/` rather than the
+  iteration-2 `core/_build.py` + `core/_translate.py` flat-private
+  pattern. **Why the change vs the iteration-4 implement output:** the
+  initial implementation chose the flat `commands/_init_*.py` layout per
+  research.md R10. The post-implement quality audit (review.md §3 R1)
+  flipped that decision because (a) six private siblings in the flat
+  `commands/` namespace push the directory from three at-a-glance
+  subcommand entries to ten, weakening Principle IV's stated goal of
+  "per-command isolation makes tests addressable and prevents drift
+  toward a god-module"; (b) the codebase's own precedent for
+  cluster-of-modules-implements-one-thing is the package layout under
+  `integrations/<key>/`, not flat siblings; and (c) the flat layout
+  introduced bidirectional imports between `_init_envelope` and
+  `_init_scaffold`/`_init_git`, papered over with two `# noqa:
+  PLC0415 — break cycle` lazy imports inside
+  `classify_filesystem_failure` (review.md §3 R2). Inside the package
+  the cycle disappears because siblings can use relative imports
+  (`from .git import GitInitError`, `from .scaffold import
+  BackupCreationError, TargetOutsideProjectRootError`) without
+  re-entering the parent `bookwright.commands` package. No module
+  crosses the 500-line ceiling; the largest is `scaffold.py` at 407
+  lines.
 - **Templates ship as a packaged resource subtree**
   (`src/bookwright/resources/project/`) so iteration 7 can replace the
   bible / outline content without touching the scaffolder. The
