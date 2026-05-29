@@ -128,6 +128,27 @@ def test_class_level_code_is_pinned(
     assert cls.code == expected_code
 
 
+def test_forgetful_subclass_fails_at_class_definition() -> None:
+    """R18 — `_IntegrationError.__init_subclass__` rejects subclasses that
+    don't override `to_dict` at class-definition time (i.e., at import),
+    not at production --json serialisation time.
+
+    `__init_subclass__` is used instead of `abc.ABC` because
+    `BaseException.__new__` (C-level) bypasses `__abstractmethods__`,
+    making `class Foo(Exception, ABC)` enforcement a no-op.
+    """
+
+    with pytest.raises(TypeError) as exc_info:
+
+        class ForgetfulError(_IntegrationError):
+            code = "forgetful"
+            # `to_dict` deliberately not overridden.
+
+    msg = str(exc_info.value)
+    assert "to_dict" in msg
+    assert "ForgetfulError" in msg
+
+
 def test_all_error_types_round_trip_through_json_dumps() -> None:
     """SC-008 — every payload survives a json.dumps/loads cycle unchanged."""
 

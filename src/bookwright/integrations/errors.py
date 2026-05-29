@@ -21,19 +21,37 @@ class _IntegrationError(Exception):
 
     Subclasses MUST set a non-empty class-level ``code``, assign
     ``self.message`` in ``__init__`` before delegating to ``super().__init__``,
-    and override ``to_dict()`` with their structured payload.
+    and implement ``to_dict()`` (R18 — enforced at class-definition time
+    via ``__init_subclass__`` so a forgetful subclass fails at import,
+    not when the iteration-4 ``--json`` envelope tries to serialise it in
+    production).
+
+    Why ``__init_subclass__`` and not ``abc.ABC``: ``BaseException.__new__``
+    is implemented in C and does not consult ``__abstractmethods__``, so
+    ``class Foo(Exception, ABC)`` lets a forgetful subclass be
+    instantiated despite the abstract decorator. Class-definition-time
+    enforcement is both stricter (fails at import, not at first ``raise``)
+    and unaffected by the C-level bypass.
     """
 
     code: str = ""
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        if "to_dict" not in cls.__dict__:
+            raise TypeError(
+                f"{cls.__qualname__} must override `to_dict()` "
+                "(required by the _IntegrationError contract)"
+            )
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
         self.message = message
 
     def to_dict(self) -> dict[str, object]:
-        raise NotImplementedError(  # pragma: no cover
-            "subclasses must implement to_dict(); _IntegrationError is private and abstract"
-        )
+        # Never reached for any well-formed subclass — __init_subclass__
+        # rejects subclasses that don't override this method at import time.
+        raise NotImplementedError  # pragma: no cover
 
 
 class UnknownIntegrationError(_IntegrationError):
