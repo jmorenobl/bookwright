@@ -54,7 +54,16 @@ def _register(cls: type[SkillsIntegration]) -> None:
         raise InvalidIntegrationError(rule="empty_key", value=_fqcn(cls))
 
     existing = INTEGRATION_REGISTRY.get(cls.key)
-    if existing is cls:
+    # R12 — compare by fully-qualified class name, not by identity. After
+    # `importlib.reload(bookwright.integrations.claude)` the reloaded
+    # `ClaudeIntegration` is a NEW class object with different identity
+    # from the one already in the registry; relying on `is` would raise
+    # DuplicateRegistrationError spuriously, breaking the FR-002 reload
+    # idempotency promise. FQCN equality preserves the duplicate guard
+    # for genuinely different classes (different module/qualname) that
+    # collide on `key`.
+    if existing is cls or (existing is not None and _fqcn(existing) == _fqcn(cls)):
+        INTEGRATION_REGISTRY[cls.key] = cls  # rebind to the reloaded class
         return
     if existing is not None:
         raise DuplicateRegistrationError(

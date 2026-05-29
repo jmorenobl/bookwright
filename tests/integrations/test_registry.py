@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import importlib
 from typing import cast
 
 import pytest
 
+import bookwright.integrations.claude as claude_module
 from bookwright.integrations import (
     INTEGRATION_REGISTRY,
     ClaudeIntegration,
@@ -102,6 +104,27 @@ def test_register_different_class_under_existing_key_raises(
     new_name = payload["new"]
     assert isinstance(existing, str) and existing.endswith("ClaudeIntegration")
     assert isinstance(new_name, str) and new_name.endswith("ConflictingClaude")
+
+
+def test_register_reloaded_submodule_is_idempotent(
+    registry_snapshot: dict[str, type[SkillsIntegration]],
+) -> None:
+    """R12 — `_register` MUST be idempotent across `importlib.reload`
+    even though the reloaded module produces a fresh class object with
+    different identity. Pre-R12 the `existing is cls` check raised
+    DuplicateRegistrationError spuriously, contradicting FR-002.
+    """
+
+    del registry_snapshot
+
+    reloaded = importlib.reload(claude_module)
+
+    # Identity differs from the previously-registered class…
+    assert reloaded.ClaudeIntegration is not INTEGRATION_REGISTRY["claude"]
+    # …but FQCN matches, so _register treats it as a re-registration and
+    # rebinds the registry to the reloaded class with no exception.
+    _register(reloaded.ClaudeIntegration)
+    assert INTEGRATION_REGISTRY["claude"] is reloaded.ClaudeIntegration
 
 
 def test_register_base_class_raises_invalid_integration() -> None:
