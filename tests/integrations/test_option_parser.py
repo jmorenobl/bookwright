@@ -225,6 +225,26 @@ def test_invalid_flag_prefix_in_descriptor_raises_invalid_declaration() -> None:
     assert payload["value"] == "skills-dir"
 
 
+@pytest.mark.parametrize("raw", [None, "", "   "])
+def test_invalid_descriptor_raises_even_on_empty_input(raw: str | None) -> None:
+    """R9 — FR-015 programming-error guards fire BEFORE the FR-020 empty
+    short-circuit, so a broken `options()` declaration surfaces on the first
+    call regardless of what the user supplied via `--integration-options`.
+    """
+
+    class BadFlagIntegration(SkillsIntegration):
+        key: ClassVar[str] = "bad-flag-r9"
+        default_skills_dir: ClassVar[str] = ".bad/skills"
+
+        @classmethod
+        def options(cls) -> list[IntegrationOption]:
+            return [IntegrationOption(flag="skills-dir", type="string")]
+
+    with pytest.raises(InvalidOptionDeclarationError) as exc_info:
+        parse_options(raw, BadFlagIntegration)
+    assert exc_info.value.to_dict()["rule"] == "bad_flag_prefix"
+
+
 def test_invalid_type_in_descriptor_raises_invalid_declaration() -> None:
     class BadTypeIntegration(SkillsIntegration):
         key: ClassVar[str] = "bad-type"

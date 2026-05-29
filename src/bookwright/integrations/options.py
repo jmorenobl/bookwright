@@ -69,13 +69,16 @@ def parse_options(  # noqa: PLR0912 — small hand-rolled state machine, one bra
     structured exceptions; nothing is written to stdout/stderr.
     """
 
-    if raw is None or raw.strip() == "":
-        return {}
-
-    # Validate every declared descriptor up front (FR-015).
+    # Validate every declared descriptor up front (FR-015, R9).
+    # Runs BEFORE the empty-input short-circuit so a broken options()
+    # declaration surfaces on the first parse_options call, not only when
+    # the user happens to pass non-empty --integration-options.
     declared = integration_cls.options()
     for option in declared:
         _validate_descriptor(option)
+
+    if raw is None or raw.strip() == "":
+        return {}
 
     lookup: dict[str, IntegrationOption] = {opt.flag: opt for opt in declared}
     declared_flags = sorted(lookup.keys())
