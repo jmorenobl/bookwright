@@ -15,11 +15,11 @@ from bookwright.integrations import (
 
 
 def test_skill_name_max_length() -> None:
-    assert SKILL_NAME_MAX_LENGTH == 64  # noqa: PLR2004 — pinning the agentskills.io literal
+    assert SKILL_NAME_MAX_LENGTH == 64
 
 
 def test_skill_description_max_length() -> None:
-    assert SKILL_DESCRIPTION_MAX_LENGTH == 1024  # noqa: PLR2004 — pinning the agentskills.io literal
+    assert SKILL_DESCRIPTION_MAX_LENGTH == 1024
 
 
 def test_skill_placeholder_marker_name() -> None:

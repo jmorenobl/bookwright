@@ -79,7 +79,7 @@ def test_overrides_take_effect_and_validate() -> None:
     assert m.book.status == "structuring"
     assert m.book.subtitle == "Entre dos puertos"
     assert m.book.genre == ["literatura", "memoria"]
-    assert m.book.target_length_words == 60000  # noqa: PLR2004
+    assert m.book.target_length_words == 60000
     assert m.integration.options == {"flavor": "cursor"}
     assert m.vocabularies.active == ["core"]
 

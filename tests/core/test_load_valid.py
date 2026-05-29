@@ -29,7 +29,7 @@ def test_load_full_returns_every_field() -> None:
     assert m.book.authors == ["Alice Author", "Bob Writer", "Alice Author"]
     assert m.book.subtitle == "An Exhaustive Fixture"
     assert m.book.genre == ["literary", "speculative"]
-    assert m.book.target_length_words == 90000  # noqa: PLR2004
+    assert m.book.target_length_words == 90000
     assert m.book.status == "drafting"
     assert m.book.metadata == {
         "isbn_planned": "978-0-00-000000-0",
@@ -108,7 +108,7 @@ def test_load_preserves_duplicate_authors() -> None:
     """Edge case: legitimate duplicate co-author entries round-trip verbatim."""
 
     m = Manifest.load(load_fixture("valid_full.toml"))
-    assert m.book.authors.count("Alice Author") == 2  # noqa: PLR2004
+    assert m.book.authors.count("Alice Author") == 2
 
 
 @pytest.mark.parametrize("book_type", sorted(BOOK_TYPES))

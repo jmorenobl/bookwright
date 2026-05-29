@@ -139,7 +139,7 @@ def test_multi_error_surfaces_all_failures() -> None:
         Manifest.load(load_fixture("invalid_multi_error.toml"))
     rule_ids = _rule_ids(exc_info.value)
     # At least three independent failures from different fields.
-    assert len(rule_ids) >= 3  # noqa: PLR2004
+    assert len(rule_ids) >= 3
     assert {f.field_path for f in exc_info.value.failures} >= {
         "book.title",
         "book.language",
