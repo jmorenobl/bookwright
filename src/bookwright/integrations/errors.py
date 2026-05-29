@@ -19,39 +19,34 @@ from __future__ import annotations
 class _IntegrationError(Exception):
     """Private base for all structured errors raised by the integrations layer.
 
-    Subclasses MUST set a non-empty class-level ``code``, assign
-    ``self.message`` in ``__init__`` before delegating to ``super().__init__``,
-    and implement ``to_dict()`` (R18 — enforced at class-definition time
-    via ``__init_subclass__`` so a forgetful subclass fails at import,
-    not when the iteration-4 ``--json`` envelope tries to serialise it in
-    production).
-
-    Why ``__init_subclass__`` and not ``abc.ABC``: ``BaseException.__new__``
-    is implemented in C and does not consult ``__abstractmethods__``, so
-    ``class Foo(Exception, ABC)`` lets a forgetful subclass be
-    instantiated despite the abstract decorator. Class-definition-time
-    enforcement is both stricter (fails at import, not at first ``raise``)
-    and unaffected by the C-level bypass.
+    Subclasses MUST set a non-empty class-level ``code`` and assign their
+    structured fields on ``self`` in ``__init__`` (e.g., ``self.rule``,
+    ``self.value``). The base ``to_dict()`` (R20) returns
+    ``{'code': self.code, 'message': self.message, **<public instance attrs>}``
+    — derived from ``vars(self)`` minus dunder/underscore-prefixed names
+    and the ``message`` key (which is hoisted up). Subclasses do NOT need
+    to override ``to_dict`` for the standard payload shape; the field
+    order in the returned dict is ``code, message, <attrs in insertion
+    order>`` because the iteration-4 ``--json`` envelope compares by
+    value, not by serialised string.
     """
 
     code: str = ""
-
-    def __init_subclass__(cls, **kwargs: object) -> None:
-        super().__init_subclass__(**kwargs)
-        if "to_dict" not in cls.__dict__:
-            raise TypeError(
-                f"{cls.__qualname__} must override `to_dict()` "
-                "(required by the _IntegrationError contract)"
-            )
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
         self.message = message
 
     def to_dict(self) -> dict[str, object]:
-        # Never reached for any well-formed subclass — __init_subclass__
-        # rejects subclasses that don't override this method at import time.
-        raise NotImplementedError  # pragma: no cover
+        return {
+            "code": self.code,
+            "message": self.message,
+            **{
+                k: v
+                for k, v in vars(self).items()
+                if not k.startswith("_") and k != "message"
+            },
+        }
 
 
 class UnknownIntegrationError(_IntegrationError):
@@ -64,14 +59,6 @@ class UnknownIntegrationError(_IntegrationError):
         self.valid = list(valid)
         message = f"unknown integration: {value!r}; valid: [{', '.join(self.valid)}]"
         super().__init__(message)
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "code": self.code,
-            "value": self.value,
-            "valid": list(self.valid),
-            "message": self.message,
-        }
 
 
 class UnknownOptionError(_IntegrationError):
@@ -89,15 +76,6 @@ class UnknownOptionError(_IntegrationError):
         )
         super().__init__(message)
 
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "code": self.code,
-            "integration": self.integration,
-            "value": self.value,
-            "valid": list(self.valid),
-            "message": self.message,
-        }
-
 
 class MalformedOptionError(_IntegrationError):
     """Raised by ``parse_options`` on a structural rule violation in user input."""
@@ -109,14 +87,6 @@ class MalformedOptionError(_IntegrationError):
         self.value = value
         message = f"malformed option {value!r}: {rule}"
         super().__init__(message)
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "code": self.code,
-            "rule": self.rule,
-            "value": self.value,
-            "message": self.message,
-        }
 
 
 class DuplicateRegistrationError(_IntegrationError):
@@ -133,15 +103,6 @@ class DuplicateRegistrationError(_IntegrationError):
             f"already registered as {existing}, refusing to replace with {new}"
         )
         super().__init__(message)
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "code": self.code,
-            "value": self.value,
-            "existing": self.existing,
-            "new": self.new,
-            "message": self.message,
-        }
 
 
 class InvalidOptionDeclarationError(_IntegrationError):
@@ -163,14 +124,6 @@ class InvalidOptionDeclarationError(_IntegrationError):
         )
         super().__init__(message)
 
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "code": self.code,
-            "rule": self.rule,
-            "value": self.value,
-            "message": self.message,
-        }
-
 
 class InvalidIntegrationError(_IntegrationError):
     """Raised by ``_register`` when an integration class is malformed.
@@ -191,11 +144,3 @@ class InvalidIntegrationError(_IntegrationError):
             "this is a programming error in the integration class"
         )
         super().__init__(message)
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "code": self.code,
-            "rule": self.rule,
-            "value": self.value,
-            "message": self.message,
-        }

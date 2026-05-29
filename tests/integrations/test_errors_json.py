@@ -128,25 +128,34 @@ def test_class_level_code_is_pinned(
     assert cls.code == expected_code
 
 
-def test_forgetful_subclass_fails_at_class_definition() -> None:
-    """R18 — `_IntegrationError.__init_subclass__` rejects subclasses that
-    don't override `to_dict` at class-definition time (i.e., at import),
-    not at production --json serialisation time.
+def test_subclass_without_to_dict_inherits_base_serialiser() -> None:
+    """R20 — after collapsing to_dict to the base impl, a subclass that
+    does not override `to_dict` inherits a working serialiser. The base
+    walks `vars(self)` and produces the same `{code, message, **attrs}`
+    shape every iteration-4 --json envelope consumer expects.
 
-    `__init_subclass__` is used instead of `abc.ABC` because
-    `BaseException.__new__` (C-level) bypasses `__abstractmethods__`,
-    making `class Foo(Exception, ABC)` enforcement a no-op.
+    Supersedes R18's `__init_subclass__` guard: forgetting to override
+    is no longer a bug because the base impl handles it correctly.
     """
 
-    with pytest.raises(TypeError) as exc_info:
+    class CustomError(_IntegrationError):
+        code = "custom"
 
-        class ForgetfulError(_IntegrationError):
-            code = "forgetful"
-            # `to_dict` deliberately not overridden.
+        def __init__(self, *, foo: str, bar: int) -> None:
+            self.foo = foo
+            self.bar = bar
+            super().__init__(f"custom error: foo={foo} bar={bar}")
 
-    msg = str(exc_info.value)
-    assert "to_dict" in msg
-    assert "ForgetfulError" in msg
+    err = CustomError(foo="alpha", bar=42)
+    payload = err.to_dict()
+    assert payload == {
+        "code": "custom",
+        "message": err.message,
+        "foo": "alpha",
+        "bar": 42,
+    }
+    # Survives a json.dumps round-trip identically to the hand-rolled subclasses.
+    assert json.loads(json.dumps(payload)) == payload
 
 
 def test_all_error_types_round_trip_through_json_dumps() -> None:
