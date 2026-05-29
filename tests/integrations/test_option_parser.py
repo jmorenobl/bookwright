@@ -311,6 +311,32 @@ def test_invalid_descriptor_raises_even_on_empty_input(raw: str | None) -> None:
     assert exc_info.value.to_dict()["rule"] == "bad_flag_prefix"
 
 
+def test_colliding_identifiers_in_descriptor_raises_invalid_declaration() -> None:
+    """R15 — `--skills-dir` and `--skills_dir` both normalize to
+    `skills_dir`; the parser would silently last-wins. Detect at
+    declaration time so the integration author fixes the spelling.
+    """
+
+    class CollidingIntegration(SkillsIntegration):
+        key: ClassVar[str] = "colliding"
+        default_skills_dir: ClassVar[str] = ".coll/skills"
+
+        @classmethod
+        def options(cls) -> list[IntegrationOption]:
+            return [
+                IntegrationOption(flag="--skills-dir", type="string"),
+                IntegrationOption(flag="--skills_dir", type="string"),
+            ]
+
+    with pytest.raises(InvalidOptionDeclarationError) as exc_info:
+        parse_options(None, CollidingIntegration)
+    payload = exc_info.value.to_dict()
+    assert payload["rule"] == "colliding_identifiers"
+    assert "skills_dir" in str(payload["value"])
+    assert "--skills-dir" in str(payload["value"])
+    assert "--skills_dir" in str(payload["value"])
+
+
 def test_duplicate_flag_declaration_raises_invalid_declaration() -> None:
     """R14 — two IntegrationOption entries with the same flag in one
     integration's options() is a programming error, not silent last-wins.

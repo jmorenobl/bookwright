@@ -87,6 +87,21 @@ def parse_options(  # noqa: PLR0912, PLR0915 — small hand-rolled state machine
         dup = next(f for f in flags if flags.count(f) > 1)
         raise InvalidOptionDeclarationError(rule="duplicate_flag", value=dup)
 
+    # R15 — two flags that normalize to the same identifier
+    # (e.g. `--skills-dir` and `--skills_dir` both → `skills_dir`) would
+    # silently last-wins in `result`; detect at declaration time. Build
+    # a flag→ident map so the error names BOTH colliding flags.
+    idents: dict[str, str] = {}
+    for flag in flags:
+        ident = _normalize_identifier(flag)
+        if ident in idents.values():
+            collider = next(f for f, i in idents.items() if i == ident)
+            raise InvalidOptionDeclarationError(
+                rule="colliding_identifiers",
+                value=f"{collider} and {flag} both normalize to {ident!r}",
+            )
+        idents[flag] = ident
+
     result: dict[str, str | bool] = {}
 
     if raw is not None and raw.strip() != "":
