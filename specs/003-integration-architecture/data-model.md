@@ -280,11 +280,11 @@ integration does not declare (FR-018).
 | Field         | Type       | Source            | Notes                                       |
 |---------------|------------|-------------------|---------------------------------------------|
 | `code`        | `str`      | class attribute   | Always `"malformed_option"`.                |
-| `rule`        | `str`      | constructor arg   | One of `"missing_value"`, `"unexpected_value"`, `"duplicate_flag"`, `"missing_required"`. |
-| `value`       | `str`      | constructor arg   | The offending flag. For `rule="missing_required"` this is the *declared-but-absent* flag (the descriptor's `flag`), NOT a token from the user's input. For the other three rules it is the token from the input that violated the rule. |
+| `rule`        | `str`      | constructor arg   | One of `"missing_value"`, `"unexpected_value"`, `"duplicate_flag"`, `"missing_required"`, `"malformed_shell_syntax"`, `"escapes_project_root"`, `"resolves_to_project_root"`. |
+| `value`       | `str`      | constructor arg   | The offending flag, except: for `rule="missing_required"` this is the *declared-but-absent* flag (the descriptor's `flag`), NOT a token from the user's input; for `rule="malformed_shell_syntax"` this is the entire raw `--integration-options` string that failed tokenization; for `rule="escapes_project_root"` and `rule="resolves_to_project_root"` this is the string form of the `resolve_skills_dir(...)` return (a `Path`-normalized view of what the user supplied — e.g., `""`, `"."`, and `"./"` all collapse to `"."`). |
 | `message`     | `str`      | derived           | Human-readable, names the rule and the flag. |
 
-**Raised by**: `parse_options(...)` per FR-019, FR-021.
+**Raised by**: `parse_options(...)` per FR-019, FR-021 (rules `missing_value`, `unexpected_value`, `duplicate_flag`, `missing_required`, `malformed_shell_syntax`); `SkillsIntegration.setup(...)` per FR-029 (rules `escapes_project_root`, `resolves_to_project_root`).
 
 **`to_dict()` shape**:
 ```json

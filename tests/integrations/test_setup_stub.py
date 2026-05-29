@@ -180,6 +180,45 @@ def test_generic_setup_rejects_skills_dir_escaping_project_root(
 
 
 @pytest.mark.parametrize(
+    "collapse_value,expected_value",
+    [
+        # `Path("")`, `Path(".")`, `Path("./")` all normalize to `Path(".")`
+        # at construction; the error echoes `str(resolved)` so we expect ".".
+        ("", "."),
+        (".", "."),
+        ("./", "."),
+        # `Path("foo/..")` stays un-normalized until `.resolve()`; the error
+        # carries the not-yet-resolved relative path the user effectively asked for.
+        ("foo/..", "foo/.."),
+    ],
+)
+def test_generic_setup_rejects_skills_dir_that_resolves_to_project_root(
+    collapse_value: str,
+    expected_value: str,
+    tmp_project: Path,
+    minimal_manifest: Manifest,
+) -> None:
+    """R6 — ``--skills-dir`` whose resolved target equals ``project_root`` is rejected.
+
+    Without this guard, ``Path("") == Path(".")`` collapses into project_root
+    itself, and ``setup()`` would happily drop ``.bookwright-skills-placeholder``
+    directly at the project root — polluting the user's repo with a stray marker.
+    """
+
+    with pytest.raises(MalformedOptionError) as exc_info:
+        GenericIntegration().setup(tmp_project, minimal_manifest, {"skills_dir": collapse_value})
+
+    payload = exc_info.value.to_dict()
+    assert payload["code"] == "malformed_option"
+    assert payload["rule"] == "resolves_to_project_root"
+    assert payload["value"] == expected_value
+    # Marker MUST NOT land at project_root.
+    assert (tmp_project / ".bookwright-skills-placeholder").exists() is False
+    # Default dir MUST NOT be created either.
+    assert (tmp_project / ".agents/skills").exists() is False
+
+
+@pytest.mark.parametrize(
     "integration_cls,expected_dir",
     [
         (ClaudeIntegration, ".claude/skills"),

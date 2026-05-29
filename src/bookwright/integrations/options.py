@@ -80,7 +80,14 @@ def parse_options(  # noqa: PLR0912 — small hand-rolled state machine, one bra
     lookup: dict[str, IntegrationOption] = {opt.flag: opt for opt in declared}
     declared_flags = sorted(lookup.keys())
 
-    tokens = shlex.split(raw, posix=True)
+    try:
+        tokens = shlex.split(raw, posix=True)
+    except ValueError as exc:
+        # `shlex.split` raises `ValueError("No closing quotation")` on
+        # unbalanced quotes. Translate into the structured-error contract
+        # FR-035 promises — otherwise iteration-4's `--json` envelope sees
+        # a bare ValueError without `code`/`message` keys (R7).
+        raise MalformedOptionError(rule="malformed_shell_syntax", value=raw) from exc
 
     result: dict[str, str | bool] = {}
     seen: set[str] = set()

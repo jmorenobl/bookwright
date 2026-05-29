@@ -87,6 +87,36 @@ def test_duplicate_flag_rejected() -> None:
     assert payload["value"] == "--skills-dir"
 
 
+# ---------- R7 — shlex tokenization errors surface as MalformedOptionError ----------
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        '--skills-dir "unclosed',
+        "--skills-dir 'unclosed",
+        '"',
+        "'",
+    ],
+)
+def test_unbalanced_quotes_raise_structured_malformed_option(raw: str) -> None:
+    """R7 — `shlex.split` raises bare `ValueError` on unbalanced quotes; the
+    parser MUST translate this into the structured-error contract (FR-035).
+
+    Iteration 4's `--json` envelope reads `to_dict()` directly; a leaked
+    `ValueError` would leave it without a `code`/`message` payload.
+    """
+
+    with pytest.raises(MalformedOptionError) as exc_info:
+        parse_options(raw, GenericIntegration)
+    payload = exc_info.value.to_dict()
+    assert payload["code"] == "malformed_option"
+    assert payload["rule"] == "malformed_shell_syntax"
+    # The raw user input is carried in `value` (not a single flag) so the
+    # caller can echo the offending string back to the user.
+    assert payload["value"] == raw
+
+
 # ---------- FR-019 — flag-typed option must NOT swallow a following token ----------
 
 

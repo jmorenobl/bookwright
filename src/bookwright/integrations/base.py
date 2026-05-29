@@ -87,6 +87,12 @@ class SkillsIntegration:
         resolved = self.resolve_skills_dir(parsed_options)
         target = (project_root / resolved).resolve()
         root = project_root.resolve()
+        if target == root:
+            # `--skills-dir=`, `--skills-dir .`, `--skills-dir ./`, etc. all
+            # collapse the marker into project_root itself. Rejected as a
+            # separate rule from `escapes_project_root` so the JSON envelope
+            # can distinguish "lands AT root" from "lands OUTSIDE root" (R6).
+            raise MalformedOptionError(rule="resolves_to_project_root", value=str(resolved))
         if not target.is_relative_to(root):
             raise MalformedOptionError(rule="escapes_project_root", value=str(resolved))
         target.mkdir(parents=True, exist_ok=True)
