@@ -162,12 +162,7 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     )
     skills_dir = integration_cls().resolve_skills_dir(parsed_options).as_posix()
 
-    git_binary_available = _init_git.git_available()
-    use_git = git_binary_available and not no_git
-    if not no_git and not git_binary_available:
-        warnings.append(_init_scaffold.GIT_MISSING_WARNING)
-        if not json_output:
-            sys.stderr.write(_init_scaffold.GIT_MISSING_WARNING + "\n")
+    use_git = _init_git.git_available() and not no_git
 
     resolved = ResolvedInvocation(
         mode=mode,

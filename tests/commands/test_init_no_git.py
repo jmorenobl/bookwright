@@ -35,7 +35,7 @@ def test_fake_git_missing_warns_and_succeeds(
     expected_warning = (
         "bookwright: warning: git not found on PATH; project created without a repository"
     )
-    assert expected_warning in payload["warnings"]
+    assert payload["warnings"].count(expected_warning) == 1
 
     project_root = scaffold_in_tmp / "mi-libro"
     assert not (project_root / ".git").exists()
