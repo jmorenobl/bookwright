@@ -152,8 +152,10 @@ that:
 
 1. Resolves the absolute target path (and confirms it is inside the
    project root — refuse otherwise).
-2. If the target exists, copies it to a sibling backup file
-   `<target>.bookwright-backup-<short-uuid>` via `shutil.copy2`
+2. If the target exists, copies it to a per-invocation backup directory
+   under `<project_root>/.bookwright/cache/backup/<token>/<rel_path>`
+   (where `<token> = secrets.token_hex(6)` per overwrite, and
+   `<rel_path> = target.relative_to(project_root)`) via `shutil.copy2`
    (preserves mode + mtime). On copy failure, abort (the FR-030 last
    sentence: "If a backup cannot be created (e.g. permission denied), the
    overwrite MUST NOT proceed").
@@ -170,8 +172,11 @@ created by this command, an outer `try/except` removes the freshly
 created `project_root` after the ledger replay (so a "couldn't even
 create the manifest" failure leaves nothing behind, matching SC-005).
 
-Backup file name uses a 12-char hex suffix from `secrets.token_hex(6)` so
-parallel test invocations under `tmp_path` don't collide.
+Backup files live under `.bookwright/cache/backup/` (which is excluded
+from git by the generated `.gitignore` — see spec § Assumptions). This
+keeps `git add .` from staging the backups during the initial commit
+(FR-022, SC-004). The `<token>` segment also disambiguates parallel
+overwrites of the same path.
 
 **Rationale**:
 

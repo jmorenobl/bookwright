@@ -43,8 +43,26 @@ the iteration-3 contract in
 - **The chosen integration's `setup()` runs after the rest of the tree is
   on disk** so a rollback-after-setup-failure path can still delete the
   marker via the same backup ledger that covers every other write.
-  `parse_options(raw, integration_cls)` (iteration 3) is the only source of
-  parsed integration options; `init` never re-parses.
+  Because iteration 3's `SkillsIntegration.setup(project_root, manifest,
+  parsed_options)` does NOT accept a ledger parameter (changing that
+  contract is out of scope for iteration 4 — Assumption: "This iteration
+  consumes those APIs; it does not reimplement them"), `init` participates
+  the integration's writes in the ledger via a thin wrapper: before
+  calling `setup()`, the orchestrator computes
+  `skills_target = project_root / integration_cls().resolve_skills_dir(parsed_options)`,
+  pre-registers that directory with `mkdir_tracked(skills_target, ledger)`
+  and the marker file with
+  `ledger.record_new_file(skills_target / SKILL_PLACEHOLDER_MARKER_NAME)`,
+  then invokes `setup()`. The iteration-3 stub is idempotent on both writes
+  (`mkdir(exist_ok=True)` and `if not marker.exists(): marker.write_text(...)`),
+  so the pre-registration changes neither the on-disk outcome nor the
+  iter-3 test pins. On a `setup()` exception the ledger replay unlinks the
+  marker (if it exists) and `rmtree`s the skills directory tree exactly as
+  it does for every other scaffolded path. Iteration 9 (real SKILL.md
+  materialization) will revisit this wrapper if it begins writing files
+  the wrapper does not know about. `parse_options(raw, integration_cls)`
+  (iteration 3) is the only source of parsed integration options; `init`
+  never re-parses.
 - **Atomic-or-nothing on disk via a backup ledger** (FR-030). Every write
   goes through one writer that, before any byte hits the target,
   appends `(target_path, prior_state)` to an in-memory ledger:
@@ -75,7 +93,15 @@ the iteration-3 contract in
   become structured "removed flag" errors with a pointer to the modern
   invocation (FR-004). The pre-callback fires before any filesystem
   side-effect (FR-031 + the SC-005 "byte-for-byte unchanged on failure"
-  guarantee).
+  guarantee). **Precedence among pre-callbacks**: the removed-flag check
+  fires BEFORE the `PROJECT_NAME` ⊕ `--here` mutex check (FR-002). If the
+  user supplies a removed flag AND violates the mutex in the same
+  invocation, the structured error is `code: "removed_flag"` (exit 2) —
+  the obsolete-syntax error is more fundamental ("this spelling no longer
+  exists") than the mutex error ("pick one of the two modes"), and
+  resolving it first lets the user see the migration pointer before
+  re-running. Both errors share exit code 2, so the choice is purely
+  about which `code` / `message` lands in the envelope.
 - **`--json` is contract-tested via subprocess**, mirroring the existing
   `tests/test_cli_subprocess.py` pattern. The envelope shape is pinned in
   [`contracts/init_command.md`](contracts/init_command.md) and asserted by

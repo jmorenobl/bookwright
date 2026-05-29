@@ -178,8 +178,8 @@ dataclass itself):
   failure on the very first write should leave nothing behind).
 
 **Storage**: in-memory only. Never serialised. The backup files
-themselves are on-disk siblings of their targets and are deleted on
-success.
+themselves live under `<project_root>/.bookwright/cache/backup/<token>/`
+(per the rules above) and are deleted on success.
 
 ---
 
