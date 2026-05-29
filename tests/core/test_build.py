@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 import pytest
 
+import bookwright.core.manifest as manifest_module
 from bookwright.core import Manifest, ManifestValidationError
 from bookwright.core.manifest import _default_skills_dir_map
 
@@ -154,6 +155,34 @@ def test_unknown_integration_key_with_explicit_skills_dir_succeeds() -> None:
     )
     assert m.integration.key == "cursor"
     assert m.integration.skills_dir == ".cursor/skills"
+
+
+def test_build_with_explicit_skills_dir_skips_default_map(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """R10 — when the caller supplies `integration_skills_dir`,
+    `_default_skills_dir_map()` MUST NOT be called (and therefore the
+    `bookwright.integrations` import + `_register_builtins()` side effect
+    MUST NOT be triggered). Lets iteration-2-style core-only callers
+    avoid the integrations registry entirely.
+    """
+
+    def _explode(*_args: object, **_kwargs: object) -> dict[str, str]:
+        raise RuntimeError(
+            "R10 regression: _default_skills_dir_map called despite explicit "
+            "integration_skills_dir override"
+        )
+
+    monkeypatch.setattr(manifest_module, "_default_skills_dir_map", _explode)
+
+    m = Manifest.build(
+        title="x",
+        authors=["a"],
+        integration_key="claude",
+        uri_base="https://example.org/x/",
+        integration_skills_dir="/tmp/explicit/skills",
+    )
+    assert m.integration.skills_dir == "/tmp/explicit/skills"
 
 
 @pytest.mark.parametrize(

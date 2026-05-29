@@ -412,13 +412,24 @@ class Manifest(BaseModel):
     ) -> Manifest:
         """Construct a fresh manifest from minimal inputs. See contracts/manifest_api.md."""
 
+        # R10 — only consult the integrations registry when the caller
+        # didn't supply an explicit `integration_skills_dir`. Otherwise
+        # `_build_manifest` ignores the map entirely, so building it
+        # (and the `bookwright.integrations` import that triggers
+        # `_register_builtins()`) is wasted work — and worse, it forces
+        # every Manifest.build caller through the registry even when
+        # core-only behaviour is what they want.
+        default_skills_dir: dict[str, str] = (
+            {} if "integration_skills_dir" in overrides else _default_skills_dir_map()
+        )
+
         return _build_manifest(
             cls,
             title=title,
             authors=authors,
             integration_key=integration_key,
             installed_version=_installed_version(),
-            default_skills_dir=_default_skills_dir_map(),
+            default_skills_dir=default_skills_dir,
             **overrides,
         )
 
