@@ -419,8 +419,18 @@ class Manifest(BaseModel):
         # `_register_builtins()`) is wasted work — and worse, it forces
         # every Manifest.build caller through the registry even when
         # core-only behaviour is what they want.
+        #
+        # R23 — align the "supplied" predicate with `_build_manifest`'s
+        # documented None-as-default contract (see _build.py: explicit-None
+        # overrides are dropped from `effective_overrides`). Using
+        # ``"integration_skills_dir" in overrides`` here would diverge:
+        # ``Manifest.build(..., integration_skills_dir=None)`` would skip
+        # the registry, then `_build_manifest` would also skip the
+        # override (None filtered), then `default_skills_dir[key]` would
+        # raise KeyError → misleading TypeError. ``.get(...) is not None``
+        # keeps both call sites in agreement.
         default_skills_dir: dict[str, str] = (
-            {} if "integration_skills_dir" in overrides else _default_skills_dir_map()
+            {} if overrides.get("integration_skills_dir") is not None else _default_skills_dir_map()
         )
 
         return _build_manifest(

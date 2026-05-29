@@ -196,6 +196,15 @@ def test_build_with_explicit_skills_dir_skips_default_map(
         "vocabularies_active",
         "validators_enabled",
         "indexer",
+        # R23 — `integration_skills_dir=None` MUST behave as omission and
+        # fall back to the registry-derived default for `integration_key`.
+        # Pre-R23 the R10 optimization in `Manifest.build` saw the key as
+        # "supplied" (it WAS in **overrides), passed an empty default map
+        # to `_build_manifest`, which then filtered the None and crashed
+        # in the else branch with a misleading
+        # `TypeError("build() requires explicit integration_skills_dir
+        # for unknown integration_key='claude'")`.
+        "integration_skills_dir",
     ],
 )
 def test_none_override_is_treated_as_default(override_name: str) -> None:
