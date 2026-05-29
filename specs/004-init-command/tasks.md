@@ -21,7 +21,7 @@ description: "Task list for iteration 4 — `bookwright init` command"
 
 - Production: `src/bookwright/`
 - Tests: `tests/` at repository root
-- This iteration adds `src/bookwright/commands/init.py` + private `_init_*.py` siblings, `src/bookwright/resources/project/`, `src/bookwright/resources/vocabularies/`, and `tests/commands/`.
+- This iteration adds `src/bookwright/commands/init.py` + private `_init_*.py` siblings, `src/bookwright/resources/project/`, `src/bookwright/resources/vocabularies/`, and `tests/commands/`. (Phase 9 — quality-audit round 4 — re-shapes the `commands/init.py` + `_init_*.py` siblings into a `commands/init/` package; from T046 onward, the canonical layout is the package form. See Phase 9 for the migration map.)
 
 ---
 
@@ -169,6 +169,170 @@ description: "Task list for iteration 4 — `bookwright init` command"
 
 ---
 
+## Phase 9: Quality-Audit Round 4 — Layout Restructure (R1 + R2)
+
+**Purpose**: Apply the post-implement audit's R1 (cluster `init`'s helpers into a `commands/init/` package; see [review.md](review.md) §3 R1 and §4 R1) and R2 (drop the `# noqa: PLC0415 — break cycle` lazy-import workaround that the flat-helpers layout introduced in `_init_envelope.classify_filesystem_failure`; see [review.md](review.md) §3 R2). Structural rename only — **no FRs change**, **no new tests**, behaviour byte-identical pre/post. The decision flip vs research.md R10 is recorded in [research.md](research.md) §R10 and [plan.md](plan.md) § Structure Decision.
+
+**⚠️ Sequencing**: T038 → T039 must complete before any [P] task in this phase, because every subsequent file rewrite (intra-package import rewrites, `__init__.py` re-export, AST-glob retarget, test-side helper imports) reads paths that only exist after the `git mv`s land. The final task (T046) is the quality gate and runs sequentially last.
+
+**Concrete pre/post sanity check** (from review.md §4 R1, run before opening the PR):
+
+```bash
+find src/bookwright/commands -maxdepth 1 -type f -name '*.py'      # expect: __init__.py, check.py, version.py
+find src/bookwright/commands/init -maxdepth 1 -type f -name '*.py' # expect: __init__.py, main.py, conflict.py, envelope.py, git.py, resolve.py, scaffold.py, validate.py
+```
+
+- [ ] T038 Create the new package directory and relocate the Typer entry-point with history-preserving moves: `mkdir src/bookwright/commands/init` then `git mv src/bookwright/commands/init.py src/bookwright/commands/init/main.py`. The file's body is unchanged in this task — only its path moves. Intra-file import rewrites land in T040.
+- [ ] T039 [P] Relocate the six helper modules with history-preserving moves, dropping the `_init_` prefix (the parent `init/` package now provides the namespace per [review.md](review.md) §4 R1 migration map):
+  - `git mv src/bookwright/commands/_init_conflict.py src/bookwright/commands/init/conflict.py`
+  - `git mv src/bookwright/commands/_init_envelope.py src/bookwright/commands/init/envelope.py`
+  - `git mv src/bookwright/commands/_init_git.py src/bookwright/commands/init/git.py`
+  - `git mv src/bookwright/commands/_init_resolve.py src/bookwright/commands/init/resolve.py`
+  - `git mv src/bookwright/commands/_init_scaffold.py src/bookwright/commands/init/scaffold.py`
+  - `git mv src/bookwright/commands/_init_validate.py src/bookwright/commands/init/validate.py`
+
+  Six independent moves bundled into one task because each is mechanical and they share the same prerequisite (T038 must have created `init/`). File bodies are unchanged in this task — intra-package import rewrites land in T040 + T042 + T043. Sequential after T038.
+- [ ] T040 [P] Create [src/bookwright/commands/init/__init__.py](src/bookwright/commands/init/__init__.py) as the package's public-surface marker. Body:
+
+  ```python
+  """Public surface for the `bookwright init` subcommand package."""
+  from .main import CONTEXT_SETTINGS, run
+
+  __all__ = ["CONTEXT_SETTINGS", "run"]
+  ```
+
+  This keeps [src/bookwright/cli.py](src/bookwright/cli.py)'s `from bookwright.commands import init` + `app.command(...)(init.run)` + `init.CONTEXT_SETTINGS` registration shape working unchanged. Sequential after T038 (the directory must exist).
+- [ ] T041 [P] Rewrite intra-package imports inside [src/bookwright/commands/init/main.py](src/bookwright/commands/init/main.py):
+  - Replace the absolute-import block
+
+    ```python
+    from bookwright.commands import (
+        _init_conflict,
+        _init_envelope,
+        _init_git,
+        _init_resolve,
+        _init_scaffold,
+        _init_validate,
+    )
+    from bookwright.commands._init_envelope import ResolvedInvocation
+    ```
+
+    with the relative form
+
+    ```python
+    from . import conflict, envelope, git, resolve, scaffold, validate
+    from .envelope import ResolvedInvocation
+    ```
+
+  - Rename every call-site prefix: `_init_conflict.X(...)` → `conflict.X(...)`, `_init_envelope.X(...)` → `envelope.X(...)`, `_init_git.X(...)` → `git.X(...)`, `_init_resolve.X(...)` → `resolve.X(...)`, `_init_scaffold.X(...)` → `scaffold.X(...)`, `_init_validate.X(...)` → `validate.X(...)`. A `sed -E 's/_init_([a-z]+)\\./\\1./g'` over this single file plus a manual diff review is sufficient — every existing reference has the same pattern.
+  - Also remove the line-6 docstring sentence `"git step to the ``_init_*.py`` private siblings."` — replace with `"git step to the package's private sibling modules."` to match the new layout.
+
+  Sequential after T038 + T039.
+- [ ] T042 [P] Rewrite cross-helper imports inside the package's siblings (each becomes a relative intra-package import; each file edited independently):
+  - [src/bookwright/commands/init/conflict.py](src/bookwright/commands/init/conflict.py): `from bookwright.commands import _init_resolve` → `from . import resolve`; `from bookwright.commands._init_envelope import emit_error` → `from .envelope import emit_error`; `from bookwright.commands._init_scaffold import BackupLedger` → `from .scaffold import BackupLedger`. Rename the one body reference `_init_resolve.is_interactive` → `resolve.is_interactive`.
+  - [src/bookwright/commands/init/resolve.py](src/bookwright/commands/init/resolve.py): `from bookwright.commands._init_envelope import emit_error` → `from .envelope import emit_error`; `from bookwright.commands._init_validate import (...)` → `from .validate import (...)` (preserve the import-from list verbatim).
+  - [src/bookwright/commands/init/validate.py](src/bookwright/commands/init/validate.py): `from bookwright.commands._init_envelope import emit_error` → `from .envelope import emit_error`.
+  - [src/bookwright/commands/init/scaffold.py](src/bookwright/commands/init/scaffold.py): `from bookwright.commands import _init_envelope, _init_git` → `from . import envelope, git`; `from bookwright.commands._init_envelope import ResolvedInvocation` (the `TYPE_CHECKING` guard at line 33) → `from .envelope import ResolvedInvocation`. Rename body references: `_init_envelope.X` → `envelope.X` and `_init_git.X` → `git.X`.
+  - [src/bookwright/commands/init/git.py](src/bookwright/commands/init/git.py): the `TYPE_CHECKING` guard at line 19 (`from bookwright.commands._init_scaffold import BackupLedger`) → `from .scaffold import BackupLedger`.
+
+  Five independent files (different boundaries from T041); bundled into one task so the search-replace pass runs once. Sequential after T038 + T039.
+- [ ] T043 [P] Drop the lazy-import workaround in [src/bookwright/commands/init/envelope.py](src/bookwright/commands/init/envelope.py) `classify_filesystem_failure(...)` per [review.md](review.md) §3 R2:
+  - Move the two function-local imports (lines 196–200)
+
+    ```python
+    from bookwright.commands._init_git import GitInitError  # noqa: PLC0415 — break cycle
+    from bookwright.commands._init_scaffold import (  # noqa: PLC0415 — break cycle
+        BackupCreationError,
+        TargetOutsideProjectRootError,
+    )
+    ```
+
+    to the module top as relative imports
+
+    ```python
+    from .git import GitInitError
+    from .scaffold import BackupCreationError, TargetOutsideProjectRootError
+    ```
+
+  - Drop the two `# noqa: PLC0415 — break cycle` annotations and the function's "Lazy-imports the scaffold/git exception types to avoid a module-load cycle (scaffold imports this module for the options-record helpers)." docstring paragraph — the package layout makes the cycle disappear because Python resolves intra-package submodules without re-entering the parent `bookwright.commands` package. `ruff check` MUST stay green; if `PLC0415` flags any other site in this file after the move, that is a regression to fix at the source.
+
+  Sequential after T038 + T039; independent of T041 + T042 (different file).
+- [ ] T044 [P] Rewrite the AST-invariant glob in [tests/commands/test_init_ast_invariants.py](tests/commands/test_init_ast_invariants.py): replace the two-pattern glob at line 17
+
+  ```python
+  _INIT_FILES = sorted(list(_INIT_DIR.glob("init.py")) + list(_INIT_DIR.glob("_init_*.py")))
+  ```
+
+  with the single-directory glob
+
+  ```python
+  _INIT_FILES = sorted((_INIT_DIR / "init").glob("*.py"))
+  ```
+
+  The new glob picks up every `.py` inside the `init/` package (including `__init__.py` and `main.py`); FR-015 / FR-006 / contract § 7.3 / § 7.4 invariants are pinned across the whole package surface. The test parametrize IDs (`[p.name for p in _INIT_FILES]`) remain meaningful — they just show the new short names (`main.py`, `envelope.py`, …). Sequential after T038 + T039.
+- [ ] T045 [P] Update helper-import sites across the test suite (mechanical rewrite — every match of `bookwright.commands._init_<X>` becomes `bookwright.commands.init.<X>`, and every Python-level module alias `_init_<X>` becomes `<X>`). Concrete impact (from `grep -n _init_ tests/commands/*.py` at the time of writing):
+  - [tests/commands/conftest.py](tests/commands/conftest.py): two `monkeypatch.setattr` string sites (`bookwright.commands._init_resolve.is_interactive`, `bookwright.commands._init_git.git_available`).
+  - [tests/commands/test_init_branches.py](tests/commands/test_init_branches.py): four `monkeypatch.setattr` string sites (`_init_resolve._git_config_user_name` ×2, `_init_resolve.is_interactive` ×2).
+  - [tests/commands/test_init_helpers.py](tests/commands/test_init_helpers.py): the file-level import block
+
+    ```python
+    from bookwright.commands import (
+        _init_envelope,
+        _init_git,
+        _init_resolve,
+        _init_scaffold,
+        _init_validate,
+    )
+    from bookwright.commands._init_envelope import (...)
+    from bookwright.commands._init_scaffold import (...)
+    ```
+
+    becomes
+
+    ```python
+    from bookwright.commands.init import (
+        envelope,
+        git,
+        resolve,
+        scaffold,
+        validate,
+    )
+    from bookwright.commands.init.envelope import (...)
+    from bookwright.commands.init.scaffold import (...)
+    ```
+
+    plus every body reference (`_init_validate.X`, `_init_resolve.X`, etc.) renames to the unprefixed form (`validate.X`, `resolve.X`). Plus the file's module-docstring opening line `"""Unit-level coverage for the `_init_*` helpers."""` updates to `"""Unit-level coverage for the `commands.init.*` helpers."""`.
+  - [tests/commands/test_init_rollback.py](tests/commands/test_init_rollback.py): any `bookwright.commands._init_scaffold.<symbol>` patches → `bookwright.commands.init.scaffold.<symbol>` (audit-cited line refs: 136, 184, 219–224).
+  - [tests/commands/test_init_options_record.py](tests/commands/test_init_options_record.py): any `bookwright.commands._init_envelope.<symbol>` patches → `bookwright.commands.init.envelope.<symbol>` (audit-cited line ref: 16).
+
+  Sweep with the two-pass rewrite:
+
+  ```bash
+  # Pass 1: absolute-module-path strings (covers monkeypatch.setattr targets and dotted imports)
+  grep -rl "bookwright\\.commands\\._init_" tests/commands | \
+    xargs sed -E -i '' 's#bookwright\\.commands\\._init_([a-z]+)#bookwright.commands.init.\\1#g'
+  # Pass 2: in-file module-alias usages and imports
+  grep -rl "_init_[a-z]" tests/commands | \
+    xargs sed -E -i '' 's/\\b_init_([a-z]+)\\b/\\1/g'
+  ```
+
+  Audit the diff manually after — the second pass is broad enough that a stray match would be visible in a `git diff`. Sequential after T039 (the new module paths must exist for `pytest --collect-only` to succeed).
+- [ ] T046 Re-run the iteration-4 quality gate (the same five commands T035 ran, with the new module paths) to confirm zero behavioural drift:
+
+  ```bash
+  uv run pytest --cov=src/bookwright/commands/init --cov-fail-under=95
+  uv run pytest                               # global suite, ≥80 % per Constitution Principle VIII
+  uv run ruff check
+  uv run ruff format --check
+  uv run mypy --strict src tests
+  ```
+
+  All five MUST be green. The per-module slice coverage values from [review.md](review.md) §5 (96 %–100 % per module, 97.35 % global) should redistribute across the package but stay ≥ 80 % per module and ≥ 95 % combined. Run the [review.md](review.md) §4 R1 pre/post sanity check (`find src/bookwright/commands -maxdepth 1 …` and `find src/bookwright/commands/init -maxdepth 1 …`) to confirm the layout matches the migration map exactly — three top-level entries (`__init__.py`, `check.py`, `version.py`) and eight package entries (`__init__.py`, `main.py`, `conflict.py`, `envelope.py`, `git.py`, `resolve.py`, `scaffold.py`, `validate.py`). Sequential after T040 + T041 + T042 + T043 + T044 + T045 (everything else in this phase).
+
+**Checkpoint**: [review.md](review.md) findings R1 and R2 are both closed. `commands/` is back to three at-a-glance subcommand entries. The cyclic-import workaround is gone. No FR / contract / data-model changes; every existing test still passes against the new module paths.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -181,6 +345,7 @@ description: "Task list for iteration 4 — `bookwright init` command"
 - **User Story 4 (Phase 6, P2)**: depends on US1 (extends `init.run` git step).
 - **User Story 5 (Phase 7, P3)**: depends on US1 + US3 (the pre-callback routes `--ai` into the integration flag that US3 wired up).
 - **Polish (Phase 8)**: the rollback / JSON-envelope grids depend on every user story phase being complete; the quality gate depends on every test file existing.
+- **Quality-Audit Round 4 — Layout Restructure (Phase 9)**: depends on Polish being green on `main` (the audit that triggered the restructure ran against the merged Polish state). Within Phase 9: T038 → T039 → (T040 ‖ T041 ‖ T042 ‖ T043 ‖ T044 ‖ T045) → T046.
 
 ### User Story Dependencies
 
@@ -199,6 +364,7 @@ description: "Task list for iteration 4 — `bookwright init` command"
 - All eight Foundational helper / fixture / resource tasks: T004, T005, T006, T007, T009, T010, T011, T012 in parallel (T008 sequences after T007 inside the same file; T013 / T014 depend on the helpers existing).
 - All test files within a user story can be authored in parallel: T015/T016/T017 (US1), T023/T024 (US2), T027 (US3 single file), T029 (US4), T031 (US5).
 - Polish test files: T033, T034, T036, T037 in parallel; T035 runs after all of them.
+- Phase 9 restructure: after T038 + T039 land, T040 / T041 / T042 / T043 / T044 / T045 all touch distinct files and can be authored in parallel; T046 (quality gate) runs sequentially after all six.
 
 ---
 
@@ -245,6 +411,7 @@ Task: "Tests for FR-034 init-options.json envelope in tests/commands/test_init_o
 4. Add US4 (`--no-git` + git-missing warning) → re-run § 4 → demo.
 5. Add US5 (deprecated flags) → re-run quickstart § 6 "Failure modes" rows for `--ai`, `--ai-skills`, `--ai-commands-dir`.
 6. Add Polish (rollback grid, JSON-envelope subprocess pin, quality gate) → open the PR.
+7. Apply Phase 9 (quality-audit round 4 — layout restructure: `commands/init.py` + `_init_*.py` → `commands/init/` package) → re-run the same quality gate → open the follow-up PR. Phase 9 is post-merge audit remediation, not part of the original iteration-4 PR; it ships as a `refactor(commands):` commit with the prefix-renames recorded via `git mv` so `git log --follow` keeps working.
 
 ### Parallel Team Strategy
 
@@ -260,4 +427,5 @@ US1 lands first because every other user story extends `init.run`. Once it is on
 - Per Constitution Principle IX (and contract § 7.5), every `--json` invocation MUST emit exactly one JSON document on stdout. T034 is the subprocess pin that protects this invariant across every documented failure mode.
 - Per Constitution Principle V, `init.run` MUST NOT branch on the integration key (no `if key == "claude"` ladder). The skills directory and marker file are owned by the integration class, exercised by T028 and asserted by T027.
 - Per spec § FR-030 and SC-005, every documented failure mode MUST leave the target directory byte-for-byte unchanged. T033 is the dirhash-snapshot pin that protects this invariant.
+- Phase 9 (post-implement audit-driven restructure) adds no new tests and changes no FR — every existing test still runs verbatim, only the helper import paths and the AST-invariant glob move with the source. The decision flip vs research.md R10 (which originally rejected the package layout) is recorded inside research.md §R10 itself; the rationale is captured in [review.md](review.md) §3 R1 / §3 R2 and [plan.md](plan.md) § Structure Decision.
 - Stop after T035 and let CI run the full matrix before merging. Coverage thresholds and strictness are CI gates — do not relax them locally.
