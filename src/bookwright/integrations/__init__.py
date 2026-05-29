@@ -107,7 +107,12 @@ _register_builtins()
 
 
 __all__ = [
-    "INTEGRATION_REGISTRY",
+    # NOTE: `INTEGRATION_REGISTRY` is intentionally NOT exposed in __all__
+    # (R17). The dict remains importable from the module namespace for
+    # the in-tree test snapshot fixture and the registry-mutation guard
+    # tests, but external consumers MUST go through `get`, `list_keys`,
+    # and `_register` — direct dict assignment bypasses FR-005's
+    # duplicate-detection guard and the R13 empty-key guard.
     "SKILL_DESCRIPTION_MAX_LENGTH",
     "SKILL_NAME_MAX_LENGTH",
     "SKILL_PLACEHOLDER_MARKER_NAME",

@@ -24,11 +24,11 @@ import pytest
 
 from bookwright.core import Manifest
 from bookwright.integrations import (
-    INTEGRATION_REGISTRY,
     SKILL_PLACEHOLDER_MARKER_NAME,
     IntegrationOption,
     SkillsIntegration,
     UnknownOptionError,
+    _register,
     get,
     list_keys,
     parse_options,
@@ -93,7 +93,9 @@ def test_fake_integration_registers_and_satisfies_surface(
     minimal_manifest: Manifest,
 ) -> None:
     del registry_snapshot  # fixture restores teardown
-    INTEGRATION_REGISTRY["fake"] = FakeIntegration
+    # R17 — go through `_register` rather than direct dict assignment so
+    # the FR-005 / R13 guards exercise the same path real integrations do.
+    _register(FakeIntegration)
 
     # Lookup and listing.
     assert get("fake") is FakeIntegration
@@ -118,7 +120,7 @@ def test_parse_options_is_generic_over_options(
     registry_snapshot: dict[str, type[SkillsIntegration]],
 ) -> None:
     del registry_snapshot
-    INTEGRATION_REGISTRY["fake-with-opts"] = FakeWithOptionsIntegration
+    _register(FakeWithOptionsIntegration)
 
     assert parse_options("--scope wide", FakeWithOptionsIntegration) == {"scope": "wide"}
 
