@@ -182,14 +182,45 @@ Cada proyecto declara un namespace base en `manifest.toml`. Por ejemplo:
 uri_base = "https://example.org/my-book/"
 ```
 
-Las URIs se generan por composición:
+Las URIs se generan por composición, `{uri_base}{segmento}/{token}`, con un
+segmento fijo por concepto y un token de identidad (slug para entidades con
+nombre, UUIDv7 para aserciones):
 
-- Personaje: `{uri_base}character/{slug}`
-- Evento: `{uri_base}event/{slug}`
-- Localización: `{uri_base}location/{slug}`
-- Aserción de atributo: `{uri_base}assertion/{uuid7}`
+| Concepto | Segmento | Token |
+|---|---|---|
+| Personaje (`G1_Character`) | `character` | slug |
+| Objeto (`G16_Object`) | `object` | slug |
+| Evento (`G5_Narrative_Event`) | `event` | slug |
+| Estado psicológico (`G3_Psychological_State`) | `psychological-state` | slug |
+| Setting (`G12_Setting`) | `setting` | slug |
+| Localización (`G13_Narrative_Location`) | `location` | slug |
+| Relación social (`G4_Social_Relationship`) | `relationship` | slug |
+| Rol de relación (`G6_Relationship_Role`) | `relationship-role` | slug |
+| Unidad narrativa (`G9_Narrative_Unit`) | `narrative-unit` | slug |
+| Función narrativa (`G10_Narrative_Function`) | `narrative-function` | slug |
+| Rol narrativo (`G11_Narrative_Role`) | `narrative-role` | slug |
+| Secuencia narrativa (`G7_Narrative_Sequence`) | `narrative-sequence` | slug |
+| Aserción de atributo (`E13_Attribute_Assignment`) | `assertion` | UUIDv7 |
 
-El slug se genera del nombre canónico con `python-slugify`. Las aserciones usan UUIDv7 (vía `uuid_utils.uuid7()` del paquete `uuid-utils`) para mantener orden temporal sin colisiones.
+El segmento por concepto evita que dos entidades de tipos distintos que
+comparten slug colapsen en la misma URI.
+
+El slug se genera del nombre canónico con `python-slugify` en su modo por
+defecto: **minúsculas y solo ASCII**. Los caracteres acentuados o no-ASCII se
+transliteran a su forma ASCII más próxima (`José Peña` → `jose-pena`,
+`La caída` → `la-caida`), los espacios y separadores colapsan a un único guión,
+y se recortan los guiones de los extremos. Un nombre canónico cuyo slug
+resultante quede vacío se rechaza con un error explícito. Se eligió ASCII puro
+—en lugar de preservar diacríticos— por portabilidad: las IRIs con caracteres
+no-ASCII obligan a percent-encoding y se comportan de forma inconsistente entre
+endpoints SPARQL, herramientas RDF y espejos en el sistema de ficheros. La
+desambiguación de slugs colisionantes es responsabilidad del indexer (iteración
+6), no del modelo de dominio.
+
+Las aserciones usan UUIDv7 (vía `uuid_utils.uuid7()` del paquete `uuid-utils`)
+para mantener orden temporal sin colisiones. Toda entidad salvo la aserción de
+atributo se construye a partir de un nombre canónico provisto por quien la crea;
+el modelo nunca sintetiza nombres a partir de los participantes.
 
 ---
 

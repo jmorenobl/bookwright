@@ -17,9 +17,9 @@
   are transliterated to their closest ASCII form (`José Peña` → `jose-pena`,
   `La caída` → `la-caida`); letters are lowercased; runs of whitespace and
   separators collapse to a single hyphen; leading/trailing hyphens are stripped;
-  a name that yields an empty slug is rejected. This intentionally **overrides**
-  the "acentos sí" note in design § 4.5 in favor of maximally portable,
-  tool-safe identifiers; the indexer (iteration 6) owns any disambiguation.
+  a name that yields an empty slug is rejected. Chosen for maximally portable,
+  tool-safe identifiers; design § 4.5 has been updated to document this rule
+  explicitly. The indexer (iteration 6) owns any disambiguation.
 - Q: What URI path segment do the nine concepts not listed in § 4.5 use? → A: A
   fixed per-concept lowercase-hyphenated segment (full table in FR-004), so that
   two different-typed entities sharing a slug do **not** collapse to the same
@@ -336,9 +336,9 @@ identifier it was taken from.
   in FR-004; cross-type slug collisions are thereby avoided by construction.
 - **Slug rule precision**: resolved in Clarifications — slugs are lowercase and
   ASCII-only (accents transliterated, e.g. `José` → `jose`), spaces and
-  separators collapse to single hyphens, empty results are rejected. This
-  deliberately overrides the "acentos sí" note in design § 4.5; consider
-  updating that line in `bookwright-design.md` to match.
+  separators collapse to single hyphens, empty results are rejected. Design
+  § 4.5 in `bookwright-design.md` has been updated to document this ASCII-only
+  rule (and the full per-concept segment table) explicitly.
 - **Reified entities still take a canonical name**: resolved in Clarifications —
   relationships, roles, narrative units, etc. are constructed with a
   caller-supplied canonical name from which a slug is derived; the model does
