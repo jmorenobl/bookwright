@@ -159,8 +159,8 @@ Razones:
 
 - La versión de GOLEM se **congela** en cada release de Bookwright. Vive en `src/bookwright/resources/schemas/golem-{version}/`.
 - El proyecto generado registra qué versión usa en `manifest.toml > [bookwright] schema_version`.
-- Cuando GOLEM publique una versión nueva, se añade una carpeta `golem-{nueva}/` sin tocar la anterior. El usuario migra explícitamente con `bookwright migrate-schema`.
-- v0 inicia con GOLEM 1.0 (la versión publicada en 2025).
+- Cuando GOLEM publique una versión nueva, se añade una carpeta `golem-{nueva}/` sin tocar la anterior. El usuario migra explícitamente con `bookwright migrate-schema`. El `{version}` del directorio (y por tanto el valor de `schema_version`) sigue la versión de GOLEM upstream, no un versionado propio de Bookwright.
+- v0 congela GOLEM **1.1**, bajo el selector `golem-1.1`. Nota de procedencia: la única serialización Turtle legible por máquina de GOLEM vive en la rama `main` del repositorio upstream (`golem/golem_v1-1.ttl`, `owl:versionInfo "1.1"`); el *release tag* `v1.0` contiene únicamente documentación HTML, sin TTL. La procedencia exacta (repo + commit + `versionIRI`) se registra en `version.json` junto al TTL congelado.
 
 ### 4.4 Vocabularios controlados
 
@@ -402,7 +402,7 @@ bookwright/
 │       │
 │       └── resources/                   # artefactos empaquetados
 │           ├── schemas/
-│           │   └── golem-1.0/
+│           │   └── golem-1.1/
 │           │       ├── golem.ttl
 │           │       └── version.json
 │           ├── vocabularies/
@@ -597,7 +597,7 @@ El principio: lo que un humano puede leer o reconstruir desde texto, se versiona
 [bookwright]
 # OBLIGATORIO. Versiones para compatibilidad.
 cli_version_min = "0.1.0"
-schema_version = "golem-1.0"
+schema_version = "golem-1.1"
 manifest_version = "1"
 
 # OBLIGATORIO. URI base del proyecto.
@@ -1253,7 +1253,7 @@ dev = [
 **Objetivo:** capacidad de construir y consultar el grafo de un proyecto.
 
 - `golem/namespaces.py`, `golem/base.py`, `golem/modules/*`.
-- `resources/schemas/golem-1.0/`: copiar el TTL de GOLEM upstream, validar.
+- `resources/schemas/golem-1.1/`: copiar el TTL de GOLEM upstream, validar.
 - `indexers/base.py`, `indexers/rdflib_indexer.py`.
 - `commands/graph.py`: `build`, `query`.
 - `io/turtle.py`, `io/bible.py`, `io/manuscript.py`.

@@ -164,12 +164,12 @@ identifier it was taken from.
 
 1. **Given** a fresh install of the toolkit, **When** the bundled schema
    directory is inspected, **Then** it contains the frozen GOLEM ontology for
-   version 1.0.
+   version 1.1.
 2. **Given** the bundled ontology, **When** its accompanying version record is
    read, **Then** it names the upstream source repository and the exact upstream
    commit identifier the ontology was frozen from.
 3. **Given** a future GOLEM release, **When** it is later vendored, **Then** it
-   is added alongside the existing version without altering the frozen 1.0 copy.
+   is added alongside the existing version without altering the frozen 1.1 copy.
 
 ---
 
@@ -256,7 +256,7 @@ identifier it was taken from.
 - **FR-010**: Serialized output across multiple entities MUST use a shared set
   of registered short prefixes covering at least the GOLEM base namespace and
   the common RDF, RDFS, CIDOC-CRM, and DOLCE/DUL prefixes.
-- **FR-011**: The toolkit MUST bundle a frozen copy of the GOLEM 1.0 ontology as
+- **FR-011**: The toolkit MUST bundle a frozen copy of the GOLEM 1.1 ontology as
   an internal resource and MUST accompany it with a version record that names
   the upstream repository and the exact upstream commit identifier it was frozen
   from.
@@ -300,7 +300,7 @@ identifier it was taken from.
   under `assertion/{uuid}`.
 - **Namespace Registry**: The central catalogue of short prefixes (GOLEM base
   plus RDF, RDFS, CIDOC-CRM, DOLCE/DUL) used when serializing.
-- **Frozen Ontology Resource**: The vendored GOLEM 1.0 ontology plus its version
+- **Frozen Ontology Resource**: The vendored GOLEM 1.1 ontology plus its version
   record (upstream repository + commit identifier).
 
 ## Success Criteria *(mandatory)*
@@ -361,7 +361,7 @@ identifier it was taken from.
   and `bookwright.schema_version`, which this model consumes as the namespace
   base and ontology version selector.
 - **Upstream GOLEM ontology** (`github.com/GOLEM-lab/golem-ontology`): the source
-  of the frozen 1.0 TTL; its commit identifier is recorded in the version record.
+  of the frozen 1.1 TTL; its commit identifier is recorded in the version record.
 
 ## Out of Scope
 

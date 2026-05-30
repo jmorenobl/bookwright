@@ -157,5 +157,5 @@ plumbing whose only justification is "future X" MUST be rejected:
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[specs/004-init-command/plan.md](specs/004-init-command/plan.md)
+[specs/005-golem-domain-model/plan.md](specs/005-golem-domain-model/plan.md)
 <!-- SPECKIT END -->
