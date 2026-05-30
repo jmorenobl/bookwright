@@ -181,6 +181,34 @@ def test_resolved_invocation_rejects_skills_dir_with_dotdot() -> None:
         _make_resolved(integration_skills_dir="../escape")
 
 
+def test_resolved_invocation_rejects_pending_git_status() -> None:
+    """R1 regression — the internal ``"pending"`` sentinel must not survive in the public model."""
+    with pytest.raises(ValueError, match="git_status"):
+        _make_resolved(git_status="pending")
+
+
+def test_resolved_invocation_requires_git_status() -> None:
+    """R1 regression — ``git_status`` is mandatory; callers must settle it before construction."""
+    base: dict[str, object] = {
+        "mode": "named",
+        "project_name": "mi-libro",
+        "project_slug": "mi-libro",
+        "project_root": "/abs/mi-libro",
+        "title": "mi-libro",
+        "authors": ["Alice"],
+        "language": "es",
+        "integration_key": "claude",
+        "integration_skills_dir": ".claude/skills",
+        "integration_options": {},
+        "no_git": False,
+        "force": False,
+        "json_output": False,
+        "deprecated_flags_seen": [],
+    }
+    with pytest.raises(ValueError, match="git_status"):
+        ResolvedInvocation(**base)  # type: ignore[arg-type]
+
+
 def test_init_options_record_rejects_wrong_schema_version() -> None:
     resolved = _make_resolved()
     with pytest.raises(ValueError, match="schema_version"):

@@ -317,16 +317,15 @@ def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previou
     ledger: BackupLedger,
     json_output: bool,
     warnings: list[str],
-    no_git: bool,
     author_name: str,
-    use_git: bool,
-) -> ResolvedInvocation:
+) -> None:
     """All filesystem mutations + integration setup + git step.
 
     The orchestrator behind ``bookwright init``'s success path: renders
     the packaged template tree, dumps the manifest, copies vocabularies,
     runs the integration's ``setup()`` and finally ``git init + commit``
-    when applicable. Returns ``resolved`` with ``git_status`` filled in.
+    when applicable. The ``git_status`` on ``resolved`` is settled by
+    ``main.run`` before this function is called.
     """
 
     project_root = Path(resolved.project_root)
@@ -375,16 +374,7 @@ def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previou
         ledger.record_new_file(marker)
     integration_cls().setup(project_root, manifest, parsed_options)
 
-    # 5) Write the init-options record. The git_status is filled in below.
-    if no_git:
-        resolved = resolved.model_copy(update={"git_status": "skipped_by_flag"})
-    elif not use_git:
-        resolved = resolved.model_copy(update={"git_status": "skipped_no_binary"})
-    elif git.is_inside_existing_repo(project_root):
-        resolved = resolved.model_copy(update={"git_status": "skipped_existing_repo"})
-    else:
-        resolved = resolved.model_copy(update={"git_status": "initialized"})
-
+    # 5) Write the init-options record (git_status already settled by main.run).
     record = envelope.build_options_record(resolved)
     options_payload = envelope.serialize_options_record(record)
     write_bytes_atomic(
@@ -404,5 +394,3 @@ def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previou
         warnings.append(GIT_MISSING_WARNING)
         if not json_output:
             sys.stderr.write(GIT_MISSING_WARNING + "\n")
-
-    return resolved

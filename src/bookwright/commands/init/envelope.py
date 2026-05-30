@@ -52,8 +52,7 @@ class ResolvedInvocation(BaseModel):
         "skipped_by_flag",
         "skipped_no_binary",
         "skipped_existing_repo",
-        "pending",
-    ] = "pending"
+    ]
     deprecated_flags_seen: list[str] = Field(default_factory=list)
 
     @field_validator("language")

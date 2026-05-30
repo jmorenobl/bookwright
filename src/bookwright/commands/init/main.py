@@ -155,7 +155,20 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     )
     skills_dir = integration_cls().resolve_skills_dir(parsed_options).as_posix()
 
-    use_git = git.git_available() and not no_git
+    git_status: Literal[
+        "initialized",
+        "skipped_by_flag",
+        "skipped_no_binary",
+        "skipped_existing_repo",
+    ]
+    if no_git:
+        git_status = "skipped_by_flag"
+    elif not git.git_available():
+        git_status = "skipped_no_binary"
+    elif git.is_inside_existing_repo(project_root):
+        git_status = "skipped_existing_repo"
+    else:
+        git_status = "initialized"
 
     resolved = ResolvedInvocation(
         mode=mode,
@@ -171,29 +184,36 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
         no_git=no_git,
         force=force,
         json_output=json_output,
+        git_status=git_status,
         deprecated_flags_seen=list(deprecated_seen),
     )
 
     ledger = conflict.seed_backup_ledger(project_root, cleanup_project_root)
 
+    def _rollback_and_cleanup() -> None:
+        ledger.rollback()
+        if cleanup_project_root and project_root.exists():
+            import shutil  # noqa: PLC0415 — local cleanup only
+
+            shutil.rmtree(project_root, ignore_errors=True)
+
     try:
-        resolved = scaffold.run_scaffold_steps(
+        scaffold.run_scaffold_steps(
             resolved=resolved,
             integration_cls=integration_cls,
             parsed_options=parsed_options,
             ledger=ledger,
             json_output=json_output,
             warnings=warnings,
-            no_git=no_git,
             author_name=authors[0],
-            use_git=use_git,
         )
-    except BaseException as exc:
-        ledger.rollback()
-        if cleanup_project_root and project_root.exists():
-            import shutil  # noqa: PLC0415 — local cleanup only
-
-            shutil.rmtree(project_root, ignore_errors=True)
+    except (KeyboardInterrupt, SystemExit):
+        # Signal-like interruptions: roll back the partial scaffold and re-raise
+        # without writing an envelope, so the user sees the original signal.
+        _rollback_and_cleanup()
+        raise
+    except Exception as exc:
+        _rollback_and_cleanup()
         if isinstance(exc, typer.Exit):
             raise
         code, exit_code, details = envelope.classify_filesystem_failure(exc)

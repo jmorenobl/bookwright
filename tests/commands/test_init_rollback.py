@@ -208,6 +208,68 @@ def test_backup_creation_error_rolls_back(
     assert _filter(after) == _filter(snapshot)
 
 
+def test_keyboard_interrupt_propagates_after_rollback(
+    runner: CliRunner,
+    scaffold_in_tmp: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """R2 regression — KeyboardInterrupt mid-scaffold rolls back, then re-raises.
+
+    The interrupt must NOT be funnelled through ``classify_filesystem_failure``
+    (which would mis-stamp it as ``filesystem_error`` exit 6) and must NOT
+    produce a JSON envelope on stdout. Typer's outer shell converts the
+    propagated ``KeyboardInterrupt`` into the conventional SIGINT exit
+    code 130 — the user-visible signal — but only after our handler has
+    rolled back the partial scaffold.
+    """
+
+    def boom(*args: object, **kwargs: object) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("bookwright.commands.init.scaffold.render_resource_tree", boom)
+
+    snapshot = dirhash(scaffold_in_tmp)
+
+    result = runner.invoke(app, ["init", "mi-libro", "--no-git", "--json"])
+
+    # Convention: SIGINT exits 130, NOT 6 (which would be filesystem_error).
+    assert result.exit_code == 130, result.stdout
+    # No error envelope: stdout must not look like an envelope, and stderr
+    # must not contain the human-readable error prefix.
+    assert result.stdout.strip() == ""
+    assert "bookwright: error:" not in result.stderr
+    # Rollback + project_root cleanup leave the parent tree byte-identical.
+    assert dirhash(scaffold_in_tmp) == snapshot
+
+
+def test_system_exit_propagates_after_rollback(
+    runner: CliRunner,
+    scaffold_in_tmp: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """R2 regression — bare ``SystemExit`` mid-scaffold also bypasses the envelope path.
+
+    Only ``typer.Exit`` (which already carries the structured envelope) and
+    ``Exception`` subclasses should hit ``classify_filesystem_failure``. A
+    bare ``SystemExit`` raised from arbitrary code must roll back and
+    re-raise, preserving the original exit code.
+    """
+
+    def boom(*args: object, **kwargs: object) -> None:
+        raise SystemExit(42)
+
+    monkeypatch.setattr("bookwright.commands.init.scaffold.render_resource_tree", boom)
+
+    snapshot = dirhash(scaffold_in_tmp)
+
+    result = runner.invoke(app, ["init", "mi-libro", "--no-git", "--json"])
+
+    assert result.exit_code == 42, result.stdout
+    assert result.stdout.strip() == ""
+    assert "bookwright: error:" not in result.stderr
+    assert dirhash(scaffold_in_tmp) == snapshot
+
+
 def test_git_error_rolls_back(
     runner: CliRunner,
     scaffold_in_tmp: Path,
