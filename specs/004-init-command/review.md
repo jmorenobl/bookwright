@@ -17,16 +17,39 @@ survived that cleanup.
 
 ## 1. Summary
 
-| Severity | Count |
-|---|---|
-| CRITICAL | 0 |
-| HIGH     | 0 |
-| MEDIUM   | 1 |
-| LOW      | 3 |
-| **Total** | 4 |
+| Severity | Open | Closed |
+|---|---|---|
+| CRITICAL | 0 | 0 |
+| HIGH     | 0 | 0 |
+| MEDIUM   | 0 | 1 |
+| LOW      | 0 | 3 |
+| **Total** | 0 | 4 |
 
-Coverage gate: **PASS** (global 97.48 %, threshold 80 %, every changed
-init module ≥ 95 %).
+Coverage gate: **PASS** (post-fix global 97.72 %, threshold 80 %, every
+changed init module ≥ 95 %). 356 tests passing; `ruff check`, `ruff
+format --check`, `mypy --strict src tests` all clean.
+
+**Update 2026-05-30 — all findings closed in commit `0adb89f`** (plus a
+contract-§5 violation surfaced by the same `/simplify` pass — warnings
+were gated on `not json_output`, dropping them from stderr under
+`--json` against FR-032; gates removed in `resolve.py` and
+`scaffold.py`):
+
+- **R1 (MEDIUM)** — one `SkillsIntegration` instance is now built in
+  [main.py:142](../../src/bookwright/commands/init/main.py#L142) and
+  threaded into `run_scaffold_steps` ([main.py:227](../../src/bookwright/commands/init/main.py#L227),
+  [scaffold.py:315](../../src/bookwright/commands/init/scaffold.py#L315),
+  [scaffold.py:369](../../src/bookwright/commands/init/scaffold.py#L369),
+  [scaffold.py:374](../../src/bookwright/commands/init/scaffold.py#L374)).
+- **R2 (LOW)** — dead-code `… if False else None` expression deleted
+  from `tests/commands/test_init_options_record.py`.
+- **R3 (LOW)** — `test_named_mode_reserved_slug` renamed to
+  `test_named_mode_slugifies_to_empty` with a matching docstring in
+  `tests/commands/test_init_branches.py`.
+- **R4 (LOW)** — six `import os as _os  # noqa: PLC0415` occurrences
+  collapsed into a single top-level `import os` per file across
+  `tests/commands/test_init_here.py`, `test_init_integrations.py`, and
+  `test_init_options_record.py`.
 
 ## 2. Conventions Compliance Matrix
 
@@ -64,18 +87,19 @@ the expected artifacts in order.
 
 | ID | Pass | Severity | Location | Summary | Recommendation |
 |---|---|---|---|---|---|
-| R1 | B | MEDIUM | [src/bookwright/commands/init/main.py:141](../../src/bookwright/commands/init/main.py#L141), [scaffold.py:370](../../src/bookwright/commands/init/scaffold.py#L370), [scaffold.py:375](../../src/bookwright/commands/init/scaffold.py#L375) | `integration_cls()` is instantiated three times per `init` invocation (once in `main.run` to compute `skills_dir`, twice inside `run_scaffold_steps` for `mkdir_tracked` + `setup()`). The two integrations in v0 carry no per-instance state, but the pattern reads as if they did, and a future `__init__` with non-trivial cost would be invoked thrice without anyone noticing. | Build the instance once: `integration = integration_cls()` in `main.run`, then thread the *instance* (not the class) into `run_scaffold_steps`. Update the `run_scaffold_steps` signature so `integration_cls` becomes `integration: SkillsIntegration`. Single-line change in three callsites; no behavioural delta. |
+| R1 | B | MEDIUM (CLOSED in `0adb89f`) | [src/bookwright/commands/init/main.py:141](../../src/bookwright/commands/init/main.py#L141), [scaffold.py:369](../../src/bookwright/commands/init/scaffold.py#L369), [scaffold.py:374](../../src/bookwright/commands/init/scaffold.py#L374) | ~~`integration_cls()` is instantiated three times per `init` invocation (once in `main.run` to compute `skills_dir`, twice inside `run_scaffold_steps` for `mkdir_tracked` + `setup()`).~~ Closed: `integration_instance = integration_cls()` is built once at [main.py:141](../../src/bookwright/commands/init/main.py#L141), used to resolve `skills_dir` at [main.py:142](../../src/bookwright/commands/init/main.py#L142), and threaded into `run_scaffold_steps(integration=...)` at [main.py:227](../../src/bookwright/commands/init/main.py#L227). The scaffold-side signature now accepts `integration: SkillsIntegration` ([scaffold.py:315](../../src/bookwright/commands/init/scaffold.py#L315)) and reuses the same instance for `resolve_skills_dir` + `setup()`. | — Applied. |
 | R2 | B | LOW | [tests/commands/test_init_options_record.py:85](../../tests/commands/test_init_options_record.py#L85) | Dead-code expression: `(target / ".bookwright_temp").write_text("temp", encoding="utf-8") if False else None`. The `if False else None` always evaluates to `None`; the `write_text` branch is unreachable. Leftover from an earlier draft — flagged in the prior audit (R3 then) and still on disk. | Delete the line outright. If the temp file was needed as a fixture artifact, lift it into a real conditional or a parametrize id; otherwise it just confuses future readers. |
 | R3 | B | LOW | [tests/commands/test_init_branches.py:94-103](../../tests/commands/test_init_branches.py#L94-L103) | `test_named_mode_reserved_slug` is named for the "slugifies to a reserved name" path but its body sends `"***"` (which slugifies to empty, tripping the `empty` rule) and its own docstring concludes *"Skip this — covered already by derive_slug raising on '***'"*. The test name + docstring still describe an intent the body abandoned — also flagged as R4 in the prior audit, still uncorrected. | Rename to `test_named_mode_slugifies_to_empty` and rewrite the docstring; OR replace the body with a name whose slug actually lands on a reserved word and reassert the `reserved_name` rule. Either resolves the name/body drift. |
 | R4 | B | LOW | [tests/commands/test_init_here.py:27,56,80,129](../../tests/commands/test_init_here.py#L27), [test_init_integrations.py:183](../../tests/commands/test_init_integrations.py#L183), [test_init_options_record.py:87](../../tests/commands/test_init_options_record.py#L87) | Six test functions across five files each carry `import os as _os  # noqa: PLC0415` at the top of their body just to call `_os.chdir(...)`. None of those files import `os` at module scope, so the alias and the lint waiver are unnecessary — a top-level `import os` removes both. The repetition reads like a pattern that was adopted once and copy-pasted without reconsidering. | In each of the five files, add `import os` to the module's import block and replace the in-body `import os as _os  # noqa: PLC0415` + `_os.chdir(...)` with a direct `os.chdir(...)`. Net delta: -6 lines, -6 noqa pragmas, -6 alias names. |
 
 ## 4. Remediation Detail
 
-### R1 — Triple instantiation of the integration class per `init` call
+### R1 — Triple instantiation of the integration class per `init` call (CLOSED in `0adb89f`)
 
-- **Where:** [src/bookwright/commands/init/main.py:141](../../src/bookwright/commands/init/main.py#L141), [src/bookwright/commands/init/scaffold.py:370](../../src/bookwright/commands/init/scaffold.py#L370), [src/bookwright/commands/init/scaffold.py:375](../../src/bookwright/commands/init/scaffold.py#L375).
-- **Why it matters:** The call shape `integration_cls().resolve_skills_dir(...)` / `integration_cls().setup(...)` reads as if the result is a stateless class-method. The implementation is in fact `def resolve_skills_dir(self, …)` and `def setup(self, …)` — instance methods on `SkillsIntegration`. The constitution mandates the registry shape (`integrations.get(key)` → a `type[SkillsIntegration]`), so what callers receive is genuinely the class. But there is no reason to construct three throw-away instances per invocation — and a future `__init__` with non-trivial cost (e.g. an integration that discovers an installed agent's home directory) would be invoked three times without anyone noticing. The pattern also subtly invites bugs where someone caches state on `self` in one branch and is surprised the other two branches don't see it.
-- **Suggested change:** Build the instance once and thread it. Concrete diff:
+- **Status:** Closed in commit `0adb89f`. `integration_instance = integration_cls()` is now built once at [main.py:141](../../src/bookwright/commands/init/main.py#L141); the same instance services `resolve_skills_dir` ([main.py:142](../../src/bookwright/commands/init/main.py#L142), [scaffold.py:369](../../src/bookwright/commands/init/scaffold.py#L369)) and `setup` ([scaffold.py:374](../../src/bookwright/commands/init/scaffold.py#L374)). The `run_scaffold_steps` signature was updated to accept `integration: SkillsIntegration` ([scaffold.py:315](../../src/bookwright/commands/init/scaffold.py#L315)). Quality gates remained green after the change (356 passed, ruff/ruff-format/mypy --strict all clean).
+- **Where (original):** [src/bookwright/commands/init/main.py:141](../../src/bookwright/commands/init/main.py#L141), [src/bookwright/commands/init/scaffold.py:370](../../src/bookwright/commands/init/scaffold.py#L370), [src/bookwright/commands/init/scaffold.py:375](../../src/bookwright/commands/init/scaffold.py#L375).
+- **Why it mattered:** The call shape `integration_cls().resolve_skills_dir(...)` / `integration_cls().setup(...)` reads as if the result is a stateless class-method. The implementation is in fact `def resolve_skills_dir(self, …)` and `def setup(self, …)` — instance methods on `SkillsIntegration`. The constitution mandates the registry shape (`integrations.get(key)` → a `type[SkillsIntegration]`), so what callers receive is genuinely the class. But there is no reason to construct three throw-away instances per invocation — and a future `__init__` with non-trivial cost (e.g. an integration that discovers an installed agent's home directory) would be invoked three times without anyone noticing. The pattern also subtly invites bugs where someone caches state on `self` in one branch and is surprised the other two branches don't see it.
+- **Applied change (kept for reference):** Build the instance once and thread it. Concrete diff:
 
   ```python
   # main.py — around line 138-141:
