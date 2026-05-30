@@ -160,6 +160,8 @@ def _filter_diverging(entries: list[tuple[str, str]]) -> dict[str, str]:
 
     keep: dict[str, str] = {}
     for rel, digest in entries:
+        if rel in {".claude", ".agents"}:
+            continue
         if rel.startswith(".claude/") or rel.startswith(".agents/"):
             continue
         if rel == "manifest.toml":

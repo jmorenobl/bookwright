@@ -146,8 +146,9 @@ def test_default_no_writes_outside_project_root(
     project_root = scaffold_in_tmp / "mi-libro"
 
     def _filter_outside_project(entries: list[tuple[str, str]]) -> list[tuple[str, str]]:
-        prefix = project_root.relative_to(scaffold_in_tmp).as_posix() + "/"
-        return [(rel, h) for rel, h in entries if not rel.startswith(prefix)]
+        root_rel = project_root.relative_to(scaffold_in_tmp).as_posix()
+        prefix = root_rel + "/"
+        return [(rel, h) for rel, h in entries if rel != root_rel and not rel.startswith(prefix)]
 
     snapshot_after = dirhash(scaffold_in_tmp)
     assert _filter_outside_project(snapshot_after) == snapshot_before

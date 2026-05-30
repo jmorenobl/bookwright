@@ -52,17 +52,25 @@ def fake_git_missing(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def dirhash(path: Path) -> list[tuple[str, str]]:
-    """Sorted ``(relative_posix, sha256)`` snapshot of every file under ``path``."""
+    """Sorted ``(relative_posix, sha256_or_dir_sentinel)`` snapshot under ``path``.
+
+    Captures directories too (as a ``<DIR>`` sentinel) so the FR-030 / SC-005
+    atomic-or-nothing assertions detect orphan directories left by a failed
+    scaffold; files-only snapshots gave false negatives for `unknown_integration`
+    and absolute `--skills-dir` regressions (round-4 audit, T047).
+    """
 
     if not path.exists():
         return []
     entries: list[tuple[str, str]] = []
     for child in sorted(path.rglob("*")):
-        if child.is_file() or child.is_symlink():
-            rel = child.relative_to(path).as_posix()
+        rel = child.relative_to(path).as_posix()
+        if child.is_symlink() or child.is_file():
             try:
                 digest = hashlib.sha256(child.read_bytes()).hexdigest()
             except OSError:
                 digest = "<unreadable>"
             entries.append((rel, digest))
+        elif child.is_dir():
+            entries.append((rel, "<DIR>"))
     return entries
