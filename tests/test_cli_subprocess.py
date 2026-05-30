@@ -24,7 +24,7 @@ def test_version_json_subprocess_stdout_pure() -> None:
         json.dumps(
             {
                 "package_version": bookwright.__version__,
-                "golem_schema_version": "unknown",
+                "golem_schema_version": "golem-1.1",
             },
             separators=(",", ":"),
         )

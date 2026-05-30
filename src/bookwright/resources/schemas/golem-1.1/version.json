@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/GOLEM-lab/golem-ontology",
+  "commit": "f666128a9a29f39c9f23c96ae1c48023cc8e7898",
+  "file": "golem/golem_v1-1.ttl",
+  "version_iri": "https://w3id.org/golem/ontology/v1.1",
+  "version_info": "1.1",
+  "retrieved": "2026-05-30"
+}

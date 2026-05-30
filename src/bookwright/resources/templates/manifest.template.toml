@@ -11,7 +11,7 @@
 # Minimum Bookwright CLI version required to operate on this project (PEP 440).
 cli_version_min = "0.0.0"
 # GOLEM ontology schema stamp.
-schema_version = "golem-1.0"
+schema_version = "golem-1.1"
 # Manifest format version (positive integer string).
 manifest_version = "1"
 # Absolute http(s) URI used as the @prefix for the project's Turtle graph.

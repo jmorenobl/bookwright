@@ -18,7 +18,7 @@ def test_load_full_returns_every_field() -> None:
     m = Manifest.load(load_fixture("valid_full.toml"))
 
     assert m.bookwright.cli_version_min == "0.0.1"
-    assert m.bookwright.schema_version == "golem-1.0"
+    assert m.bookwright.schema_version == "golem-1.1"
     assert m.bookwright.manifest_version == "1"
     assert m.bookwright.uri_base == "https://example.org/full/"
     assert m.bookwright.indexer == "rdflib"
@@ -118,7 +118,7 @@ def test_load_accepts_every_book_type(book_type: str, tmp_manifest: Callable[[st
     body = f"""
 [bookwright]
 cli_version_min = "0.0.1"
-schema_version = "golem-1.0"
+schema_version = "golem-1.1"
 manifest_version = "1"
 uri_base = "https://example.org/types/"
 
@@ -144,7 +144,7 @@ def test_load_accepts_every_book_status(status: str, tmp_manifest: Callable[[str
     body = f"""
 [bookwright]
 cli_version_min = "0.0.1"
-schema_version = "golem-1.0"
+schema_version = "golem-1.1"
 manifest_version = "1"
 uri_base = "https://example.org/status/"
 
@@ -172,7 +172,7 @@ def test_load_does_not_check_vocabulary_existence(
     body = """
 [bookwright]
 cli_version_min = "0.0.1"
-schema_version = "golem-1.0"
+schema_version = "golem-1.1"
 manifest_version = "1"
 uri_base = "https://example.org/voc/"
 

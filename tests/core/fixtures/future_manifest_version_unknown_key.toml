@@ -5,7 +5,7 @@
 
 [bookwright]
 cli_version_min = "0.0.1"
-schema_version = "golem-1.0"
+schema_version = "golem-1.1"
 manifest_version = "9"
 uri_base = "https://example.org/future-mv-unknown-key/"
 lock_file = "bookwright.lock"

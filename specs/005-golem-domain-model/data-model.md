@@ -6,10 +6,19 @@ IRIs and predicates below are confirmed present in the frozen ontology
 term-closure test (SC-003) is the backstop against any drift.
 
 Namespaces (per research § D5): `golem: https://w3id.org/golem/ontology#`,
-`crm: http://www.cidoc-crm.org/cidoc-crm/`, the DOLCE-Lite-Plus layer at
-`http://www.ontologydesignpatterns.org/ont/dlp/` (bound as `dlp`), `rdf:`,
-`rdfs:`, `xsd:`. The frozen TTL's native alias for the GOLEM namespace (`gc:` /
-`:`) is **not** rebound; we always emit the single `golem:` prefix.
+`crm: http://www.cidoc-crm.org/cidoc-crm/`, the DOLCE-Lite-Plus layer bound as
+`dlp` (see below), `rdf:`, `rdfs:`, `xsd:`. The frozen TTL's native alias for
+the GOLEM namespace (`gc:` / `:`) is **not** rebound; we always emit the single
+`golem:` prefix.
+
+**`dlp` resolved (T021)**: the cross-reference object properties we emit
+(`participant`, `proper-part`, `generically-dependent-on`, `generic-location`)
+all live in the frozen ontology under
+`http://www.ontologydesignpatterns.org/ont/dlp/DOLCE-Lite.owl#`, so `dlp` is
+bound to **that** IRI (not the bare `…/ont/dlp/`); only then does Turtle emit
+`dlp:participant` rather than a full `<…>` IRI (US2-4). The sibling DnS /
+spatial / temporal DOLCE files are imported by the ontology but none of their
+terms are emitted in v0, so no extra prefix is bound.
 
 ---
 
@@ -82,12 +91,24 @@ Each lives in its GOLEM-module file (design § 4.2 grouping).
 | `NarrativeRole` | `golem:G11_Narrative_Role` | `narrative-role` | — | — |
 | `NarrativeSequence` | `golem:G7_Narrative_Sequence` | `narrative-sequence` | `units: tuple[GolemEntity \| URIRef, ...]` (ordered) | one triple per unit using the ontology's sequence/part predicate (e.g. `dlp:proper-part`) |
 
-> Cross-reference predicate selection: the confirmed object-property inventory in
-> the frozen ontology includes `crm:P67_refers_to`, `crm:P16_used_specific_object`,
-> `golem:GP1_is_character_in`, and the DOLCE (`dlp`) `participant` / `participant-in` /
-> `involves` / `involved-in` / `proper-part(-of)` family. Each link above is bound
-> to a specific one of these during implementation and verified by the
-> term-closure test. The model never coins a new predicate.
+> Cross-reference predicates resolved (T021). Each link below is bound to a
+> single object property confirmed present in the frozen ontology and asserted
+> ∈ `frozen_terms()` by `test_namespaces.py`. The model never coins a predicate.
+>
+> | Link | Predicate IRI |
+> |---|---|
+> | Social Relationship → participant | `dlp:participant` (`…/DOLCE-Lite.owl#participant`) |
+> | Narrative Event → participant | `dlp:participant` |
+> | Relationship Role → relationship | `crm:P67_refers_to` |
+> | Psychological State → bearer | `dlp:generically-dependent-on` |
+> | Narrative Location → setting | `dlp:generic-location` |
+> | Narrative Unit → function / role | `crm:P67_refers_to` |
+> | Narrative Sequence → unit (ordered) | `dlp:proper-part` |
+>
+> These IRIs live in `golem/namespaces.py` as the `PARTICIPANT`,
+> `GENERICALLY_DEPENDENT_ON`, `GENERIC_LOCATION`, `PROPER_PART` and `REFERS_TO`
+> constants. Because RDF is unordered, the *ordering* of a sequence's units is
+> carried only by the caller's tuple order, not by the triples.
 
 ### `modules/inference.py`
 
@@ -101,8 +122,8 @@ Fields (FR-009):
 |---|---|---|---|
 | `target` | `GolemEntity \| URIRef` | yes | `(self.uri, crm:P140_assigned_attribute_to, target.uri)` |
 | `attribute` | `GolemEntity \| URIRef` | yes | `(self.uri, crm:P141_assigned, attribute.uri)` |
-| `source` | `str` (path, e.g. `manuscript/cap-04.md:42`) | yes | source path as `xsd:string` literal via the ontology's source/"used" property (exact IRI confirmed and recorded in T021 — never coined); stored & emitted **verbatim** (FR-009, US3-2) |
-| `premise` | `GolemEntity \| URIRef \| None` | no | when present, link this assignment to its premise assignment via the ontology's premise property (exact IRI confirmed and recorded in T021); when `None`, omitted (US3-3) |
+| `source` | `str` (path, e.g. `manuscript/cap-04.md:42`) | yes | source path as `xsd:string` literal via `crm:P16_used_specific_object` (confirmed T021 — the ontology's own comment names P16 as the "source … used in an inference (E13)" property); stored & emitted **verbatim** (FR-009, US3-2) |
+| `premise` | `GolemEntity \| URIRef \| None` | no | when present, links this assignment to its premise assignment via `crm:P67_refers_to` (confirmed T021); when `None`, omitted (US3-3) |
 
 Construction: `AttributeAssignment` does **not** take `name`; it overrides token
 generation to `uuid7()` and exposes the same `.uri` / `.to_triples()` surface.

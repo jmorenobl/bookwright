@@ -35,7 +35,7 @@ def test_minimal_build_applies_fr017_defaults() -> None:
     assert m.book.genre == []
     assert m.book.target_length_words is None
     assert m.bookwright.manifest_version == "1"
-    assert m.bookwright.schema_version == "golem-1.0"
+    assert m.bookwright.schema_version == "golem-1.1"
     assert m.bookwright.indexer == "rdflib"
     assert m.paths.manuscript == "manuscript/"
     assert m.paths.bible == "bible/"

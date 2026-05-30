@@ -12,7 +12,7 @@ def test_version_human(runner: CliRunner) -> None:
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
     assert bookwright.__version__ in result.stdout
-    assert "unknown" in result.stdout
+    assert "golem-1.1" in result.stdout
 
 
 def test_version_json_byte_exact(runner: CliRunner) -> None:
@@ -22,7 +22,7 @@ def test_version_json_byte_exact(runner: CliRunner) -> None:
         json.dumps(
             {
                 "package_version": bookwright.__version__,
-                "golem_schema_version": "unknown",
+                "golem_schema_version": "golem-1.1",
             },
             separators=(",", ":"),
         )

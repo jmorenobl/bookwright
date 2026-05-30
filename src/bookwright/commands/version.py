@@ -12,7 +12,7 @@ from bookwright import __version__
 
 def _read_golem_schema_version() -> str:
     try:
-        resource = resources.files("bookwright").joinpath("schemas/golem/VERSION")
+        resource = resources.files("bookwright").joinpath("resources/schemas/golem-1.1/VERSION")
         return resource.read_text(encoding="utf-8").strip()
     except (FileNotFoundError, ModuleNotFoundError):
         return "unknown"
