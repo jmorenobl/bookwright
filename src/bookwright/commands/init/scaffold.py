@@ -312,10 +312,9 @@ def copy_resource_file(
 def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previously-resolved input in one call
     *,
     resolved: ResolvedInvocation,
-    integration_cls: type[_integrations.SkillsIntegration],
+    integration: _integrations.SkillsIntegration,
     parsed_options: dict[str, str | bool],
     ledger: BackupLedger,
-    json_output: bool,
     warnings: list[str],
     author_name: str,
 ) -> None:
@@ -367,12 +366,12 @@ def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previou
         )
 
     # 4) Wire the integration's setup() through the ledger.
-    skills_target = project_root / integration_cls().resolve_skills_dir(parsed_options)
+    skills_target = project_root / integration.resolve_skills_dir(parsed_options)
     mkdir_tracked(skills_target, ledger)
     marker = skills_target / _integrations.SKILL_PLACEHOLDER_MARKER_NAME
     if not marker.exists():
         ledger.record_new_file(marker)
-    integration_cls().setup(project_root, manifest, parsed_options)
+    integration.setup(project_root, manifest, parsed_options)
 
     # 5) Write the init-options record (git_status already settled by main.run).
     record = envelope.build_options_record(resolved)
@@ -383,14 +382,14 @@ def run_scaffold_steps(  # noqa: PLR0913 — orchestrator: gathers every previou
         ledger,
     )
 
-    # 6) Run git init + commit if applicable.
+    # 6) Run git init + commit if applicable. Warnings go to stderr regardless
+    # of ``--json`` (contract §5); the JSON envelope mirrors them via the
+    # ``warnings`` list on the success path.
     if resolved.git_status == "initialized":
         git.init_and_commit(project_root, COMMIT_MESSAGE, author_name, ledger)
     elif resolved.git_status == "skipped_existing_repo":
         warnings.append(GIT_EXISTING_WARNING)
-        if not json_output:
-            sys.stderr.write(GIT_EXISTING_WARNING + "\n")
+        sys.stderr.write(GIT_EXISTING_WARNING + "\n")
     elif resolved.git_status == "skipped_no_binary":
         warnings.append(GIT_MISSING_WARNING)
-        if not json_output:
-            sys.stderr.write(GIT_MISSING_WARNING + "\n")
+        sys.stderr.write(GIT_MISSING_WARNING + "\n")

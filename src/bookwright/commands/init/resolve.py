@@ -140,16 +140,17 @@ def parse_named_slug(name: str, json_output: bool) -> str:
 def resolve_authors_or_warn(
     project_root: Path,
     warnings: list[str],
-    *,
-    json_output: bool,
 ) -> list[str]:
-    """Resolve authors and emit the FR-016 fallback warning on stderr if used."""
+    """Resolve authors and emit the FR-016 fallback warning on stderr if used.
+
+    Per contract §5 the warning goes to stderr regardless of ``--json``; the
+    JSON envelope mirrors it via the ``warnings`` list on the success path.
+    """
 
     authors, fellback = resolve_authors(project_root)
     if fellback:
         warnings.append(AUTHOR_FALLBACK_WARNING)
-        if not json_output:
-            sys.stderr.write(AUTHOR_FALLBACK_WARNING + "\n")
+        sys.stderr.write(AUTHOR_FALLBACK_WARNING + "\n")
     return authors
 
 

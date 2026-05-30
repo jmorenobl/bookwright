@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -24,9 +25,7 @@ def test_here_in_empty_cwd(
 
     subdir = scaffold_in_tmp / "my-here-project"
     subdir.mkdir()
-    import os as _os  # noqa: PLC0415
-
-    _os.chdir(subdir)
+    os.chdir(subdir)
 
     result = runner.invoke(app, ["init", "--here", "--json"])
     assert result.exit_code == 0, result.stdout
@@ -53,9 +52,7 @@ def test_here_already_initialized_refusal(
 
     subdir = scaffold_in_tmp / "existing"
     (subdir / ".bookwright").mkdir(parents=True)
-    import os as _os  # noqa: PLC0415
-
-    _os.chdir(subdir)
+    os.chdir(subdir)
 
     snapshot = dirhash(subdir)
 
@@ -77,9 +74,7 @@ def test_here_force_overrides_prompt(
     subdir = scaffold_in_tmp / "my-here-project"
     subdir.mkdir()
     (subdir / "notes.txt").write_text("USER NOTES", encoding="utf-8")
-    import os as _os  # noqa: PLC0415
-
-    _os.chdir(subdir)
+    os.chdir(subdir)
 
     result = runner.invoke(app, ["init", "--here", "--force", "--json"])
     assert result.exit_code == 0, result.stdout
@@ -126,9 +121,7 @@ def test_here_inside_existing_repo_skips_git(
         check=True,
     ).stdout.strip()
 
-    import os as _os  # noqa: PLC0415
-
-    _os.chdir(subdir)
+    os.chdir(subdir)
 
     result = runner.invoke(app, ["init", "--here", "--force", "--json"])
     assert result.exit_code == 0, result.stdout

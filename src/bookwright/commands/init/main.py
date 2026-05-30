@@ -133,12 +133,13 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     # named mode it equals project_root.parent (which always exists); in here mode it
     # equals project_root itself. git walks upward in both cases, so the resolved name
     # is identical to the legacy behaviour of probing inside project_root post-mkdir.
-    authors = resolve.resolve_authors_or_warn(Path.cwd(), warnings, json_output=json_output)
+    authors = resolve.resolve_authors_or_warn(Path.cwd(), warnings)
     language = resolve.resolve_language()
     integration_cls, parsed_options = resolve.resolve_integration(
         integration, integration_options, json_output=json_output
     )
-    skills_dir = integration_cls().resolve_skills_dir(parsed_options).as_posix()
+    integration_instance = integration_cls()
+    skills_dir = integration_instance.resolve_skills_dir(parsed_options).as_posix()
 
     git_status: Literal[
         "initialized",
@@ -223,10 +224,9 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     try:
         scaffold.run_scaffold_steps(
             resolved=resolved,
-            integration_cls=integration_cls,
+            integration=integration_instance,
             parsed_options=parsed_options,
             ledger=ledger,
-            json_output=json_output,
             warnings=warnings,
             author_name=authors[0],
         )

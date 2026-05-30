@@ -91,13 +91,16 @@ def test_here_basename_reserved_via_dir_rename(
     assert payload["details"]["rule"] == "reserved_name"
 
 
-def test_named_mode_reserved_slug(runner: CliRunner, scaffold_in_tmp: Path) -> None:
-    """A name that passes validate_project_name but slugifies to a reserved name."""
+def test_named_mode_slugifies_to_empty(runner: CliRunner, scaffold_in_tmp: Path) -> None:
+    """A name that passes ``validate_project_name`` but slugifies to ``""``.
 
-    # "C O N" → trimmed "C O N" → not slash, dot, leading-dot, length ok,
-    # reserved? validate_project_name uppercases and checks. "C O N" is not in
-    # the reserved set; but slugify("C O N") → "c-o-n" which is not reserved
-    # either. Skip this — covered already by derive_slug raising on "***".
+    ``"***"`` survives the FR-021a grid (not empty after strip, no path
+    separator, not ``.``/``..``, not leading-dot, fits length, not reserved)
+    but ``slugify`` collapses it to the empty string, which trips
+    ``derive_slug``'s post-check and surfaces as ``invalid_project_name``
+    rule ``empty``. Pinning this boundary keeps the slug post-check from
+    being silently bypassed by a future slugifier swap.
+    """
     result = runner.invoke(app, ["init", "***", "--no-git", "--json"])
     assert result.exit_code == 2, result.stdout
 

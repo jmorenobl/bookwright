@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -180,13 +181,11 @@ def test_sc008_tree_independent_of_integration(runner: CliRunner, scaffold_in_tm
     claude_root.mkdir()
     generic_root.mkdir()
 
-    import os as _os  # noqa: PLC0415
-
-    _os.chdir(claude_root)
+    os.chdir(claude_root)
     r1 = runner.invoke(app, ["init", "mi-libro", "--integration", "claude", "--no-git", "--json"])
     assert r1.exit_code == 0, r1.stdout
 
-    _os.chdir(generic_root)
+    os.chdir(generic_root)
     r2 = runner.invoke(app, ["init", "mi-libro", "--integration", "generic", "--no-git", "--json"])
     assert r2.exit_code == 0, r2.stdout
 

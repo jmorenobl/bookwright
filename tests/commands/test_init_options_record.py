@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -82,11 +83,7 @@ def test_options_round_trip(
     if "--here" in argv:
         target = scaffold_in_tmp / "my-here-project"
         target.mkdir()
-        (target / ".bookwright_temp").write_text("temp", encoding="utf-8") if False else None
-        # cd into the new dir
-        import os as _os  # noqa: PLC0415
-
-        _os.chdir(target)
+        os.chdir(target)
 
     result = runner.invoke(app, argv)
     assert result.exit_code == 0, result.stdout
