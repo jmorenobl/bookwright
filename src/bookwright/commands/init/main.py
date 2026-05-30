@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import typer
+from pydantic import ValidationError
 from rich.console import Console
 
 from . import conflict, envelope, git, resolve, scaffold, validate
@@ -126,29 +127,13 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     else:
         conflict.apply_named_conflict_matrix(project_root, force, json_output=json_output)
 
-    if not project_root.exists():
-        try:
-            project_root.mkdir(parents=True, exist_ok=False)
-        except PermissionError as exc:
-            envelope.emit_error(
-                code="permission_denied",
-                message=f"could not create {project_root}: {exc}",
-                details={"path": str(project_root), "errno": exc.errno or 0},
-                exit_code=6,
-                json_output=json_output,
-                rolled_back=False,
-            )
-        except OSError as exc:
-            envelope.emit_error(
-                code="filesystem_error",
-                message=f"could not create {project_root}: {exc}",
-                details={"path": str(project_root), "errno": exc.errno or 0},
-                exit_code=6,
-                json_output=json_output,
-                rolled_back=False,
-            )
-
-    authors = resolve.resolve_authors_or_warn(project_root, warnings, json_output=json_output)
+    # Resolve every value that can fail BEFORE touching the filesystem (FR-030 / SC-005:
+    # a failure here must leave the parent dir byte-identical, so we cannot mkdir first).
+    # `Path.cwd()` is the right cwd for the git-config probe regardless of mode: in
+    # named mode it equals project_root.parent (which always exists); in here mode it
+    # equals project_root itself. git walks upward in both cases, so the resolved name
+    # is identical to the legacy behaviour of probing inside project_root post-mkdir.
+    authors = resolve.resolve_authors_or_warn(Path.cwd(), warnings, json_output=json_output)
     language = resolve.resolve_language()
     integration_cls, parsed_options = resolve.resolve_integration(
         integration, integration_options, json_output=json_output
@@ -170,23 +155,61 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
     else:
         git_status = "initialized"
 
-    resolved = ResolvedInvocation(
-        mode=mode,
-        project_name=title if mode == "named" else None,
-        project_slug=project_slug,
-        project_root=project_root.as_posix(),
-        title=title,
-        authors=list(authors),
-        language=language,
-        integration_key=integration,
-        integration_skills_dir=skills_dir,
-        integration_options=dict(parsed_options),
-        no_git=no_git,
-        force=force,
-        json_output=json_output,
-        git_status=git_status,
-        deprecated_flags_seen=list(deprecated_seen),
-    )
+    try:
+        resolved = ResolvedInvocation(
+            mode=mode,
+            project_name=title if mode == "named" else None,
+            project_slug=project_slug,
+            project_root=project_root.as_posix(),
+            title=title,
+            authors=list(authors),
+            language=language,
+            integration_key=integration,
+            integration_skills_dir=skills_dir,
+            integration_options=dict(parsed_options),
+            no_git=no_git,
+            force=force,
+            json_output=json_output,
+            git_status=git_status,
+            deprecated_flags_seen=list(deprecated_seen),
+        )
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        field = ".".join(str(part) for part in first.get("loc", ()))
+        envelope.emit_error(
+            code="malformed_option",
+            message=f"invalid {field}: {first.get('msg', str(exc))}",
+            details={
+                "field": field,
+                "value": str(first.get("input", "")),
+                "rule": first.get("type", "value_error"),
+            },
+            exit_code=5,
+            json_output=json_output,
+            rolled_back=False,
+        )
+
+    if not project_root.exists():
+        try:
+            project_root.mkdir(parents=True, exist_ok=False)
+        except PermissionError as exc:
+            envelope.emit_error(
+                code="permission_denied",
+                message=f"could not create {project_root}: {exc}",
+                details={"path": str(project_root), "errno": exc.errno or 0},
+                exit_code=6,
+                json_output=json_output,
+                rolled_back=False,
+            )
+        except OSError as exc:
+            envelope.emit_error(
+                code="filesystem_error",
+                message=f"could not create {project_root}: {exc}",
+                details={"path": str(project_root), "errno": exc.errno or 0},
+                exit_code=6,
+                json_output=json_output,
+                rolled_back=False,
+            )
 
     ledger = conflict.seed_backup_ledger(project_root, cleanup_project_root)
 

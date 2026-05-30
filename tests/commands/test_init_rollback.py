@@ -54,6 +54,23 @@ _VALIDATION_FAILURES: list[tuple[list[str], str, int]] = [
         "malformed_option",
         5,
     ),
+    # B1 regression (round-4 audit): absolute --skills-dir tripped the
+    # ResolvedInvocation field validator post-mkdir, leaking an orphan
+    # project dir AND escaping the structured-error envelope (FR-030).
+    (
+        [
+            "init",
+            "mi-libro",
+            "--integration",
+            "generic",
+            "--integration-options",
+            "--skills-dir /tmp/foo",
+            "--no-git",
+            "--json",
+        ],
+        "malformed_option",
+        5,
+    ),
     (
         ["init", "mi-libro", "--ai-skills", "--no-git", "--json"],
         "removed_flag",
