@@ -8,6 +8,28 @@
 
 **Input**: User description: "Bookwright necesita representar el modelo de dominio narrativo (personajes, eventos, settings, relaciones, etc.) como objetos Python tipados que sepan cómo serializarse a RDF/Turtle según la ontología GOLEM."
 
+## Clarifications
+
+### Session 2026-05-30
+
+- Q: How should canonical names be normalized into URI slugs — casing and
+  accents? → A: **Lowercase and ASCII-only.** Accented and non-ASCII characters
+  are transliterated to their closest ASCII form (`José Peña` → `jose-pena`,
+  `La caída` → `la-caida`); letters are lowercased; runs of whitespace and
+  separators collapse to a single hyphen; leading/trailing hyphens are stripped;
+  a name that yields an empty slug is rejected. This intentionally **overrides**
+  the "acentos sí" note in design § 4.5 in favor of maximally portable,
+  tool-safe identifiers; the indexer (iteration 6) owns any disambiguation.
+- Q: What URI path segment do the nine concepts not listed in § 4.5 use? → A: A
+  fixed per-concept lowercase-hyphenated segment (full table in FR-004), so that
+  two different-typed entities sharing a slug do **not** collapse to the same
+  identifier.
+- Q: How are reified concepts that may lack a natural name identified
+  (relationships, roles, narrative functions/roles)? → A: **Uniform model** —
+  every entity except Attribute Assignment is constructed from a caller-supplied
+  canonical name that is slugged; only Attribute Assignment uses a time-ordered
+  UUIDv7 token. The model never synthesizes names from participants.
+
 ## User Scenarios & Testing *(mandatory)*
 
 The consumers of this capability are downstream parts of the toolkit — the
@@ -161,16 +183,17 @@ identifier it was taken from.
   the caller's responsibility (the indexer, iteration 6); the model does not
   silently merge or silently diverge.
 - **Canonical name with internal whitespace, mixed case, or accents**: spaces
-  always collapse to single hyphens; accents on proper names are preserved; the
-  rule must be deterministic so the same name always yields the same slug.
+  always collapse to single hyphens; accents and other non-ASCII characters are
+  transliterated to ASCII and letters are lowercased; the rule must be
+  deterministic so the same name always yields the same slug.
 - **Renaming after construction**: produces a *new* identifier on a *new*
   object; reconciling old and new identifiers (migration) is explicitly out of
   scope for v0.
 - **Entity types without a pattern listed in § 4.5** (object, psychological
   state, setting, relationship, relationship role, narrative unit, narrative
-  function, narrative role, narrative sequence): each receives a deterministic
-  path segment derived from its type, following the same `{segment}/{slug}`
-  shape as the documented patterns (see Assumptions).
+  function, narrative role, narrative sequence): each receives a fixed
+  per-concept path segment, following the same `{segment}/{slug}` shape as the
+  documented patterns (see the segment table in FR-004).
 - **Attribute assignment referencing an entity that has no triples yet**: the
   assignment still serializes; it references the target by identifier and does
   not require the target to be materialized in the same batch.
@@ -190,15 +213,36 @@ identifier it was taken from.
 - **FR-003**: Each entity MUST carry a stable identifier composed of the project
   namespace base, a type-specific path segment, and an identity token (a slug
   for named entities, a time-ordered unique token for attribute assignments).
-- **FR-004**: The model MUST generate the documented identifier patterns
-  exactly: `{base}character/{slug}` for characters, `{base}event/{slug}` for
-  events, `{base}location/{slug}` for narrative locations, and
-  `{base}assertion/{uuid}` for attribute assignments (per § 4.5).
+- **FR-004**: The model MUST generate identifiers as `{base}{segment}/{token}`,
+  using a fixed per-concept path segment and identity token:
+
+  | Concept | Path segment | Identity token |
+  |---|---|---|
+  | Character | `character` | slug |
+  | Object | `object` | slug |
+  | Event | `event` | slug |
+  | Psychological State | `psychological-state` | slug |
+  | Setting | `setting` | slug |
+  | Narrative Location | `location` | slug |
+  | Social Relationship | `relationship` | slug |
+  | Relationship Role | `relationship-role` | slug |
+  | Narrative Unit | `narrative-unit` | slug |
+  | Narrative Function | `narrative-function` | slug |
+  | Narrative Role | `narrative-role` | slug |
+  | Narrative Sequence | `narrative-sequence` | slug |
+  | Attribute Assignment | `assertion` | UUIDv7 |
+
+  The segments `character`, `event`, `location`, and `assertion` MUST match
+  § 4.5 exactly; the remaining segments follow the same lowercase-hyphenated
+  shape and MUST be stable across runs and releases.
 - **FR-005**: Slug generation MUST be deterministic: the same canonical name and
   type always produce the same slug, and therefore the same identifier.
-- **FR-006**: Slug generation MUST collapse whitespace to single hyphens and
-  MUST preserve accented characters that occur in proper names; it MUST reject
-  (raise a clear error for) names that yield an empty slug.
+- **FR-006**: Slug generation MUST be lowercase and ASCII-only: accented and
+  non-ASCII characters are transliterated to their closest ASCII form (`José` →
+  `jose`, `caída` → `caida`), letters are lowercased, runs of whitespace and
+  separators collapse to a single hyphen, and leading/trailing hyphens are
+  stripped. A canonical name that yields an empty slug MUST be rejected with a
+  clear error.
 - **FR-007**: An entity's identifier MUST be immutable once generated: changing
   the canonical name of a constructed object MUST NOT mutate its existing
   identifier.
@@ -287,23 +331,19 @@ identifier it was taken from.
   `http`/`https` URI ending in `/`. This model relies on that guarantee and does
   not re-validate it; identifiers are built by direct concatenation after the
   trailing slash.
-- **Path segments for the nine concepts not enumerated in § 4.5** (object,
-  psychological state, setting, relationship, relationship role, narrative unit,
-  narrative function, narrative role, narrative sequence): each is assumed to get
-  a deterministic, lowercase, hyphenated path segment derived from its concept
-  name (for example `object/{slug}`, `setting/{slug}`,
-  `narrative-unit/{slug}`), mirroring the `{segment}/{slug}` shape of the four
-  documented patterns. `/speckit-clarify` may refine the exact segment strings.
-- **Slug rule precision**: "Preserve case/diacritics only where it adds value"
-  is interpreted as: accents on proper names are preserved; ASCII letter casing
-  is normalized to lowercase; spaces and separators collapse to single hyphens.
-  Because identifiers are immutable and case-sensitive, this exact rule is a
-  candidate for confirmation in `/speckit-clarify`.
-- **Reified entities still take a canonical name**: relationships, narrative
-  units, etc. are assumed to be constructed with a caller-supplied canonical
-  name from which a slug is derived; the model does not synthesize names from
-  participants. Only Attribute Assignment uses a generated time-ordered token
-  instead of a slug.
+- **Path segments for the nine concepts not enumerated in § 4.5**: resolved in
+  Clarifications — each gets a fixed lowercase-hyphenated segment per the table
+  in FR-004; cross-type slug collisions are thereby avoided by construction.
+- **Slug rule precision**: resolved in Clarifications — slugs are lowercase and
+  ASCII-only (accents transliterated, e.g. `José` → `jose`), spaces and
+  separators collapse to single hyphens, empty results are rejected. This
+  deliberately overrides the "acentos sí" note in design § 4.5; consider
+  updating that line in `bookwright-design.md` to match.
+- **Reified entities still take a canonical name**: resolved in Clarifications —
+  relationships, roles, narrative units, etc. are constructed with a
+  caller-supplied canonical name from which a slug is derived; the model does
+  not synthesize names from participants. Only Attribute Assignment uses a
+  generated time-ordered UUIDv7 token instead of a slug.
 - **Serialization granularity**: "serialize to triples" means each entity can
   emit its own triples and a collection of entities can be emitted together as
   Turtle using the shared prefix registry; persisting to disk and querying are
