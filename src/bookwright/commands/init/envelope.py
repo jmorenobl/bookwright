@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from bookwright import __version__ as _BOOKWRIGHT_VERSION
 from bookwright.core.iso639_1 import ISO_639_1_CODES
+from bookwright.integrations import MalformedOptionError
 
 from .git import GitInitError
 from .scaffold import BackupCreationError, TargetOutsideProjectRootError
@@ -188,9 +189,22 @@ def emit_error(  # noqa: PLR0913 — structured-error envelope demands all six f
     raise typer.Exit(exit_code)
 
 
-def classify_filesystem_failure(exc: BaseException) -> tuple[str, int, dict[str, Any]]:
+def classify_filesystem_failure(  # noqa: PLR0911 — one branch per contract §4 exception type
+    exc: BaseException,
+) -> tuple[str, int, dict[str, Any]]:
     """Map a scaffold-time exception to ``(code, exit_code, details)`` (contract §4)."""
 
+    if isinstance(exc, MalformedOptionError):
+        # `SkillsIntegration.setup()` raises this at scaffold time for
+        # `resolves_to_project_root` / `escapes_project_root` (and similar
+        # option-domain rules). Surface it with the same code/exit_code/details
+        # shape that parse-time `MalformedOptionError` uses in
+        # `resolve.resolve_integration`, so consumers see a single contract.
+        return (
+            "malformed_option",
+            5,
+            {"value": exc.value, "rule": exc.rule},
+        )
     if isinstance(exc, BackupCreationError):
         return (
             "backup_creation_error",

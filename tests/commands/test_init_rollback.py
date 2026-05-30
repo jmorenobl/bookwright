@@ -287,6 +287,41 @@ def test_system_exit_propagates_after_rollback(
     assert dirhash(scaffold_in_tmp) == snapshot
 
 
+def test_skills_dir_resolves_to_project_root_rolls_back(
+    runner: CliRunner, scaffold_in_tmp: Path
+) -> None:
+    """B3 regression (round-4 audit): setup-time MalformedOptionError used to be
+    misclassified as ``filesystem_error`` exit 6 with empty details, hiding the
+    real rule (``resolves_to_project_root``). After the fix it surfaces with the
+    same shape as parse-time MalformedOptionError, and the rollback removes the
+    project dir that the scaffold had already partially populated.
+    """
+
+    snapshot = dirhash(scaffold_in_tmp)
+
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "x",
+            "--integration",
+            "generic",
+            "--integration-options",
+            "--skills-dir .",
+            "--no-git",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 5, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["code"] == "malformed_option"
+    assert payload["details"]["rule"] == "resolves_to_project_root"
+    assert payload["details"]["value"] == "."
+    assert payload["rolled_back"] is True
+
+    assert dirhash(scaffold_in_tmp) == snapshot
+
+
 def test_git_error_rolls_back(
     runner: CliRunner,
     scaffold_in_tmp: Path,
