@@ -255,7 +255,8 @@ identifier it was taken from.
   optional premise assertion that, when present, is captured in the triples.
 - **FR-010**: Serialized output across multiple entities MUST use a shared set
   of registered short prefixes covering at least the GOLEM base namespace and
-  the common RDF, RDFS, CIDOC-CRM, and DOLCE/DUL prefixes.
+  the common RDF, RDFS, CIDOC-CRM, DOLCE/DUL, and XSD prefixes (the last for
+  typed literals such as source paths).
 - **FR-011**: The toolkit MUST bundle a frozen copy of the GOLEM 1.1 ontology as
   an internal resource and MUST accompany it with a version record that names
   the upstream repository and the exact upstream commit identifier it was frozen

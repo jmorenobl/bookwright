@@ -5,10 +5,11 @@ IRIs and predicates below are confirmed present in the frozen ontology
 (`golem/golem_v1-1.ttl` @ `f666128a…`, vendored as `golem.ttl`); the
 term-closure test (SC-003) is the backstop against any drift.
 
-Namespaces: `golem: https://w3id.org/golem/ontology#`,
-`crm: http://www.cidoc-crm.org/cidoc-crm/`, the DOLCE layers under
-`http://www.ontologydesignpatterns.org/ont/dlp/…` (bound as `dolce_lite`,
-`dns`, etc.), `rdf:`, `rdfs:`, `xsd:`.
+Namespaces (per research § D5): `golem: https://w3id.org/golem/ontology#`,
+`crm: http://www.cidoc-crm.org/cidoc-crm/`, the DOLCE-Lite-Plus layer at
+`http://www.ontologydesignpatterns.org/ont/dlp/` (bound as `dlp`), `rdf:`,
+`rdfs:`, `xsd:`. The frozen TTL's native alias for the GOLEM namespace (`gc:` /
+`:`) is **not** rebound; we always emit the single `golem:` prefix.
 
 ---
 
@@ -48,42 +49,42 @@ Each lives in its GOLEM-module file (design § 4.2 grouping).
 
 | Class | GOLEM class | Segment | Extra fields | Linking triples |
 |---|---|---|---|---|
-| `Character` | `gc:G1_Character` | `character` | — (v0: identity only) | — |
-| `Object` | `gc:G16_Object` | `object` | — | — |
+| `Character` | `golem:G1_Character` | `character` | — (v0: identity only) | — |
+| `Object` | `golem:G16_Object` | `object` | — | — |
 
 ### `modules/relationship.py`
 
 | Class | GOLEM class | Segment | Extra fields | Linking triples (FR-015) |
 |---|---|---|---|---|
-| `SocialRelationship` | `gc:G4_Social_Relationship` | `relationship` | `participants: tuple[GolemEntity \| URIRef, ...]` | one triple per participant using a DOLCE participation predicate (e.g. `dolce:participant`), object = participant `.uri` |
-| `RelationshipRole` | `gc:G6_Relationship_Role` | `relationship-role` | optional `relationship: GolemEntity \| URIRef` | link role → relationship via the ontology's relationship/role property |
+| `SocialRelationship` | `golem:G4_Social_Relationship` | `relationship` | `participants: tuple[GolemEntity \| URIRef, ...]` | one triple per participant using a DOLCE participation predicate (e.g. `dlp:participant`), object = participant `.uri` |
+| `RelationshipRole` | `golem:G6_Relationship_Role` | `relationship-role` | optional `relationship: GolemEntity \| URIRef` | link role → relationship via the ontology's relationship/role property |
 
 ### `modules/event.py`
 
 | Class | GOLEM class | Segment | Extra fields | Linking triples |
 |---|---|---|---|---|
-| `NarrativeEvent` | `gc:G5_Narrative_Event` | `event` | optional `participants: tuple[…]` | `dolce:participant` → each participant `.uri` |
-| `PsychologicalState` | `gc:G3_Psychological_State` | `psychological-state` | optional `bearer: GolemEntity \| URIRef` | link state → its character |
+| `NarrativeEvent` | `golem:G5_Narrative_Event` | `event` | optional `participants: tuple[…]` | `dlp:participant` → each participant `.uri` |
+| `PsychologicalState` | `golem:G3_Psychological_State` | `psychological-state` | optional `bearer: GolemEntity \| URIRef` | link state → its character |
 
 ### `modules/setting.py`
 
 | Class | GOLEM class | Segment | Extra fields | Linking triples |
 |---|---|---|---|---|
-| `Setting` | `gc:G12_Setting` | `setting` | — | — |
-| `NarrativeLocation` | `gc:G13_Narrative_Location` | `location` | optional `setting: GolemEntity \| URIRef` | link location → setting |
+| `Setting` | `golem:G12_Setting` | `setting` | — | — |
+| `NarrativeLocation` | `golem:G13_Narrative_Location` | `location` | optional `setting: GolemEntity \| URIRef` | link location → setting |
 
 ### `modules/narrative.py`
 
 | Class | GOLEM class | Segment | Extra fields | Linking triples |
 |---|---|---|---|---|
-| `NarrativeUnit` | `gc:G9_Narrative_Unit` | `narrative-unit` | optional `functions`, `roles` refs | link unit → function/role |
-| `NarrativeFunction` | `gc:G10_Narrative_Function` | `narrative-function` | — | — |
-| `NarrativeRole` | `gc:G11_Narrative_Role` | `narrative-role` | — | — |
-| `NarrativeSequence` | `gc:G7_Narrative_Sequence` | `narrative-sequence` | `units: tuple[GolemEntity \| URIRef, ...]` (ordered) | one triple per unit using the ontology's sequence/part predicate (e.g. `dolce:proper-part`) |
+| `NarrativeUnit` | `golem:G9_Narrative_Unit` | `narrative-unit` | optional `functions`, `roles` refs | link unit → function/role |
+| `NarrativeFunction` | `golem:G10_Narrative_Function` | `narrative-function` | — | — |
+| `NarrativeRole` | `golem:G11_Narrative_Role` | `narrative-role` | — | — |
+| `NarrativeSequence` | `golem:G7_Narrative_Sequence` | `narrative-sequence` | `units: tuple[GolemEntity \| URIRef, ...]` (ordered) | one triple per unit using the ontology's sequence/part predicate (e.g. `dlp:proper-part`) |
 
 > Cross-reference predicate selection: the confirmed object-property inventory in
 > the frozen ontology includes `crm:P67_refers_to`, `crm:P16_used_specific_object`,
-> `gc:GP1_is_character_in`, and the DOLCE `participant` / `participant-in` /
+> `golem:GP1_is_character_in`, and the DOLCE (`dlp`) `participant` / `participant-in` /
 > `involves` / `involved-in` / `proper-part(-of)` family. Each link above is bound
 > to a specific one of these during implementation and verified by the
 > term-closure test. The model never coins a new predicate.
@@ -100,8 +101,8 @@ Fields (FR-009):
 |---|---|---|---|
 | `target` | `GolemEntity \| URIRef` | yes | `(self.uri, crm:P140_assigned_attribute_to, target.uri)` |
 | `attribute` | `GolemEntity \| URIRef` | yes | `(self.uri, crm:P141_assigned, attribute.uri)` |
-| `source` | `str` (path, e.g. `manuscript/cap-04.md:42`) | yes | source path as `xsd:string` literal via the ontology's source/"used" property; stored & emitted **verbatim** (FR-009, US3-2) |
-| `premise` | `GolemEntity \| URIRef \| None` | no | when present, link this assignment to its premise assignment; when `None`, omitted (US3-3) |
+| `source` | `str` (path, e.g. `manuscript/cap-04.md:42`) | yes | source path as `xsd:string` literal via the ontology's source/"used" property (exact IRI confirmed and recorded in T021 — never coined); stored & emitted **verbatim** (FR-009, US3-2) |
+| `premise` | `GolemEntity \| URIRef \| None` | no | when present, link this assignment to its premise assignment via the ontology's premise property (exact IRI confirmed and recorded in T021); when `None`, omitted (US3-3) |
 
 Construction: `AttributeAssignment` does **not** take `name`; it overrides token
 generation to `uuid7()` and exposes the same `.uri` / `.to_triples()` surface.
