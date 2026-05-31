@@ -29,7 +29,15 @@ def _populated_graph_entities() -> list[GolemEntity]:
     note = AttributeAssignment(
         uri_base=B, target=aparici, attribute=pena, source="manuscript/cap-04.md:42"
     )
-    return [aparici, pena, setting, location, rel, note]
+    attributed = Character(
+        uri_base=B,
+        name="Don Atributo",
+        born=1828,
+        died=1900,
+        features=("ingeniero químico",),
+        narrative_roles=("protagonist",),
+    )
+    return [aparici, pena, setting, location, rel, note, attributed]
 
 
 def test_roundtrip_is_isomorphic() -> None:

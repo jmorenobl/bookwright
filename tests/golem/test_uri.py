@@ -78,3 +78,43 @@ def test_frozen_name_reassignment_rejected() -> None:
 
 def test_slug_exposed_on_named_entity() -> None:
     assert Character(uri_base=B, name="José Peña").slug == "jose-pena"
+
+
+# --- +US5: nested character-scoped attribute-node URIs (FR-021, SC-007) ------
+
+
+def test_character_scoped_node_uri_patterns() -> None:
+    c = Character(
+        uri_base=B,
+        name="Aparici",
+        born=1828,
+        died=1900,
+        features=("ingeniero químico",),
+        narrative_roles=("protagonist",),
+    )
+    subjects = {s for s, _, _ in c.to_triples()}
+    assert URIRef(f"{c.uri}/feature/birth") in subjects
+    assert URIRef(f"{c.uri}/feature/death") in subjects
+    assert URIRef(f"{c.uri}/feature/ingeniero-quimico") in subjects
+    assert URIRef(f"{c.uri}/feature/birth/dimension") in subjects
+    assert URIRef(f"{c.uri}/role/protagonist") in subjects
+
+
+def test_birth_death_type_individuals_are_project_scoped_and_shared() -> None:
+    """FR-019: the birth/death E55_Type individuals carry stable project-scoped
+    URIs ({uri_base}type/birth|death) and are shared (deduped) across characters."""
+    aparici = Character(uri_base=B, name="Aparici", born=1828)
+    pena = Character(uri_base=B, name="Peña", born=1830)
+    birth_type = URIRef(f"{B}type/birth")
+    assert birth_type in {o for _, _, o in aparici.to_triples()}
+    assert birth_type in {o for _, _, o in pena.to_triples()}
+    # The type individual is NOT character-scoped (no character segment).
+    assert "character" not in str(birth_type)
+
+
+def test_attributed_character_uris_are_immutable() -> None:
+    c = Character(uri_base=B, name="Aparici", born=1828, features=("barba",))
+    original = {s for s, _, _ in c.to_triples()}
+    with pytest.raises(ValidationError):
+        c.born = 1900
+    assert {s for s, _, _ in c.to_triples()} == original

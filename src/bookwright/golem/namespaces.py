@@ -23,10 +23,16 @@ __all__ = [
     "CLASS_IRI",
     "CRM",
     "DLP",
+    "EDNS",
     "GENERICALLY_DEPENDENT_ON",
     "GENERIC_LOCATION",
     "GOLEM",
+    "HAS_DIMENSION",
+    "HAS_FEATURE",
+    "HAS_TYPE",
+    "HAS_VALUE",
     "PARTICIPANT",
+    "PLAYS",
     "PROPER_PART",
     "RDF",
     "RDFS",
@@ -45,11 +51,16 @@ CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 # The DOLCE-Lite-Plus layer the frozen GOLEM ontology actually emits its
 # participation / part / dependence / location predicates from (research D5).
 DLP = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/DOLCE-Lite.owl#")
+# +US5: the DOLCE ExtendedDnS layer that supplies ``plays`` (character →
+# narrative role) — a *different* file from the DOLCE-Lite ``DLP`` above, kept
+# bound to its own ``edns`` prefix so the distinction stays visible (FR-018).
+EDNS = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/ExtendedDnS.owl#")
 
 _PREFIXES: tuple[tuple[str, Namespace], ...] = (
     ("golem", GOLEM),
     ("crm", CRM),
     ("dlp", DLP),
+    ("edns", EDNS),
     ("rdf", Namespace(str(RDF))),
     ("rdfs", Namespace(str(RDFS))),
     ("xsd", Namespace(str(XSD))),
@@ -82,8 +93,14 @@ CLASS_IRI: dict[str, URIRef] = {
     "NarrativeRole": GOLEM["G11_Narrative_Role"],
     "NarrativeSequence": GOLEM["G7_Narrative_Sequence"],
     "AttributeAssignment": CRM["E13_Attribute_Assignment"],
+    # +US5 character-scoped attribute-carrier classes (FR-020). These are NOT
+    # narrative concepts — they are excluded from the CONCEPTS registry — but
+    # their rdf:type IRIs live here so the closure test (SC-003) covers them too.
+    "CharacterFeature": GOLEM["G17_Character_Feature"],
+    "Dimension": CRM["E54_Dimension"],
+    "Type": CRM["E55_Type"],
 }
-"""Concept name → rdf:type IRI. Every value is asserted ∈ frozen_terms() (SC-003)."""
+"""Class name → rdf:type IRI. Every value is asserted ∈ frozen_terms() (SC-003)."""
 
 # --- Cross-reference predicate IRIs (FR-015, recorded in data-model.md T021) -
 
@@ -103,6 +120,19 @@ ASSIGNED = CRM["P141_assigned"]
 """Attribute assignment → the attribute it asserts."""
 USED_SPECIFIC_OBJECT = CRM["P16_used_specific_object"]
 """Attribute assignment → the source used in the inference (carries the path)."""
+
+# --- +US5 character-attribute predicates (FR-017/018/019, recorded T021/D14) -
+
+HAS_FEATURE = GOLEM["GP0_has_feature"]
+"""Character → one of its character features (biographical or free-text)."""
+PLAYS = EDNS["plays"]
+"""Character → a narrative role it plays (DOLCE ExtendedDnS, distinct from dlp)."""
+HAS_TYPE = CRM["P2_has_type"]
+"""Biographical feature → its E55_Type (the birth / death individual)."""
+HAS_DIMENSION = CRM["P43_has_dimension"]
+"""Biographical feature → its E54_Dimension (carrying the year value)."""
+HAS_VALUE = CRM["P90_has_value"]
+"""Dimension → its primitive value (the year as an xsd:gYear literal)."""
 
 # --- Frozen ontology --------------------------------------------------------
 

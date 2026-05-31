@@ -1,9 +1,11 @@
 """GOLEM domain model: typed, frozen entities with deterministic RDF identity.
 
-Public surface: the thirteen GOLEM concept classes, the ``GolemError`` /
-``EmptySlugError`` types, the ``CONCEPTS`` name→class registry, and
-``to_turtle``. See specs/005-golem-domain-model/contracts/golem_api.md for the
-stable contract.
+Public surface: the thirteen GOLEM concept classes, the two +US5
+character-scoped attribute carriers (``CharacterFeature`` / ``Dimension`` —
+exported for iteration-10 introspection but deliberately **not** in
+``CONCEPTS``), the ``GolemError`` / ``EmptySlugError`` types, the ``CONCEPTS``
+name→class registry, and ``to_turtle``. See
+specs/005-golem-domain-model/contracts/golem_api.md for the stable contract.
 """
 
 from __future__ import annotations
@@ -11,6 +13,7 @@ from __future__ import annotations
 from bookwright.golem.errors import EmptySlugError, GolemError
 from bookwright.golem.modules.character import Character, Object
 from bookwright.golem.modules.event import NarrativeEvent, PsychologicalState
+from bookwright.golem.modules.feature import CharacterFeature, Dimension
 from bookwright.golem.modules.inference import AttributeAssignment
 from bookwright.golem.modules.narrative import (
     NarrativeFunction,
@@ -43,6 +46,8 @@ __all__ = [
     "CONCEPTS",
     "AttributeAssignment",
     "Character",
+    "CharacterFeature",
+    "Dimension",
     "EmptySlugError",
     "GolemError",
     "NarrativeEvent",

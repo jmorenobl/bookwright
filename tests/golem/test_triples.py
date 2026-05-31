@@ -43,7 +43,18 @@ def _sample_entities() -> list[GolemEntity]:
     unit = NarrativeUnit(uri_base=B, name="Apertura", functions=(func,), roles=(nrole,))
     seq = NarrativeSequence(uri_base=B, name="Acto I", units=(unit,))
     note = AttributeAssignment(uri_base=B, target=aparici, attribute=func, source="bible/x.md:1")
+    # +US5: an attributed Character drags G17/E54/E55/GP0_has_feature/edns:plays/
+    # P2_has_type/P43_has_dimension/P90_has_value/rdfs:label into the closure loop.
+    attributed = Character(
+        uri_base=B,
+        name="Don Atributo",
+        born=1828,
+        died=1900,
+        features=("ingeniero químico",),
+        narrative_roles=("protagonist",),
+    )
     return [
+        attributed,
         aparici,
         pena,
         obj,
