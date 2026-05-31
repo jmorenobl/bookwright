@@ -1,6 +1,6 @@
 """AttributeAssignment: verbatim source, optional premise, uuid7 ordering.
 
-FR-009/013, SC-006, US3.
+FR-009/013, SC-006.
 """
 
 from __future__ import annotations

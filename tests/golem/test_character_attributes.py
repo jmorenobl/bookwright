@@ -1,6 +1,6 @@
-"""US5 acceptance matrix: a Character carries born/died/features/narrative_roles.
+"""Acceptance matrix: a Character carries born/died/features/narrative_roles.
 
-FR-016 through FR-021, SC-007, US5-1..6. Every attribute is reached through frozen GOLEM /
+FR-016 through FR-021, SC-007. Every attribute is reached through frozen GOLEM /
 CIDOC-CRM / DOLCE ExtendedDnS terms; every generated node is a deterministic,
 character-scoped URI (never a blank node); an attribute-free Character emits
 only its identity assertion.
@@ -31,7 +31,7 @@ def _attributed() -> Character:
 
 
 def test_free_text_feature_linked_by_has_feature_with_label() -> None:
-    """US5-1, FR-017: free text → G17 feature linked by golem:GP0_has_feature,
+    """FR-017: free text → G17 feature linked by golem:GP0_has_feature,
     text carried on rdfs:label."""
     c = Character(uri_base=B, name="Aparici", features=("ingeniero químico",))
     triples = set(c.to_triples())
@@ -42,7 +42,7 @@ def test_free_text_feature_linked_by_has_feature_with_label() -> None:
 
 
 def test_narrative_role_linked_by_plays_with_label() -> None:
-    """US5-2, FR-018: role → G11 linked by edns:plays, text on rdfs:label."""
+    """FR-018: role → G11 linked by edns:plays, text on rdfs:label."""
     c = Character(uri_base=B, name="Aparici", narrative_roles=("protagonist",))
     triples = set(c.to_triples())
     role = URIRef(f"{c.uri}/role/protagonist")
@@ -52,7 +52,7 @@ def test_narrative_role_linked_by_plays_with_label() -> None:
 
 
 def test_born_year_modeled_through_dimension_chain() -> None:
-    """US5-3, FR-019: born=1828 → biographical G17 typed crm:P2_has_type a birth
+    """FR-019: born=1828 → biographical G17 typed crm:P2_has_type a birth
     E55_Type individual + crm:P43_has_dimension → E54_Dimension whose
     crm:P90_has_value is "1828"^^xsd:gYear."""
     c = Character(uri_base=B, name="Aparici", born=1828)
@@ -70,7 +70,7 @@ def test_born_year_modeled_through_dimension_chain() -> None:
 
 
 def test_died_year_modeled_through_dimension_chain() -> None:
-    """US5-4: died=1900 analogous to born, with the death E55_Type individual."""
+    """died=1900 analogous to born, with the death E55_Type individual."""
     c = Character(uri_base=B, name="Aparici", died=1900)
     triples = set(c.to_triples())
     feature = URIRef(f"{c.uri}/feature/death")
@@ -143,11 +143,11 @@ def test_empty_slug_role_raises() -> None:
 
 
 def test_attribute_free_character_emits_only_rdf_type() -> None:
-    """US5-6: a Character with none of the four attributes emits only its
+    """A Character with none of the four attributes emits only its
     identity assertion — byte-identical to the merged identity-only output."""
     bare = Character(uri_base=B, name="Aparici")
     assert list(bare.to_triples()) == [(bare.uri, RDF.type, bare.golem_class)]
-    # And byte-identical Turtle to the pre-US5 identity-only Character.
+    # And byte-identical Turtle to the identity-only Character.
     assert to_turtle([bare]) == to_turtle([Character(uri_base=B, name="Aparici")])
 
 

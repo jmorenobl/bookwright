@@ -16,14 +16,14 @@ from bookwright.golem.namespaces import CLASS_IRI, HAS_FEATURE, PLAYS
 class Character(SluggedEntity):
     """A character (``golem:G1_Character``).
 
-    Besides its identity, a character may carry the documented frontmatter
-    (+US5): ``born`` / ``died`` years, free-text ``features``, and
+    Besides its identity, a character may carry the documented frontmatter:
+    ``born`` / ``died`` years, free-text ``features``, and
     ``narrative_roles``. Each is materialized — once, deterministically, at
     construction — as a character-scoped node under
     :mod:`bookwright.golem.modules.feature`, linked by a frozen predicate
     (``golem:GP0_has_feature`` for features, ``edns:plays`` for roles). A
     character built with none of the four attributes has empty node tuples and
-    therefore emits only its ``rdf:type`` assertion (US5-6).
+    therefore emits only its ``rdf:type`` assertion.
     """
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["Character"]

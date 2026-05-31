@@ -1,6 +1,6 @@
 """URI / identity: per-concept segments, determinism, immutability.
 
-FR-003/004/007, US1 worked examples, SC-002.
+FR-003/004/007, worked examples, SC-002.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ def test_segment_table(cls: type, segment: str) -> None:
         (NarrativeLocation, "El faro", f"{B}location/el-faro"),
     ],
 )
-def test_us1_worked_examples(cls: type, name: str, expected: str) -> None:
+def test_canonical_uri_for_worked_examples(cls: type, name: str, expected: str) -> None:
     assert cls(uri_base=B, name=name).uri == URIRef(expected)
 
 
@@ -80,7 +80,7 @@ def test_slug_exposed_on_named_entity() -> None:
     assert Character(uri_base=B, name="José Peña").slug == "jose-pena"
 
 
-# --- +US5: nested character-scoped attribute-node URIs (FR-021, SC-007) ------
+# --- Nested character-scoped attribute-node URIs (FR-021, SC-007) -----------
 
 
 def test_character_scoped_node_uri_patterns() -> None:

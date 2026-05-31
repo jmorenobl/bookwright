@@ -1,4 +1,4 @@
-"""Feature module (+US5): character-scoped attribute carriers.
+"""Feature module: character-scoped attribute carriers.
 
 These typed nodes hang off a :class:`~bookwright.golem.modules.character.Character`
 and carry the documented frontmatter that the identity-only model could not:

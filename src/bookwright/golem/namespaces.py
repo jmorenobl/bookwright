@@ -51,7 +51,7 @@ CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 # The DOLCE-Lite-Plus layer the frozen GOLEM ontology actually emits its
 # participation / part / dependence / location predicates from (research D5).
 DLP = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/DOLCE-Lite.owl#")
-# +US5: the DOLCE ExtendedDnS layer that supplies ``plays`` (character →
+# The DOLCE ExtendedDnS layer that supplies ``plays`` (character →
 # narrative role) — a *different* file from the DOLCE-Lite ``DLP`` above, kept
 # bound to its own ``edns`` prefix so the distinction stays visible (FR-018).
 EDNS = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/ExtendedDnS.owl#")
@@ -93,7 +93,7 @@ CLASS_IRI: dict[str, URIRef] = {
     "NarrativeRole": GOLEM["G11_Narrative_Role"],
     "NarrativeSequence": GOLEM["G7_Narrative_Sequence"],
     "AttributeAssignment": CRM["E13_Attribute_Assignment"],
-    # +US5 character-scoped attribute-carrier classes (FR-020). These are NOT
+    # Character-scoped attribute-carrier classes (FR-020). These are NOT
     # narrative concepts — they are excluded from the CONCEPTS registry — but
     # their rdf:type IRIs live here so the closure test (SC-003) covers them too.
     "CharacterFeature": GOLEM["G17_Character_Feature"],
@@ -121,7 +121,7 @@ ASSIGNED = CRM["P141_assigned"]
 USED_SPECIFIC_OBJECT = CRM["P16_used_specific_object"]
 """Attribute assignment → the source used in the inference (carries the path)."""
 
-# --- +US5 character-attribute predicates (FR-017/018/019, recorded T021/D14) -
+# --- Character-attribute predicates (FR-017/018/019, recorded T021/D14) ------
 
 HAS_FEATURE = GOLEM["GP0_has_feature"]
 """Character → one of its character features (biographical or free-text)."""

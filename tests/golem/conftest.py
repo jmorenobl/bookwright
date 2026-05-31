@@ -1,6 +1,6 @@
 """Shared fixtures for the GOLEM domain-model suite.
 
-The canonical project base used across the user-story examples (spec US1). Per
+The canonical project base used across the worked examples. Per
 -concept sample entities are introduced by the phases that add those classes.
 """
 

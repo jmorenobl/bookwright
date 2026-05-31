@@ -1,6 +1,6 @@
 """GOLEM domain model: typed, frozen entities with deterministic RDF identity.
 
-Public surface: the thirteen GOLEM concept classes, the two +US5
+Public surface: the thirteen GOLEM concept classes, the two
 character-scoped attribute carriers (``CharacterFeature`` / ``Dimension`` —
 exported for iteration-10 introspection but deliberately **not** in
 ``CONCEPTS``), the ``GolemError`` / ``EmptySlugError`` types, the ``CONCEPTS``

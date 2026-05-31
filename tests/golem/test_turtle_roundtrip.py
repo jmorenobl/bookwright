@@ -1,6 +1,6 @@
 """Turtle serialization round-trips isomorphically with short prefixes.
 
-FR-012, SC-004, US2-4.
+FR-012, SC-004.
 """
 
 from __future__ import annotations

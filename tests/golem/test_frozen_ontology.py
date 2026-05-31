@@ -1,6 +1,6 @@
 """The bundled ontology exists, parses, and records its exact provenance.
 
-FR-011, SC-005, US4.
+FR-011, SC-005.
 """
 
 from __future__ import annotations
