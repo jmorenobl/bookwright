@@ -1,9 +1,9 @@
 """GOLEM domain model: typed, frozen entities with deterministic RDF identity.
 
-Public re-exports are filled incrementally by the user stories (US1 adds the
-twelve slugged concept classes, the error types and the ``CONCEPTS`` registry;
-US2 adds ``to_turtle``; US3 adds ``AttributeAssignment``). See
-specs/005-golem-domain-model/contracts/golem_api.md for the stable contract.
+Public surface: the thirteen GOLEM concept classes, the ``GolemError`` /
+``EmptySlugError`` types, the ``CONCEPTS`` name→class registry, and
+``to_turtle``. See specs/005-golem-domain-model/contracts/golem_api.md for the
+stable contract.
 """
 
 from __future__ import annotations
