@@ -39,6 +39,40 @@ print(ttl)
 #     <dolce participant predicate> <.../character/aparici>, <.../character/jose-pena> .
 ```
 
+## 2b. Carry character attributes (+US5: born/died/features/roles)
+
+```python
+c = Character(
+    uri_base=B, name="Aparici",
+    born=1828, died=1900,
+    features=("ingeniero químico",),
+    narrative_roles=("protagonist",),
+)
+
+ttl = to_turtle([c])
+print(ttl)
+# <.../character/aparici> a golem:G1_Character ;
+#     golem:GP0_has_feature <.../character/aparici/feature/birth>,
+#                        <.../character/aparici/feature/death>,
+#                        <.../character/aparici/feature/ingeniero-quimico> ;
+#     edns:plays <.../character/aparici/role/protagonist> .
+# <.../character/aparici/feature/birth> a golem:G17_Character_Feature ;
+#     crm:P2_has_type <.../type/birth> ;
+#     crm:P43_has_dimension <.../character/aparici/feature/birth/dimension> .
+# <.../character/aparici/feature/birth/dimension> a crm:E54_Dimension ;
+#     crm:P90_has_value "1828"^^xsd:gYear .
+# <.../character/aparici/feature/ingeniero-quimico> a golem:G17_Character_Feature ;
+#     rdfs:label "ingeniero químico" .
+# <.../character/aparici/role/protagonist> a golem:G11_Narrative_Role ;
+#     rdfs:label "protagonist" .
+```
+
+Every node URI is deterministic and character-scoped (never a blank node), so
+re-serializing the same `Character` is byte-identical. `edns:plays` is the DOLCE
+**ExtendedDnS** property — distinct from the DOLCE-Lite `dlp:participant` used in
+§2. A `Character` built with none of these attributes serializes to just its
+`rdf:type` triple, exactly like §1.
+
 ## 3. Record provenance for an inferred attribute
 
 ```python

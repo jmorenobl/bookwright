@@ -276,3 +276,128 @@ the value of one JSON field, which still emits a single JSON document (Principle
 `commands/version.py` (this wiring) and the iteration-2 test/template artifacts
 covered by D11 (the `golem-1.0` → `golem-1.1` rename). Nothing here reads the
 bible/manuscript or validates coherence (FR-014).
+
+---
+
+## D12 — Character-attribute mapping (US5): frozen terms, nothing minted
+
+**Decision** (migrated and finalized from the `006-graph-indexer` branch's R1).
+Map each documented character key to the term the **frozen** ontology already
+defines for it; drop nothing, mint nothing. Every class/predicate below is a
+member of `frozen_terms()` (verified at planning time), so SC-003 / SC-007 hold:
+
+| Key | Frozen modeling (all terms ∈ `frozen_terms()`) |
+|---|---|
+| `name` | identity (slug → URI) + `rdf:type golem:G1_Character` — **already shipped** |
+| `features[]` (free text) | one `golem:G17_Character_Feature` per item; `Character —golem:GP0_has_feature→ feature`; text on `rdfs:label` |
+| `narrative_roles[]` | one `golem:G11_Narrative_Role` per item; `Character —edns:plays→ role`; text on `rdfs:label` |
+| `born` / `died` (year) | biographical `golem:G17_Character_Feature`, `crm:P2_has_type` an `crm:E55_Type` individual (`birth`/`death`); year via `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ "YYYY"^^xsd:gYear` |
+
+This is the ontology's own prescription: `G17_Character_Feature` is documented as
+covering *"biographical (e.g., birth, death), physical, and psychological
+features… specified using crm:E55_Type"*, and `G1_Character` carries OWL
+restrictions on `edns:plays → G11_Narrative_Role` and `golem:GP0_has_feature →
+G2_Feature`. `crm:P90_has_value` (the ontology's sole datatype property) is the
+frozen literal carrier and its domain is `crm:E54_Dimension`, giving the
+feature → dimension → value chain.
+
+**Rationale**: design § 16 fixes GOLEM precisely because it is a *narrative*
+ontology with exactly these affordances; using them is the intended path, not an
+extension. An identity-only `Character` produces a near-empty graph that cannot
+answer the toolkit's motivating query ("characters born before 1850") and blocks
+iteration-10's temporal / character-presence validators. The extension is purely
+additive — a `Character` with no attributes still emits only its `rdf:type`
+triple (US5-6).
+
+**Alternatives considered**:
+- *Drop scalars (identity + provenance only)* — rejected: empties the graph of
+  its narrative content and defers a model decision iteration 10 hard-requires.
+- *Mint `golem:born` / literal triples outside the closure* — rejected: violates
+  SC-003/SC-007 and reintroduces the ad-hoc-vocabulary drift the frozen ontology
+  exists to prevent; unnecessary, since frozen terms already fit.
+
+---
+
+## D13 — Intermediate-node modeling: character-scoped entities, never blank nodes
+
+**Decision**: model the generated feature / dimension / role nodes as
+**character-scoped typed entities** in a new `modules/feature.py`, each owning
+its own `to_triples()` (the same "every entity owns its triples" pattern the base
+already uses), with **deterministic URIs** computed once at construction —
+**never** rdflib blank nodes (FR-021):
+
+| Node | Class | URI pattern |
+|---|---|---|
+| free-text feature | `CharacterFeature` (`golem:G17_Character_Feature`) | `{character}/feature/{slug(text)}` |
+| biographical feature | `CharacterFeature` (`golem:G17_Character_Feature`) | `{character}/feature/birth` · `{character}/feature/death` |
+| year carrier | `Dimension` (`crm:E54_Dimension`) | `{feature}/dimension` |
+| narrative role | character-scoped `golem:G11_Narrative_Role` node | `{character}/role/{slug(text)}` |
+| birth/death type | `crm:E55_Type` individual | `{base}type/birth` · `{base}type/death` |
+
+`Character` keeps public fields that mirror the frontmatter keys exactly
+(`born: int | None`, `died: int | None`, `features: tuple[str, ...]`,
+`narrative_roles: tuple[str, ...]`) and builds the typed nodes from them once in
+`model_post_init`; the single-hop edges (`golem:GP0_has_feature`, `edns:plays`) are
+declared with the existing `CrossRef` mechanism over the built node tuples, while
+the two-hop `feature → dimension → value` chain and the `E55_Type` typing are
+emitted by the nodes' own `to_triples()`. `Character.to_triples()` chains
+`super().to_triples()` (type assertion + the `CrossRef` edges) with each nested
+node's triples.
+
+**Why deterministic URIs, not blank nodes** (the spec's 2026-05-31 clarification):
+(a) byte-identical reproducibility — blank-node labels are assigned
+nondeterministically by rdflib, which would break SC-002/SC-007; (b) provenance —
+an `AttributeAssignment` (US3) can only target an attribute *by identifier*, so
+feature/role nodes must be addressable across batches; (c) correctly scoped
+dedup — identical feature/role text on the *same* character resolves to one
+shared node (identity derived from the slugged text), while the same value on two
+*different* characters yields two distinct, character-scoped nodes (top-level
+URIs would wrongly collapse them).
+
+**Why a separate `modules/feature.py`, not folded into `character.py`**: keeps
+both files well under the Principle-IV 500-line ceiling and reflects that
+`CharacterFeature` / `Dimension` are reusable *attribute carriers*, not the
+`Character` concept. They are exported from `bookwright.golem` for iteration-10's
+validators to read, but kept **out** of the `CONCEPTS` registry, which remains
+the thirteen narrative concepts (SC-001: the only additional classes are
+attribute-support classes, not new narrative concepts).
+
+**Empty-slug discipline**: feature / role text reuses `make_slug`, so a text made
+only of unsluggable characters raises the existing `EmptySlugError` (FR-021,
+same rule as canonical names). `born`/`died` use the fixed `birth`/`death`
+tokens, so they never slug.
+
+**Alternatives considered**:
+- *Let `Character.to_triples()` mint plain `URIRef`s inline for every node* —
+  rejected: scatters the two-hop chain logic in `Character`, duplicates closure
+  responsibility, and makes the nodes non-reusable for iteration 6/10.
+- *Reuse the top-level `NarrativeRole` (`{base}narrative-role/{slug}`) for
+  character roles* — rejected: FR-018/FR-021 pin the **character-scoped**
+  `{character}/role/{slug}` URI; a top-level role would wrongly merge identical
+  role names across different characters. The character-scoped node reuses the
+  G11 `rdf:type` IRI but not the standalone URI scheme.
+
+---
+
+## D14 — ExtendedDnS `plays` vs DOLCE-Lite `participant` (FR-018, namespace trap)
+
+**Decision**: bind a **new** namespace constant `EDNS =
+Namespace("http://www.ontologydesignpatterns.org/ont/dlp/ExtendedDnS.owl#")`
+with its own short prefix `edns`, distinct from the existing `DLP`
+(`…/DOLCE-Lite.owl#`). The character → role link uses `edns:plays`
+(`…/ExtendedDnS.owl#plays`), confirmed present in `golem.ttl` (line 727,
+`owl:inverseOf …#played-by`, `rdfs:label "plays"`). `participant` /
+`proper-part` / `generically-dependent-on` / `generic-location` stay on `DLP`
+(DOLCE-Lite) unchanged.
+
+**Rationale**: the two DOLCE layers are *different namespaces*; `plays` lives
+only in ExtendedDnS, and the frozen `G1_Character` OWL restriction references the
+ExtendedDnS term. Binding `edns` separately makes the Turtle emit `edns:plays`
+(not an expanded IRI) and keeps the distinction load-bearing and visible
+(FR-010/FR-018). The closure test already guards this: `edns:plays ∈
+frozen_terms()` is asserted, so a regression to a DOLCE-Lite `plays` (which does
+not exist) would fail the suite.
+
+**Alternatives considered**: reusing `DLP` for `plays` — rejected: there is no
+`plays` in DOLCE-Lite, so it would either fail closure or, worse, silently emit
+an out-of-closure term.

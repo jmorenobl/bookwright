@@ -21,6 +21,8 @@ from bookwright.golem import (
     NarrativeUnit, NarrativeFunction, NarrativeRole, NarrativeSequence,
     # Inference module
     AttributeAssignment,
+    # Feature module (+US5 — attribute-support entities, not narrative concepts)
+    CharacterFeature, Dimension,
     # helpers
     to_turtle,
     # errors
@@ -29,7 +31,12 @@ from bookwright.golem import (
 ```
 
 A `CONCEPTS` registry (mapping concept name → class) is also exported for
-downstream introspection.
+downstream introspection. **`CharacterFeature` / `Dimension` are intentionally
+excluded from `CONCEPTS`** — they are character-scoped attribute carriers, not
+one of the thirteen narrative concepts (SC-001). They are exported only so
+iteration-10 validators can introspect the attribute subgraph; iteration 6
+constructs them indirectly by passing `born`/`died`/`features`/`narrative_roles`
+to `Character`.
 
 ## Construction contract
 
@@ -44,6 +51,28 @@ e = Character(uri_base="https://example.org/my-book/", name="Aparici")
   `EmptySlugError`.
 - Instances are **frozen**: assigning to any field after construction raises
   `pydantic.ValidationError`.
+
+**`Character` optional attributes (+US5)** — all default to empty/`None`, so
+existing identity-only construction is unchanged:
+
+```python
+c = Character(
+    uri_base="https://example.org/my-book/",
+    name="Aparici",
+    born=1828,                              # int year | None
+    died=1900,                              # int year | None
+    features=("ingeniero químico",),        # tuple[str, ...]; deduped by slug
+    narrative_roles=("protagonist",),       # tuple[str, ...]; deduped by slug
+)
+```
+
+- `features` / `narrative_roles` items follow the slug rule; an item that slugs
+  to empty raises `EmptySlugError` (FR-021).
+- Supplying none of the four → `c.to_triples()` yields only the `rdf:type`
+  assertion (US5-6), byte-identical to the identity-only `Character` above.
+- The generated feature / dimension / role nodes carry deterministic,
+  character-scoped URIs (`{c.uri}/feature/{slug|birth|death}`,
+  `{feature}/dimension`, `{c.uri}/role/{slug}`) — never blank nodes (FR-021).
 
 `AttributeAssignment` is the one exception — constructed without `name`:
 
@@ -82,7 +111,8 @@ Worked examples (from spec US1):
   `(e.uri, RDF.type, <its GOLEM class>)`, plus cross-reference triples linking to
   referenced entities by their `.uri` (FR-015).
 - `to_turtle(entities) -> str` — Turtle document using the registered short
-  prefixes (`golem`, `crm`, DOLCE, `rdf`, `rdfs`, `xsd`) (FR-010).
+  prefixes (`golem`, `crm`, `dlp` (DOLCE-Lite), **+US5 `edns`** (DOLCE
+  ExtendedDnS, distinct from `dlp`), `rdf`, `rdfs`, `xsd`) (FR-010/FR-018).
 - **Term closure**: every class/predicate emitted is defined in the frozen GOLEM
   ontology (FR-008, SC-003).
 - **Well-formed**: `to_turtle(...)` output parses back through
