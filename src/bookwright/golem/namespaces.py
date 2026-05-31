@@ -102,7 +102,7 @@ CLASS_IRI: dict[str, URIRef] = {
 }
 """Class name → rdf:type IRI. Every value is asserted ∈ frozen_terms() (SC-003)."""
 
-# --- Cross-reference predicate IRIs (FR-015, recorded in data-model.md T021) -
+# --- Cross-reference predicate IRIs (FR-015) -------------------------------
 
 PARTICIPANT = DLP["participant"]
 """Perdurant → endurant participation (relationship / event participants)."""
@@ -121,7 +121,7 @@ ASSIGNED = CRM["P141_assigned"]
 USED_SPECIFIC_OBJECT = CRM["P16_used_specific_object"]
 """Attribute assignment → the source used in the inference (carries the path)."""
 
-# --- Character-attribute predicates (FR-017/018/019, recorded T021/D14) ------
+# --- Character-attribute predicates (FR-017/018/019, D14) -------------------
 
 HAS_FEATURE = GOLEM["GP0_has_feature"]
 """Character → one of its character features (biographical or free-text)."""

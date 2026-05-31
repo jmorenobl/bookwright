@@ -42,6 +42,37 @@ uv run pytest
 
 If any of the four fails locally, it will fail in CI.
 
+## Traceability tags in code
+
+Comments and docstrings may reference the planning artifacts that justify a
+piece of code. Keep these — in a spec-driven repo they are how a reader (and
+`/speckit-analyze`) navigates from code back to the *why*.
+
+**Allowed in source/tests:**
+
+- `FR-0xx` / `SC-0xx` — a requirement / success criterion in the **owning
+  iteration's** `specs/NNN-*/spec.md`.
+- `D-x` — a recorded decision in that iteration's `research.md`.
+- `bookwright-design.md § N.M` — a section of the global design doc.
+
+**Forbidden in source/tests** (planning bookkeeping with no durable artifact):
+
+- `US-x` / `+USx` — user-story / backlog tags.
+- `T0xx` — task IDs from `tasks.md`.
+
+**Two rules that keep the allowed tags trustworthy:**
+
+1. **Refs resolve relative to the file's iteration.** Each `src/` subtree maps
+   to one iteration; a bare `FR-021` means *that* iteration's spec. (Specs
+   restart numbering at `FR-001`, so the number alone is ambiguous.)
+2. **Numbers freeze on merge.** Once an iteration lands on `main`, its
+   `FR`/`SC`/`D` numbers are never renumbered — so inline refs never go stale.
+
+Prefer pairing the ref with the reason, not a bare pointer:
+
+    # dedup identical feature values (FR-021)   ✅
+    # (FR-021)                                  ⚠️ adds nothing on its own
+
 ## Pre-commit hooks
 
 Install the project's pre-commit hooks (ruff format, ruff check,
