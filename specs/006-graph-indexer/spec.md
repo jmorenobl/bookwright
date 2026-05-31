@@ -8,6 +8,31 @@
 
 **Input**: User description: "Necesidad: el grafo de un proyecto Bookwright es la representación consultable de su contenido narrativo. Necesitamos poder construirlo desde los archivos markdown de la bible y manuscrito, y consultarlo desde el CLI o desde los commands. [...] Referencia: ver bookwright-design.md § 12 (Sistema de Indexers) y § 5.1 (comandos del CLI)."
 
+## Clarifications
+
+### Session 2026-05-31 (resolved during `/speckit-plan`; user delegated both to engineering judgment)
+
+- **Q: How do character scalars (`born`/`died`/`features`/`narrative_roles`)
+  become triples, given iteration-5's identity-only model and SC-001's
+  frozen-vocabulary constraint?**
+  **A:** Map each to the term the **frozen GOLEM/CIDOC ontology already
+  defines** — nothing dropped, nothing minted:
+  `narrative_roles[]` → `dlp:plays → golem:G11_Narrative_Role`;
+  `features[]` → `golem:GP0_has_feature → golem:G17_Character_Feature` (text via
+  `rdfs:label`); `born`/`died` → biographical `golem:G17_Character_Feature`
+  (`crm:P2_has_type` birth/death) carrying the year via
+  `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ xsd:gYear`.
+  This honors FR-010 and SC-001 as written. **Consequence:** iteration-5's
+  identity-only typed model is extended additively now (new `CharacterFeature`
+  /`Dimension` entities, `Character.features`/`.roles`) so it can construct/emit
+  these — also unblocking iteration 10's validators. See plan R1/R1a.
+
+- **Q: Is the bible laid out as four directories (FR-009) or per design § 7?**
+  **A:** Per design § 7 / what `bookwright init` actually scaffolds:
+  `bible/characters/*.md` and `bible/settings/*.md` are one-entity-per-file;
+  `bible/timeline.md` and `bible/relationships.md` are single collection files.
+  FR-009 is corrected accordingly (see below). See plan R2.
+
 ## User Scenarios & Testing *(mandatory)*
 
 This iteration turns a project's plain-text bible into a queryable knowledge
@@ -238,14 +263,23 @@ outcome.
   available engines.
 - **FR-008**: Adding a new engine MUST NOT require changes to the `build` or
   `query` command code (the engine is resolved through a registry/factory).
-- **FR-009**: The bible parser MUST identify entity types by location: character
-  files under `bible/characters/`, setting files under `bible/settings/`,
-  timeline/event files under `bible/timeline/`, and relationship files under
-  `bible/relationships/`, mapping each to its corresponding GOLEM concept.
+- **FR-009**: The bible parser MUST identify entity types by location, matching
+  the layout `bookwright init` scaffolds (design § 7): one-entity-per-file under
+  `bible/characters/` (→ Character) and `bible/settings/` (→ Setting), and the
+  single collection files `bible/timeline.md` (→ Narrative Events, one per
+  `events:` item) and `bible/relationships.md` (→ Social Relationships, one per
+  `relationships:` item), mapping each to its corresponding GOLEM concept.
+  *(Corrected from "timeline/" / "relationships/" directories per Clarifications.)*
 - **FR-010**: For each source file, the parser MUST convert the file's YAML
-  frontmatter into the triples defined by the corresponding GOLEM module — for a
-  character, the documented frontmatter (`name`, `born`, `died`, `features[]`,
-  `narrative_roles[]`) maps to the Character module's properties.
+  frontmatter into triples drawn entirely from the frozen GOLEM/CIDOC vocabulary.
+  For a character, the documented frontmatter maps as: `name` → identity +
+  `rdf:type golem:G1_Character`; `narrative_roles[]` → `dlp:plays
+  golem:G11_Narrative_Role`; `features[]` → `golem:GP0_has_feature
+  golem:G17_Character_Feature` (`rdfs:label`); `born`/`died` → biographical
+  `golem:G17_Character_Feature` (`crm:P2_has_type`) with the year carried via
+  `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ xsd:gYear`. The
+  iteration-5 GOLEM typed model is extended additively to construct/emit these
+  (see plan R1a); no class or predicate outside `frozen_terms()` is introduced.
 - **FR-011**: Every generated triple MUST carry a corresponding Attribute
   Assignment that points to the source file, and to the line within that file
   when the value can be located to a specific line.
@@ -312,11 +346,15 @@ outcome.
 
 ## Assumptions
 
-- **Iteration 5 domain model is available**: typed GOLEM classes that construct
-  entities, generate deterministic ASCII slugs, and emit triples (including
-  Attribute Assignment with source path and optional line) are already on `main`
-  and are consumed as-is. Slug rules and URI patterns are owned by iteration 5;
-  this iteration only *uses* them and detects collisions.
+- **Iteration 5 domain model is available and is extended here**: typed GOLEM
+  classes that construct entities, generate deterministic ASCII slugs, and emit
+  triples (including Attribute Assignment with source path and optional line) are
+  available. Slug rules and URI patterns are owned by iteration 5 and reused
+  as-is. **However**, iteration 5's model is *identity-only*; to satisfy FR-010
+  this iteration extends it **additively** (new `CharacterFeature`/`Dimension`
+  entities and `Character.features`/`.roles` fields) using terms already in the
+  frozen ontology — see plan R1a. The extension is backward-compatible (existing
+  identity-only behaviour and tests preserved).
 - **Indexer Protocol shape**: the engine interface follows design § 12.1
   (`load`, `save`, `add_triple`, `query`, `construct`, `count`); `GrafeoIndexer`
   is a deferred stub (v0.3) and MUST NOT be implemented here.
