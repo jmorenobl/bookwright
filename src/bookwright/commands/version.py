@@ -2,18 +2,17 @@
 
 import json
 import sys
-from importlib import resources
 
 import typer
 from rich.console import Console
 
 from bookwright import __version__
+from bookwright.resources.schemas import load_schema_version
 
 
 def _read_golem_schema_version() -> str:
     try:
-        resource = resources.files("bookwright").joinpath("resources/schemas/golem-1.1/VERSION")
-        return resource.read_text(encoding="utf-8").strip()
+        return load_schema_version()
     except (FileNotFoundError, ModuleNotFoundError):
         return "unknown"
 

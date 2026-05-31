@@ -15,6 +15,8 @@ from rdflib import Graph, Namespace
 from rdflib.namespace import RDF, RDFS, XSD
 from rdflib.term import URIRef
 
+from bookwright.resources.schemas import SCHEMA_DIR
+
 __all__ = [
     "ASSIGNED",
     "ASSIGNED_ATTRIBUTE_TO",
@@ -105,7 +107,7 @@ USED_SPECIFIC_OBJECT = CRM["P16_used_specific_object"]
 # --- Frozen ontology --------------------------------------------------------
 
 _SCHEMA_PACKAGE = "bookwright.resources.schemas"
-_ONTOLOGY_RELPATH = "golem-1.1/golem.ttl"
+_ONTOLOGY_RELPATH = f"{SCHEMA_DIR}/golem.ttl"
 
 
 def load_frozen_ontology() -> Graph:

@@ -20,8 +20,6 @@ from bookwright.golem.slug import make_slug
 Triple = tuple[URIRef, URIRef, URIRef | Literal]
 """An rdflib triple emitted by :meth:`GolemEntity.to_triples`."""
 
-EntityRef = "GolemEntity | URIRef"
-
 
 def ref_uri(ref: GolemEntity | URIRef) -> URIRef:
     """Resolve a cross-reference target to the URIRef used in a linking triple."""
