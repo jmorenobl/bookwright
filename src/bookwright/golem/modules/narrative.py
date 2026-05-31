@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import ClassVar
 
 from rdflib.term import URIRef
 
-from bookwright.golem.base import GolemEntity, SluggedEntity, Triple, ref_uri
+from bookwright.golem.base import CrossRef, GolemEntity, SluggedEntity
 from bookwright.golem.namespaces import CLASS_IRI, PROPER_PART, REFERS_TO
 
 
@@ -19,16 +18,13 @@ class NarrativeUnit(SluggedEntity):
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["NarrativeUnit"]
     path_segment: ClassVar[str] = "narrative-unit"
+    cross_refs: ClassVar[tuple[CrossRef, ...]] = (
+        CrossRef("functions", REFERS_TO, multi=True),
+        CrossRef("roles", REFERS_TO, multi=True),
+    )
 
     functions: tuple[GolemEntity | URIRef, ...] = ()
     roles: tuple[GolemEntity | URIRef, ...] = ()
-
-    def to_triples(self) -> Iterable[Triple]:
-        yield from super().to_triples()
-        for function in self.functions:
-            yield (self.uri, REFERS_TO, ref_uri(function))
-        for role in self.roles:
-            yield (self.uri, REFERS_TO, ref_uri(role))
 
 
 class NarrativeFunction(SluggedEntity):
@@ -54,10 +50,6 @@ class NarrativeSequence(SluggedEntity):
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["NarrativeSequence"]
     path_segment: ClassVar[str] = "narrative-sequence"
+    cross_refs: ClassVar[tuple[CrossRef, ...]] = (CrossRef("units", PROPER_PART, multi=True),)
 
     units: tuple[GolemEntity | URIRef, ...] = ()
-
-    def to_triples(self) -> Iterable[Triple]:
-        yield from super().to_triples()
-        for unit in self.units:
-            yield (self.uri, PROPER_PART, ref_uri(unit))

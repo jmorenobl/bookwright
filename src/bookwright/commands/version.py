@@ -13,7 +13,7 @@ from bookwright.resources.schemas import load_schema_version
 def _read_golem_schema_version() -> str:
     try:
         return load_schema_version()
-    except (FileNotFoundError, ModuleNotFoundError):
+    except FileNotFoundError:
         return "unknown"
 
 

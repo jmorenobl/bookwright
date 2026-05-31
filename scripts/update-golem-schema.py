@@ -39,7 +39,7 @@ DEST = (
 def main() -> None:
     DEST.mkdir(parents=True, exist_ok=True)
 
-    with urllib.request.urlopen(RAW_URL) as response:
+    with urllib.request.urlopen(RAW_URL, timeout=30) as response:
         ttl_bytes = response.read()
     (DEST / "golem.ttl").write_bytes(ttl_bytes)
 

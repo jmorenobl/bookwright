@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import ClassVar
 
 from rdflib.term import URIRef
 
-from bookwright.golem.base import GolemEntity, SluggedEntity, Triple, ref_uri
+from bookwright.golem.base import CrossRef, GolemEntity, SluggedEntity
 from bookwright.golem.namespaces import CLASS_IRI, GENERIC_LOCATION
 
 
@@ -26,10 +25,6 @@ class NarrativeLocation(SluggedEntity):
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["NarrativeLocation"]
     path_segment: ClassVar[str] = "location"
+    cross_refs: ClassVar[tuple[CrossRef, ...]] = (CrossRef("setting", GENERIC_LOCATION),)
 
     setting: GolemEntity | URIRef | None = None
-
-    def to_triples(self) -> Iterable[Triple]:
-        yield from super().to_triples()
-        if self.setting is not None:
-            yield (self.uri, GENERIC_LOCATION, ref_uri(self.setting))

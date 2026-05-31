@@ -9,10 +9,10 @@ propagates unwrapped (not folded into a ``pydantic.ValidationError``).
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import ClassVar
+from typing import ClassVar, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr
-from rdflib.namespace import RDF
+from rdflib.namespace import RDF, XSD
 from rdflib.term import Literal, URIRef
 
 from bookwright.golem.slug import make_slug
@@ -24,6 +24,25 @@ Triple = tuple[URIRef, URIRef, URIRef | Literal]
 def ref_uri(ref: GolemEntity | URIRef) -> URIRef:
     """Resolve a cross-reference target to the URIRef used in a linking triple."""
     return ref.uri if isinstance(ref, GolemEntity) else ref
+
+
+class CrossRef(NamedTuple):
+    """A declarative cross-reference edge: one field → its linking predicate (FR-015).
+
+    Concepts list these in :attr:`GolemEntity.cross_refs` instead of hand-rolling
+    a ``to_triples`` override, so the base emits every edge uniformly and a new
+    concept can never forget to chain the ``rdf:type`` assertion.
+
+    - ``multi``: the field is a tuple; emit one triple per item, in tuple order.
+    - ``literal``: emit the field value verbatim as an ``xsd:string`` (e.g. a
+      source path), not a resolved reference.
+    - otherwise the field is a single optional reference, omitted when ``None``.
+    """
+
+    attr: str
+    predicate: URIRef
+    multi: bool = False
+    literal: bool = False
 
 
 class GolemEntity(BaseModel):
@@ -44,6 +63,7 @@ class GolemEntity(BaseModel):
 
     golem_class: ClassVar[URIRef]
     path_segment: ClassVar[str]
+    cross_refs: ClassVar[tuple[CrossRef, ...]] = ()
 
     _uri: URIRef = PrivateAttr()
 
@@ -59,12 +79,22 @@ class GolemEntity(BaseModel):
         return self._uri
 
     def to_triples(self) -> Iterable[Triple]:
-        """Yield this entity's triples, always including the rdf:type assertion.
+        """Yield this entity's triples: the ``rdf:type`` assertion (FR-008, always
+        first) followed by every edge declared in :attr:`cross_refs` (FR-015).
 
-        Subclasses extend (call ``super().to_triples()``), never replace, the
-        base type triple (FR-008).
+        Concepts customize emission declaratively via ``cross_refs``; overriding
+        this method is unnecessary for any concept in the current model.
         """
         yield (self.uri, RDF.type, self.golem_class)
+        for ref in self.cross_refs:
+            value = getattr(self, ref.attr)
+            if ref.multi:
+                for item in value:
+                    yield (self.uri, ref.predicate, ref_uri(item))
+            elif ref.literal:
+                yield (self.uri, ref.predicate, Literal(value, datatype=XSD.string))
+            elif value is not None:
+                yield (self.uri, ref.predicate, ref_uri(value))
 
 
 class SluggedEntity(GolemEntity):

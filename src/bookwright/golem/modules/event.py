@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import ClassVar
 
 from rdflib.term import URIRef
 
-from bookwright.golem.base import GolemEntity, SluggedEntity, Triple, ref_uri
+from bookwright.golem.base import CrossRef, GolemEntity, SluggedEntity
 from bookwright.golem.namespaces import CLASS_IRI, GENERICALLY_DEPENDENT_ON, PARTICIPANT
 
 
@@ -19,13 +18,11 @@ class NarrativeEvent(SluggedEntity):
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["NarrativeEvent"]
     path_segment: ClassVar[str] = "event"
+    cross_refs: ClassVar[tuple[CrossRef, ...]] = (
+        CrossRef("participants", PARTICIPANT, multi=True),
+    )
 
     participants: tuple[GolemEntity | URIRef, ...] = ()
-
-    def to_triples(self) -> Iterable[Triple]:
-        yield from super().to_triples()
-        for participant in self.participants:
-            yield (self.uri, PARTICIPANT, ref_uri(participant))
 
 
 class PsychologicalState(SluggedEntity):
@@ -36,10 +33,6 @@ class PsychologicalState(SluggedEntity):
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["PsychologicalState"]
     path_segment: ClassVar[str] = "psychological-state"
+    cross_refs: ClassVar[tuple[CrossRef, ...]] = (CrossRef("bearer", GENERICALLY_DEPENDENT_ON),)
 
     bearer: GolemEntity | URIRef | None = None
-
-    def to_triples(self) -> Iterable[Triple]:
-        yield from super().to_triples()
-        if self.bearer is not None:
-            yield (self.uri, GENERICALLY_DEPENDENT_ON, ref_uri(self.bearer))

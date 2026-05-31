@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import ClassVar
 
 import uuid_utils
 from pydantic import PrivateAttr
-from rdflib.namespace import XSD
-from rdflib.term import Literal, URIRef
+from rdflib.term import URIRef
 
-from bookwright.golem.base import GolemEntity, Triple, ref_uri
+from bookwright.golem.base import CrossRef, GolemEntity
 from bookwright.golem.namespaces import (
     ASSIGNED,
     ASSIGNED_ATTRIBUTE_TO,
@@ -32,6 +30,12 @@ class AttributeAssignment(GolemEntity):
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["AttributeAssignment"]
     path_segment: ClassVar[str] = "assertion"
+    cross_refs: ClassVar[tuple[CrossRef, ...]] = (
+        CrossRef("target", ASSIGNED_ATTRIBUTE_TO),
+        CrossRef("attribute", ASSIGNED),
+        CrossRef("source", USED_SPECIFIC_OBJECT, literal=True),
+        CrossRef("premise", REFERS_TO),
+    )
 
     target: GolemEntity | URIRef
     attribute: GolemEntity | URIRef
@@ -46,11 +50,3 @@ class AttributeAssignment(GolemEntity):
 
     def _build_token(self) -> str:
         return self._token
-
-    def to_triples(self) -> Iterable[Triple]:
-        yield from super().to_triples()
-        yield (self.uri, ASSIGNED_ATTRIBUTE_TO, ref_uri(self.target))
-        yield (self.uri, ASSIGNED, ref_uri(self.attribute))
-        yield (self.uri, USED_SPECIFIC_OBJECT, Literal(self.source, datatype=XSD.string))
-        if self.premise is not None:
-            yield (self.uri, REFERS_TO, ref_uri(self.premise))
