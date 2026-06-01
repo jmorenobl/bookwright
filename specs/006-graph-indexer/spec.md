@@ -250,9 +250,11 @@ outcome.
 ### Functional Requirements
 
 - **FR-001**: The system MUST provide a `bookwright graph build` command that
-  reads the current project's `bible/` (and `manuscript/`) markdown, extracts
-  GOLEM model instances, and writes all resulting triples to the Turtle file
-  configured at `manifest.toml > [paths] graph` (default `bible/graph.ttl`).
+  extracts GOLEM model instances from the current project's `bible/` markdown and
+  writes all resulting triples to the Turtle file configured at
+  `manifest.toml > [paths] graph` (default `bible/graph.ttl`). The command MUST
+  require `manuscript/` to be present (FR-012) but, in v0, extracts no instances
+  from it (no prose mining — see Assumptions).
 - **FR-002**: `graph build` MUST accept a `--force` flag that rebuilds the graph
   from scratch, ignoring any cache.
 - **FR-003**: The system MUST provide a `bookwright graph query "<SPARQL>"`
@@ -395,11 +397,13 @@ outcome.
   Relationships) — per design § 7 / FR-009, matching what `bookwright init`
   scaffolds. Character frontmatter is the documented schema; the non-character
   schemas are fixed in [contracts/bible-format.md](contracts/bible-format.md).
-- **Manuscript role in this iteration**: `manuscript/` is read so its presence is
-  required and so provenance can reference manuscript lines; deep prose mining
-  (NLP, mention extraction) is **not** in scope — entity extraction is driven by
-  bible frontmatter. Resolved: v0 performs a presence-only check on
-  `manuscript/` and extracts nothing from its prose (plan / out of scope).
+- **Manuscript role in this iteration**: `manuscript/` MUST exist — its presence
+  is a build precondition (FR-012) — but v0 performs a presence-only check and
+  extracts nothing from its prose. Entity extraction is driven entirely by bible
+  frontmatter, so every provenance record references a bible source file; no
+  manuscript-line provenance is emitted in v0. Deep prose mining (NLP, mention
+  extraction) and manuscript-sourced provenance are out of scope (plan / Out of
+  Scope).
 - **Cache semantics**: Resolved — v0 writes **no** cache and always performs a
   full rebuild (plan / Constitution Principle I). `--force` is accepted for
   forward-compatibility but is a no-op in v0 (there is nothing to bypass); any

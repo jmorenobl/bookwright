@@ -37,9 +37,9 @@ Single-project CLI: production code under `src/bookwright/`, tests under
 **Purpose**: Land the Gate II `pyyaml` amendment package and create the new
 package skeletons before any code imports them.
 
-- [ ] T001 Add `"pyyaml>=6.0"` to `[project].dependencies` in [pyproject.toml](pyproject.toml) (insert alphabetically) and run `uv sync` so the direct dependency is recorded in [uv.lock](uv.lock). (Gate II prerequisite — the constitution was already amended to v1.2.0 in commit `76cce03`; this records the runtime dep itself.)
+- [ ] T001 Add `"pyyaml>=6.0"` to `[project].dependencies` in [pyproject.toml](pyproject.toml) (insert alphabetically) and run `uv sync` so the direct dependency is recorded in [uv.lock](uv.lock). (Gate II prerequisite — the constitution was already amended to v1.2.0 in commit `caaedf6`; this records the runtime dep itself.)
 - [ ] T002 Add `"yaml"` to `RUNTIME_MODULES` in [src/bookwright/commands/check.py](src/bookwright/commands/check.py#L11) so `bookwright check` verifies the new runtime import. Also add `"packaging"` in the same tuple: it was promoted to a runtime dependency in constitution v1.1.0 (iteration 2) but `RUNTIME_MODULES` never started verifying it — close that gap while editing this tuple.
-- [ ] T003 Update design § 14.1 in [bookwright-design.md](bookwright-design.md) (Spanish) to list `pyyaml` among the runtime dependencies, matching the v1.2.0 amendment.
+- [ ] T003 Verify design § 14.1 in [bookwright-design.md](bookwright-design.md) (Spanish) lists `pyyaml` among the runtime dependencies — this propagation already landed with the v1.2.0 constitution amendment (commit `caaedf6`); this is a confirmation gate, not a re-edit. Fail only if the entry is missing or out of order.
 - [ ] T004 [P] Create the `indexers` package skeleton: empty [src/bookwright/indexers/__init__.py](src/bookwright/indexers/__init__.py) (re-exports filled in T009/T015).
 - [ ] T005 [P] Create the `io` package skeleton: empty [src/bookwright/io/__init__.py](src/bookwright/io/__init__.py).
 - [ ] T006 [P] Create the `commands/graph` package skeleton: empty [src/bookwright/commands/graph/__init__.py](src/bookwright/commands/graph/__init__.py) (Typer wiring filled in T016).
