@@ -83,13 +83,13 @@ extensions (FR-024).
 | V. Plugin-based integrations | ✅ N/A | No integration code touched. |
 | VI. Agent Skills only | ✅ PASS | Writes no `commands/` directory; molds are stamped *into* `bible/`/`manuscript/`, not into a skills dir. |
 | VII. agentskills.io compliance | ✅ N/A | No `SKILL.md` generated this iteration (skills land in iter 9). |
-| VIII. Test discipline (≥80%) | ⚠️ JUSTIFIED EXCEPTION | Deliverable is prose, not executable lines; line-coverage is not a meaningful gate (SC-007, plan §). Validation is by format/round-trip/completeness tests instead. The *validation tests themselves* are real pytest and run in CI. See Complexity Tracking. |
+| VIII. Test discipline (≥80%) | ✅ N/A — no new executable lines | This iteration adds **zero** production Python, so the global `src/bookwright/` coverage figure is mathematically unchanged — there is no deviation to except. Deliverables are prose; validation is by format/round-trip/completeness tests, which are real pytest and run in CI (SC-007). See Complexity Tracking for rationale. |
 | IX. JSON-over-stdout | ✅ N/A | No CLI output contract changed. |
 | X. Design-document axioms | ✅ PASS | Supersedes design § 6's unified-template layout in favor of the lifecycle split (FR-021, documented in CHANGELOG). § 6 is structural guidance, **not** a § 16 axiom, so no constitutional amendment is required; the divergence is recorded, not litigated. GOLEM/rdflib/plain-text axioms untouched. |
 
-**Gate result**: PASS. The single deviation (Principle VIII line-coverage)
-is a pre-authorized exception, not an unjustified violation — recorded in
-Complexity Tracking and ratified by spec SC-007.
+**Gate result**: PASS. No principle is violated. Principle VIII is N/A this
+iteration (no executable lines added → global coverage unchanged); the
+rationale is recorded in Complexity Tracking and ratified by spec SC-007.
 
 ## Project Structure
 
@@ -164,9 +164,10 @@ per FR-021. No new package; molds live beside the existing
 
 ## Complexity Tracking
 
-> Filled because Constitution Check carries one justified deviation.
+> Filled to record the rationale behind the § 6 layout divergence and to
+> document why Principle VIII's coverage gate is N/A (not excepted) here.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Principle VIII ≥80% line coverage not met by this iteration's deliverables | The deliverable is authored prose (Markdown/Jinja2/mold documents), which has no executable lines to cover. Line coverage would measure nothing real. | Writing throwaway Python to "host" the prose purely to generate coverage would be speculative generality (Scope & Release Discipline) and add a god-module. The honest gate for prose is format/round-trip/completeness — which this plan ships as real pytest, run in CI, asserting the parser-visible contract (SC-002/003/004) and the human-visible contract (SC-001/005). SC-007 pre-authorizes this exception. |
+| Principle VIII ≥80% line coverage — N/A this iteration (no new executable lines, so the global figure is unchanged) | The deliverable is authored prose (Markdown/Jinja2/mold documents), which has no executable lines to cover. Line coverage would measure nothing real. | Writing throwaway Python to "host" the prose purely to generate coverage would be speculative generality (Scope & Release Discipline) and add a god-module. The honest gate for prose is format/round-trip/completeness — which this plan ships as real pytest, run in CI, asserting the parser-visible contract (SC-002/003/004) and the human-visible contract (SC-001/005). SC-007 pre-authorizes this exception. |
 | Layout diverges from design § 6 (unified `templates/` + `resolve_template()`) | The 4-layer resolver's only consumers (presets v0.2, extensions v0.5) are out of v0 scope and not expected to ship; building it now is forbidden plumbing (FR-024, Scope & Release Discipline). | Keeping § 6's layout would require either dead resolver code or stamping literal `*.tmpl` files into every project (walker byte-copies non-`.j2`). The lifecycle split matches what iter-4 already does and needs no new code. Not a § 16 axiom, so no amendment — recorded in CHANGELOG per FR-021. |

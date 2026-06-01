@@ -125,7 +125,7 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 - **FR-012**: `bible/character.md.tmpl` MUST carry indexer-significant frontmatter restricted to `{name, born, died, features, narrative_roles}` and prose sections for biographical, psychological, and physical features, narrative role, sample dialogue, and body-language patterns. The user-facing concept of "age" MUST be expressed via `born`/`died` years (the indexer's model) and/or prose, never as a non-integer frontmatter value.
 - **FR-013**: `bible/setting.md.tmpl` MUST carry frontmatter with `name` (the only indexer-ingested key) and prose sections for the broad narrative universe (culture, system/era, wide geography).
 - **FR-014**: `bible/location.md.tmpl` MUST provide sensory-anchor sections (what is seen, heard, smelled, touched, and the dominant atmosphere); its frontmatter, if present, MUST be valid YAML and the template MUST NOT imply it is indexed in v0.
-- **FR-015**: `manuscript/chapter.md.tmpl` MUST provide a chapter structure suitable as a drafting starting point.
+- **FR-015**: `resources/templates/manuscript/chapter.md.tmpl` MUST provide a chapter structure suitable as a drafting starting point.
 - **FR-016**: A scene mold MUST be authored under `resources/templates/scenes/scene.md.tmpl` with a usable scene structure.
 
 **Cross-cutting authoring rules**
@@ -158,7 +158,7 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 - **SC-002**: Building the graph on a freshly-initialized project yields zero `invalid_frontmatter` skips, zero `unknown_keys` warnings, and zero `unresolved_participants`.
 - **SC-003**: Every authored template file — both skeleton and molds — parses through the iteration-6 frontmatter reader without raising; 100% pass a format smoke test.
 - **SC-004**: A character file stamped from `character.md.tmpl` and filled with a name, years, features, and roles maps to exactly one `Character` GOLEM entity carrying those attributes; the equivalent holds for `setting.md.tmpl` → `Setting`.
-- **SC-005**: Every authored template contains at least one HTML-comment guidance block and renders/reads sensibly as plain Markdown (verified by inspection of all files).
+- **SC-005**: Every authored template contains at least one HTML-comment guidance block and valid YAML where a frontmatter fence is present — this half is the automated `pytest` gate (T030). That each file additionally *reads sensibly* as plain Markdown is a manual inspection sign-off, not part of the pytest gate.
 - **SC-006**: The CHANGELOG credits the preset inspiration and records the § 6 layout supersession.
 - **SC-007**: Test coverage gates do not apply to this iteration's prose deliverables (per the implementation plan); validation is by format/completeness/round-trip tests rather than line coverage.
 
