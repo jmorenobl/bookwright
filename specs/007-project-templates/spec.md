@@ -21,6 +21,13 @@ Templates are instead organized by **lifecycle**, matching what the already-ship
 
 This split is the permanent v0 architecture, not a temporary compromise. (`§ 6` of the design is now superseded; the divergence is recorded in the CHANGELOG per FR-021.)
 
+## Clarifications
+
+### Session 2026-06-01
+
+- Q: What language should the templates' human-facing prose use? → A: Spanish for all human-facing scaffolding prose (section headings, HTML-comment guidance, `[PENDIENTE]` questions), including the authored `README.md.j2` guidance; frontmatter **keys** and the `[PENDIENTE]` token stay English (parser contract). The verify-only `manifest.template.toml` (FR-025) keeps its existing English comments.
+- Q: Should templates ship blank, or with a worked example? → A: Blank scaffold plus a short worked example tucked inside HTML `<!-- -->` comments — invisible when read as plain Markdown, never indexed, never tripping the stub-sentinel check. For the indexer-ingested collection files (`timeline.md`, `relationships.md`), the example entries live in HTML comments so the shipped frontmatter list stays empty.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A new project ships a complete, fill-in-ready narrative skeleton (Priority: P1)
@@ -122,8 +129,8 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 
 **Cross-cutting authoring rules**
 
-- **FR-017**: Every authored template MUST be readable directly as plain Markdown without rendering.
-- **FR-018**: Every authored template MUST include HTML `<!-- -->` comments carrying instructions for the human author or AI agent; these MUST NOT render as visible body prose.
+- **FR-017**: Every authored template MUST be readable directly as plain Markdown without rendering. Human-facing scaffolding prose (section headings, body labels, HTML-comment guidance, and `[PENDIENTE]` questions) MUST be written in Spanish; frontmatter keys and the `[PENDIENTE]` token itself MUST remain in English (parser contract). The already-shipped English `README.md.j2` and `manifest.template.toml` are unaffected, but the README's authored guidance prose follows the Spanish rule.
+- **FR-018**: Every authored template MUST include HTML `<!-- -->` comments carrying instructions for the human author or AI agent; these MUST NOT render as visible body prose. Each template MUST also include a short worked example demonstrating the expected shape, placed **inside** HTML comments so it never renders, never indexes, and never trips the stub-sentinel check (FR-022). For `timeline.md` / `relationships.md`, example entries MUST live in HTML comments while the shipped frontmatter `events:` / `relationships:` lists stay empty (FR-002, FR-003).
 - **FR-019**: Sections the agent must populate from a narrative brief MUST use `[PENDIENTE: <question>]` placeholders phrased as the question to answer.
 - **FR-020**: YAML frontmatter MUST appear only where it carries meaning, MUST be parseable by the iteration-6 frontmatter reader without `yaml.YAMLError`, and — for the four indexer-ingested concepts (character, setting, timeline, relationships) — MUST use only mapper-recognized keys so a stamped, filled instance produces zero `unknown_keys` warnings on canonical fields.
 - **FR-021**: The CHANGELOG MUST credit the `fiction-book-writing` preset (adaumann, MIT) as structural inspiration, state that Bookwright's redaction is original (Apache-2.0) and adapted to the GOLEM model, and note that this iteration supersedes the unified-template layout described in design § 6 in favor of the lifecycle split.
@@ -162,5 +169,6 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 - **Locations are not indexed in v0**: Iteration 6 has no `bible/locations/` handler, so `location.md.tmpl` frontmatter is for human/agent use only.
 - **`pov-structure.md` ships unconditionally**: `init` does not branch on multi-POV, so the document ships in every project with guidance that it applies only to multi-POV works.
 - **Manifest template is pre-existing**: `resources/templates/manifest.template.toml` already satisfies the "commented manifest" need and is wired into `Manifest.build`; only verification is in scope.
-- **Spec/code language is English**: Templates, frontmatter keys, and the spec are authored in English (matching prior iterations and the constitution); `[PENDIENTE]` is retained as the placeholder token per the user prompt.
+- **Template prose is Spanish; keys and spec are English** (per Clarification Q1): human-facing scaffolding prose in the templates (headings, HTML-comment guidance, `[PENDIENTE]` questions, authored README guidance) is Spanish; frontmatter keys, the `[PENDIENTE]` token, this spec, and the verify-only `manifest.template.toml` comments stay English.
+- **Preset is studied, not fetched as a dependency**: the `fiction-book-writing` document inventory is taken from design § 17.2 (which already enumerates what to adopt); optionally consulting adaumann's MIT repo read-only for structure is allowed but not a build/runtime dependency, and no preset text is copied verbatim (FR-021).
 - **Dependencies**: Iteration 4 (`init` scaffold walker) and iteration 6 (frontmatter reader + bible mapper) are merged on `main` and define the contracts this iteration conforms to.
