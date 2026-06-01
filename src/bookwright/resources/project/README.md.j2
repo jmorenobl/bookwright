@@ -1,9 +1,36 @@
 # {{ title }}
 
-Bookwright project — slug `{{ project_slug }}`.
+<!--
+Guía: este README se genera al crear el proyecto y orienta a quien lo abre por
+primera vez. Sólo puede usar las variables de contexto del andamiaje: `title`,
+`project_slug`, `author`, `language`, `integration_key`. No añadas otras: el
+render con `StrictUndefined` abortaría `init`.
+-->
 
-Author: {{ author }}.
+Proyecto Bookwright — identificador `{{ project_slug }}`.
+Autoría: {{ author }}. Idioma de la obra: `{{ language }}`.
 
-Edit `bible/constitution.md` to declare the project's narrative
-contract, then drop your scenes under `manuscript/`. Run `bookwright
-check` from the project root to verify the toolchain.
+## Por dónde empezar
+
+1. Abre `bible/constitution.md` y responde sus prompts `[PENDING: …]`: fija la
+   voz, el pacto con el lector y las líneas rojas de la obra.
+2. Esboza la historia en `outline/` (sinopsis, estructura, arcos, escenas).
+3. Da cuerpo al mundo en `bible/` (personajes, lugares, temas, glosario).
+4. Escribe el manuscrito bajo `manuscript/`.
+
+## Qué contiene cada directorio
+
+- `bible/` — la "biblia" de la obra: personajes, escenarios, línea de tiempo,
+  relaciones, temas, glosario e investigación. Es la fuente de verdad del mundo.
+- `outline/` — el plan: sinopsis corta y larga, estructura, arcos y escenas.
+- `manuscript/` — el texto en sí, capítulo a capítulo.
+- `.bookwright/` — estado interno del proyecto (caché, vocabularios, esquema);
+  no suele editarse a mano.
+
+## Comandos clave
+
+- `bookwright graph build` — indexa la biblia y construye el grafo GOLEM.
+- `bookwright check` — verifica que el proyecto y la cadena de herramientas
+  están en orden.
+
+Ejecuta los comandos desde la raíz del proyecto.

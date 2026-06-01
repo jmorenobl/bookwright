@@ -1,0 +1,63 @@
+---
+name: "[PENDING: ¿Cómo se llama el personaje?]"
+# born: 1990          # año entero; descomenta y rellena, nunca un texto
+# died:               # año entero o deja la línea omitida si sigue vivo
+features: []
+narrative_roles: []
+---
+
+# Ficha de personaje
+
+<!--
+Guía para el agente y el autor: esta ficha se indexa como un `Character` del
+modelo GOLEM. El frontmatter sólo admite las claves `name`, `born`, `died`,
+`features` y `narrative_roles`; cualquier otra clave de nivel superior genera un
+aviso del indexador.
+
+  - `name`: cadena obligatoria. El prompt `[PENDING: …]` es legal sólo entre
+    comillas (`name: "[PENDING: …]"`); sin comillas, los corchetes se leen como
+    una lista YAML y la ficha se descarta.
+  - `born` / `died`: año entero o se omiten. Nunca un texto ni un `[PENDING]`:
+    un valor no entero hace que el indexador descarte el archivo. La edad se
+    expresa por `born`/`died` o en prosa, jamás como cadena en el frontmatter.
+  - `features` / `narrative_roles`: listas de cadenas.
+
+Ejemplo de frontmatter ya rellenado:
+
+name: "Ana Soler"
+born: 1990
+features: ["cicatriz en la ceja", "zurda"]
+narrative_roles: ["protagonista", "heroína"]
+-->
+
+## Rasgos biográficos
+
+<!-- Guía: origen, familia, hitos vitales. La edad se deriva de `born`/`died` o
+     se cuenta aquí en prosa, nunca como dato en el frontmatter. -->
+
+[PENDING: ¿De dónde viene el personaje y qué hechos marcaron su vida?]
+
+## Rasgos psicológicos
+
+[PENDING: ¿Qué quiere, qué teme y qué herida arrastra?]
+
+## Rasgos físicos
+
+[PENDING: ¿Qué aspecto tiene y qué detalle lo hace reconocible?]
+
+## Rol narrativo
+
+<!-- Guía: su función en la trama (protagonista, antagonista, aliado…) y cómo
+     se relaciona con los `narrative_roles` declarados en el frontmatter. -->
+
+[PENDING: ¿Qué papel cumple en la historia y respecto a quién?]
+
+## Diálogo de muestra
+
+<!-- Guía: dos o tres réplicas que capturen su voz, para mantenerla constante. -->
+
+[PENDING: ¿Cómo habla? Escribe una réplica característica.]
+
+## Patrones de lenguaje corporal
+
+[PENDING: ¿Qué gestos o tics lo delatan bajo presión?]
