@@ -7,7 +7,9 @@ relationships: []
 <!--
 Guía: registra aquí los vínculos sociales entre personajes. Cada relación es un
 mapa `{ name, participants }`, donde `participants` es una lista de *slugs* de
-personaje (el nombre de archivo de `bible/characters/<slug>.md`, sin extensión).
+personaje. El *slug* se deriva del campo `name` de la ficha (p. ej.
+`name: "Ana Soler"` → `ana-soler`), no del nombre del archivo; nombra cada
+`bible/characters/<slug>.md` con ese mismo slug para mantenerlos alineados.
 El indexador sólo lee la clave `relationships:` del frontmatter — mantenla como
 única clave de nivel superior. Deja la lista vacía hasta rellenarla; los
 ejemplos viven dentro de este comentario para que nunca se indexen. Ejemplo:

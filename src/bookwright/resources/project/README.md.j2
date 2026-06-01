@@ -1,10 +1,14 @@
+{#
+Nota de mantenimiento (comentario Jinja: NO se renderiza en el README final).
+Esta plantilla sólo puede usar las variables de contexto del andamiaje:
+`title`, `project_slug`, `author`, `language`, `integration_key`. No añadas
+otras: el render con `StrictUndefined` abortaría `init`.
+-#}
 # {{ title }}
 
 <!--
-Guía: este README se genera al crear el proyecto y orienta a quien lo abre por
-primera vez. Sólo puede usar las variables de contexto del andamiaje: `title`,
-`project_slug`, `author`, `language`, `integration_key`. No añadas otras: el
-render con `StrictUndefined` abortaría `init`.
+Guía: este README es el punto de entrada del proyecto y orienta a quien lo abre
+por primera vez. Edítalo libremente; borra este bloque cuando ya no lo necesites.
 -->
 
 Proyecto Bookwright — identificador `{{ project_slug }}`.
