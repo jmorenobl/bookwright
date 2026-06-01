@@ -1172,6 +1172,8 @@ dependencies = [
     "python-slugify>=8.0",
     "platformdirs>=4.2",
     "uuid-utils>=0.16",
+    "packaging>=23.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

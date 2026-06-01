@@ -18,6 +18,8 @@ RUNTIME_MODULES: tuple[str, ...] = (
     "slugify",
     "platformdirs",
     "uuid_utils",
+    "yaml",
+    "packaging",
 )
 
 

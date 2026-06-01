@@ -116,8 +116,9 @@ Cada iteración sigue este flujo:
 | 7 | Templates de bible, outline y constitution | 4 | M2 |
 | 8 | Redacción de los 10 commands source | 7 | M2 |
 | 9 | Materialización de commands a Agent Skills | 3, 8 | M2 |
-| 10 | Sistema de validación | 6, 9 | M3 |
-| 11 | Fixtures, tests E2E y documentación | 1-10 | M3 |
+| 10 | Consolidación de envelopes de error | 2, 5, 6 | M3 |
+| 11 | Sistema de validación | 6, 9, 10 | M3 |
+| 12 | Fixtures, tests E2E y documentación | 1-11 | M3 |
 
 Estimación total: 6-8 semanas a tiempo parcial, 3-4 semanas a tiempo completo. Cada iteración entre medio día y dos días de trabajo del agente más revisión humana.
 
@@ -552,7 +553,48 @@ Referencia: ver bookwright-design.md § 11.4 (Generación de SKILL.md desde comm
 
 ---
 
-### Iteración 10 — Sistema de validación
+### Iteración 10 — Consolidación de envelopes de error
+
+**Objetivo:** unificar las cuatro jerarquías de excepción que hoy duplican `to_json()` (core, golem, io, indexers) en una base compartida, **antes** de que el sistema de validación añada una quinta forma de salida estructurada (`Violation`). Refactor de comportamiento preservado; no añade funcionalidad de usuario.
+
+**Motivación:** auditoría de calidad de la iteración 6 (finding **R4**, `specs/006-graph-indexer/review.md`). Cada módulo de errores reimplementa a mano el sobre `{"status":"error","code":...,"message":...,"details":{...}}`. Con cuatro copias, cualquier cambio en el contrato de error es shotgun surgery; la iteración 11 (validación) introduciría una quinta (`Violation`). Consolidar aquí evita esa deuda y deja una base de la que `Violation` puede heredar.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: Bookwright tiene cuatro jerarquías de excepción independientes (core, golem, io, indexers) que reimplementan el mismo método to_json() produciendo el sobre de error JSON-sobre-stdout (Principio IX). La duplicación obliga a replicar cualquier cambio del contrato de error en N sitios, y el sistema de validación de la siguiente iteración añadiría una jerarquía más. Necesitamos una base de error compartida que centralice la forma del sobre, preservando el comportamiento observable byte-a-byte.
+
+Comportamiento esperado:
+
+- Existe una clase base (BookwrightError) de la que heredan todas las excepciones que se serializan a JSON. Declara code (a nivel de clase), message (de instancia) y details opcional, y un único to_json() que construye {"status":"error","code":...,"message":...} y añade "details" solo cuando hay detalles.
+- Cada subclase concreta (ProjectNotFoundError, MissingDirectoryError, SlugCollisionError, InvalidFrontmatterError, UnknownIndexerError, GraphNotBuiltError, GraphLoadError, InvalidQueryError, ManifestError, EmptySlugError, etc.) declara su code y rellena message/details; ya no reimplementa to_json().
+- El JSON emitido por cada error es idéntico al actual (mismas claves, misma forma de details). Los tests existentes de forma de error siguen pasando sin cambios de aserción.
+- Los códigos de error (code) y los exit codes de cada comando no cambian.
+
+Restricciones:
+
+- Refactor de comportamiento preservado: ningún cambio en mensajes, codes, exit codes ni en la forma del JSON. Es reorganización interna, no rediseño del contrato.
+- Mantener la independencia de capas: el módulo base no debe importar de core/golem/io/indexers (solo al revés). Sin ciclos de import.
+- No tocar el contrato JSON-sobre-stdout (Principio IX).
+
+Fuera de scope:
+
+- Cambiar códigos o mensajes de error existentes.
+- Añadir nuevos tipos de error (el Violation de validación llega en la iteración siguiente y heredará de esta base).
+- Cualquier cambio funcional en los comandos.
+
+Referencia: ver el finding R4 de specs/006-graph-indexer/review.md y data-model § 6 (forma del sobre de error).
+```
+
+**Pista para `/speckit-plan`:** *"Crea una base `BookwrightError(Exception)` con `code: ClassVar[str]`, `message: str`, `details: dict | None` y un único `to_json()`. Colócala donde no genere ciclos (un módulo raíz `src/bookwright/errors.py` es lo más seguro; core/golem/io/indexers importan de él, no al revés). Migra las jerarquías de core/errors.py, golem/errors.py, io/errors.py e indexers/errors.py a heredar de ella, borrando los `to_json()` duplicados. Apóyate en los tests de forma de error existentes como red de seguridad — no deben requerir cambios de aserción."*
+
+**Criterio de aceptación:** ningún módulo de errores reimplementa `to_json()`; todos heredan de `BookwrightError`. La suite completa pasa sin modificar las aserciones de los tests de forma de error. `mypy --strict` y `ruff` verdes. La cobertura no baja respecto a la iteración previa.
+
+---
+
+### Iteración 11 — Sistema de validación
 
 **Objetivo:** detectar inconsistencias automáticamente con validators ejecutables, complementando a los chequeos LLM.
 
@@ -597,7 +639,7 @@ Referencia: ver bookwright-design.md § 13 (Sistema de Validación) completo.
 
 ---
 
-### Iteración 11 — Fixtures, tests E2E y documentación
+### Iteración 12 — Fixtures, tests E2E y documentación
 
 **Objetivo:** asegurar que todo el sistema funciona de extremo a extremo y queda documentado para usuarios y contribuidores.
 

@@ -1,42 +1,33 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.0 → 1.1.0
-Bump rationale: MINOR — addition to runtime dependency list per Principle II /
-Technical Constraints, required by FR-012 (iteration 002-manifest-model) for
-PEP 440 ordering of `cli_version_min` via `packaging.version.Version`.
+Version change: 1.1.0 → 1.2.0
+Bump rationale: MINOR — addition to the runtime dependency list per Principle II
+/ Technical Constraints. Iteration 006-graph-indexer parses bible Markdown YAML
+frontmatter; no declared runtime dependency parses YAML, so `pyyaml` is added to
+the minimum set. A hand-rolled YAML parser was rejected (fragile / unsafe with
+author-authored prose — fails the spirit of Principles I and VIII). PyYAML is
+already resolved transitively in `uv.lock`; this promotes it to a declared
+direct dependency.
 
-Principles defined (all new, no renames):
-- I. Plain Text as Source of Truth (NON-NEGOTIABLE)
-- II. Modern Python Stack
-- III. src-layout
-- IV. Modular Command Surface
-- V. Plugin-Based Integrations
-- VI. Agent Skills Only — No Legacy Commands (NON-NEGOTIABLE)
-- VII. agentskills.io Standard Compliance
-- VIII. Test Discipline (NON-NEGOTIABLE)
-- IX. JSON-over-stdout CLI Contract
-- X. Design Document Axioms
+Principles: unchanged since 1.1.0 (I–X; no renames, no additions, no removals).
 
-Added sections:
-- Core Principles (expanded from 5 → 10 principle slots)
-- Technical Constraints
-- Scope & Release Discipline
-- Governance
-
-Removed sections: none (template placeholders replaced in place).
-
-Templates requiring updates:
-- ✅ .specify/templates/plan-template.md — no change required (Constitution
-  Check gate is generic; principles I–X unchanged).
-- ✅ .specify/templates/spec-template.md — no change required.
-- ✅ .specify/templates/tasks-template.md — no change required.
-- ✅ .specify/templates/checklist-template.md — no change required.
+Propagation:
+- ✅ Technical Constraints → runtime dependency list: `pyyaml` added (alphabetical).
+- ✅ bookwright-design.md § 14.1 — `pyyaml` added to the dependencies snippet.
+- ⛔ Implementation follow-ups (NOT part of this amendment; tracked as iteration
+  006 tasks): add `pyyaml>=6.0` to `pyproject.toml [project].dependencies` +
+  refresh `uv.lock`; add `"yaml"` to `RUNTIME_MODULES` in
+  `src/bookwright/commands/check.py`.
+- ✅ .specify/templates/*.md — no change required (dependency addition only).
 - ✅ .claude/skills/speckit-*/ — no change required.
 
-Follow-up TODOs: none. README.md and docs/quickstart.md are not present in the
-repository; if added later, they MUST cite this constitution under a "Project
-governance" pointer.
+History:
+- 1.0.0 (2026-05-28): initial ratification (Principles I–X, Technical
+  Constraints, Scope & Release Discipline, Governance).
+- 1.1.0 (2026-05-28): added `packaging` to the runtime dependency list
+  (FR-012, iteration 002-manifest-model; PEP 440 ordering of `cli_version_min`).
+- 1.2.0 (2026-06-01): added `pyyaml` (this amendment).
 -->
 
 # Bookwright Constitution
@@ -188,9 +179,9 @@ constitutional bump.
 
 - **Language**: Python 3.11+ only. No support for 3.10 or earlier.
 - **Runtime dependencies (minimum set)**: `jinja2`, `packaging`,
-  `platformdirs`, `pydantic` (v2), `python-slugify`, `rdflib`, `rich`,
-  `tomlkit`, `typer`, `uuid-utils`. Adding to this list requires a MINOR
-  amendment; removing or swapping requires a MAJOR amendment.
+  `platformdirs`, `pydantic` (v2), `python-slugify`, `pyyaml`, `rdflib`,
+  `rich`, `tomlkit`, `typer`, `uuid-utils`. Adding to this list requires a
+  MINOR amendment; removing or swapping requires a MAJOR amendment.
 - **Build backend**: `hatchling`. **Lockfile**: `uv.lock` committed to the
   repository.
 - **Distribution**: PyPI package name `bookwright-cli`. Release tags follow
@@ -246,4 +237,4 @@ either the code is fixed or the constitution is amended through the
 procedure above. The CI pipeline (Principle VIII) is the automated half of
 this gate; human review covers the rest.
 
-**Version**: 1.1.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-05-28
+**Version**: 1.2.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-06-01
