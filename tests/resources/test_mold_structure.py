@@ -1,4 +1,4 @@
-"""US3 independent test — every ``*.tmpl`` mold is well-formed.
+"""Mold structure — every ``*.tmpl`` mold is well-formed (FR-012..016, SC-004).
 
 For each mold: (a) ``parse_frontmatter`` raises no ``yaml.YAMLError``,
 (b) its required Spanish section headings are present, (c) the indexed molds
