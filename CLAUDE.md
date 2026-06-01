@@ -65,8 +65,9 @@ From `bookwright-implementation-plan.md` § 2:
 | 7 | Bible / outline / constitution templates | 4 | M2 |
 | 8 | Author the 10 source commands | 7 | M2 |
 | 9 | Materialize commands as Agent Skills | 3, 8 | M2 |
-| 10 | Validation system | 6, 9 | M3 |
-| 11 | Fixtures + E2E tests + docs | 1–10 | M3 |
+| 10 | Error-envelope consolidation (`BookwrightError`) | 2, 5, 6 | M3 |
+| 11 | Validation system | 6, 9, 10 | M3 |
+| 12 | Fixtures + E2E tests + docs | 1–11 | M3 |
 
 When a `/speckit-specify` prompt references `§ 6`, `§ 11`, `§ 15.1`, etc.,
 that's a section in `bookwright-design.md`. Open it.
