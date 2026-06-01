@@ -7,17 +7,17 @@
 
 ## 1. Summary
 
-| Severity | Count |
-|---|---|
-| CRITICAL | 0 |
-| HIGH | 0 |
-| MEDIUM | 2 |
-| LOW | 2 |
-| **Total** | 4 |
+| Severity | Open | Resolved |
+|---|---|---|
+| CRITICAL | 0 | — |
+| HIGH | 0 | — |
+| MEDIUM | 0 | 2 (R1, R2) |
+| LOW | 2 | 0 |
+| **Total** | 2 | 2 |
 
-Coverage gate: **PASS** (0 changed modules below threshold, threshold = 80%). Full suite: 437 passed, 98% total; every changed `golem` module is 98–100%. `ruff check`, `ruff format --check`, and `mypy --strict` all clean on the changed tree.
+Coverage gate: **PASS** (0 changed modules below threshold, threshold = 80%). Full suite: 437 passed, 98% total; after the R2 fix every changed `golem` module is **100%**. `ruff check`, `ruff format --check`, and `mypy --strict` all clean on the changed tree.
 
-This branch adds the character-attributes layer (`born`/`died`/`features`/`narrative_roles`) on top of the already-merged identity-only GOLEM model. The work is high quality: the declarative `CrossRef` mechanism is applied uniformly across concepts, every namespace term is frozen-ontology-backed (SC-007 test asserts this), and the attribute-free `Character` is proven byte-identical to the prior identity-only output. Findings are quality nits, not correctness or governance failures.
+This branch adds the character-attributes layer (`born`/`died`/`features`/`narrative_roles`) on top of the already-merged identity-only GOLEM model. The work is high quality: the declarative `CrossRef` mechanism is applied uniformly across concepts, every namespace term is frozen-ontology-backed (SC-007 test asserts this), and the attribute-free `Character` is proven byte-identical to the prior identity-only output. Both MEDIUM findings (R1, R2) have since been remediated and verified; the two remaining LOW items are non-blocking (R3 is deferred to iteration 6, R4 is a moot test-tightening once R2 is fixed).
 
 ## 2. Conventions Compliance Matrix
 
@@ -45,29 +45,26 @@ This branch adds the character-attributes layer (`born`/`died`/`features`/`narra
 
 ## 3. Findings
 
-| ID | Pass | Severity | Location | Summary | Recommendation |
-|---|---|---|---|---|---|
-| R1 | C | MEDIUM | src/bookwright/golem/base.py:90-95 | `to_triples` docstring claims "overriding … is unnecessary for any concept … a character's owned feature / role sub-trees included" — but `CharacterFeature`, `CharacterRole`, and `Dimension` all override it | Correct the docstring: owned sub-nodes *do* override because `CrossRef` handles only URIRef refs and `xsd:string` literals, not `rdfs:label` literals, conditional sub-trees, or `xsd:gYear` |
-| R2 | B | MEDIUM | src/bookwright/golem/modules/feature.py:106-107,123 | `model_post_init` runs *before* the `@model_validator(mode="after")`, so the neither-variant case is caught by `assert self.label is not None` (123) — making the validator's guard at 106-107 unreachable dead code (uncovered) and validation dependent on a `-O`-strippable assert | Move the variant check to a `mode="before"` validator (or compute URIs after validation) so 106-107 runs; under `python -O` the neither-variant case currently degrades to an opaque `TypeError` from `slugify(None)` |
-| R3 | D | LOW | src/bookwright/golem/base.py:67 | `uri_base: str` is unvalidated; `conftest` documents "absolute http(s), trailing slash" but nothing enforces it, so a missing trailing slash silently yields malformed URIs | Add a Pydantic field validator asserting an `http(s)` scheme and trailing `/`; low urgency since the manifest wiring that supplies it lands in iteration 6 |
-| R4 | D | LOW | tests/golem/test_character_attributes.py:191-197 | `test_character_feature_requires_exactly_one_variant` asserts only `pytest.raises(ValidationError)`; the neither-variant case passes because pydantic wraps the *AssertionError*, not the validator's intended `ValueError` — masking R2 | Assert on the error cause/message (`match=`), which would have surfaced that line 107 never runs |
+| ID | Pass | Severity | Status | Location | Summary | Recommendation |
+|---|---|---|---|---|---|---|
+| R1 | C | MEDIUM | ✅ RESOLVED | src/bookwright/golem/base.py:92-98 | `to_triples` docstring claimed "overriding … is unnecessary for any concept … a character's owned feature / role sub-trees included" — but `CharacterFeature`, `CharacterRole`, and `Dimension` all override it | Done: docstring now states `cross_refs` covers only URIRef refs / `xsd:string` literals and names the three deliberate overrides |
+| R2 | B | MEDIUM | ✅ RESOLVED | src/bookwright/golem/modules/feature.py:93-117 | `model_post_init` ran *before* the `@model_validator(mode="after")`, so the neither-variant case was caught by `assert self.label is not None` — making the validator's guard unreachable dead code (uncovered) and validation dependent on a `-O`-strippable assert | Done: variant check moved to `@model_validator(mode="before")`; neither-variant now raises a clean `ValidationError` (verified identical under `python -O`); `feature.py` coverage 98% → 100% |
+| R3 | D | LOW | OPEN | src/bookwright/golem/base.py:67 | `uri_base: str` is unvalidated; `conftest` documents "absolute http(s), trailing slash" but nothing enforces it, so a missing trailing slash silently yields malformed URIs | Add a Pydantic field validator asserting an `http(s)` scheme and trailing `/`; low urgency since the manifest wiring that supplies it lands in iteration 6 |
+| R4 | D | LOW | OPEN (moot) | tests/golem/test_character_attributes.py:191-197 | `test_character_feature_requires_exactly_one_variant` asserts only `pytest.raises(ValidationError)` without `match=` | With R2 fixed the test now passes for the right reason; tightening with `match=` remains an optional nicety |
 
 ## 4. Remediation Detail
 
-### R1 — `to_triples` docstring overstates the no-override invariant
+### R1 — `to_triples` docstring overstated the no-override invariant ✅ RESOLVED
 
-- **Where:** [base.py:90-95](../../src/bookwright/golem/base.py#L90-L95)
-- **Why it matters:** The docstring tells a future maintainer that no concept needs to override `to_triples`, explicitly including "a character's owned feature / role sub-trees." That is false: [feature.py](../../src/bookwright/golem/modules/feature.py) overrides `to_triples` in `Dimension` (L65), `CharacterFeature` (L126), and `CharacterRole` (L155). A maintainer trusting the docstring could "simplify" those overrides away or misjudge how the owned sub-tree is emitted.
-- **Suggested change:** Reword to state the real rule: the declarative `cross_refs` path covers URIRef references and `xsd:string` literals; concepts that emit `rdfs:label` (plain literal), a conditional sub-tree keyed on a discriminator, or a typed literal such as `xsd:gYear` (the `feature` module) override `to_triples` deliberately.
+- **Where:** [base.py:92-98](../../src/bookwright/golem/base.py#L92-L98)
+- **Why it mattered:** The docstring told a future maintainer that no concept needs to override `to_triples`, explicitly including "a character's owned feature / role sub-trees." That was false: [feature.py](../../src/bookwright/golem/modules/feature.py) overrides `to_triples` in `Dimension`, `CharacterFeature`, and `CharacterRole`.
+- **Fix applied:** the docstring now states the real rule — `cross_refs` covers only URIRef references and `xsd:string` literals, and names the three deliberate overrides (`rdfs:label` plain literal, discriminator-keyed sub-tree, `xsd:gYear` typed literal) as cases that fall outside that path.
 
-### R2 — Variant validation relies on a `model_post_init` assert that preempts the validator
+### R2 — Variant validation relied on a `model_post_init` assert that preempted the validator ✅ RESOLVED
 
-- **Where:** [feature.py:95-110](../../src/bookwright/golem/modules/feature.py#L95-L110) and [feature.py:122-124](../../src/bookwright/golem/modules/feature.py#L122-L124)
-- **Why it matters:** In this Pydantic version `model_post_init` executes *before* `@model_validator(mode="after")` (verified empirically). For the "neither `label` nor `kind`+`year`" case, `model_post_init` reaches `assert self.label is not None` (L123) and raises `AssertionError` before `_exactly_one_variant` ever runs its L106-107 guard. Consequences:
-  1. **Dead code / coverage gap:** L107 is unreachable and shows as uncovered (the 1 missing statement in `feature.py`'s 98%).
-  2. **Validation depends on `assert`:** under `python -O` the assert is stripped; the neither-variant case then falls through to `make_slug(self.label)` and raises `TypeError: decoding to str: need a bytes-like object, NoneType found` — an opaque error instead of the intended clean `ValidationError`.
-  - The L132 assert (`self._dimension is not None`) is a fine type-narrowing invariant and is *not* part of this finding.
-- **Suggested change:** Perform the exactly-one-variant check where it runs before identity construction — e.g. a `@model_validator(mode="before")` on the raw dict, or guard `model_post_init` itself so the URI is only built once the variant is known valid. Then L106-107 becomes the single source of truth and L123's assert can stay purely as a type-narrowing invariant.
+- **Where:** [feature.py:93-117](../../src/bookwright/golem/modules/feature.py#L93-L117)
+- **Why it mattered:** In this Pydantic version `model_post_init` executes *before* `@model_validator(mode="after")` (verified empirically). The "neither `label` nor `kind`+`year`" case hit `assert self.label is not None` in `model_post_init` before the validator ran, making the validator's guard unreachable dead code (the 1 uncovered statement) and making validation depend on an assert — under `python -O` it degraded to an opaque `TypeError` from `slugify(None)`.
+- **Fix applied:** `_exactly_one_variant` is now a `@model_validator(mode="before")` that inspects the raw kwargs dict, so it runs before identity construction. Verified: the neither-variant case raises a clean `ValidationError` ("requires either `label` or (`kind` + `year`)") **identically under `python -O`**, and `feature.py` coverage rose from 98% to **100%** (no more dead branch). The remaining asserts in the class are now purely type-narrowing invariants guaranteed by the validator.
 
 ## 5. Coverage Detail
 
@@ -77,9 +74,9 @@ This branch adds the character-attributes layer (`born`/`died`/`features`/`narra
 | golem/base.py | 100% | 80% | PASS |
 | golem/namespaces.py | 100% | 80% | PASS |
 | golem/modules/character.py | 100% | 80% | PASS |
-| golem/modules/feature.py | 98% (L107 unreachable — see R2) | 80% | PASS |
+| golem/modules/feature.py | 100% (was 98%; dead branch removed by R2 fix) | 80% | PASS |
 | **Full suite total** | 98% | 80% | PASS |
 
 ## 6. Inability-to-verify notes
 
-- None. All four gates ran locally and the full test suite (437 tests) passed. The single uncovered line (`feature.py:107`) is explained and attributed in R2 rather than left as an unknown.
+- None. All four gates ran locally and the full test suite (437 tests) passed. After the R2 fix there are no unreachable branches in the changed modules.

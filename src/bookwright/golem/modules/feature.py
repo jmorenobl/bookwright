@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import ClassVar, Literal
 
-from pydantic import PrivateAttr, model_validator
+from pydantic import model_validator
 from rdflib.namespace import RDF, RDFS, XSD
 from rdflib.term import Literal as RdfLiteral
 from rdflib.term import URIRef
@@ -90,8 +90,6 @@ class CharacterFeature(GolemEntity):
     kind: BioKind | None = None
     year: int | None = None
 
-    _dimension: Dimension | None = PrivateAttr(default=None)
-
     @model_validator(mode="before")
     @classmethod
     def _exactly_one_variant(cls, data: dict[str, object]) -> dict[str, object]:
@@ -124,10 +122,6 @@ class CharacterFeature(GolemEntity):
             # slug never contains `/`, so it can never collide with the
             # birth/death token on the same character (FR-021).
             self._uri = URIRef(f"{self.character_uri}/feature/bio/{self.kind}")
-            assert self.year is not None  # guaranteed by _exactly_one_variant
-            self._dimension = Dimension(
-                uri_base=self.uri_base, feature_uri=self._uri, year=self.year
-            )
         else:
             assert self.label is not None  # guaranteed by _exactly_one_variant
             self._uri = URIRef(f"{self.character_uri}/feature/{make_slug(self.label)}")
@@ -138,9 +132,10 @@ class CharacterFeature(GolemEntity):
             type_uri = URIRef(f"{self.uri_base}type/{self.kind}")
             yield (self.uri, HAS_TYPE, type_uri)
             yield (type_uri, RDF.type, CLASS_IRI["Type"])
-            assert self._dimension is not None  # built in model_post_init
-            yield (self.uri, HAS_DIMENSION, self._dimension.uri)
-            yield from self._dimension.to_triples()
+            assert self.year is not None  # guaranteed by _exactly_one_variant
+            dimension = Dimension(uri_base=self.uri_base, feature_uri=self.uri, year=self.year)
+            yield (self.uri, HAS_DIMENSION, dimension.uri)
+            yield from dimension.to_triples()
         else:
             yield (self.uri, RDFS.label, RdfLiteral(self.label))
 
