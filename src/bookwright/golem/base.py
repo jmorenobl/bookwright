@@ -89,9 +89,13 @@ class GolemEntity(BaseModel):
         and, for an ``owned`` edge, the target sub-node's own triples chained
         immediately after its link triple.
 
-        Concepts customize emission declaratively via ``cross_refs``; overriding
-        this method is unnecessary for any concept in the current model — a
-        character's owned feature / role sub-trees included.
+        Concepts customize emission declaratively via ``cross_refs`` only when
+        their edges are URIRef references or ``xsd:string`` literals — the two
+        shapes this method knows how to emit. Concepts whose emission falls
+        outside that path override ``to_triples`` deliberately: ``CharacterFeature``
+        and ``CharacterRole`` emit an ``rdfs:label`` plain literal (and the former
+        a discriminator-keyed sub-tree), and ``Dimension`` emits a typed
+        ``xsd:gYear`` literal — none of which ``cross_refs`` can express.
         """
         yield (self.uri, RDF.type, self.golem_class)
         for ref in self.cross_refs:

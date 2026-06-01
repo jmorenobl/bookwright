@@ -92,22 +92,31 @@ class CharacterFeature(GolemEntity):
 
     _dimension: Dimension | None = PrivateAttr(default=None)
 
-    @model_validator(mode="after")
-    def _exactly_one_variant(self) -> CharacterFeature:
-        if self.kind is not None:
+    @model_validator(mode="before")
+    @classmethod
+    def _exactly_one_variant(cls, data: dict[str, object]) -> dict[str, object]:
+        # Runs *before* identity construction in ``model_post_init`` (which
+        # builds the URI from the chosen variant), so the variant invariant is
+        # enforced by a real ``ValidationError`` rather than the type-narrowing
+        # assert at the bottom of this class. That assert is then never the line
+        # that rejects bad input, so it stays correct under ``python -O``. ``data``
+        # is always the raw kwargs dict: this frozen model is only ever built via
+        # ``CharacterFeature(...)``, never re-validated from an existing instance.
+        kind, label, year = data.get("kind"), data.get("label"), data.get("year")
+        if kind is not None:
             # Biographical: a year is mandatory, a free-text label is forbidden.
-            if self.label is not None:
+            if label is not None:
                 raise ValueError("biographical CharacterFeature must not also carry a `label`")
-            if self.year is None:
+            if year is None:
                 raise ValueError("biographical CharacterFeature requires a `year`")
         else:
             # Free-text: a label is mandatory; a stray `year` is forbidden rather
             # than silently dropped, since only the biographical variant emits it.
-            if self.label is None:
+            if label is None:
                 raise ValueError("CharacterFeature requires either `label` or (`kind` + `year`)")
-            if self.year is not None:
+            if year is not None:
                 raise ValueError("free-text CharacterFeature must not carry a `year`")
-        return self
+        return data
 
     def model_post_init(self, __context: object) -> None:
         if self.kind is not None:
@@ -115,10 +124,10 @@ class CharacterFeature(GolemEntity):
             # slug never contains `/`, so it can never collide with the
             # birth/death token on the same character (FR-021).
             self._uri = URIRef(f"{self.character_uri}/feature/bio/{self.kind}")
-            if self.year is not None:  # the year-less case is rejected by the validator
-                self._dimension = Dimension(
-                    uri_base=self.uri_base, feature_uri=self._uri, year=self.year
-                )
+            assert self.year is not None  # guaranteed by _exactly_one_variant
+            self._dimension = Dimension(
+                uri_base=self.uri_base, feature_uri=self._uri, year=self.year
+            )
         else:
             assert self.label is not None  # guaranteed by _exactly_one_variant
             self._uri = URIRef(f"{self.character_uri}/feature/{make_slug(self.label)}")
