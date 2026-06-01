@@ -158,5 +158,5 @@ plumbing whose only justification is "future X" MUST be rejected:
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[specs/006-graph-indexer/plan.md](specs/006-graph-indexer/plan.md)
+[specs/007-project-templates/plan.md](specs/007-project-templates/plan.md)
 <!-- SPECKIT END -->

@@ -25,14 +25,15 @@ This split is the permanent v0 architecture, not a temporary compromise. (`§ 6`
 
 ### Session 2026-06-01
 
-- Q: What language should the templates' human-facing prose use? → A: Spanish for all human-facing scaffolding prose (section headings, HTML-comment guidance, `[PENDIENTE]` questions), including the authored `README.md.j2` guidance; frontmatter **keys** and the `[PENDIENTE]` token stay English (parser contract). The verify-only `manifest.template.toml` (FR-025) keeps its existing English comments.
+- Q: What language should the templates' human-facing prose use? → A: Spanish for all human-facing scaffolding prose (section headings, HTML-comment guidance, `[PENDING]` questions), including the authored `README.md.j2` guidance; frontmatter **keys** and the `[PENDING]` fill-marker token stay English (a fixed marker the sentinel sweep must not flag and the iter-8/9 authoring commands scan for). The verify-only `manifest.template.toml` (FR-025) keeps its existing English comments.
+- Q: What spelling for the fill-marker token? → A: `[PENDING: <question>]` (English). The token is a stable English marker regardless of the surrounding Spanish prose; the question inside stays Spanish. This supersedes the design/plan's `[PENDIENTE]` spelling (which was awkwardly labelled "English" for a Spanish word). When a `[PENDING: …]` value sits in a **string-typed** frontmatter field (e.g. a mold's `name`), it MUST be quoted — `name: "[PENDING: …]"` — because bare `[…]` is parsed by YAML as a list, not a string.
 - Q: Should templates ship blank, or with a worked example? → A: Blank scaffold plus a short worked example tucked inside HTML `<!-- -->` comments — invisible when read as plain Markdown, never indexed, never tripping the stub-sentinel check. For the indexer-ingested collection files (`timeline.md`, `relationships.md`), the example entries live in HTML comments so the shipped frontmatter list stays empty.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A new project ships a complete, fill-in-ready narrative skeleton (Priority: P1)
 
-An author runs `bookwright init my-book` and immediately finds, under `bible/` and `outline/`, a full set of structured documents — the narrative constitution, timeline, relationships, themes, glossary, research log, subplots, POV structure, and the four outline documents — each laid out with clear sections, instructions, and `[PENDIENTE: <question>]` prompts that tell the author and the agent exactly what to fill in. No file contains a leftover "placeholder, coming later" stub.
+An author runs `bookwright init my-book` and immediately finds, under `bible/` and `outline/`, a full set of structured documents — the narrative constitution, timeline, relationships, themes, glossary, research log, subplots, POV structure, and the four outline documents — each laid out with clear sections, instructions, and `[PENDING: <question>]` prompts that tell the author and the agent exactly what to fill in. No file contains a leftover "placeholder, coming later" stub.
 
 **Why this priority**: This is the headline value of the iteration — the templates are the most visible intellectual surface of the product. Without it, every freshly-initialized project ships broken stubs.
 
@@ -40,7 +41,7 @@ An author runs `bookwright init my-book` and immediately finds, under `bible/` a
 
 **Acceptance Scenarios**:
 
-1. **Given** a clean directory, **When** `bookwright init` runs, **Then** `bible/constitution.md` contains all § 9.2 sections (voice/register, reader pact, historical-fictional pact, red lines, coherence invariants, active vocabularies, agent notes) with `[PENDIENTE: …]` prompts.
+1. **Given** a clean directory, **When** `bookwright init` runs, **Then** `bible/constitution.md` contains all § 9.2 sections (voice/register, reader pact, historical-fictional pact, red lines, coherence invariants, active vocabularies, agent notes) with `[PENDING: …]` prompts.
 2. **Given** the same project, **When** the author opens any `bible/` or `outline/` document in a plain text editor, **Then** it reads as clean, sensible Markdown without needing a renderer.
 3. **Given** any shipped template, **When** scanned for sentinel strings, **Then** no `Placeholder — iteration 7`, `{{TODO}}`, or unresolved scaffolding marker remains.
 
@@ -81,11 +82,11 @@ The repeated-instance documents — `character`, `setting`, `location`, `scene`,
 
 ### User Story 4 - Every template guides both a human and an AI agent (Priority: P3)
 
-Each authored document carries HTML `<!-- -->` comments with instructions for the human author or the AI agent, `[PENDIENTE: <question>]` placeholders for content the agent must elicit and fill, and minimal YAML frontmatter only where it carries meaning. The result is legible as plain Markdown and is original Bookwright prose adapted to the GOLEM model — inspired by, but not copied from, the MIT-licensed `fiction-book-writing` preset, with that inspiration credited in the CHANGELOG.
+Each authored document carries HTML `<!-- -->` comments with instructions for the human author or the AI agent, `[PENDING: <question>]` placeholders for content the agent must elicit and fill, and minimal YAML frontmatter only where it carries meaning. The result is legible as plain Markdown and is original Bookwright prose adapted to the GOLEM model — inspired by, but not copied from, the MIT-licensed `fiction-book-writing` preset, with that inspiration credited in the CHANGELOG.
 
 **Why this priority**: This is a cross-cutting quality bar over Stories 1-3 rather than a separable slice; it is verifiable but does not, on its own, deliver a runnable artifact.
 
-**Independent Test**: Lint every authored template for: presence of at least one HTML-comment instruction block, `[PENDIENTE: …]` prompts in author-fill sections, valid YAML frontmatter where present, and absence of verbatim preset text.
+**Independent Test**: Lint every authored template for: presence of at least one HTML-comment instruction block, `[PENDING: …]` prompts in author-fill sections, valid YAML frontmatter where present, and absence of verbatim preset text.
 
 **Acceptance Scenarios**:
 
@@ -94,8 +95,8 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 
 ### Edge Cases
 
-- **Unfilled parser-significant frontmatter**: A shipped `timeline.md` / `relationships.md` must index to zero entities (empty lists), never raise on a `[PENDIENTE]` string sitting in a typed field. Typed fields (`born`, `died`) must be null/omitted, never a placeholder string, or `_coerce_year` rejects the file.
-- **Placeholder text vs. machine fields**: `[PENDIENTE: …]` prompts belong in prose or in string-typed frontmatter values, never in integer/list-typed frontmatter values that the indexer coerces.
+- **Unfilled parser-significant frontmatter**: A shipped `timeline.md` / `relationships.md` must index to zero entities (empty lists), never raise on a `[PENDING]` string sitting in a typed field. Typed fields (`born`, `died`) must be null/omitted, never a placeholder string, or `_coerce_year` rejects the file.
+- **Placeholder text vs. machine fields**: `[PENDING: …]` prompts belong in prose or in string-typed frontmatter values, never in integer/list-typed frontmatter values that the indexer coerces. When placed in a string-typed value (e.g. a mold's `name`) the prompt MUST be quoted (`name: "[PENDING: …]"`); a bare `name: [PENDING: …]` is parsed by YAML as a list, not a string, and would later skip on `_require_name`.
 - **`init` walker semantics**: Skeleton files under `project/` must keep `.md` / `.j2` extensions (never `.tmpl`), because the walker byte-copies any non-`.j2` file verbatim — a `.tmpl` extension would be stamped literally into the project.
 - **Jinja2 rendering**: Files under `project/` ending in `.j2` are rendered with `StrictUndefined`; any `{{ variable }}` they use must be one the scaffold context provides (`title`, `project_slug`, `author`, `language`, `integration_key`) or `init` aborts.
 - **Locations not indexed in v0**: `location.md.tmpl` frontmatter is not mapped to a GOLEM entity (no `locations/` handler in iteration 6); this is intended, and the template must not imply otherwise.
@@ -107,7 +108,7 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 
 **Project skeleton (stamped once by `init`, authored in `resources/project/`)**
 
-- **FR-001**: `bible/constitution.md.j2` MUST be a full narrative-contract template covering all `bookwright-design.md` § 9.2 sections: narrative voice, register, reader pact, historical-fictional pact (clearly marked optional), red lines, coherence invariants, active vocabularies, and agent notes — each with `[PENDIENTE: <question>]` prompts and HTML-comment guidance.
+- **FR-001**: `bible/constitution.md.j2` MUST be a full narrative-contract template covering all `bookwright-design.md` § 9.2 sections: narrative voice, register, reader pact, historical-fictional pact (clearly marked optional), red lines, coherence invariants, active vocabularies, and agent notes — each with `[PENDING: <question>]` prompts and HTML-comment guidance.
 - **FR-002**: `bible/timeline.md` MUST ship with YAML frontmatter whose top-level key is `events`, set to an empty list, so a fresh project indexes to zero `NarrativeEvent`s with zero warnings; the body MUST document the per-event shape (`name`, optional `participants` referencing character slugs).
 - **FR-003**: `bible/relationships.md` MUST ship with frontmatter whose top-level key is `relationships`, set to an empty list; the body MUST document the per-relationship shape (`name`, `participants`).
 - **FR-004**: `bible/themes.md` MUST provide a motif registry, a symbol tracker, and a chapter thematic map.
@@ -129,9 +130,9 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 
 **Cross-cutting authoring rules**
 
-- **FR-017**: Every authored template MUST be readable directly as plain Markdown without rendering. Human-facing scaffolding prose (section headings, body labels, HTML-comment guidance, and `[PENDIENTE]` questions) MUST be written in Spanish; frontmatter keys and the `[PENDIENTE]` token itself MUST remain in English (parser contract). The already-shipped English `README.md.j2` and `manifest.template.toml` are unaffected, but the README's authored guidance prose follows the Spanish rule.
+- **FR-017**: Every authored template MUST be readable directly as plain Markdown without rendering. Human-facing scaffolding prose (section headings, body labels, HTML-comment guidance, and `[PENDING]` questions) MUST be written in Spanish; frontmatter keys and the `[PENDING]` fill-marker token itself MUST remain in English (a fixed marker, not translated per section). The verify-only `manifest.template.toml` keeps its existing English comments (FR-025); the `README.md.j2`, though already shipped, has its guidance prose rewritten into Spanish per FR-010.
 - **FR-018**: Every authored template MUST include HTML `<!-- -->` comments carrying instructions for the human author or AI agent; these MUST NOT render as visible body prose. Each template MUST also include a short worked example demonstrating the expected shape, placed **inside** HTML comments so it never renders, never indexes, and never trips the stub-sentinel check (FR-022). For `timeline.md` / `relationships.md`, example entries MUST live in HTML comments while the shipped frontmatter `events:` / `relationships:` lists stay empty (FR-002, FR-003).
-- **FR-019**: Sections the agent must populate from a narrative brief MUST use `[PENDIENTE: <question>]` placeholders phrased as the question to answer.
+- **FR-019**: Sections the agent must populate from a narrative brief MUST use `[PENDING: <question>]` placeholders phrased as the question to answer.
 - **FR-020**: YAML frontmatter MUST appear only where it carries meaning, MUST be parseable by the iteration-6 frontmatter reader without `yaml.YAMLError`, and — for the four indexer-ingested concepts (character, setting, timeline, relationships) — MUST use only mapper-recognized keys so a stamped, filled instance produces zero `unknown_keys` warnings on canonical fields.
 - **FR-021**: The CHANGELOG MUST credit the `fiction-book-writing` preset (adaumann, MIT) as structural inspiration, state that Bookwright's redaction is original (Apache-2.0) and adapted to the GOLEM model, and note that this iteration supersedes the unified-template layout described in design § 6 in favor of the lifecycle split.
 - **FR-022**: No shipped or authored file may retain a stub/scaffolding sentinel (`Placeholder — iteration 7 lands the full template`, `{{TODO}}`, or equivalent).
@@ -147,7 +148,7 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 - **Project skeleton template**: A `.md` / `.j2` document under `resources/project/`, stamped once per project by `init`. Examples: constitution, timeline, relationships, themes, glossary, research, subplots, pov-structure, the four outline docs, README, `.gitignore`.
 - **Re-instanceable mold**: A `.tmpl` document under `resources/templates/`, stamped repeatedly by agent commands. Examples: character, setting, location, scene, chapter.
 - **Indexer-significant frontmatter**: The YAML keys the iteration-6 mapper ingests — `{name, born, died, features, narrative_roles}` for a character (in `bible/characters/`), `{name}` for a setting (in `bible/settings/`), an `events:` list for `timeline.md`, a `relationships:` list for `relationships.md`. All other frontmatter is valid YAML but not mapped to a GOLEM entity in v0.
-- **Authoring guidance**: The HTML-comment instructions and `[PENDIENTE: <question>]` placeholders that direct the human author and AI agent.
+- **Authoring guidance**: The HTML-comment instructions and `[PENDING: <question>]` placeholders that direct the human author and AI agent.
 
 ## Success Criteria *(mandatory)*
 
@@ -169,6 +170,6 @@ Each authored document carries HTML `<!-- -->` comments with instructions for th
 - **Locations are not indexed in v0**: Iteration 6 has no `bible/locations/` handler, so `location.md.tmpl` frontmatter is for human/agent use only.
 - **`pov-structure.md` ships unconditionally**: `init` does not branch on multi-POV, so the document ships in every project with guidance that it applies only to multi-POV works.
 - **Manifest template is pre-existing**: `resources/templates/manifest.template.toml` already satisfies the "commented manifest" need and is wired into `Manifest.build`; only verification is in scope.
-- **Template prose is Spanish; keys and spec are English** (per Clarification Q1): human-facing scaffolding prose in the templates (headings, HTML-comment guidance, `[PENDIENTE]` questions, authored README guidance) is Spanish; frontmatter keys, the `[PENDIENTE]` token, this spec, and the verify-only `manifest.template.toml` comments stay English.
+- **Template prose is Spanish; keys and spec are English** (per Clarification Q1): human-facing scaffolding prose in the templates (headings, HTML-comment guidance, `[PENDING]` questions, authored README guidance) is Spanish; frontmatter keys, the `[PENDING]` token, this spec, and the verify-only `manifest.template.toml` comments stay English.
 - **Preset is studied, not fetched as a dependency**: the `fiction-book-writing` document inventory is taken from design § 17.2 (which already enumerates what to adopt); optionally consulting adaumann's MIT repo read-only for structure is allowed but not a build/runtime dependency, and no preset text is copied verbatim (FR-021).
 - **Dependencies**: Iteration 4 (`init` scaffold walker) and iteration 6 (frontmatter reader + bible mapper) are merged on `main` and define the contracts this iteration conforms to.
