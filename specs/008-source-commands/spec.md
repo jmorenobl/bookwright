@@ -28,6 +28,8 @@ This spec inherits two project-wide conventions settled in iteration 7 that supe
 - Q: Should the command source files carry a `handoffs:` frontmatter block, as shown in the § 10.1 example? → A: No. v0 command sources stay **integration-agnostic**. The only frontmatter required is `name` and `description` (plus other agentskills.io-valid keys if needed). Agent-specific affordances (Claude Code `handoffs`, dynamic-context injection) are the concern of per-integration materialization in iteration 9, consistent with Constitution Principles V–VII. The § 10.1 `handoffs` block is treated as illustrative of the eventual materialized skill, not a requirement of the source.
 - Q: What language are the command **bodies** written in? → A: Spanish prose (matching the § 10.1 example and the iteration-7 templates). Frontmatter keys are English; each `description` embeds **both** Spanish and English trigger phrases so implicit activation fires regardless of the language the author writes their request in.
 - Q: Heavy domain context (GOLEM ontology, Propp functions, Greimas actants)? → A: Lives in `src/bookwright/resources/commands/references/*.md` (tier-3 progressive disclosure). Command bodies link to those files rather than inlining the material, keeping each body under the 5000-token tier-2 budget.
+- Q: How much does a single `bookwright-bible` invocation produce? → A: A complete first pass over **every** bible artifact in one run, but the prompt directs the agent to work in a fixed order (constitution-derived entities first), write each file as it goes, and mark thin entries `[PENDING: …]` rather than over-inventing canon. This honors the § 10.4 "full bible set" contract while keeping every file grounded and the author's command count low.
+- Q: Re-invoking a generative command on already-populated targets? → A: Update-in-place, preserving authored content. The prompt directs the agent to read the existing file, treat human-authored prose and resolved `[PENDING]` answers as authoritative, fill only gaps and still-open `[PENDING: …]` markers, and never overwrite or duplicate authored content. Re-running is therefore safe and additive.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -104,7 +106,7 @@ Where a command needs extended domain material — the GOLEM character ontology,
 - **Missing input information**: every generative command must distinguish *fill-with-marker* from *stop-and-ask*. The rule: when the brief simply lacks a field, mark `[PENDING: <pregunta en español>]` and continue; only halt to ask the author when proceeding would require inventing load-bearing canon (e.g. a protagonist's core motivation) that contradicts or cannot be derived from existing artifacts.
 - **`[PENDING]` inside a string-typed frontmatter field** of a stamped mold (e.g. a character's `name`) must be quoted — `name: "[PENDING: …]"` — because bare `[…]` is YAML-parsed as a list.
 - **Multi-POV vs single-POV**: `bookwright-bible` writes `bible/pov-structure.md` only when the constitution declares multiple POVs; the prompt states this condition.
-- **Re-invocation / idempotency**: a command run twice on the same project should update in place rather than duplicate entities; the prompts must say how they treat already-populated targets.
+- **Re-invocation / idempotency**: a generative command run twice on the same project MUST update in place — read the existing target, treat human-authored content and resolved `[PENDING]` answers as authoritative, fill only gaps and still-open `[PENDING: …]` markers, and never overwrite or duplicate authored prose. Each generative prompt states this explicitly.
 - **Unknown `scene_id` / `artifact` argument**: `bookwright-draft` and `bookwright-checklist` must define what the agent does when the argument names something that does not exist (report and ask, not fabricate).
 - **Empty or near-empty project**: a checking command (`analyze`, `continuity`, `checklist`) run before the relevant artifacts exist should report "nothing to check / prerequisite missing", not error opaquely.
 
@@ -139,6 +141,7 @@ Where a command needs extended domain material — the GOLEM character ontology,
 
 - **FR-015**: Each body MUST stay under 5000 tokens (agentskills.io tier-2 limit), measured with `tiktoken` when available, otherwise by a character-based approximation.
 - **FR-016**: Generative commands MUST instruct the agent to emit the fill-marker as the exact token `[PENDING: <question>]` (English token, Spanish question), and to quote it when it lands in a string-typed YAML field.
+- **FR-016a**: Each generative command (`constitution`, `bible`, `outline`, `scenes`, `draft`) MUST state an update-in-place rule: read any already-populated target, preserve human-authored content and resolved `[PENDING]` answers, fill only gaps and still-open `[PENDING: …]` markers, and never overwrite or duplicate authored prose.
 
 **CLI integration**
 
@@ -147,7 +150,7 @@ Where a command needs extended domain material — the GOLEM character ontology,
 **Per-command behavior** (each command's body MUST encode the contract from § 10.4):
 
 - **FR-018**: `bookwright-constitution` reads the brief/conversation + constitution mold, writes `bible/constitution.md`, runs the graph build, and reports pending fields + activated vocabularies + the suggestion to run `bookwright-clarify` before `bookwright-bible`.
-- **FR-019**: `bookwright-bible` reads constitution + brief and writes the full bible set, stamping the iteration-7 molds once per entity; `bible/pov-structure.md` only when multi-POV.
+- **FR-019**: `bookwright-bible` reads constitution + brief and, in a **single invocation**, does a complete first pass over the full bible set — stamping the iteration-7 molds once per entity in a fixed order (constitution-derived entities first), writing each file as it goes, and marking thin entries `[PENDING: …]` rather than inventing canon. `bible/pov-structure.md` is written only when multi-POV.
 - **FR-020**: `bookwright-outline` reads constitution + bible and writes `outline/arcs.md`, `outline/structure.md`, `outline/synopsis.md`.
 - **FR-021**: `bookwright-scenes` reads outline + bible and writes `outline/scenes.md` with per-scene narrative function, characters present, location, and beats.
 - **FR-022**: `bookwright-draft <scene_id>` reads outline + scene + bible and writes the scene into the correct `manuscript/cap-NN.md` section, honoring voice/focalization/constraints.
@@ -194,7 +197,7 @@ Where a command needs extended domain material — the GOLEM character ontology,
 
 - **Fill-marker spelling**: the prompt text (and design § 10.1) says `[PENDIENTE]`, but iteration 7 standardized the project on `[PENDING: <question>]` (English token, Spanish question). This spec adopts `[PENDING: …]` so all artifacts share one marker; `[PENDIENTE]` is treated as superseded.
 - **Body language**: command bodies are written in **Spanish** prose (matching the § 10.1 example and iteration-7 templates); frontmatter keys are English; descriptions are bilingual to drive activation in both languages. This follows the project's bilingual convention (Spanish prose, English code/identifiers).
-- **No `handoffs:` in source**: the § 10.1 `handoffs` block illustrates an eventual *materialized* Claude skill, not the integration-agnostic source. Per-integration affordances are injected in iteration 9. (Recorded as a Clarification above; revisit in `/speckit-clarify` if the owner disagrees.)
+- **No `handoffs:` in source**: the § 10.1 `handoffs` block illustrates an eventual *materialized* Claude skill, not the integration-agnostic source. Per-integration affordances are injected in iteration 9. (Confirmed in `/speckit-clarify`, Session 2026-06-01; "next step" hints may still appear as body prose, not frontmatter.)
 - **Molds already exist**: the re-instanceable templates the generative commands stamp (`character.md.tmpl`, `setting.md.tmpl`, `location.md.tmpl`, `scene.md.tmpl`, `chapter.md.tmpl`) and the project skeleton (`bible/`, `outline/`, `manuscript/`) were authored in iterations 4 and 7 and are consumed, not re-created, here.
 - **CLI subcommands already exist**: `bookwright graph build --json` (iteration 6) and the `init` skeleton (iteration 4) are present on `main`; this iteration only references them, it does not implement them.
 - **Reference file set**: the exact roster under `references/` (e.g. `golem-character.md`, `propp-functions.md`, `greimas-actants.md`) is finalized during planning/implementation from what the bodies actually cite; the binding rule is FR-029 (no dangling references), not a fixed list.
