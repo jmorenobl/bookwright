@@ -1,7 +1,17 @@
 # Quality Audit Checklist
 
-Source: review.md (dbc901f) — lens: planning jargon in names
+Source: review.md (a433439)
 
-- [ ] R1 — Rename `test_us1_worked_examples` → behavior-describing name (tests/golem/test_uri.py:60)
-- [ ] R2 — Strip ephemeral planning tags — user-story (`+US5`, `US5-x`, `US1`, `US2-4`, `pre-US5`) and task IDs (`T021`) — from golem docstrings/comments; keep neighbouring `FR`/`SC`/`D` refs (character.py, feature.py, __init__.py, namespaces.py, test_character_attributes.py, test_namespaces.py, test_triples.py, test_turtle_roundtrip.py, test_uri.py)
-- [ ] R3 (docs, MEDIUM) — Add the trace-tag convention to CONTRIBUTING.md (allowed classes, relative resolution, freeze-on-merge). Sanctions FR/SC/D/§; forbids US/T0xx in code. No code churn.
+Prior findings (dbc901f) all resolved this run:
+- [X] R1 (prior) — `test_us1_worked_examples` renamed (no `test_usN` remains)
+- [X] R2 (prior) — `US`/`+US`/`T0xx` tags stripped from golem src + tests
+- [X] R3 (prior) — Trace-tag convention added to CONTRIBUTING.md:45-75
+
+Current run — no CRITICAL or HIGH findings. The GOLEM character-attribute
+extension is correct, fully covered (golem 100% / repo 98%), all four CI gates green.
+
+- [X] No CRITICAL or HIGH findings — nothing blocks merge.
+
+Optional (LOW, non-blocking):
+
+- [X] R1 — Free-text/biographical feature URI collision **structurally eliminated**: biographical features moved to `{c}/feature/bio/{kind}`, disjoint from the free-text slug space (a slug can't contain `/`). No guard/error needed — the fix removed code rather than adding it (feature.py, character.py, contract+data-model synced, tests updated)

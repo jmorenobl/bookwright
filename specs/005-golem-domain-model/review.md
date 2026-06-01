@@ -1,80 +1,91 @@
 # Quality Audit — 005-golem-domain-model
 
-**Scope:** 4 changed source files + 5 changed test files vs `main` (focused lens: planning jargon in identifiers/names)
-**Commit range:** main..dbc901f
+**Scope:** 4 changed source files + 8 changed test files + 3 docs vs `main`
+**Commit range:** `main`..`a433439` (merge-base `22bed02`; this branch's 4 newest commits = the iter-5 character-attribute *fix*)
 **Date:** 2026-05-31
-**Conventions discovered:** `CLAUDE.md`, `.specify/memory/constitution.md`, `CONTRIBUTING.md`, `pyproject.toml`
-**Audit lens (from invocation):** "que los nombres de tests, funciones, clases, métodos y cualquier cosa no contengan jerga de planificación (p.ej. `us5`) que no dice nada una vez terminada la planificación." This user instruction is treated as the governing rule for this run; severity is raised accordingly even though the constitution does not (yet) codify it as a MUST.
+**Conventions discovered:** `CLAUDE.md`, `.specify/memory/constitution.md` (v1.1.0), `CONTRIBUTING.md`, `pyproject.toml`
+**Invocation lens:** "verify the GOLEM domain model was implemented correctly and that the previously-detected problems were fixed."
 
 ## 1. Summary
 
 | Severity | Count |
 |---|---|
 | CRITICAL | 0 |
-| HIGH | 2 |
-| MEDIUM | 1 |
-| LOW | 0 |
-| **Total** | 3 |
+| HIGH | 0 |
+| MEDIUM | 0 |
+| LOW | 1 (resolved) |
+| **Total** | 1 |
 
-Coverage gate: UNKNOWN (not measured — this run is a targeted naming sweep, not a coverage pass).
+Coverage gate: **PASS** — full suite 98.08%, **golem module 100%** (every file under `src/bookwright/golem/` at 100% line + branch), threshold = 80%. `431 passed`. `ruff check`, `ruff format --check`, `mypy --strict` all clean on the golem subtree.
 
-**Headline:** Exactly **one** identifier carries planning jargon — `test_us1_worked_examples` (R1). Everything else (`Character`, `CharacterFeature`, `Dimension`, `bind_prefixes`, `test_born_year_modeled_through_dimension_chain`, …) is descriptive and clean. The bulk of the jargon lives in **docstrings and comments** as user-story tags (`+US5`, `US5-1..6`, `US1`, `US2-4`) and requirement-trace tags (`FR-0xx`, `SC-00x`, `T021`, `D5/D14`).
+**Headline:** The character-attribute extension that iteration-5 was under-scoped for (the [HANDOFF.md](../../HANDOFF.md) fix) is implemented correctly, additively, and within the frozen vocabulary. **All three findings from the prior audit (R1, R2, R3) are resolved.** The one new LOW finding (slug-collision in feature URIs) has also been **resolved structurally** — biographical features moved to a disjoint `feature/bio/{kind}` subspace, making the collision impossible by construction (see §4 R1).
+
+### Prior-audit regression check (the "detected problems")
+
+| Prior ID | Was | Now | Evidence |
+|---|---|---|---|
+| R1 (HIGH) | `test_us1_worked_examples` carried user-story jargon | **FIXED** | `grep test_us[0-9] tests/` → none |
+| R2 (HIGH) | `+US5`/`US5-x`/`T0xx` tags in golem docstrings/comments | **FIXED** | `grep 'US[0-9]\|+US\|T0[0-9][0-9]' src/bookwright/golem tests/golem` → none |
+| R3 (decided) | Trace-tag policy (`FR`/`SC`/`D`/`§`) needed sanctioning in docs | **FIXED** | `CONTRIBUTING.md:45-75` "Traceability tags in code" — allowed/forbidden classes, relative resolution, freeze-on-merge |
 
 ## 2. Conventions Compliance Matrix
 
 | Rule (verbatim ≤120 chars) | Source | Kind | Status | Evidence |
 |---|---|---|---|---|
-| "Names of tests/functions/classes/methods must not contain planning jargon like `us5`" | invocation arg | naming (audit lens) | FAIL | `test_us1_worked_examples` at `tests/golem/test_uri.py:60` (R1) |
-| "Source code, identifiers … in English" | `CLAUDE.md:143` | layout | PASS | All identifiers English; no Spanish leaked into code |
-| "Each CLI subcommand in its own file ≤500 lines" | constitution | module-size | N/A | No `commands/` files on this branch |
-| Test discipline ≥80% coverage | constitution (VIII) | coverage-threshold | N/A | Not measured this run (naming-focused) |
-| Plain-text source of truth, no binary under src/ | constitution (I) | layout | PASS | No binaries in diff |
+| "frozen terms only — drop nothing, mint nothing" / SC-001 zero terms outside frozen vocab | HANDOFF.md:18 / spec | scope-ban | PASS | `test_all_emitted_terms_are_frozen`, `test_class_iris_are_in_frozen_terms`, `test_term_closure_over_frozen_ontology` all green; G17/E54/E55 present in `golem.ttl` |
+| "Adding a runtime dependency requires an amendment" — pyyaml deferred to iter-6 | constitution II / HANDOFF.md:82 | dependency | PASS | `pyproject.toml` NOT in branch diff; no new dep added |
+| "No source file may exceed 500 lines" | constitution IV:94 | module-size | PASS | character.py 89, feature.py 133, namespaces.py 160, base.py 118 |
+| "All production code under `src/bookwright/`, tests under `tests/`" | constitution III:81 | layout | PASS | golem code under `src/bookwright/golem/`; tests under `tests/golem/` |
+| "Plain text source of truth — no binary under src/" | constitution I:54 | layout | PASS | only `.py`/`.ttl`/`.md` in diff |
+| "v0 MUST hold ≥80% line coverage across src/bookwright/" | constitution VIII:144 | coverage-threshold | PASS | 98.08% total; golem 100% |
+| "Source code, identifiers, commit messages in English" | CLAUDE.md:143 | layout | PASS | all identifiers English (Spanish only in test *fixture data* strings, allowed) |
+| "Each CLI subcommand in own file ≤500 lines" | constitution IV:92 | module-size | N/A | no `commands/` files in this branch's diff |
+| "Emit Agent Skills only; no `.claude/commands/`" | constitution VI:114 | directory-ban | N/A | no skills/commands emitted by golem (pure domain model) |
+| "`--json` single JSON doc on stdout" | constitution IX:155 | io-contract | N/A | golem is a library layer, no CLI surface on this branch |
+| Names/identifiers must not carry planning jargon (`usN`) | prior-audit lens | naming | PASS | R1/R2 remediated (see §1 regression table) |
+| Allowed trace tags `FR`/`SC`/`D`/`§`; `US`/`T0xx` forbidden in code | CONTRIBUTING.md:45 | other | PASS | golem uses only `FR`/`SC`/`D`/`§`; no `US`/`T0xx` |
+
+### Track-integrity (A.3) & workflow-trail (A.4)
+
+- **Track integrity:** clean. `git status --porcelain` is empty; every golem file on disk is tracked. The 9 golem files absent from `main...HEAD` (base.py, serialize.py, slug.py, errors.py, event/inference/narrative/relationship/setting.py) are **inherited from `main`** (merge-base `22bed02`), the OK case in the decision table — they are the already-merged identity-only model, not missing artifacts.
+- **Workflow trail (Spec Kit):** complete. `specs/005-golem-domain-model/` holds spec.md, research.md, plan.md, tasks.md, contracts/golem_api.md, data-model.md, quickstart.md, and checklists/. No downstream-without-upstream gap.
 
 ## 3. Findings
 
 | ID | Pass | Severity | Location | Summary | Recommendation |
 |---|---|---|---|---|---|
-| R1 | B | HIGH | tests/golem/test_uri.py:60 | Test function name `test_us1_worked_examples` embeds "us1" (User Story 1) planning jargon | Rename to describe the behavior, e.g. `test_canonical_uri_for_worked_examples` |
-| R2 | B | HIGH | character.py:20,26 · feature.py:1 · __init__.py:3 · namespaces.py:54,96,105,124 · test_character_attributes.py:1,3,34,45,55,73,146,150 · test_namespaces.py:17,42 · test_triples.py:46 · test_turtle_roundtrip.py:3 · test_uri.py:3,83 | Ephemeral planning tags — user-story (`+US5`, `US5-1..6`, `US1`, `US2-4`, `pre-US5`) and task IDs (`T021` at namespaces.py:105,124) — in docstrings/comments. These name work units, not durable artifacts. | Strip the `USx`/`+USx` and `T0xx` tokens; keep the descriptive remainder of each docstring (most already read well without the tag). The 4 other `T0xx` sites (base.py:11, two core fixtures, commands/conftest.py:60) live in merged code — out of this branch's reach. |
-| R3 | B | MEDIUM | namespaces.py:5,7,98,103,124,155 · feature.py:7 · serialize.py:1,18 · slug.py:1 · (and ~300 more across merged core/, integrations/, commands/) | **DECIDED.** Durable trace tags (`FR-0xx`, `SC-00x`, `D-x`, `bookwright-design.md § N.M`) used as inline shorthand. Unlike R2 these point to versioned in-repo artifacts (spec.md / research.md / design doc) that carry the *why*. Keep them — but they are ambiguous (`FR-021` exists in 5 specs) and can drift on `/speckit-specify` re-run. | Do **not** strip. Sanction the convention in `CONTRIBUTING.md` (see §7 / Remediation R3): allowed classes = `FR`/`SC` (owning iteration's spec), `D` (research), `§ N.M` (global design); refs resolve relative to the file's iteration; FR/SC/D numbers freeze once an iteration merges. `US`/`T0xx` forbidden in code (→ R2). Zero churn on the ~300 existing refs. |
+| R1 | B | LOW (resolved) | src/bookwright/golem/modules/feature.py:95 | A free-text feature whose slug equals `"birth"`/`"death"` collided with the biographical feature URI and was silently deduped away when the character also had `born`/`died` | RESOLVED — biographical features moved to the disjoint `{c}/feature/bio/{kind}` subspace; collision now impossible by construction (no guard needed). See §4. |
 
 ## 4. Remediation Detail
 
-### R1 — Test identifier carries user-story jargon (`us1`)
+_No CRITICAL or HIGH findings._ The one LOW was **resolved** (structural fix, not a guard):
 
-- **Where:** `tests/golem/test_uri.py:60`
-- **Why it matters:** This is the single place where planning jargon escaped a docstring and became a **public identifier**. `us1` is the exact failure mode the audit targets: it names a backlog item, not a behavior. A reader running `pytest -k` or scanning a failure report learns nothing from "us1". The body already tests "canonical URI for the design's worked examples" — the name should say that.
-- **Suggested change:** rename the function to `test_canonical_uri_for_worked_examples` (or `test_worked_example_uris`). Also drop the `US1` reference on the module docstring at `test_uri.py:3` ("US1 worked examples" → "worked examples"). No other call site references the name.
+### R1 — Free-text feature could collide with a biographical feature URI — RESOLVED
 
-### R2 — Ephemeral planning tags (user-story + task IDs) in golem docstrings/comments
-
-- **Where:** 4 source files + 5 test files; full site list in the table above. Representative cases:
-  - `src/bookwright/golem/modules/feature.py:1` — `"""Feature module (+US5): character-scoped attribute carriers.`
-  - `src/bookwright/golem/modules/character.py:26` — `... emits only its rdf:type assertion (US5-6).`
-  - `tests/golem/test_character_attributes.py:1` — `"""US5 acceptance matrix: a Character carries born/died/...`
-  - `tests/golem/test_character_attributes.py:34` — `"""US5-1, FR-017: free text → G17 feature linked by golem:GP0_has_feature ...`
-  - `src/bookwright/golem/namespaces.py:105,124` — `recorded ... T021` (task ID)
-- **Why it matters:** `+US5` ("added in User Story 5"), `US5-3` and `T021` name **work units**, not durable artifacts — there is no `US5.md` or `T021.md` a future reader opens. Once the story/task is delivered they are commit-time bookkeeping frozen into the file. (Contrast R3, which points to versioned spec/research artifacts.) The surrounding prose is already descriptive (e.g. "free text → G17 feature linked by `golem:GP0_has_feature`"), so the tags are pure prefix noise that can be deleted without losing meaning. **Keep the `FR-0xx` references** that co-occur on the same lines — those are sanctioned under R3.
-- **Suggested change:** delete the `USx` / `+USx` / `pre-USx` / `T0xx` tokens (keep neighbouring `FR`/`SC`/`D` refs). For test docstrings, keep the behavioral description: `"""US5-1, FR-017: free text → ..."""` becomes `"""FR-017: free text feature is linked by golem:GP0_has_feature with rdfs:label."""`. Mechanical, file-local edit — a good fit for `/simplify`. The 4 `T0xx` sites outside golem (`integrations/base.py:11`, `tests/core/fixtures/valid_{full,minimal}.toml:1`, `tests/commands/conftest.py:60`) are merged code, not this branch's scope.
-
-### R3 — DECIDED: durable trace tags are sanctioned, not stripped
-
-- **Where:** `src/bookwright/golem/namespaces.py:5,7,124,155`, `serialize.py:1,18`, `slug.py:1`, `feature.py:7`, and ~300 occurrences across merged `core/`, `integrations/`, `commands/`.
-- **The decision (recorded 2026-05-31):** `FR-0xx`, `SC-00x`, `D-x` and `bookwright-design.md § N.M` are **kept** as deliberate, project-sanctioned traceability — they are *not* the same as `us5`. Each points to a **versioned, in-repo artifact** that carries the *why*: `FR`/`SC` → the owning iteration's `spec.md`, `D` → `research.md`, `§ N.M` → the global design doc (already declared "load-bearing" by `CLAUDE.md`). In a Spec-Kit project these IDs are the lingua franca that `/speckit-analyze` cross-references. The 261 `FR` + 45 `SC` refs are systematic, not accidental.
-- **Two real risks that the policy must close:** (1) **Ambiguity** — every spec restarts at `FR-001`, so a bare `FR-021` matches 5 specs; only the file's location disambiguates. (2) **Drift** — re-running `/speckit-specify` can renumber FRs and silently stale every inline ref.
-- **Resolution — sanction + close the gaps in `CONTRIBUTING.md`** (draft below, awaiting approval; nothing edited yet):
-  1. **Allowed in code:** `FR`/`SC` (owning iteration's `spec.md`), `D-x` (`research.md`), `bookwright-design.md § N.M` (global). `US-x` and `T0xx` are **forbidden** in code (enforced via R2).
-  2. **Relative resolution:** an inline ref resolves against the spec/research of the iteration the file belongs to (the `src/` tree maps to iterations). Documenting this once removes the ambiguity with zero edits to the ~300 refs.
-  3. **Freeze on merge:** once an iteration merges, its `FR`/`SC`/`D` numbers are frozen — never renumbered. This turns inline refs from best-effort into trustworthy and kills the drift.
-  - Style preference (not a rule): pair the ref with a *why* phrase (`# dedup identical features (FR-021)`) rather than a bare pointer. Most sites already do.
-- **Net:** zero churn on the existing refs; the only action is ~6 lines added to `CONTRIBUTING.md`.
+- **Was:** biographical and free-text features shared the `{character.uri}/feature/{token}` namespace, distinguished only by whether the token happened to be `birth`/`death`. `Character(born=1828, features=("birth",))` silently dropped the free-text feature via the dedup `seen` set. Data loss on a contrived-but-legal input; flat namespace was the root cause.
+- **Fix (chosen over a runtime guard):** biographical features now live under a disjoint sub-segment — `{character.uri}/feature/bio/{kind}` ([feature.py:95](../../src/bookwright/golem/modules/feature.py#L95)) — while free-text stays at `{character.uri}/feature/{slug}`. A slug can never contain `/`, so the two subspaces **cannot** collide; the collision is impossible by construction, not rejected at runtime. The dedup in [character.py](../../src/bookwright/golem/modules/character.py) reverts to deduping free-text values only. Net effect: **code removed** (no `ReservedFeatureTokenError`, no guard) rather than added.
+- **Verification:** `test_free_text_birth_feature_coexists_with_born_year` asserts `features=("birth",)` + `born=1828` now yields two distinct nodes. golem coverage 100%, full suite 431 passed, contract (`golem_api.md`) and `data-model.md` updated to the `bio/` URI shape. iteration-6/10 are unaffected (queries traverse predicates, not URI string patterns), and iter-5 is unmerged so the contract change is free.
 
 ## 5. Coverage Detail
 
-Not measured this run (the invocation scoped the audit to naming/jargon, not coverage). Run `uv run pytest --cov=src/bookwright/golem --cov-report=term-missing` for the gate.
+| Module | Stmts | Miss | Branch | Coverage | Threshold | Status |
+|---|---|---|---|---|---|---|
+| golem/__init__.py | 13 | 0 | 0 | 100% | 80% | PASS |
+| golem/base.py | 50 | 0 | 10 | 100% | 80% | PASS |
+| golem/errors.py | 11 | 0 | 0 | 100% | 80% | PASS |
+| golem/modules/character.py | 51 | 0 | 16 | 100% | 80% | PASS |
+| golem/modules/feature.py | 63 | 0 | 10 | 100% | 80% | PASS |
+| golem/modules/event.py | 15 | 0 | 0 | 100% | 80% | PASS |
+| golem/modules/inference.py | 21 | 0 | 0 | 100% | 80% | PASS |
+| golem/modules/narrative.py | 22 | 0 | 0 | 100% | 80% | PASS |
+| golem/modules/relationship.py | 15 | 0 | 0 | 100% | 80% | PASS |
+| golem/modules/setting.py | 13 | 0 | 0 | 100% | 80% | PASS |
+| golem/namespaces.py | 54 | 0 | 2 | 100% | 80% | PASS |
+| golem/serialize.py | 12 | 0 | 4 | 100% | 80% | PASS |
+| golem/slug.py | 8 | 0 | 2 | 100% | 80% | PASS |
+| **Full repo** | 1628 | 21 | 352 | **98.08%** | 80% | PASS |
 
 ## 6. Inability-to-verify notes
 
-- Coverage gate not evaluated (out of this run's lens).
-- R3 is now **decided** (keep + sanction, see §4 R3); the only remaining work is the `CONTRIBUTING.md` block, which is a docs add, not a code change. Its full extent reaches already-merged code on `main`; the policy applies repo-wide but requires no edits to the ~300 existing refs.
-- The constitution does not codify a "no planning jargon in names" rule; R1/R2 severity derives from the explicit audit instruction, not a discovered MUST. If you want this enforced going forward, it belongs in CONTRIBUTING.md or the constitution.
+- None. All four gates ran locally and the golem subtree is fully covered. The 21 missed statements across the full repo are entirely outside golem (untouched merged modules) and the project gate still passes at 98%.
+- R1's reachability depends on iteration-6's bible-frontmatter parser (not on this branch); flagged for confirmation there rather than treated as a defect here.

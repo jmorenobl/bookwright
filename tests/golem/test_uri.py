@@ -93,10 +93,10 @@ def test_character_scoped_node_uri_patterns() -> None:
         narrative_roles=("protagonist",),
     )
     subjects = {s for s, _, _ in c.to_triples()}
-    assert URIRef(f"{c.uri}/feature/birth") in subjects
-    assert URIRef(f"{c.uri}/feature/death") in subjects
+    assert URIRef(f"{c.uri}/feature/bio/birth") in subjects
+    assert URIRef(f"{c.uri}/feature/bio/death") in subjects
     assert URIRef(f"{c.uri}/feature/ingeniero-quimico") in subjects
-    assert URIRef(f"{c.uri}/feature/birth/dimension") in subjects
+    assert URIRef(f"{c.uri}/feature/bio/birth/dimension") in subjects
     assert URIRef(f"{c.uri}/role/protagonist") in subjects
 
 

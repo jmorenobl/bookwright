@@ -147,7 +147,7 @@ validators) but excluded from the `CONCEPTS` registry (SC-001).
 | Class | rdf:type | URI | Fields | Triples emitted |
 |---|---|---|---|---|
 | `CharacterFeature` (free-text) | `golem:G17_Character_Feature` | `{character.uri}/feature/{slug(label)}` | `character_uri: URIRef`, `label: str` | `(uri, rdf:type, G17)`, `(uri, rdfs:label, Literal(label))` |
-| `CharacterFeature` (biographical) | `golem:G17_Character_Feature` | `{character.uri}/feature/{birth\|death}` | `character_uri`, `uri_base`, `kind: "birth"\|"death"`, `year: int` | `(uri, rdf:type, G17)`, `(uri, crm:P2_has_type, {uri_base}type/{kind})`, `({uri_base}type/{kind}, rdf:type, crm:E55_Type)`, `(uri, crm:P43_has_dimension, dimension.uri)` + the `Dimension`'s own triples |
+| `CharacterFeature` (biographical) | `golem:G17_Character_Feature` | `{character.uri}/feature/bio/{birth\|death}` | `character_uri`, `uri_base`, `kind: "birth"\|"death"`, `year: int` | `(uri, rdf:type, G17)`, `(uri, crm:P2_has_type, {uri_base}type/{kind})`, `({uri_base}type/{kind}, rdf:type, crm:E55_Type)`, `(uri, crm:P43_has_dimension, dimension.uri)` + the `Dimension`'s own triples |
 | `Dimension` | `crm:E54_Dimension` | `{feature.uri}/dimension` | `feature_uri: URIRef`, `year: int` | `(uri, rdf:type, E54)`, `(uri, crm:P90_has_value, Literal(str(year), datatype=xsd:gYear))` |
 | character-scoped role | `golem:G11_Narrative_Role` | `{character.uri}/role/{slug(text)}` | `character_uri`, `label: str` | `(uri, rdf:type, G11)`, `(uri, rdfs:label, Literal(label))` |
 
@@ -157,6 +157,9 @@ Notes:
   use the `{base}{segment}/{slug}` triad, because `{feature}/dimension` has no
   token and `birth`/`death` are fixed tokens). `make_slug` is reused for the
   text-derived suffixes; an empty slug raises `EmptySlugError` (FR-021).
+  Biographical features sit under a `bio/` sub-segment (`…/feature/bio/birth`);
+  because a slug never contains `/`, a free-text feature can never collide with
+  a biographical one on the same character, so no reserved-token guard is needed.
 - **`xsd:gYear`**: the year is emitted as `Literal(str(year), datatype=XSD.gYear)`
   — never `xsd:integer` or a plain string (FR-019, spec edge case). This is what
   makes iteration-10's "born before 1850" temporal query answerable.

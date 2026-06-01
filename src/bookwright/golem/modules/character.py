@@ -49,7 +49,10 @@ class Character(SluggedEntity):
             feature_nodes.append(self._biographical("birth", self.born))
         if self.died is not None:
             feature_nodes.append(self._biographical("death", self.died))
-        seen: set[URIRef] = {node.uri for node in feature_nodes}
+        # Biographical features live under `feature/bio/…`, structurally apart
+        # from the free-text slug space, so the only dedup needed here is between
+        # identical free-text values (FR-021).
+        seen: set[URIRef] = set()
         for text in self.features:
             node = CharacterFeature(uri_base=self.uri_base, character_uri=self.uri, label=text)
             if node.uri not in seen:  # dedup identical feature values (FR-021)

@@ -59,7 +59,9 @@ class CharacterFeature(GolemEntity):
     - **free-text** — supply ``label``; URI ``{character.uri}/feature/{slug(label)}``,
       emits the type assertion + ``rdfs:label``.
     - **biographical** — supply ``kind`` (``"birth"``/``"death"``) and ``year``;
-      URI ``{character.uri}/feature/{kind}``, emits the type assertion, a
+      URI ``{character.uri}/feature/bio/{kind}`` (the ``bio/`` sub-segment keeps
+      the birth/death token out of the free-text slug space, so the two variants
+      can never collide on one character), emits the type assertion, a
       ``crm:P2_has_type`` link to the shared ``{uri_base}type/{kind}`` E55_Type
       individual, and a ``crm:P43_has_dimension`` link to its :class:`Dimension`.
 
@@ -86,17 +88,18 @@ class CharacterFeature(GolemEntity):
         return self
 
     def model_post_init(self, __context: object) -> None:
-        token: str
         if self.kind is not None:
-            token = self.kind
+            # Biographical features live under a `bio/` sub-segment: a free-text
+            # slug never contains `/`, so it can never collide with the
+            # birth/death token on the same character (FR-021).
+            self._uri = URIRef(f"{self.character_uri}/feature/bio/{self.kind}")
+            if self.year is not None:  # the year-less case is rejected by the validator
+                self._dimension = Dimension(
+                    uri_base=self.uri_base, feature_uri=self._uri, year=self.year
+                )
         else:
             assert self.label is not None  # guaranteed by _exactly_one_variant
-            token = make_slug(self.label)
-        self._uri = URIRef(f"{self.character_uri}/feature/{token}")
-        if self.kind is not None and self.year is not None:
-            self._dimension = Dimension(
-                uri_base=self.uri_base, feature_uri=self._uri, year=self.year
-            )
+            self._uri = URIRef(f"{self.character_uri}/feature/{make_slug(self.label)}")
 
     def to_triples(self) -> Iterable[Triple]:
         yield (self.uri, RDF.type, self.golem_class)

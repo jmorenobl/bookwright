@@ -67,11 +67,13 @@ c = Character(
 ```
 
 - `features` / `narrative_roles` items follow the slug rule; an item that slugs
-  to empty raises `EmptySlugError` (FR-021).
+  to empty raises `EmptySlugError` (FR-021). Free-text and biographical features
+  live in disjoint URI subspaces (`/feature/{slug}` vs `/feature/bio/{kind}`), so
+  a free-text feature never collides with `born`/`died` on the same character.
 - Supplying none of the four → `c.to_triples()` yields only the `rdf:type`
   assertion (US5-6), byte-identical to the identity-only `Character` above.
 - The generated feature / dimension / role nodes carry deterministic,
-  character-scoped URIs (`{c.uri}/feature/{slug|birth|death}`,
+  character-scoped URIs (`{c.uri}/feature/{slug}`, `{c.uri}/feature/bio/{birth|death}`,
   `{feature}/dimension`, `{c.uri}/role/{slug}`) — never blank nodes (FR-021).
 
 `AttributeAssignment` is the one exception — constructed without `name`:

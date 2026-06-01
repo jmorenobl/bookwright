@@ -57,7 +57,7 @@ def test_born_year_modeled_through_dimension_chain() -> None:
     crm:P90_has_value is "1828"^^xsd:gYear."""
     c = Character(uri_base=B, name="Aparici", born=1828)
     triples = set(c.to_triples())
-    feature = URIRef(f"{c.uri}/feature/birth")
+    feature = URIRef(f"{c.uri}/feature/bio/birth")
     type_uri = URIRef(f"{B}type/birth")
     dimension = URIRef(f"{feature}/dimension")
     assert (c.uri, ns.HAS_FEATURE, feature) in triples
@@ -73,7 +73,7 @@ def test_died_year_modeled_through_dimension_chain() -> None:
     """died=1900 analogous to born, with the death E55_Type individual."""
     c = Character(uri_base=B, name="Aparici", died=1900)
     triples = set(c.to_triples())
-    feature = URIRef(f"{c.uri}/feature/death")
+    feature = URIRef(f"{c.uri}/feature/bio/death")
     type_uri = URIRef(f"{B}type/death")
     dimension = URIRef(f"{feature}/dimension")
     assert (feature, ns.HAS_TYPE, type_uri) in triples
@@ -84,7 +84,7 @@ def test_died_year_modeled_through_dimension_chain() -> None:
 def test_gyear_literal_is_not_integer_or_plain_string() -> None:
     """FR-019: the year is xsd:gYear, never xsd:integer or an untyped literal."""
     c = Character(uri_base=B, name="Aparici", born=1828)
-    dimension = URIRef(f"{c.uri}/feature/birth/dimension")
+    dimension = URIRef(f"{c.uri}/feature/bio/birth/dimension")
     values = [o for s, p, o in c.to_triples() if s == dimension and p == ns.HAS_VALUE]
     assert values == [Literal("1828", datatype=XSD.gYear)]
     value = values[0]
@@ -96,12 +96,12 @@ def test_deterministic_character_scoped_uris() -> None:
     """FR-021: every generated node carries a deterministic, character-scoped URI."""
     c = _attributed()
     expected = {
-        URIRef(f"{c.uri}/feature/birth"),
-        URIRef(f"{c.uri}/feature/death"),
+        URIRef(f"{c.uri}/feature/bio/birth"),
+        URIRef(f"{c.uri}/feature/bio/death"),
         URIRef(f"{c.uri}/feature/ingeniero-quimico"),
         URIRef(f"{c.uri}/feature/barba"),
-        URIRef(f"{c.uri}/feature/birth/dimension"),
-        URIRef(f"{c.uri}/feature/death/dimension"),
+        URIRef(f"{c.uri}/feature/bio/birth/dimension"),
+        URIRef(f"{c.uri}/feature/bio/death/dimension"),
         URIRef(f"{c.uri}/role/protagonist"),
     }
     subjects = {s for s, _, _ in c.to_triples()}
@@ -134,6 +134,22 @@ def test_empty_slug_feature_raises() -> None:
     """FR-021: a feature text that slugs to empty raises EmptySlugError."""
     with pytest.raises(EmptySlugError):
         Character(uri_base=B, name="Aparici", features=("!!!",))
+
+
+def test_free_text_birth_feature_coexists_with_born_year() -> None:
+    """FR-021: biographical features live under ``feature/bio/…``, so a free-text
+    feature whose slug is ``birth`` cannot collide with ``born`` — both are kept,
+    each at its own URI."""
+    c = Character(uri_base=B, name="Aparici", born=1828, features=("birth",))
+    triples = set(c.to_triples())
+    bio = URIRef(f"{c.uri}/feature/bio/birth")
+    free_text = URIRef(f"{c.uri}/feature/birth")
+    # The biographical chain and the free-text feature are distinct nodes.
+    assert (c.uri, ns.HAS_FEATURE, bio) in triples
+    assert (c.uri, ns.HAS_FEATURE, free_text) in triples
+    assert bio != free_text
+    assert (bio, ns.HAS_DIMENSION, URIRef(f"{bio}/dimension")) in triples
+    assert (free_text, RDFS.label, Literal("birth")) in triples
 
 
 def test_empty_slug_role_raises() -> None:
