@@ -22,19 +22,19 @@ ontology already defines for it. Nothing is dropped; nothing new is minted.
 SC-001 ("zero predicates or classes absent from the frozen GOLEM vocabulary")
 holds because every class/predicate below is a member of `frozen_terms()`.
 
-**Character (`bible/characters/<f>.md` → `gc:G1_Character`)**
+**Character (`bible/characters/<f>.md` → `golem:G1_Character`)**
 
 | Key | Frozen modeling (all terms ∈ `frozen_terms()`) |
 |---|---|
 | `name` | identity: slug → URI (iteration-5), the `rdf:type` assertion |
-| `narrative_roles[]` | one `gc:G11_Narrative_Role` per role; `Character —edns:plays→ role` |
-| `features[]` (free text) | one `gc:G17_Character_Feature` per item; `Character —gc:GP0_has_feature→ feature`; text via `rdfs:label` |
-| `born` / `died` (year) | biographical `gc:G17_Character_Feature`, `crm:P2_has_type` an `crm:E55_Type` individual (`birth`/`death`); year via `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ "YYYY"^^xsd:gYear` |
+| `narrative_roles[]` | one `golem:G11_Narrative_Role` per role; `Character —edns:plays→ role` |
+| `features[]` (free text) | one `golem:G17_Character_Feature` per item; `Character —golem:GP0_has_feature→ feature`; text via `rdfs:label` |
+| `born` / `died` (year) | biographical `golem:G17_Character_Feature`, `crm:P2_has_type` an `crm:E55_Type` individual (`birth`/`death`); year via `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ "YYYY"^^xsd:gYear` |
 
 This is the ontology's own prescription: `G17_Character_Feature` is documented as
 covering *"biographical (e.g., birth, death), physical, and psychological
 features… specified using crm:E55_Type,"* and the `G1_Character` class carries
-OWL restrictions on `edns:plays → G11_Narrative_Role` and `gc:GP0_has_feature →
+OWL restrictions on `edns:plays → G11_Narrative_Role` and `golem:GP0_has_feature →
 G2_Feature`. `crm:P90_has_value` (the ontology's sole datatype property) is the
 frozen literal carrier; its domain is `E54_Dimension`, hence the
 feature→dimension→value chain.

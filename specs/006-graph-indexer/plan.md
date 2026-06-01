@@ -28,7 +28,7 @@ section of [spec.md](spec.md)):
 1. **Frontmatter → triples, with frozen terms (R1).** Every documented character
    key maps to the term the frozen GOLEM/CIDOC ontology already defines for it:
    `narrative_roles[]` → `edns:plays → G11_Narrative_Role`; `features[]` →
-   `gc:GP0_has_feature → G17_Character_Feature`; `born`/`died` → biographical
+   `golem:GP0_has_feature → G17_Character_Feature`; `born`/`died` → biographical
    `G17_Character_Feature` (`crm:P2_has_type` birth/death) with the year via
    `crm:P43_has_dimension → E54_Dimension —crm:P90_has_value→ xsd:gYear` (`edns:`
    = ExtendedDnS ns, distinct from DOLCE-Lite `dlp:`). Nothing is dropped and
@@ -50,7 +50,8 @@ section of [spec.md](spec.md)):
 `rich` (human rendering on stderr), `tomlkit`/`pydantic` via the iteration-2
 `Manifest`, the iteration-5 `bookwright.golem` package (now on `main` with the
 character-attribute extension — `Character(born/died/features/narrative_roles)`,
-`CharacterFeature`/`Dimension`, `AttributeAssignment`, `to_triples`), consumed
+`CharacterFeature`/`Dimension`, `AttributeAssignment`, `to_triples`, and the R1b
+provenance seam `DerivedAssertion` + `derived_assertions()`), consumed
 as-is; `python-slugify` (collision detection re-uses iter-5 slugs). **New runtime
 dependency**: `pyyaml` for frontmatter — see Constitution Check Gate II.
 
@@ -111,8 +112,17 @@ narrative_roles`, the `EDNS` namespace + frozen-term predicate constants) was
 implemented as a **completion of iteration 5** and merged to `main`. It is
 additive (identity-only behaviour + tests preserved) and the iteration-5
 closure test (SC-003) was extended to guard every new term. This iteration
-consumes it as a dependency — no GOLEM-model work remains here. All four gates
-are green on this rebased branch (`pytest` 437 passed, 98% coverage).
+consumes it as a dependency — no GOLEM-model work remains here.
+
+**Iteration-5 provenance seam (R1b) — DONE.** A second additive completion of
+iteration 5, also on `main`: `DerivedAssertion(target, attribute, source_field)`
++ `GolemEntity.derived_assertions()` (declarative default from `cross_refs`;
+`Character` overrides to tag `born`/`died`/`features`/`narrative_roles`). This is
+the source-agnostic seam US3 consumes to mint one `crm:E13` per derived assertion
+(FR-011/SC-006) without reading the model's private node tuples or recomputing its
+URI scheme — the model names the originating field, the indexer resolves the line.
+Additive, backward-compatible, frozen terms only; `to_triples()` unchanged. All
+four gates green on `main` (`pytest` 446 passed, 98% coverage).
 
 **Result**: PASS, conditional only on the Gate II amendment task (`pyyaml`)
 completing before any frontmatter-parsing code is written. No entries in

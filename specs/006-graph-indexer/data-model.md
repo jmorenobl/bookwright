@@ -42,7 +42,7 @@ assertion (identity-only behaviour preserved).
 ### Supporting types (also on `main`, **not** constructed by the mapper)
 - `CharacterFeature` / `CharacterRole` / `Dimension` (`golem/modules/feature.py`)
   — inlined attribute carriers, excluded from the `CONCEPTS` registry.
-- Namespaces/predicates: `HAS_FEATURE` (`gc:GP0_has_feature`), `PLAYS`
+- Namespaces/predicates: `HAS_FEATURE` (`golem:GP0_has_feature`), `PLAYS`
   (`edns:plays` — **ExtendedDnS** ns `…/ExtendedDnS.owl#`, distinct from the
   `DLP` = `…/DOLCE-Lite.owl#` constant), `HAS_TYPE`/`HAS_DIMENSION`/`HAS_VALUE`
   (`crm:P2`/`P43`/`P90`), `CLASS_IRI` for `G2_Feature`/`G17_Character_Feature`/
@@ -52,6 +52,22 @@ assertion (identity-only behaviour preserved).
 `Setting` (`G12`), `NarrativeEvent` (`G5`), `SocialRelationship` (`G4`) with
 their existing `dlp:participant` edges; `AttributeAssignment` (`crm:E13`) for
 provenance.
+
+### Provenance enumeration surface (R1b, on `main`)
+`GolemEntity.derived_assertions() -> Iterable[DerivedAssertion]` is the
+source-agnostic seam the build path consumes for provenance (§4). Each
+`DerivedAssertion(target, attribute, source_field)` names one derived assertion:
+`target` is the entity URI, `attribute` is the materialized feature/role/
+participant URI (or `target` itself for the identity assertion), and
+`source_field` is the originating model field — identical to the frontmatter key
+by FR-010 (`born`/`died`/`features`/`narrative_roles`/`participants`), or `None`
+for the identity assertion. The model never exposes a file path; the indexer maps
+`source_field` → a line via `key_lines`. The mapper does **not** read the private
+`_feature_nodes`/`_role_nodes` nor recompute node URIs — it enumerates them
+through this API. `Character` overrides the declarative default to fan its single
+node tuple back out to `born`/`died`/`features`; `NarrativeEvent`/
+`SocialRelationship` use the default (their `participants` field already equals
+the frontmatter key).
 
 ---
 
@@ -127,17 +143,24 @@ model.)
 
 ## 4. Provenance (`AttributeAssignment`, R6 / FR-011 / SC-006)
 
-One iteration-5 `AttributeAssignment` per derived top-level entity (and, where a
-line is locatable, per attribute assertion):
+One iteration-5 `AttributeAssignment` **per derived assertion** — the identity
+assertion (file-level) and each feature, role, birth/death and participation —
+built by iterating `entity.derived_assertions()` (§0). The line is appended
+**when locatable**; its absence never drops the assignment (FR-011/SC-006 are
+per-assertion, not per-entity):
 
 | Field | Value |
 |---|---|
-| `target` | the entity URI the assertion is about |
-| `attribute` | the entity URI (or the feature/role/event URI when attaching to a specific assertion) |
-| `source` | `"<relpath>"` or `"<relpath>:<line>"` (from `key_lines`) |
+| `target` | `DerivedAssertion.target` — the entity URI the assertion is about |
+| `attribute` | `DerivedAssertion.attribute` — the materialized feature/role/participant URI, or `target` itself for the identity assertion |
+| `source` | `"<relpath>"` (identity / no locatable line) or `"<relpath>:<line>"`, resolving `DerivedAssertion.source_field` against `key_lines` |
 | `premise` | `None` (v0) |
 
-Emitted alongside the entity triples so SC-006 holds for every derived entity.
+Emitted alongside the entity triples so SC-006 holds for every derived assertion:
+the identity assertion carries file-level provenance (`source_field` `None`); each
+feature/role/participation carries `relpath:line` when its originating key is
+locatable. Because `derived_assertions()` yields exactly one descriptor per
+materialized node, no derived assertion is left without an assignment.
 
 ---
 
