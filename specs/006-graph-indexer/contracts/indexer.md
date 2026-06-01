@@ -16,7 +16,6 @@ class Indexer(Protocol):
         o: URIRef | Literal | str | int | float,
     ) -> None: ...
     def query(self, sparql: str) -> Iterable[dict[str, Any]]: ...
-    def construct(self, sparql: str) -> "Indexer": ...
     def count(self) -> int: ...
 ```
 
@@ -26,7 +25,6 @@ class Indexer(Protocol):
 | `save` | Writes the graph as Turtle to `ttl_path`, **short prefixes bound** (FR-015), creating parent directories. Atomic enough for a single-writer CLI. |
 | `add_triple` | Adds one triple. `str` subjects/predicates that look like IRIs are coerced to `URIRef`; objects keep their rdflib term type. |
 | `query` | Executes SPARQL; yields one `dict` per `SELECT` row mapping projected variable name → `str(value)`. Empty iterable for zero matches. Raises `InvalidQueryError` on a malformed query (no partial yield). |
-| `construct` | Executes `CONSTRUCT`; returns a fresh `Indexer` of the same concrete type wrapping the resulting sub-graph. |
 | `count` | Returns the number of triples currently held. |
 
 ## Registry (`indexers/__init__.py`)

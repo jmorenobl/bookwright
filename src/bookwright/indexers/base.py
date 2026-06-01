@@ -46,9 +46,9 @@ class Indexer(Protocol):
         """Run a SELECT; yield one dict per row (var → ``str``). Raise on bad SPARQL."""
         ...
 
-    def construct(self, sparql: str) -> Indexer:
-        """Run CONSTRUCT; return a fresh engine over the resulting sub-graph."""
-        ...
+    # NOTE: a `construct(sparql) -> Indexer` verb is intentionally absent — no v0
+    # command runs CONSTRUCT. Re-add it here alongside its first consumer (the
+    # validation system, iteration 10) rather than carrying an unused seam now.
 
     def count(self) -> int:
         """Return the number of triples currently held."""

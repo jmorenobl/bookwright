@@ -86,7 +86,7 @@ class GraphLoadError(IndexerError):
 
 
 class InvalidQueryError(IndexerError):
-    """A malformed SPARQL string was handed to ``query`` / ``construct`` (FR-016).
+    """A malformed SPARQL string was handed to ``query`` (FR-016).
 
     No partial rows are yielded before this is raised.
     """

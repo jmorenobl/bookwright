@@ -86,17 +86,6 @@ class RdflibIndexer:
             raise InvalidQueryError(str(exc)) from exc
         return rows
 
-    def construct(self, sparql: str) -> RdflibIndexer:
-        """Run a CONSTRUCT; return a fresh engine wrapping the resulting sub-graph."""
-        try:
-            result = self._graph.query(sparql)
-            graph = result.graph
-        except Exception as exc:  # rdflib raises a variety of parse errors
-            raise InvalidQueryError(str(exc)) from exc
-        if graph is None:  # pragma: no cover - defensive; CONSTRUCT always yields a graph
-            graph = Graph()
-        return RdflibIndexer(graph=graph)
-
     def count(self) -> int:
         """Return the number of triples currently held."""
         return len(self._graph)

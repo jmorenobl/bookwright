@@ -63,11 +63,3 @@ def test_saved_turtle_uses_short_prefixes(tmp_path: Path) -> None:
     text = out.read_text(encoding="utf-8")
     assert "@prefix golem:" in text
     assert "golem:G1_Character" in text
-
-
-def test_construct_returns_populated_engine() -> None:
-    engine = RdflibIndexer()
-    engine.add_triple(URIRef(f"{B}character/aparici"), RDF_TYPE, CHARACTER)
-    sub = engine.construct(f"CONSTRUCT {{ ?s a <{CHARACTER}> }} WHERE {{ ?s a <{CHARACTER}> }}")
-    assert isinstance(sub, RdflibIndexer)
-    assert sub.count() == 1
