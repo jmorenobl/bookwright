@@ -36,6 +36,10 @@ class CrossRef(NamedTuple):
     - ``multi``: the field is a tuple; emit one triple per item, in tuple order.
     - ``literal``: emit the field value verbatim as an ``xsd:string`` (e.g. a
       source path), not a resolved reference.
+    - ``owned``: the targets are sub-nodes this entity owns rather than peer
+      entities serialized in their own right; after each link triple, chain the
+      target's own ``to_triples()`` so the whole sub-tree is emitted here. (Used
+      with ``multi`` — a character owns its feature / role nodes.)
     - otherwise the field is a single optional reference, omitted when ``None``.
     """
 
@@ -43,6 +47,7 @@ class CrossRef(NamedTuple):
     predicate: URIRef
     multi: bool = False
     literal: bool = False
+    owned: bool = False
 
 
 class GolemEntity(BaseModel):
@@ -80,10 +85,13 @@ class GolemEntity(BaseModel):
 
     def to_triples(self) -> Iterable[Triple]:
         """Yield this entity's triples: the ``rdf:type`` assertion (FR-008, always
-        first) followed by every edge declared in :attr:`cross_refs` (FR-015).
+        first) followed by every edge declared in :attr:`cross_refs` (FR-015) —
+        and, for an ``owned`` edge, the target sub-node's own triples chained
+        immediately after its link triple.
 
         Concepts customize emission declaratively via ``cross_refs``; overriding
-        this method is unnecessary for any concept in the current model.
+        this method is unnecessary for any concept in the current model — a
+        character's owned feature / role sub-trees included.
         """
         yield (self.uri, RDF.type, self.golem_class)
         for ref in self.cross_refs:
@@ -91,6 +99,8 @@ class GolemEntity(BaseModel):
             if ref.multi:
                 for item in value:
                     yield (self.uri, ref.predicate, ref_uri(item))
+                    if ref.owned:
+                        yield from item.to_triples()
             elif ref.literal:
                 yield (self.uri, ref.predicate, Literal(value, datatype=XSD.string))
             elif value is not None:

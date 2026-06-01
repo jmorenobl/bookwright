@@ -92,6 +92,27 @@ def test_gyear_literal_is_not_integer_or_plain_string() -> None:
     assert value.datatype == XSD.gYear
 
 
+@pytest.mark.parametrize(
+    ("year", "lexical"),
+    [(1828, "1828"), (800, "0800"), (50, "0050"), (-44, "-0044"), (12000, "12000")],
+)
+def test_gyear_lexical_form_is_valid_for_short_and_bce_years(year: int, lexical: str) -> None:
+    """FR-019: the gYear lexical form needs ≥4 digits (and a sign for BCE), so a
+    medieval or ancient birth/death year must be zero-padded, not stringified raw."""
+    c = Character(uri_base=B, name="Aparici", born=year)
+    dimension = URIRef(f"{c.uri}/feature/bio/birth/dimension")
+    values = [o for s, p, o in c.to_triples() if s == dimension and p == ns.HAS_VALUE]
+    assert values == [Literal(lexical, datatype=XSD.gYear)]
+
+
+def test_free_text_feature_rejects_stray_year() -> None:
+    """A free-text feature must not carry a `year`: only the biographical variant
+    emits it, so accepting it would silently drop the value."""
+    char = Character(uri_base=B, name="Aparici")
+    with pytest.raises(ValidationError):
+        CharacterFeature(uri_base=B, character_uri=char.uri, label="barba", year=1999)
+
+
 def test_deterministic_character_scoped_uris() -> None:
     """FR-021: every generated node carries a deterministic, character-scoped URI."""
     c = _attributed()

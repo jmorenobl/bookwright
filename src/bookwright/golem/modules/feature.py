@@ -32,6 +32,20 @@ BioKind = Literal["birth", "death"]
 """The two biographical feature kinds; each maps to a shared E55_Type individual."""
 
 
+def gyear_literal(year: int) -> RdfLiteral:
+    """Format an integer year as a lexically valid ``xsd:gYear`` literal (FR-019).
+
+    XSD requires the year part to be at least four digits, with an optional
+    leading ``-`` for BCE years. Plain ``str(year)`` is invalid for years < 1000
+    or BCE (e.g. ``"800"``, ``"-44"``), which the iteration-10 temporal queries —
+    the whole reason for ``gYear`` over a plain string — would then reject. Pad
+    the magnitude to four digits and preserve the sign instead, so ``800`` →
+    ``"0800"`` and ``-44`` → ``"-0044"`` while ``1828`` stays ``"1828"``.
+    """
+    sign = "-" if year < 0 else ""
+    return RdfLiteral(f"{sign}{abs(year):04d}", datatype=XSD.gYear)
+
+
 class Dimension(GolemEntity):
     """A measurement (``crm:E54_Dimension``) carrying a biographical year.
 
@@ -50,7 +64,7 @@ class Dimension(GolemEntity):
 
     def to_triples(self) -> Iterable[Triple]:
         yield (self.uri, RDF.type, self.golem_class)
-        yield (self.uri, HAS_VALUE, RdfLiteral(str(self.year), datatype=XSD.gYear))
+        yield (self.uri, HAS_VALUE, gyear_literal(self.year))
 
 
 class CharacterFeature(GolemEntity):
@@ -80,11 +94,19 @@ class CharacterFeature(GolemEntity):
 
     @model_validator(mode="after")
     def _exactly_one_variant(self) -> CharacterFeature:
-        biographical = self.kind is not None
-        if biographical == (self.label is not None):
-            raise ValueError("CharacterFeature requires either `label` or (`kind` + `year`)")
-        if biographical and self.year is None:
-            raise ValueError("biographical CharacterFeature requires a `year`")
+        if self.kind is not None:
+            # Biographical: a year is mandatory, a free-text label is forbidden.
+            if self.label is not None:
+                raise ValueError("biographical CharacterFeature must not also carry a `label`")
+            if self.year is None:
+                raise ValueError("biographical CharacterFeature requires a `year`")
+        else:
+            # Free-text: a label is mandatory; a stray `year` is forbidden rather
+            # than silently dropped, since only the biographical variant emits it.
+            if self.label is None:
+                raise ValueError("CharacterFeature requires either `label` or (`kind` + `year`)")
+            if self.year is not None:
+                raise ValueError("free-text CharacterFeature must not carry a `year`")
         return self
 
     def model_post_init(self, __context: object) -> None:

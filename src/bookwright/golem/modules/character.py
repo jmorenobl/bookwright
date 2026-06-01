@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import ClassVar
+from collections.abc import Callable, Iterable
+from typing import ClassVar, TypeVar
 
 from pydantic import PrivateAttr
 from rdflib.term import URIRef
 
-from bookwright.golem.base import CrossRef, SluggedEntity, Triple
+from bookwright.golem.base import CrossRef, GolemEntity, SluggedEntity
 from bookwright.golem.modules.feature import BioKind, CharacterFeature, CharacterRole
 from bookwright.golem.namespaces import CLASS_IRI, HAS_FEATURE, PLAYS
+
+_Node = TypeVar("_Node", bound=GolemEntity)
+
+
+def _dedup_nodes(texts: Iterable[str], factory: Callable[[str], _Node]) -> tuple[_Node, ...]:
+    """Materialize one node per text, dropping later duplicates by URI (FR-021)."""
+    nodes: list[_Node] = []
+    seen: set[URIRef] = set()
+    for text in texts:
+        node = factory(text)
+        if node.uri not in seen:
+            seen.add(node.uri)
+            nodes.append(node)
+    return tuple(nodes)
 
 
 class Character(SluggedEntity):
@@ -29,8 +43,8 @@ class Character(SluggedEntity):
     golem_class: ClassVar[URIRef] = CLASS_IRI["Character"]
     path_segment: ClassVar[str] = "character"
     cross_refs: ClassVar[tuple[CrossRef, ...]] = (
-        CrossRef("_feature_nodes", HAS_FEATURE, multi=True),
-        CrossRef("_role_nodes", PLAYS, multi=True),
+        CrossRef("_feature_nodes", HAS_FEATURE, multi=True, owned=True),
+        CrossRef("_role_nodes", PLAYS, multi=True, owned=True),
     )
 
     born: int | None = None
@@ -44,44 +58,30 @@ class Character(SluggedEntity):
     def model_post_init(self, __context: object) -> None:
         super().model_post_init(__context)  # fixes slug + identity URI first
 
-        feature_nodes: list[CharacterFeature] = []
-        if self.born is not None:
-            feature_nodes.append(self._biographical("birth", self.born))
-        if self.died is not None:
-            feature_nodes.append(self._biographical("death", self.died))
         # Biographical features live under `feature/bio/…`, structurally apart
-        # from the free-text slug space, so the only dedup needed here is between
-        # identical free-text values (FR-021).
-        seen: set[URIRef] = set()
-        for text in self.features:
-            node = CharacterFeature(uri_base=self.uri_base, character_uri=self.uri, label=text)
-            if node.uri not in seen:  # dedup identical feature values (FR-021)
-                seen.add(node.uri)
-                feature_nodes.append(node)
-        self._feature_nodes = tuple(feature_nodes)
-
-        role_nodes: list[CharacterRole] = []
-        seen_roles: set[URIRef] = set()
-        for text in self.narrative_roles:
-            role = CharacterRole(uri_base=self.uri_base, character_uri=self.uri, label=text)
-            if role.uri not in seen_roles:  # dedup identical roles (FR-021)
-                seen_roles.add(role.uri)
-                role_nodes.append(role)
-        self._role_nodes = tuple(role_nodes)
+        # from the free-text slug space, so they never collide with free-text
+        # values and only the free-text values need URI dedup (FR-021).
+        biographical: list[CharacterFeature] = []
+        if self.born is not None:
+            biographical.append(self._biographical("birth", self.born))
+        if self.died is not None:
+            biographical.append(self._biographical("death", self.died))
+        free_text = _dedup_nodes(
+            self.features,
+            lambda text: CharacterFeature(
+                uri_base=self.uri_base, character_uri=self.uri, label=text
+            ),
+        )
+        self._feature_nodes = (*biographical, *free_text)
+        self._role_nodes = _dedup_nodes(
+            self.narrative_roles,
+            lambda text: CharacterRole(uri_base=self.uri_base, character_uri=self.uri, label=text),
+        )
 
     def _biographical(self, kind: BioKind, year: int) -> CharacterFeature:
         return CharacterFeature(
             uri_base=self.uri_base, character_uri=self.uri, kind=kind, year=year
         )
-
-    def to_triples(self) -> Iterable[Triple]:
-        # The rdf:type assertion + the GP0_has_feature / edns:plays edges (via
-        # cross_refs), then each nested node's own triples.
-        yield from super().to_triples()
-        for feature in self._feature_nodes:
-            yield from feature.to_triples()
-        for role in self._role_nodes:
-            yield from role.to_triples()
 
 
 class Object(SluggedEntity):
