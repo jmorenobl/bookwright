@@ -119,7 +119,7 @@ and assert the returned rows match the expected bindings; run the same query wit
 
 ---
 
-### User Story 3 - Provenance for every generated triple (Priority: P2)
+### User Story 3 - Provenance for every derived assertion (Priority: P2)
 
 When the indexer derives a triple from a bible file, it also records *where that
 assertion came from* — the source file path, and the line when the value can be
@@ -236,6 +236,12 @@ outcome.
 - **Frontmatter key not recognised by the entity's mapping**: ignored without
   failing the file (an unknown key is not the same as invalid frontmatter), and
   noted so the author can spot typos.
+- **Participant reference that resolves to no character** — a `participants:`
+  entry in `timeline.md`/`relationships.md` whose name matches no character slug
+  built in the same run: the event/relationship is still created, the dangling
+  participation edge is omitted, and the unresolved reference is recorded in the
+  build report (it does not skip the file or fail the build; semantic coherence
+  is iteration 10).
 - **Running outside a Bookwright project** (no `manifest.toml`): clear error
   telling the user they are not inside a project.
 
@@ -245,7 +251,8 @@ outcome.
 
 - **FR-001**: The system MUST provide a `bookwright graph build` command that
   reads the current project's `bible/` (and `manuscript/`) markdown, extracts
-  GOLEM model instances, and writes all resulting triples to `bible/graph.ttl`.
+  GOLEM model instances, and writes all resulting triples to the Turtle file
+  configured at `manifest.toml > [paths] graph` (default `bible/graph.ttl`).
 - **FR-002**: `graph build` MUST accept a `--force` flag that rebuilds the graph
   from scratch, ignoring any cache.
 - **FR-003**: The system MUST provide a `bookwright graph query "<SPARQL>"`
@@ -284,9 +291,13 @@ outcome.
   iteration-5 GOLEM typed model was completed (on `main`) to construct/emit these
   and is consumed as-is here (see plan R1a); no class or predicate outside
   `frozen_terms()` is introduced.
-- **FR-011**: Every generated triple MUST carry a corresponding Attribute
-  Assignment that points to the source file, and to the line within that file
-  when the value can be located to a specific line.
+- **FR-011**: Every derived attribute assertion — the identity assertion and
+  each feature, narrative role, birth/death, and participation — MUST carry a
+  corresponding Attribute Assignment that points to the source file, and to the
+  line within that file when the value can be located to a specific line. (The
+  internal sub-triples a single assertion materializes — e.g. the dimension and
+  type nodes of a birth year — trace through their parent assertion's
+  assignment; an Attribute Assignment is minted per assertion, not per triple.)
 - **FR-012**: If `bible/` or `manuscript/` does not exist, `graph build` MUST
   fail with a clear error naming the missing directory and MUST NOT write a
   partial graph.
@@ -305,9 +316,17 @@ outcome.
   line (no write-back) beyond `build` (re)writing `bible/graph.ttl`, and MUST NOT
   perform semantic coherence validation (that is iteration 10).
 - **FR-018**: `graph build` MUST report a summary of the run — number of source
-  files processed, number of entities/triples produced, and number of skipped
-  files — in human-readable form on stderr and, when `--json` is provided, as a
-  single JSON document on stdout.
+  files processed, number of entities/triples produced, skipped files (with
+  reasons), unrecognised frontmatter keys, and unresolved participant references
+  — in human-readable form on stderr and, when `--json` is provided, as a single
+  JSON document on stdout.
+- **FR-019**: When a `participants:` entry in `timeline.md` or
+  `relationships.md` names no character built in the same run, `graph build`
+  MUST still create the event/relationship, omit only the dangling participation
+  edge, and record the unresolved reference (source file, owning entity, and the
+  unresolved name) in the build report — without skipping the file or failing
+  the build. (Deeper referential/semantic coherence is iteration 10, per FR-017;
+  an unresolved participant is a soft warning, not a build failure.)
 
 ### Key Entities
 
@@ -322,7 +341,8 @@ outcome.
 - **Attribute Assignment (provenance record)**: ties a derived attribute to its
   source file (and line when known), per the iteration-5 domain model.
 - **Build Report**: the per-run summary — files processed, triples written,
-  skipped files with reasons, collisions.
+  skipped files with reasons, unrecognised frontmatter keys, unresolved
+  participant references, collisions.
 - **Query Result**: the rows returned by a SPARQL query, renderable as a table
   or as the `--json` document.
 
@@ -343,8 +363,10 @@ outcome.
   failure with its reason — no silent data loss.
 - **SC-005**: A slug collision is detected and reported 100% of the time and
   never results in a graph that silently merges two distinct entities.
-- **SC-006**: 100% of triples derived from the bible have an associated Attribute
-  Assignment naming their source file.
+- **SC-006**: 100% of derived attribute assertions (the identity assertion and
+  each feature/role/birth-death/participation) have an associated Attribute
+  Assignment naming their source file — no derived assertion is left without
+  provenance.
 - **SC-007**: Switching the engine name in the manifest, or adding a new engine
   to the registry, requires zero edits to the `build`/`query` command code.
 
@@ -364,22 +386,24 @@ outcome.
   (`load`, `save`, `add_triple`, `query`, `construct`, `count`); `GrafeoIndexer`
   is a deferred stub (v0.3) and MUST NOT be implemented here.
 - **Manifest is available**: iteration 2's manifest model supplies
-  `[bookwright] uri_base` and `[bookwright] indexer`; this iteration reads them
-  and does not re-validate `uri_base`.
-- **Recognised bible subdirectories**: `characters/`, `settings/`, `timeline/`,
-  and `relationships/` (per design § 7), each mapping to a GOLEM concept.
-  Character frontmatter is the documented schema; the other types follow the
-  analogous frontmatter-to-property mapping for their GOLEM module. *(The exact
-  frontmatter schema for non-character types is a likely clarification target.)*
+  `[bookwright] uri_base`, `[bookwright] indexer`, and `[paths] graph` (default
+  `bible/graph.ttl`); this iteration reads them and does not re-validate
+  `uri_base`.
+- **Recognised bible layout**: one-entity-per-file under `characters/` (→
+  Character) and `settings/` (→ Setting), plus the single collection files
+  `timeline.md` (→ Narrative Events) and `relationships.md` (→ Social
+  Relationships) — per design § 7 / FR-009, matching what `bookwright init`
+  scaffolds. Character frontmatter is the documented schema; the non-character
+  schemas are fixed in [contracts/bible-format.md](contracts/bible-format.md).
 - **Manuscript role in this iteration**: `manuscript/` is read so its presence is
   required and so provenance can reference manuscript lines; deep prose mining
   (NLP, mention extraction) is **not** in scope — entity extraction is driven by
-  bible frontmatter. *(How much, if anything, is extracted from manuscript prose
-  is a likely clarification target.)*
-- **Cache semantics**: a `.bookwright/cache/` may speed up rebuilds; `--force`
-  bypasses it. The precise default (incremental vs. always-full) behaviour is a
-  likely clarification target; the conservative default is a full rebuild every
-  time, with caching as an optimisation that never changes output.
+  bible frontmatter. Resolved: v0 performs a presence-only check on
+  `manuscript/` and extracts nothing from its prose (plan / out of scope).
+- **Cache semantics**: Resolved — v0 writes **no** cache and always performs a
+  full rebuild (plan / Constitution Principle I). `--force` is accepted for
+  forward-compatibility but is a no-op in v0 (there is nothing to bypass); any
+  future cache must be deterministically rebuildable and never change output.
 - **`graph query` supports SELECT at minimum**: ASK/CONSTRUCT handling, if
   included, follows the same stdout/stderr and `--json` contract.
 - **Commands run from the project root**, locating the project via `manifest.toml`

@@ -73,7 +73,10 @@ events:
 ---
 ```
 Each item → `<E> a golem:G5_Narrative_Event` + `<E> dlp:participant <C>` per
-participant (resolved by character slug; unresolved name → recorded, edge skipped).
+participant (resolved by character slug). A name matching no built character is
+recorded in the report's `unresolved_participants` (`{path, entity, name}`) and
+its `dlp:participant` edge is omitted; the event itself is still created
+(FR-019, soft warning).
 
 ## `bible/relationships.md` → many `golem:G4_Social_Relationship`
 ```yaml
@@ -88,7 +91,10 @@ Each item → `<R> a golem:G4_Social_Relationship` + `<R> dlp:participant <C>`.
 ---
 
 ## Resolution & collisions
-- Participant references resolve by character slug within the same build.
+- Participant references resolve by character slug within the same build
+  (characters are constructed first, then participants are looked up). A
+  reference that resolves to no character is recorded in
+  `unresolved_participants` and its edge is omitted — non-fatal (FR-019).
 - Two entities of the same concept whose `name` slugifies identically →
   `slug_collision` (fatal, FR-014).
 - Empty recognised dirs/files → zero entities (valid; empty graph).

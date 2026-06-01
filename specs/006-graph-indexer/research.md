@@ -185,9 +185,9 @@ originating frontmatter key is locatable. The entity's own identity assertion
 also carries a file-level assignment.
 
 **Rationale**: under the corrected R1 there *are* real attribute nodes, so
-provenance attaches to each one — satisfying SC-006 ("100% of triples derived
-from the bible have an associated Attribute Assignment naming their source
-file") with genuine granularity. Line precision is best-effort from the
+provenance attaches to each one — satisfying SC-006 ("100% of derived attribute
+assertions have an associated Attribute Assignment naming their source file")
+with genuine granularity (one assignment per assertion, not per sub-triple). Line precision is best-effort from the
 frontmatter reader's `key_lines`. `uuid7` identity reused from iteration 5.
 
 ---

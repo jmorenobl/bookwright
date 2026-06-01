@@ -106,6 +106,13 @@ emits the triples (§0). The mapper never assembles feature/role/dimension nodes
 
 - **Unknown keys** (not in a concept's recognised set) → ignored, recorded in
   the report's `unknown_keys` (edge case; typo aid).
+- **Unresolved participants** (a `participants:` name matching no character slug
+  built in the same run) → the entity is still constructed, only that
+  participation edge is omitted, and the reference is recorded in the report's
+  `unresolved_participants` (FR-019; soft warning, not a skip or failure).
+  Resolution is a single in-build pass: characters are constructed first to
+  populate a `slug → Character URI` index, then `events:`/`relationships:`
+  participants are looked up against it.
 - The `events:` / `relationships:` collection-item schema is fixed in
   [contracts/bible-format.md](contracts/bible-format.md).
 
@@ -145,9 +152,17 @@ Emitted alongside the entity triples so SC-006 holds for every derived entity.
 | `triples` | `int` | `engine.count()` after build. |
 | `skipped` | `list[SkippedFile]` | `{path, reason}` (FR-013). |
 | `unknown_keys` | `list[UnknownKey]` | `{path, key}`. |
+| `unresolved_participants` | `list[UnresolvedParticipant]` | `{path, entity, name}` — a `participants:` reference that matched no character slug; the edge is omitted, the entity kept (FR-019). |
 | `graph_path` | `str` | Relative path of written `bible/graph.ttl`. |
 
+Supporting models (frozen pydantic): `SkippedFile{path, reason}`,
+`UnknownKey{path, key}`, `UnresolvedParticipant{path, entity, name}` — where
+`entity` is the owning event/relationship slug and `name` is the unresolved
+participant string.
+
 `status` derived: `"ok"`; exit 0 when `skipped` empty, else exit 4 (R7).
+`unknown_keys` and `unresolved_participants` are soft warnings — they populate
+the report but never change the exit code.
 
 ---
 

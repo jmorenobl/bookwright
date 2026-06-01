@@ -20,13 +20,15 @@ Reads the current project's bible, builds the graph, writes `bible/graph.ttl`
 
 ### Success (stdout, `--json`)
 ```json
-{"status":"ok","files_processed":6,"entities":10,"triples":48,"skipped":[],"unknown_keys":[],"graph_path":"bible/graph.ttl"}
+{"status":"ok","files_processed":6,"entities":10,"triples":48,"skipped":[],"unknown_keys":[],"unresolved_participants":[],"graph_path":"bible/graph.ttl"}
 ```
-Human form (stderr): one summary line per metric.
+Human form (stderr): one summary line per metric. `unknown_keys` and
+`unresolved_participants` (FR-019) are soft warnings — populated when present but
+never changing the exit code.
 
 ### Completed with skipped files (FR-013, exit code **4**)
 ```json
-{"status":"ok","files_processed":6,"entities":9,"triples":44,"skipped":[{"path":"bible/characters/broken.md","reason":"invalid frontmatter: ..."}],"unknown_keys":[],"graph_path":"bible/graph.ttl"}
+{"status":"ok","files_processed":6,"entities":9,"triples":44,"skipped":[{"path":"bible/characters/broken.md","reason":"invalid frontmatter: ..."}],"unknown_keys":[],"unresolved_participants":[],"graph_path":"bible/graph.ttl"}
 ```
 `status` stays `"ok"` (valid files were processed) but a non-empty `skipped`
 array + exit 4 distinguish it from a clean build.
