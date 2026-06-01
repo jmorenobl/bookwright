@@ -48,13 +48,7 @@ def run(
     except ManifestError as exc:
         emit_error(error_payload("invalid_manifest", str(exc)), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
-    except ProjectNotFoundError as exc:
-        emit_error(exc.to_json(), json_output)
-        raise typer.Exit(EXIT_CONFIG) from exc
-    except MissingDirectoryError as exc:
-        emit_error(exc.to_json(), json_output)
-        raise typer.Exit(EXIT_CONFIG) from exc
-    except UnknownIndexerError as exc:
+    except (ProjectNotFoundError, MissingDirectoryError, UnknownIndexerError) as exc:
         emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except SlugCollisionError as exc:

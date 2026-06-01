@@ -37,6 +37,7 @@ array + exit 4 distinguish it from a clean build.
 | Code | Exit | When |
 |---|---|---|
 | `not_a_project` | 2 | No `manifest.toml` in cwd/ancestors. |
+| `invalid_manifest` | 2 | `manifest.toml` is present but malformed/unparseable. |
 | `missing_directory` | 2 | `bible/` or `manuscript/` absent (names which). |
 | `unknown_indexer` | 2 | Manifest names an unregistered engine (lists available). |
 | `slug_collision` | 3 | Two entities of one type share an identifier (names id + both paths). |
@@ -63,6 +64,7 @@ Loads `bible/graph.ttl` and runs the SPARQL query.
 | Code | Exit | When |
 |---|---|---|
 | `not_a_project` | 2 | No `manifest.toml`. |
+| `invalid_manifest` | 2 | `manifest.toml` is present but malformed/unparseable. |
 | `graph_not_built` | 2 | `bible/graph.ttl` missing → "run `graph build` first". |
 | `unknown_indexer` | 2 | Manifest names an unregistered engine. |
 | `invalid_query` | 3 | Malformed SPARQL; **no partial rows** emitted. |

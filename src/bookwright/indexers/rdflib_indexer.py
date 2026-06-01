@@ -80,8 +80,6 @@ class RdflibIndexer:
                 for row in result
                 if isinstance(row, ResultRow)
             ]
-        except InvalidQueryError:
-            raise
         except Exception as exc:  # rdflib raises a variety of parse errors
             raise InvalidQueryError(str(exc)) from exc
         return rows

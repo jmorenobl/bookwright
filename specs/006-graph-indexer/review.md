@@ -1,107 +1,90 @@
 # Quality Audit — 006-graph-indexer
 
-**Scope:** 18 in-scope source/test/config files vs `main` (graph commands, indexers, io package, `check.py`, `cli.py`)
-**Commit range:** `main`..`08538fc`
+**Scope:** 47 changed files vs `main` (source + tests + spec artifacts)
+**Commit range:** `main`..`1e1b7bd`
 **Date:** 2026-06-01
-**Conventions discovered:** `CLAUDE.md`, `.specify/memory/constitution.md` (v1.2.0), `pyproject.toml`
+**Conventions discovered:** `CLAUDE.md`, `.specify/memory/constitution.md` (v1.2.0), `CONTRIBUTING.md`
 
 ## 1. Summary
 
-| Severity | Count |
-|---|---|
-| CRITICAL | 0 |
-| HIGH | 0 |
-| MEDIUM | 4 |
-| LOW | 2 |
-| **Total** | 6 |
+| Severity | Found | Open |
+|---|---|---|
+| CRITICAL | 0 | 0 |
+| HIGH | 0 | 0 |
+| MEDIUM | 1 | 0 |
+| LOW | 3 | 1 |
+| **Total** | 4 | 1 |
 
-Coverage gate: **PASS** (aggregate 96.75% ≥ 80%; one in-scope module, `graph/envelope.py`, sits at 79% per-module — see R1).
-Lint / format / type gates: **PASS** (`ruff check`, `ruff format --check`, `mypy --strict` all clean on the 15 in-scope source files).
-Test suite: **515 passed**.
+Coverage gate: **PASS** (0 changed modules below threshold, threshold = 80%). Total line coverage 97.01%; every changed module ≥ 89%. 518 tests pass.
 
-This is a re-audit. The prior pass (`7424f23`) raised one finding (forbidden `US-x`/`T0xx` tags), resolved in `13df4f3`. No CRITICAL or HIGH findings remain; the implementation respects every NON-NEGOTIABLE principle.
+This re-audit follows the R1/R2/R3/R6 cleanup commits (`9ee662f`, `0d926b1`) and the iteration-10 plan insert (`1e1b7bd`). The branch is clean: no principle violation, no scope drift, no boundary-security issue.
+
+**Resolution (applied in this change):** R1, R2, and R4 were fixed in place — see the `Status` column in Section 3. The single remaining item (R3, `to_json` duplication) is intentionally deferred to iteration 10 (`BookwrightError` consolidation), so it is left open by design.
 
 ## 2. Conventions Compliance Matrix
 
 | Rule (verbatim ≤120 chars) | Source | Kind | Status | Evidence |
 |---|---|---|---|---|
-| "Every artifact … MUST be Markdown, TOML, or Turtle (RDF). Binary stores … forbidden as canonical storage" | `constitution.md:47` | layout | PASS | Graph serialized to `bible/graph.ttl` (Turtle); reports are JSON-on-stdout. No binary canonical store. |
-| "Introducing an additional runtime dependency requires an amendment to the dependency list" | `constitution.md:64` | dependency | PASS | `pyyaml` added to both `pyproject.toml` and the constitution's list (v1.1.0→1.2.0 amendment, Sync Impact Report). 11 deps match 1-to-1. |
-| "Runtime dependencies (minimum set): jinja2, packaging, … pyyaml, rdflib, rich, tomlkit, typer, uuid-utils" | `constitution.md:181` | dependency | PASS | `pyproject.toml [project].dependencies` is exactly this set, alphabetical. No extras. |
-| "All production code MUST live under `src/bookwright/`. All automated tests MUST live under `tests/`" | `constitution.md:72` | layout | PASS | All new modules under `src/bookwright/{commands/graph,indexers,io}`; all new tests under `tests/`. |
-| "Each CLI subcommand MUST live in its own module … No source file … may exceed 500 lines" | `constitution.md:83` | module-size | PASS | `graph build`/`query` in separate modules; largest in-scope file `io/bible.py` = 367 lines. All ≤500. |
-| "Integrations MUST be implemented as subclasses … A monolithic `AGENT_CONFIG`-style dispatcher is … forbidden" | `constitution.md:94` | plugin-shape | PASS | Engine seam uses the same shape: `INDEXER_REGISTRY` + `resolve_indexer`, no if/elif ladder (`indexers/__init__.py:20-33`). |
-| "Writing to `.claude/commands/`, `.agents/commands/`, or any analogous … directory is prohibited" | `constitution.md:107` | directory-ban | N/A | Iteration 6 emits no skills/commands. No writes to any banned directory in scope. |
-| "v0 MUST hold a minimum of 80% line coverage across `src/bookwright/`" | `constitution.md:135` | coverage-threshold | PASS | Aggregate 96.75%. (Rule is aggregate "across src/bookwright/", which passes; see R1 for the one sub-80% module.) |
-| "CI MUST run pytest, ruff, and mypy strict on every push … a red bar blocks merge" | `constitution.md:140` | coverage-threshold | PASS | All four gates green locally on the in-scope files. |
-| "Any CLI command … MUST accept a `--json` flag and … emit a single well-formed JSON document on stdout and nothing else" | `constitution.md:148` | io-contract | PASS | `graph build`/`query` honor it; `emit_json` writes one separator-compact line to stdout, all prose to `Console(stderr=True)`. Asserted by `test_json_contract.py`. |
-| "Exit codes MUST be non-zero on error even when `--json` is set" | `constitution.md:153` | io-contract | PASS | Both verbs raise `typer.Exit(2/3/4)` while still emitting the JSON error envelope; `test_query_error_json_only_on_stdout` checks exit 2 + error doc. |
-| "GrafeoIndexer and vector search — v0.3 … MUST NOT be pulled into v0 scope" | `constitution.md:200` | scope-ban | PASS | `GrafeoIndexer` appears only as a comment stating it is *intentionally not registered* (`indexers/__init__.py:4`). No plumbing for it. |
-| "These [§16 axioms] MUST NOT be reopened … rdflib over Grafeo in v0" | `constitution.md:159` | scope-ban | PASS | `RdflibIndexer` is the sole registry entry; no Grafeo code path. |
-| Spec Kit ordered workflow: specify → clarify → plan → tasks → analyze → implement | `CLAUDE.md` | workflow-step | PASS | spec.md, plan.md, tasks.md, research.md, data-model.md, contracts/, checklists/ all present and committed on branch (A.4). |
-| Governance / feature dir tracked in git | `CLAUDE.md` | track-integrity | PASS | All `specs/006-graph-indexer/*` and `src`/`tests` files appear in `git diff main...HEAD`; working tree clean (A.3). |
+| "Every artifact … MUST be Markdown, TOML, or Turtle (RDF). Binary stores … forbidden as canonical storage" | `.specify/memory/constitution.md:47` | layout | PASS | Graph serialized to `bible/graph.ttl` (Turtle); reports are Pydantic→JSON/stderr. No binary canonical store added. |
+| "Introducing an additional runtime dependency requires an amendment to the dependency list" | `.specify/memory/constitution.md:64` | dependency | PASS | `pyyaml>=6.0` added (`pyproject.toml:26`); matches constitution v1.2.0 amendment. Runtime deps are an exact match of the allowed set. |
+| "All production code MUST live under `src/bookwright/`. All automated tests MUST live under `tests/`" | `.specify/memory/constitution.md:72` | layout | PASS | New source under `src/bookwright/{commands/graph,indexers,io}`; new tests under `tests/`. |
+| "Each CLI subcommand MUST live in its own module … No source file … may exceed 500 lines" | `.specify/memory/constitution.md:83` | module-size | PASS | `graph build`/`query` in own modules; `cli.py` 17 lines. Largest changed file `io/bible.py` = 386 lines. |
+| "Integrations MUST be … registered in `INTEGRATION_REGISTRY` … `AGENT_CONFIG`-style dispatcher … forbidden" | `.specify/memory/constitution.md:94` | plugin-shape | PASS (analogous) | No integration code touched. New engine seam uses the same shape: `INDEXER_REGISTRY` + `resolve_indexer` (`indexers/__init__.py:20`); no if/elif dispatcher. |
+| "Bookwright MUST emit Agent Skills … Writing to `.claude/commands/` … is prohibited" | `.specify/memory/constitution.md:106` | directory-ban | N/A | No skills emitted and no `commands/` directory written this iteration. |
+| "Every generated `SKILL.md` MUST satisfy the agentskills.io specification" | `.specify/memory/constitution.md:119` | frontmatter-constraint | N/A | No `SKILL.md` generated this iteration. |
+| "v0 MUST hold a minimum of 80% line coverage across `src/bookwright/`" | `.specify/memory/constitution.md:135` | coverage-threshold | PASS | 96.98% total; every changed module ≥ 89%. |
+| "MUST accept a `--json` flag … single … JSON document on stdout and nothing else" | `.specify/memory/constitution.md:148` | io-contract | PASS | `build`/`query` accept `--json`; `envelope.emit_json` writes one doc to stdout; prose via `Console(stderr=True)`. `test_json_contract.py` asserts stdout purity. |
+| "rdflib over Grafeo in v0 … GrafeoIndexer … MUST NOT be reopened" | `.specify/memory/constitution.md:159` | scope-ban | PASS | `GrafeoIndexer` not registered; explicitly noted as deferred (`indexers/__init__.py:4-6`). No vector-search plumbing. |
+| "Forbidden in source/tests: `US-x` / `+USx` … `T0xx` task IDs" | `CONTRIBUTING.md:58` | other | PASS | `grep -E '(US-[0-9]|T[0-9]{3})'` over changed src/tests → no matches. |
+| Workflow: `specify → clarify → plan → tasks → analyze → implement` | `CLAUDE.md` | workflow-step | PASS | All artifacts present: `spec.md`, `research.md`, `plan.md`, `tasks.md`, `review.md`, source under `src/`. Trail intact. |
+| Governance artifacts tracked in branch | `CLAUDE.md` | track-integrity | PASS | All `specs/006-graph-indexer/**` files appear in `git diff main...HEAD`; working tree clean (`git status` empty). No untracked/staged-only governance file. |
 
-Every `FAIL` would have a Section 3 row; there are none. The single sub-threshold module is recorded as MEDIUM (R1), not a convention FAIL, because the binding rule is aggregate.
+Status values: `PASS`, `FAIL`, `N/A`. No `FAIL` rows.
 
 ## 3. Findings
 
-| ID | Pass | Severity | Location | Summary | Recommendation |
-|---|---|---|---|---|---|
-| R1 | D | MEDIUM | src/bookwright/commands/graph/envelope.py:24,34 | Module at 79% line coverage; the `details` branch of `error_payload` and the human-stderr branch of `emit_error` are unexercised | Add one test for `--json` off (stderr `bookwright: error:` line) and one passing `details=` to `error_payload`. |
-| R2 | B/C | MEDIUM | src/bookwright/indexers/base.py:49 | `Indexer.construct()` + its `RdflibIndexer` impl have no v0 caller (only a unit test); expands the "stable seam" every future engine must implement for zero current consumers | Drop `construct()` from the protocol until a command needs it (YAGNI), or document the consumer that justifies it. |
-| R3 | B | MEDIUM | src/bookwright/io/bible.py:211,250,285 | Data clump: `(project_root, result, collisions, slug_index)` threads through three helpers with 8–9 params each (3× `# noqa: PLR0913`) | Introduce a small `_MapContext` dataclass holding the shared mapping state; pass one object instead of re-threading four args. |
-| R4 | B | MEDIUM | src/bookwright/io/errors.py:31 | `to_json()` is hand-rolled identically across `io/errors.py` + `indexers/errors.py` (and the pre-existing `core`/`golem` error modules) — 4 parallel hierarchies | Extract a shared base (e.g. `BookwrightError` with `code`/`message`/`details` → templated `to_json`). Cross-iteration refactor — see Next Actions, not this PR. |
-| R5 | B | LOW | src/bookwright/commands/graph/build.py:37 | `--force` is a documented no-op in v0 (dead parameter) | Acceptable as forward-compat (contract-documented, idempotency-tested). No action required; listed for visibility. |
-| R6 | B | LOW | src/bookwright/io/bible.py:218,259,294 | `builder`/`factory`/`frontmatter` params typed `Any`, silently disabling `mypy --strict` at those call seams | Type as `Callable[[dict[str, Any], str], GolemEntity]` / `Callable[..., GolemEntity]` / `Frontmatter` for real strictness. |
+| ID | Pass | Severity | Status | Location | Summary | Recommendation |
+|---|---|---|---|---|---|---|
+| R1 | B | MEDIUM | ✅ RESOLVED | src/bookwright/commands/graph/build.py:51 | Three identical `except` blocks (`ProjectNotFoundError`, `MissingDirectoryError`, `UnknownIndexerError`) each `emit_error(exc.to_json(), …); raise typer.Exit(EXIT_CONFIG)` | Collapsed into one tuple-`except`, matching sibling `query.py:49-56`. |
+| R2 | A | LOW | ✅ RESOLVED | specs/006-graph-indexer/contracts/cli-graph.md | `error_payload("invalid_manifest", …)` emitted a `code` not enumerated in the `cli-graph.md` error tables | Added `invalid_manifest` (exit 2) to the build and query error tables. |
+| R3 | B | LOW | ⏳ DEFERRED | src/bookwright/indexers/errors.py (+ io/errors.py, core, golem) | Four error modules hand-roll the same `to_json()` `{status,code,message,details}` envelope | No action this PR — scheduled as **iteration 10** (`BookwrightError` consolidation, commit `1e1b7bd`). Left open by design. |
+| R4 | B | LOW | ✅ RESOLVED | src/bookwright/indexers/rdflib_indexer.py:83 | `except InvalidQueryError: raise` was dead — nothing in the `try` raised it before the following `except Exception` wraps rdflib errors | Removed the dead re-raise. |
+
+(IDs stable, sorted severity desc, file asc, line asc.)
 
 ## 4. Remediation Detail
 
-No CRITICAL or HIGH findings require pre-merge remediation. The MEDIUM items below are quality improvements; none block merge.
+### R1 — Duplicated exit-2 exception handlers in `graph build` (✅ RESOLVED)
 
-### R1 — `graph/envelope.py` two uncovered branches
-
-- **Where:** `src/bookwright/commands/graph/envelope.py:24` (`payload["details"] = details`) and `:34` (the `sys.stderr.write("bookwright: error: …")` non-`--json` branch).
-- **Why it matters:** Principle VIII's gate is aggregate (96.75%, passes), but the *human-mode* error path is the one a developer sees at the terminal and it currently has no test. A regression that broke the stderr formatting would ship green.
-- **Suggested change:** in `tests/commands/graph/`, invoke a failing command **without** `--json` and assert `result.stderr.startswith("bookwright: error:")`; add a direct unit test `error_payload("x", "y", {"k": 1})["details"] == {"k": 1}`.
-
-### R2 — `Indexer.construct()` is speculative seam
-
-- **Where:** `src/bookwright/indexers/base.py:49` (protocol) and `src/bookwright/indexers/rdflib_indexer.py:89-98` (impl, with a `# pragma: no cover` defensive branch).
-- **Why it matters:** the `Indexer` protocol is explicitly "the stable engine seam build/query depend on." Neither `graph build` nor `graph query` calls `construct()`; only `test_rdflib_indexer.py` does. Every future engine (the deferred Grafeo) is now contractually obliged to implement a method nothing consumes — the exact "speculative generality" the constitution's Scope section warns against.
-- **Suggested change:** remove `construct()` from `base.Indexer` and `RdflibIndexer` until a command (likely iteration 10 validation) actually needs CONSTRUCT, then re-add it with its consumer. If it must stay, add a one-line comment naming the iteration that will use it.
-
-### R3 — `io/bible.py` mapping helpers share a data clump
-
-- **Where:** `src/bookwright/io/bible.py:211` (`_map_single_dir`), `:250` (`_map_collection`), `:285` (`_map_collection_item`).
-- **Why it matters:** the same four values — `project_root`, `result`, `collisions`, and the `slug_index` — travel together through every helper, forcing 8–9-parameter signatures the author had to silence with `# noqa: PLR0913` three times. That is the textbook data-clump / long-parameter-list smell; the suppressions document the tension rather than resolving it.
-- **Suggested change:** add `@dataclass class _MapContext: project_root: Path; result: MapResult; collisions: _Collisions; slug_index: dict[str, URIRef] | None`, build it once in `map_bible`, and pass it as a single argument. The per-call `concept`/`allowed_keys`/`factory` stay as explicit params. This removes all three `noqa`s.
-
-### R4 — `to_json()` duplicated across error hierarchies
-
-- **Where:** `src/bookwright/io/errors.py:31` and `src/bookwright/indexers/errors.py:33` (plus the pre-existing `core/errors.py`, `golem/errors.py`). Each error class repeats `{"status":"error","code":self.code,"message":self.message,"details":{…}}`.
-- **Why it matters:** four parallel hierarchies hand-roll the identical envelope shape (the module docstrings even say they "mirror" one another). A change to the error contract is shotgun surgery across four files. Crossed the 3-occurrence DRY threshold.
-- **Suggested change:** a shared `BookwrightError(Exception)` base with `code: ClassVar[str]`, `message: str`, optional `details: dict`, and one `to_json()` built from those. **This touches pre-existing `core`/`golem` code, so it belongs in a dedicated refactor PR, not iteration 6** — see Next Actions §3.
+- **Where:** `src/bookwright/commands/graph/build.py:51`
+- **Why it matters:** the three blocks were byte-for-byte identical apart from the caught type, while the sibling command `query.py:49-56` already handles its exit-2 family as a single tuple-`except`. A future change to exit-2 handling would have needed three edits here but one in `query.py`.
+- **Applied:** the three blocks were collapsed into:
+  ```python
+  except (ProjectNotFoundError, MissingDirectoryError, UnknownIndexerError) as exc:
+      emit_error(exc.to_json(), json_output)
+      raise typer.Exit(EXIT_CONFIG) from exc
+  ```
+  `ManifestError` (different payload builder) and `SlugCollisionError` (exit 3) remain their own blocks.
 
 ## 5. Coverage Detail
 
 | Module | Coverage | Threshold | Status |
 |---|---|---|---|
-| commands/check.py | 96% | 80% | PASS |
 | commands/graph/build.py | 89% | 80% | PASS |
-| commands/graph/envelope.py | 79% | 80% (aggregate) | sub-module (R1) |
+| commands/graph/envelope.py | 100% | 80% | PASS |
 | commands/graph/query.py | 94% | 80% | PASS |
 | indexers/base.py | 100% | 80% | PASS |
 | indexers/errors.py | 100% | 80% | PASS |
-| indexers/rdflib_indexer.py | 94% | 80% | PASS |
-| io/bible.py | 91% | 80% | PASS |
+| indexers/rdflib_indexer.py | 98% | 80% | PASS |
+| io/bible.py | 92% | 80% | PASS |
 | io/errors.py | 98% | 80% | PASS |
 | io/frontmatter.py | 100% | 80% | PASS |
 | io/manuscript.py | 100% | 80% | PASS |
 | io/project.py | 100% | 80% | PASS |
 | io/report.py | 100% | 80% | PASS |
-| **Aggregate (src/bookwright)** | **96.75%** | **80%** | **PASS** |
+| **TOTAL (repo)** | **96.98%** | 80% | PASS |
 
 ## 6. Inability-to-verify notes
 
-- **TDD ordering (Pass D heuristic):** implementation and tests for each graph/indexer module landed in the same commit (`7424f23`), so the impl-before-test heuristic cannot be evaluated — no signal either way.
-- **Boundary security:** no path-traversal, injection, unsafe-deserialization, or hardcoded-secret risk found. `frontmatter.py` uses `yaml.safe_load`; no `shell=True`/`eval`/`exec`/`pickle` anywhere in scope. SPARQL passed to `graph query` is intentional read-only user input (mutation-free, asserted by `test_query_does_not_mutate_the_graph`); not a finding.
+- **Security boundary (informational, not a finding):** `manifest.paths.{graph,bible,manuscript}` are joined to the project root and could in principle point outside it via `..`. This is an author-controlled local file (same trust domain), not a path-traversal vector at a hostile-input boundary; manifest validation lives in iteration 002's model. No action.
+- No runner/dependency gaps: `uv run pytest` ran cleanly with coverage; all four CI gates reproduce locally.
