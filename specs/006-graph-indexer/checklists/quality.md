@@ -1,5 +1,5 @@
 # Quality Audit Checklist
 
-Source: review.md (7424f23)
+Source: review.md (08538fc)
 
-- [x] R1 — Forbidden `US-x`/`T0xx` planning tags in source & tests (src/bookwright/commands/graph/__init__.py:19 + 6 test files) — resolved: tags swapped for FR/SC equivalents.
+- [X] No CRITICAL or HIGH findings. 4 MEDIUM + 2 LOW recorded in review.md §3 — quality improvements, none block merge.

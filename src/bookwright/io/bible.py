@@ -9,7 +9,7 @@ frontmatter is unusable (FR-013), and raises on a slug collision (FR-014).
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -29,7 +29,7 @@ from bookwright.golem.base import GolemEntity
 from bookwright.golem.slug import make_slug
 
 from .errors import InvalidFrontmatterError, SlugCollisionError
-from .frontmatter import parse_frontmatter
+from .frontmatter import Frontmatter, parse_frontmatter
 from .report import SkippedFile, UnknownKey, UnresolvedParticipant
 
 CHARACTER_KEYS = frozenset({"name", "born", "died", "features", "narrative_roles"})
@@ -37,6 +37,12 @@ SETTING_KEYS = frozenset({"name"})
 ITEM_KEYS = frozenset({"name", "participants"})
 TIMELINE_TOP_KEYS = frozenset({"events"})
 RELATIONSHIPS_TOP_KEYS = frozenset({"relationships"})
+
+# A directory builder maps ``(frontmatter, relpath) → entity``; a collection
+# factory maps ``(name, participants) → entity``. Typed so ``mypy --strict``
+# checks every call site (rather than the previous ``Any`` escape hatch).
+_Builder = Callable[[dict[str, Any], str], GolemEntity]
+_Factory = Callable[[str, tuple[URIRef, ...]], GolemEntity]
 
 
 @dataclass(frozen=True)
@@ -76,6 +82,44 @@ class _Collisions:
         self._seen[(concept, slug)] = relpath
 
 
+@dataclass
+class _MapContext:
+    """The mutable state every mapping helper shares (R3).
+
+    Bundling ``project_root``, the accumulating ``result``, the collision
+    tracker, and the ``slug → URI`` index into one object keeps each helper's
+    signature small — the four used to be threaded positionally through every
+    function.
+    """
+
+    project_root: Path
+    result: MapResult
+    collisions: _Collisions
+    slug_index: dict[str, URIRef]
+
+
+@dataclass(frozen=True)
+class _DirSpec:
+    """Per-concept config for a one-entity-per-file directory (characters/settings)."""
+
+    directory: Path
+    concept: str
+    builder: _Builder
+    allowed_keys: frozenset[str]
+    index: bool  # whether built entities feed the participant-resolution index
+
+
+@dataclass(frozen=True)
+class _CollectionSpec:
+    """Per-concept config for a single collection file (timeline/relationships)."""
+
+    path: Path
+    concept: str
+    top_keys: frozenset[str]
+    container: str
+    factory: _Factory
+
+
 def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
     """Map every recognised bible file under ``bible_dir`` to GOLEM entities.
 
@@ -84,57 +128,58 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
     first so ``events:`` / ``relationships:`` participants resolve against a
     ``slug → URI`` index in a single pass.
     """
-    result = MapResult()
-    collisions = _Collisions()
-    slug_to_uri: dict[str, URIRef] = {}
+    ctx = _MapContext(
+        project_root=project_root,
+        result=MapResult(),
+        collisions=_Collisions(),
+        slug_index={},
+    )
 
     _map_single_dir(
-        bible_dir / "characters",
-        project_root,
-        result,
-        collisions,
-        concept="Character",
-        builder=lambda meta, rp: _build_character(uri_base, meta),
-        slug_index=slug_to_uri,
-        allowed_keys=CHARACTER_KEYS,
+        ctx,
+        _DirSpec(
+            directory=bible_dir / "characters",
+            concept="Character",
+            builder=lambda meta, rp: _build_character(uri_base, meta),
+            allowed_keys=CHARACTER_KEYS,
+            index=True,
+        ),
     )
     _map_single_dir(
-        bible_dir / "settings",
-        project_root,
-        result,
-        collisions,
-        concept="Setting",
-        builder=lambda meta, rp: Setting(uri_base=uri_base, name=_require_name(meta)),
-        slug_index=None,
-        allowed_keys=SETTING_KEYS,
+        ctx,
+        _DirSpec(
+            directory=bible_dir / "settings",
+            concept="Setting",
+            builder=lambda meta, rp: Setting(uri_base=uri_base, name=_require_name(meta)),
+            allowed_keys=SETTING_KEYS,
+            index=False,
+        ),
     )
     _map_collection(
-        bible_dir / "timeline.md",
-        project_root,
-        result,
-        collisions,
-        concept="NarrativeEvent",
-        top_keys=TIMELINE_TOP_KEYS,
-        container="events",
-        factory=lambda name, participants: NarrativeEvent(
-            uri_base=uri_base, name=name, participants=participants
+        ctx,
+        _CollectionSpec(
+            path=bible_dir / "timeline.md",
+            concept="NarrativeEvent",
+            top_keys=TIMELINE_TOP_KEYS,
+            container="events",
+            factory=lambda name, participants: NarrativeEvent(
+                uri_base=uri_base, name=name, participants=participants
+            ),
         ),
-        slug_index=slug_to_uri,
     )
     _map_collection(
-        bible_dir / "relationships.md",
-        project_root,
-        result,
-        collisions,
-        concept="SocialRelationship",
-        top_keys=RELATIONSHIPS_TOP_KEYS,
-        container="relationships",
-        factory=lambda name, participants: SocialRelationship(
-            uri_base=uri_base, name=name, participants=participants
+        ctx,
+        _CollectionSpec(
+            path=bible_dir / "relationships.md",
+            concept="SocialRelationship",
+            top_keys=RELATIONSHIPS_TOP_KEYS,
+            container="relationships",
+            factory=lambda name, participants: SocialRelationship(
+                uri_base=uri_base, name=name, participants=participants
+            ),
         ),
-        slug_index=slug_to_uri,
     )
-    return result
+    return ctx.result
 
 
 def build_provenance(mapped: MappedEntity, uri_base: str) -> Iterable[AttributeAssignment]:
@@ -169,11 +214,11 @@ def _require_name(metadata: dict[str, Any]) -> str:
 
 
 def _record_unknown_keys(
-    metadata: dict[str, Any], allowed: frozenset[str], relpath: str, result: MapResult
+    ctx: _MapContext, metadata: dict[str, Any], allowed: frozenset[str], relpath: str
 ) -> None:
     for key in metadata:
         if key not in allowed:
-            result.unknown_keys.append(UnknownKey(path=relpath, key=key))
+            ctx.result.unknown_keys.append(UnknownKey(path=relpath, key=key))
 
 
 def _build_character(uri_base: str, metadata: dict[str, Any]) -> Character:
@@ -208,117 +253,91 @@ def _coerce_str_list(value: Any, field_name: str) -> tuple[str, ...]:
     return tuple(value)
 
 
-def _map_single_dir(  # noqa: PLR0913 - one cohesive mapping step; splitting hurts clarity
-    directory: Path,
-    project_root: Path,
-    result: MapResult,
-    collisions: _Collisions,
-    *,
-    concept: str,
-    builder: Any,
-    slug_index: dict[str, URIRef] | None,
-    allowed_keys: frozenset[str],
-) -> None:
-    if not directory.is_dir():
+def _map_single_dir(ctx: _MapContext, spec: _DirSpec) -> None:
+    if not spec.directory.is_dir():
         return
-    for path in sorted(directory.glob("*.md")):
-        relpath = _relpath(path, project_root)
-        result.files_processed += 1
-        frontmatter = _safe_parse(path, relpath, result)
+    for path in sorted(spec.directory.glob("*.md")):
+        relpath = _relpath(path, ctx.project_root)
+        ctx.result.files_processed += 1
+        frontmatter = _safe_parse(ctx, path, relpath)
         if frontmatter is None:
             continue
         try:
-            entity = builder(frontmatter.metadata, relpath)
-            collisions.record(concept, _slug_of(entity), relpath)
+            entity = spec.builder(frontmatter.metadata, relpath)
+            ctx.collisions.record(spec.concept, _slug_of(entity), relpath)
         except InvalidFrontmatterError as exc:
-            result.skipped.append(SkippedFile(path=relpath, reason=exc.reason))
+            ctx.result.skipped.append(SkippedFile(path=relpath, reason=exc.reason))
             continue
         except EmptySlugError as exc:
-            result.skipped.append(SkippedFile(path=relpath, reason=exc.message))
+            ctx.result.skipped.append(SkippedFile(path=relpath, reason=exc.message))
             continue
         # Only record soft warnings once the file actually produced an entity, so a
         # subsequently skipped file never contributes `unknown_keys` (report stays
         # consistent: a skipped file shows up only under `skipped`).
-        _record_unknown_keys(frontmatter.metadata, allowed_keys, relpath, result)
-        if slug_index is not None:
-            slug_index[_slug_of(entity)] = entity.uri
-        result.mapped.append(
+        _record_unknown_keys(ctx, frontmatter.metadata, spec.allowed_keys, relpath)
+        if spec.index:
+            ctx.slug_index[_slug_of(entity)] = entity.uri
+        ctx.result.mapped.append(
             MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
         )
 
 
-def _map_collection(  # noqa: PLR0913 - one cohesive mapping step; splitting hurts clarity
-    path: Path,
-    project_root: Path,
-    result: MapResult,
-    collisions: _Collisions,
-    *,
-    concept: str,
-    top_keys: frozenset[str],
-    container: str,
-    factory: Any,
-    slug_index: dict[str, URIRef],
-) -> None:
-    if not path.is_file():
+def _map_collection(ctx: _MapContext, spec: _CollectionSpec) -> None:
+    if not spec.path.is_file():
         return
-    relpath = _relpath(path, project_root)
-    result.files_processed += 1
-    frontmatter = _safe_parse(path, relpath, result)
+    relpath = _relpath(spec.path, ctx.project_root)
+    ctx.result.files_processed += 1
+    frontmatter = _safe_parse(ctx, spec.path, relpath)
     if frontmatter is None:
         return
-    _record_unknown_keys(frontmatter.metadata, top_keys, relpath, result)
-    items = frontmatter.metadata.get(container, [])
+    _record_unknown_keys(ctx, frontmatter.metadata, spec.top_keys, relpath)
+    items = frontmatter.metadata.get(spec.container, [])
     if not isinstance(items, list):
-        result.skipped.append(SkippedFile(path=relpath, reason=f"`{container}` must be a list"))
+        ctx.result.skipped.append(
+            SkippedFile(path=relpath, reason=f"`{spec.container}` must be a list")
+        )
         return
     for item in items:
         if not isinstance(item, dict):
-            result.skipped.append(
-                SkippedFile(path=relpath, reason=f"each `{container}` item must be a mapping")
+            ctx.result.skipped.append(
+                SkippedFile(path=relpath, reason=f"each `{spec.container}` item must be a mapping")
             )
             continue
-        _map_collection_item(
-            item, relpath, result, collisions, concept, container, factory, slug_index, frontmatter
-        )
+        _map_collection_item(ctx, spec, item, relpath, frontmatter)
 
 
-def _map_collection_item(  # noqa: PLR0913 - threads the shared mapping state
+def _map_collection_item(
+    ctx: _MapContext,
+    spec: _CollectionSpec,
     item: dict[str, Any],
     relpath: str,
-    result: MapResult,
-    collisions: _Collisions,
-    concept: str,
-    container: str,
-    factory: Any,
-    slug_index: dict[str, URIRef],
-    frontmatter: Any,
+    frontmatter: Frontmatter,
 ) -> None:
     name = item.get("name")
     if not isinstance(name, str) or not name.strip():
-        result.skipped.append(
-            SkippedFile(path=relpath, reason=f"a `{container}` item is missing `name`")
+        ctx.result.skipped.append(
+            SkippedFile(path=relpath, reason=f"a `{spec.container}` item is missing `name`")
         )
         return
-    participants = _resolve_participants(item, name, relpath, result, slug_index)
+    participants = _resolve_participants(ctx, item, name, relpath)
     try:
-        entity = factory(name, participants)
-        collisions.record(concept, make_slug(name), relpath)
+        entity = spec.factory(name, participants)
+        ctx.collisions.record(spec.concept, make_slug(name), relpath)
     except EmptySlugError as exc:
-        result.skipped.append(SkippedFile(path=relpath, reason=exc.message))
+        ctx.result.skipped.append(SkippedFile(path=relpath, reason=exc.message))
         return
     # Record soft warnings only after the item produced an entity (see _map_single_dir).
-    _record_unknown_keys(item, ITEM_KEYS, relpath, result)
-    result.mapped.append(
+    _record_unknown_keys(ctx, item, ITEM_KEYS, relpath)
+    ctx.result.mapped.append(
         MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
     )
 
 
 def _resolve_participants(
+    ctx: _MapContext,
     item: dict[str, Any],
     entity_name: str,
     relpath: str,
-    result: MapResult,
-    slug_index: dict[str, URIRef],
 ) -> tuple[URIRef, ...]:
     raw = item.get("participants")
     if raw is None:
@@ -327,7 +346,7 @@ def _resolve_participants(
         # A scalar/mapping where a list was expected can't resolve to characters;
         # surface it as an unresolved reference (soft warning) instead of dropping
         # it silently. The owning event/relationship is still built.
-        result.unresolved_participants.append(
+        ctx.result.unresolved_participants.append(
             UnresolvedParticipant(path=relpath, entity=entity_name, name=str(raw))
         )
         return ()
@@ -335,9 +354,9 @@ def _resolve_participants(
     for ref in raw:
         if not isinstance(ref, str):
             continue
-        uri = slug_index.get(make_slug(ref))
+        uri = ctx.slug_index.get(make_slug(ref))
         if uri is None:
-            result.unresolved_participants.append(
+            ctx.result.unresolved_participants.append(
                 UnresolvedParticipant(path=relpath, entity=entity_name, name=ref)
             )
             continue
@@ -345,18 +364,18 @@ def _resolve_participants(
     return tuple(resolved)
 
 
-def _safe_parse(path: Path, relpath: str, result: MapResult) -> Any:
+def _safe_parse(ctx: _MapContext, path: Path, relpath: str) -> Frontmatter | None:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         # A non-UTF-8 or unreadable file is "unusable frontmatter" (FR-013): skip
         # it and keep building, exactly like a YAML error — never abort the build.
-        result.skipped.append(SkippedFile(path=relpath, reason=f"unreadable file: {exc}"))
+        ctx.result.skipped.append(SkippedFile(path=relpath, reason=f"unreadable file: {exc}"))
         return None
     try:
         return parse_frontmatter(text)
     except yaml.YAMLError as exc:
-        result.skipped.append(
+        ctx.result.skipped.append(
             SkippedFile(path=relpath, reason=f"malformed YAML frontmatter: {exc}")
         )
         return None
