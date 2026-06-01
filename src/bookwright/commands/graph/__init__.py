@@ -16,7 +16,7 @@ app = typer.Typer(
     add_completion=False,
 )
 
-# `build` (US1) and `query` (US2) register their callbacks on `app` at import
+# `build` and `query` register their callbacks on `app` at import
 # time; importing them here keeps the sub-app self-contained. The `as` redirect
 # marks the imports as intentional re-exports (registration side effect).
 from . import build as build  # noqa: E402

@@ -1,4 +1,4 @@
-"""Integration tests for ``bookwright graph query`` (US2, SC-002)."""
+"""Integration tests for ``bookwright graph query`` (FR-003, SC-002)."""
 
 from __future__ import annotations
 

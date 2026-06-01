@@ -73,7 +73,7 @@ def test_query_error_json_only_on_stdout(tiny_novel: Path, runner: CliRunner) ->
     assert doc["status"] == "error"
 
 
-# --- T040: read-only boundary (FR-017) -------------------------------------
+# --- FR-017: read-only boundary ---------------------------------------------
 
 
 def test_query_does_not_mutate_the_graph(tiny_novel: Path, runner: CliRunner) -> None:

@@ -1,4 +1,4 @@
-"""Provenance integration tests (US3, FR-011, SC-006, R6, quickstart § 3).
+"""Provenance integration tests (FR-011, SC-006, R6, quickstart § 3).
 
 Every derived assertion carries a ``crm:E13_Attribute_Assignment`` naming its
 source file; a line-locatable value also carries the ``…:N`` locator. Provenance

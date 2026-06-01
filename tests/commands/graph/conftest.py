@@ -2,7 +2,7 @@
 
 Scaffolds a minimal but realistic project (a manifest with ``uri_base``, one
 character, one setting, a timeline, a relationships file, and a ``manuscript/``
-directory) and ``chdir``s into it. Reused across US1-US5 command tests.
+directory) and ``chdir``s into it. Reused across the ``graph`` command tests.
 """
 
 from __future__ import annotations

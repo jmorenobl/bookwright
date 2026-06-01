@@ -1,4 +1,4 @@
-"""Unit tests for the bible mapper (data-model § 3, bible-format.md, US1/US5)."""
+"""Unit tests for the bible mapper (data-model § 3, bible-format.md, FR-009/010/013)."""
 
 from __future__ import annotations
 
@@ -115,7 +115,7 @@ def test_participant_resolves_to_built_character(tmp_path: Path) -> None:
     assert result.unresolved_participants == []
 
 
-# --- US5: fault tolerance (T035) -------------------------------------------
+# --- FR-013: fault tolerance (skip malformed) -------------------------------
 
 
 def test_skip_on_malformed_yaml(tmp_path: Path) -> None:

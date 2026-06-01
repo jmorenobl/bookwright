@@ -1,4 +1,8 @@
-"""Integration tests for ``bookwright graph build`` (US1 + US4/US5 fault paths)."""
+"""Integration tests for ``bookwright graph build``.
+
+Happy path FR-001 / SC-001; engine selection FR-007 / SC-007; fault paths
+FR-012 / FR-013 / FR-014 / SC-004 / SC-005.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +25,7 @@ def _build_json(runner: CliRunner, args: list[str] | None = None) -> tuple[int, 
     return result.exit_code, json.loads(result.stdout)
 
 
-# --- US1: happy path --------------------------------------------------------
+# --- FR-001 / SC-001: happy path --------------------------------------------
 
 
 def test_build_writes_parseable_turtle(tiny_novel: Path, runner: CliRunner) -> None:
@@ -65,7 +69,7 @@ def test_force_rebuilds_idempotently(tiny_novel: Path, runner: CliRunner) -> Non
     assert first["entities"] == second["entities"]
 
 
-# --- T020b: SC-001 frozen-vocabulary closure at the build level -------------
+# --- SC-001: frozen-vocabulary closure at the build level -------------------
 
 
 def test_build_uses_only_frozen_vocabulary(tiny_novel: Path, runner: CliRunner) -> None:
@@ -82,7 +86,7 @@ def test_build_uses_only_frozen_vocabulary(tiny_novel: Path, runner: CliRunner) 
     assert used <= frozen, f"out-of-vocabulary terms: {used - frozen}"
 
 
-# --- T020c: empty-bible edge case -------------------------------------------
+# --- FR-018: empty-bible edge case (reports zero entities) ------------------
 
 
 def test_empty_bible_builds_successfully(
@@ -100,7 +104,7 @@ def test_empty_bible_builds_successfully(
     Graph().parse(str(graph_file), format="turtle")  # well-formed (prefix-only)
 
 
-# --- US5: fault paths (T034) ------------------------------------------------
+# --- FR-012 / FR-013 / FR-014: fault paths ----------------------------------
 
 
 def test_build_outside_project(outside_project: Path, runner: CliRunner) -> None:
@@ -159,7 +163,7 @@ def test_build_slug_collision_exit_3(
     assert not graph_file.exists()
 
 
-# --- US4: unknown indexer (T032) -------------------------------------------
+# --- FR-007 / SC-007: unknown indexer ---------------------------------------
 
 
 def test_build_unknown_indexer_exit_2(

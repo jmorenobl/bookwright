@@ -1,4 +1,4 @@
-"""Unit tests for the indexer registry (US4, FR-007/008, SC-007)."""
+"""Unit tests for the indexer registry (FR-007/008, SC-007)."""
 
 from __future__ import annotations
 
