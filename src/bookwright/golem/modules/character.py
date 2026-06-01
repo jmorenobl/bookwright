@@ -8,7 +8,7 @@ from typing import ClassVar, TypeVar
 from pydantic import PrivateAttr
 from rdflib.term import URIRef
 
-from bookwright.golem.base import CrossRef, GolemEntity, SluggedEntity
+from bookwright.golem.base import CrossRef, DerivedAssertion, GolemEntity, SluggedEntity
 from bookwright.golem.modules.feature import BioKind, CharacterFeature, CharacterRole
 from bookwright.golem.namespaces import CLASS_IRI, HAS_FEATURE, PLAYS
 
@@ -82,6 +82,24 @@ class Character(SluggedEntity):
         return CharacterFeature(
             uri_base=self.uri_base, character_uri=self.uri, kind=kind, year=year
         )
+
+    def derived_assertions(self) -> Iterable[DerivedAssertion]:
+        """One :class:`DerivedAssertion` per derived assertion, each tagged with
+        the frontmatter key it came from so the indexer can resolve a source line:
+        biographical features → ``born`` / ``died``, free-text → ``features``,
+        roles → ``narrative_roles``. The identity assertion is file-level
+        (``source_field`` ``None``).
+
+        Overrides the declarative base because ``cross_refs`` cannot express this
+        fan-out: a single ``_feature_nodes`` tuple carries three distinct origins
+        (``born`` / ``died`` / ``features``), which only this class can untangle —
+        a biographical node is recognised by its ``kind``."""
+        yield DerivedAssertion(self.uri, self.uri, None)
+        for feature in self._feature_nodes:
+            field = {"birth": "born", "death": "died"}.get(feature.kind or "", "features")
+            yield DerivedAssertion(self.uri, feature.uri, field)
+        for role in self._role_nodes:
+            yield DerivedAssertion(self.uri, role.uri, "narrative_roles")
 
 
 class Object(SluggedEntity):

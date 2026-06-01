@@ -26,6 +26,29 @@ def ref_uri(ref: GolemEntity | URIRef) -> URIRef:
     return ref.uri if isinstance(ref, GolemEntity) else ref
 
 
+class DerivedAssertion(NamedTuple):
+    """One source-derived assertion this entity makes, for provenance (FR-011).
+
+    The indexer turns each into a ``crm:E13_Attribute_Assignment``, resolving
+    :attr:`source_field` to a ``file:line`` locator via the frontmatter reader's
+    ``key_lines``. The model names the *originating field* — never a file path —
+    so it stays source-agnostic: where a value lives on disk is the indexer's
+    knowledge, not the ontology's.
+
+    - ``target``: the entity the assertion is about (e.g. the character).
+    - ``attribute``: the materialized node the assertion introduces (a feature /
+      role / participant URI), or ``target`` itself for the identity assertion.
+    - ``source_field``: the model field — identical to the frontmatter key by
+      FR-010 (``born`` / ``died`` / ``features`` / ``narrative_roles`` /
+      ``participants``) — that the assertion derived from; ``None`` for the
+      identity assertion, which carries only file-level provenance.
+    """
+
+    target: URIRef
+    attribute: URIRef
+    source_field: str | None
+
+
 class CrossRef(NamedTuple):
     """A declarative cross-reference edge: one field → its linking predicate (FR-015).
 
@@ -109,6 +132,32 @@ class GolemEntity(BaseModel):
                 yield (self.uri, ref.predicate, Literal(value, datatype=XSD.string))
             elif value is not None:
                 yield (self.uri, ref.predicate, ref_uri(value))
+
+    def derived_assertions(self) -> Iterable[DerivedAssertion]:
+        """Yield one :class:`DerivedAssertion` per source-derived assertion: the
+        identity assertion first (``source_field`` ``None`` → file-level
+        provenance), then one per cross-reference edge tagged with its
+        originating field name.
+
+        Read declaratively from :attr:`cross_refs`, so an entity whose field name
+        already equals its frontmatter key — ``NarrativeEvent`` /
+        ``SocialRelationship`` with ``participants`` — needs no override.
+        ``literal`` edges (a verbatim source path, not an attribute) are skipped.
+        An entity that fans one field out across several origin keys — ``Character``
+        splits a single owned-node tuple across ``born`` / ``died`` / ``features`` —
+        overrides this, exactly as such concepts already override
+        :meth:`to_triples`.
+        """
+        yield DerivedAssertion(self.uri, self.uri, None)
+        for ref in self.cross_refs:
+            if ref.literal:
+                continue
+            value = getattr(self, ref.attr)
+            if ref.multi:
+                for item in value:
+                    yield DerivedAssertion(self.uri, ref_uri(item), ref.attr)
+            elif value is not None:
+                yield DerivedAssertion(self.uri, ref_uri(value), ref.attr)
 
 
 class SluggedEntity(GolemEntity):

@@ -10,6 +10,7 @@ specs/005-golem-domain-model/contracts/golem_api.md for the stable contract.
 
 from __future__ import annotations
 
+from bookwright.golem.base import DerivedAssertion
 from bookwright.golem.errors import EmptySlugError, GolemError
 from bookwright.golem.modules.character import Character, Object
 from bookwright.golem.modules.event import NarrativeEvent, PsychologicalState
@@ -47,6 +48,7 @@ __all__ = [
     "AttributeAssignment",
     "Character",
     "CharacterFeature",
+    "DerivedAssertion",
     "Dimension",
     "EmptySlugError",
     "GolemError",
