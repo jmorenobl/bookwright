@@ -65,7 +65,7 @@ for the identity assertion. The model never exposes a file path; the indexer map
 `source_field` → a line via `key_lines`. The mapper does **not** read the private
 `_feature_nodes`/`_role_nodes` nor recompute node URIs — it enumerates them
 through this API. `Character` overrides the declarative default to fan its single
-node tuple back out to `born`/`died`/`features`; `NarrativeEvent`/
+node tuple back out to `born`/`died`/`features`/`narrative_roles`; `NarrativeEvent`/
 `SocialRelationship` use the default (their `participants` field already equals
 the frontmatter key).
 
