@@ -52,12 +52,15 @@ uv run bookwright graph build --json
 uv run bookwright graph query "SELECT ?c WHERE { ?c a golem:G1_Character }" --json
 # {"status":"ok","results":[{"c":".../character/manuel-de-aparici"}],"count":1}
 
-# Characters born before 1850 (R1 makes this answerable):
+# Characters born before 1850 (R1 makes this answerable). The birth year is an
+# xsd:gYear, but rdflib 7.x does not implement `<` ordering on gYear, so compare
+# the lexical form — sound because gyear_literal zero-pads every year to four
+# digits, making lexical order match numeric order:
 uv run bookwright graph query '
   SELECT ?c ?y WHERE {
     ?c a golem:G1_Character ; golem:GP0_has_feature ?f .
-    ?f crm:P2_has_type <…/type/birth> ; crm:P43_has_dimension/crm:P90_has_value ?y .
-    FILTER(?y < "1850"^^xsd:gYear)
+    ?f crm:P2_has_type ?t ; crm:P43_has_dimension/crm:P90_has_value ?y .
+    FILTER(STR(?y) < "1850")
   }'
 
 # Protagonists:
