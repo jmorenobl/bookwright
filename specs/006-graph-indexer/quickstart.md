@@ -61,7 +61,7 @@ uv run bookwright graph query '
   }'
 
 # Protagonists:
-uv run bookwright graph query "SELECT ?c WHERE { ?c dlp:plays ?r . ?r a golem:G11_Narrative_Role }"
+uv run bookwright graph query "SELECT ?c WHERE { ?c edns:plays ?r . ?r a golem:G11_Narrative_Role }"
 ```
 
 Empty match → `{"status":"ok","results":[],"count":0}`, exit 0.

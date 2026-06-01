@@ -1,80 +1,57 @@
 # Phase 1 — Data Model
 
-Two layers change:
-
-1. **GOLEM typed model (iteration-5 layer, extended here — R1a)**: new typed
-   entities + `Character` fields + predicate constants so the documented bible
-   frontmatter can be *constructed and emitted* with frozen terms.
-2. **Indexer process model (new this iteration)**: the engine seam, the
-   frontmatter reader, the bible mapper, the build report.
-
-No term outside the frozen ontology is introduced; the iteration-5 term-closure
-test (SC-003) extends to cover every new class/predicate.
+This iteration introduces only the **indexer process model** (engine seam,
+frontmatter reader, bible mapper, build report). The GOLEM typed model it needs
+was completed in **iteration 5 and is on `main`** — see §0 for the dependency
+surface this iteration consumes. No term outside the frozen ontology is
+introduced.
 
 ---
 
-## 0. GOLEM model extension (`src/bookwright/golem/`, R1a)
+## 0. Dependency: the iteration-5 GOLEM API (on `main`, consumed as-is)
 
-### New predicate constants (`namespaces.py`) — all ∈ `frozen_terms()`
+The model the bible mapper builds against. **The mapper does not construct
+feature/role/dimension nodes itself** — it passes frontmatter values straight to
+the entity constructors, which materialize the sub-nodes deterministically. All
+emitted classes/predicates are members of `frozen_terms()` (SC-001), guarded by
+iteration-5's closure test.
 
-| Constant | IRI | Use |
-|---|---|---|
-| `HAS_FEATURE` | `gc:GP0_has_feature` (GOLEM ns) | Character → `G17_Character_Feature` |
-| `PLAYS` | `plays` in **ExtendedDnS** ns — see note | Character → `G11_Narrative_Role` |
+### `Character` (`golem:G1_Character`) — `golem/modules/character.py`
 
-> **Namespace note (must not be missed):** `plays`/`played-by`/`uses`/`setting`
-> live in `http://www.ontologydesignpatterns.org/ont/dlp/ExtendedDnS.owl#`,
-> which is **distinct** from the existing `DLP` constant
-> (`…/DOLCE-Lite.owl#`, source of `participant`/`proper-part`/etc.). Add a new
-> namespace constant (e.g. `EDNS`) + a bound prefix (e.g. `edns:`) in
-> `bind_prefixes`. The `golem.ttl` examples that read `dlp:plays` are loose
-> shorthand; the emitted Turtle binds the correct ExtendedDnS prefix.
-| `HAS_TYPE` | `crm:P2_has_type` | feature → `E55_Type` (birth/death/category) |
-| `HAS_DIMENSION` | `crm:P43_has_dimension` | feature → `E54_Dimension` |
-| `HAS_VALUE` | `crm:P90_has_value` | dimension → literal value |
-| (reuse) `RDFS.label` | `rdfs:label` | feature free-text label |
+```python
+Character(uri_base=..., name=...,
+          born: int | None = None,
+          died: int | None = None,
+          features: tuple[str, ...] = (),
+          narrative_roles: tuple[str, ...] = ())
+```
+On construction it materializes (once, deduped by URI, character-scoped):
+- each `features` string → a free-text `CharacterFeature` at
+  `{character.uri}/feature/{slug}` emitting `golem:GP0_has_feature` + `rdfs:label`;
+- `born`/`died` → a biographical `CharacterFeature` at
+  `{character.uri}/feature/bio/{birth|death}` emitting `golem:GP0_has_feature`,
+  `crm:P2_has_type {uri_base}type/{birth|death}` (a shared `crm:E55_Type`
+  individual), and `crm:P43_has_dimension` → a `crm:E54_Dimension` carrying
+  `crm:P90_has_value "YYYY"^^xsd:gYear` (4-digit/BCE-safe via `gyear_literal`);
+- each `narrative_roles` string → a `CharacterRole` (`golem:G11_Narrative_Role`)
+  at `{character.uri}/role/{slug}` emitting `edns:plays` + `rdfs:label`.
 
-New `CLASS_IRI` entries: `Feature` → `gc:G2_Feature`, `CharacterFeature` →
-`gc:G17_Character_Feature`, `Dimension` → `crm:E54_Dimension`, `Type` →
-`crm:E55_Type`.
+A character built with none of the four attributes emits only its `rdf:type`
+assertion (identity-only behaviour preserved).
 
-### New entity classes (`modules/feature.py`)
+### Supporting types (also on `main`, **not** constructed by the mapper)
+- `CharacterFeature` / `CharacterRole` / `Dimension` (`golem/modules/feature.py`)
+  — inlined attribute carriers, excluded from the `CONCEPTS` registry.
+- Namespaces/predicates: `HAS_FEATURE` (`gc:GP0_has_feature`), `PLAYS`
+  (`edns:plays` — **ExtendedDnS** ns `…/ExtendedDnS.owl#`, distinct from the
+  `DLP` = `…/DOLCE-Lite.owl#` constant), `HAS_TYPE`/`HAS_DIMENSION`/`HAS_VALUE`
+  (`crm:P2`/`P43`/`P90`), `CLASS_IRI` for `G2_Feature`/`G17_Character_Feature`/
+  `E54_Dimension`/`E55_Type`. The `edns:` prefix is bound by `bind_prefixes`.
 
-**`Dimension`** (`crm:E54_Dimension`) — a literal value carrier.
-
-| Field | Type | Emits |
-|---|---|---|
-| `value` | `str` | `crm:P90_has_value "<value>"^^<datatype>` |
-| `datatype` | `URIRef` (default `xsd:string`) | the literal datatype (e.g. `xsd:gYear`) |
-
-**`CharacterFeature`** (`gc:G17_Character_Feature`) — a biographical/physical/
-psychological trait.
-
-| Field | Type | Emits |
-|---|---|---|
-| `label` | `str \| None` | `rdfs:label "<label>"` |
-| `feature_type` | `URIRef \| None` | `crm:P2_has_type <E55 individual>` (e.g. birth/death) |
-| `dimension` | `Dimension \| URIRef \| None` | `crm:P43_has_dimension <dim>` |
-
-Identity token: slug of `label`, or a `uuid7` when label-less (mirrors
-`AttributeAssignment`). `Dimension` is uuid7-identified.
-
-### Extended `Character` (`modules/character.py`)
-
-Adds two optional reference tuples; identity-only behaviour is preserved when
-both are empty (existing iter-5 tests keep passing).
-
-| Field | Type | Cross-ref edge |
-|---|---|---|
-| `features` | `tuple[CharacterFeature \| URIRef, ...] = ()` | `gc:GP0_has_feature` (multi) |
-| `roles` | `tuple[NarrativeRole \| URIRef, ...] = ()` | `dlp:plays` (multi) |
-
-`NarrativeRole` (G11) already exists (identity-only) and is reused as-is.
-
-### E55_Type individuals
-`birth` and `death` are minted once as `crm:E55_Type` individuals at stable URIs
-(`<uri_base>type/birth`, `<uri_base>type/death`) and referenced by biographical
-features. (Individuals of a frozen class — not new vocabulary; SC-001 unaffected.)
+### Other concepts the mapper uses unchanged
+`Setting` (`G12`), `NarrativeEvent` (`G5`), `SocialRelationship` (`G4`) with
+their existing `dlp:participant` edges; `AttributeAssignment` (`crm:E13`) for
+provenance.
 
 ---
 
@@ -117,12 +94,15 @@ Malformed YAML → caller raises `InvalidFrontmatterError(path, reason)`.
 
 ## 3. Bible mapping (`io/bible.py`) — type by location (R2)
 
-| Source | Concept | Identity | Frontmatter → emission |
-|---|---|---|---|
-| `bible/characters/*.md` | `Character` | slug of `name` (fallback: filename) | `name`→identity; `narrative_roles[]`→`NarrativeRole` + `dlp:plays`; `features[]`→`CharacterFeature`(label) + `GP0_has_feature`; `born`/`died`→biographical `CharacterFeature`(`P2_has_type` birth/death) + `E54_Dimension`(`P90_has_value` `xsd:gYear`) + `GP0_has_feature` |
-| `bible/settings/*.md` | `Setting` | slug of `name` | identity (v0) |
-| `bible/timeline.md` → items under `events:` | `NarrativeEvent` | slug of item `name`/`title` | `participants[]` → `dlp:participant` (resolved to character URIs) |
-| `bible/relationships.md` → items under `relationships:` | `SocialRelationship` | slug of item `name` | `participants[]` → `dlp:participant` |
+The mapper reads frontmatter and calls the iteration-5 constructors; the model
+emits the triples (§0). The mapper never assembles feature/role/dimension nodes.
+
+| Source | Constructor call | Notes |
+|---|---|---|
+| `bible/characters/*.md` | `Character(uri_base, name, born?, died?, features=tuple(...), narrative_roles=tuple(...))` | identity = slug of `name` (fallback: filename); `born`/`died` must be int years |
+| `bible/settings/*.md` | `Setting(uri_base, name)` | identity only (v0) |
+| `bible/timeline.md` → items under `events:` | `NarrativeEvent(uri_base, name, participants=(...))` | participants resolved to character URIs → `dlp:participant` |
+| `bible/relationships.md` → items under `relationships:` | `SocialRelationship(uri_base, name, participants=(...))` | participants resolved → `dlp:participant` |
 
 - **Unknown keys** (not in a concept's recognised set) → ignored, recorded in
   the report's `unknown_keys` (edge case; typo aid).
@@ -132,22 +112,25 @@ Malformed YAML → caller raises `InvalidFrontmatterError(path, reason)`.
 ### Collision detection (FR-014)
 `dict[(concept_name, slug)] -> path`; a second entity of the same `(concept,
 slug)` raises `SlugCollisionError(identifier, first_path, second_path)` — hard
-error, no graph written.
+error, no graph written. (Note: collisions are checked on the **top-level**
+entity slug; character-scoped feature/role nodes are deduped internally by the
+model.)
 
 ---
 
 ## 4. Provenance (`AttributeAssignment`, R6 / FR-011 / SC-006)
 
-One iteration-5 `AttributeAssignment` per derived attribute assertion:
+One iteration-5 `AttributeAssignment` per derived top-level entity (and, where a
+line is locatable, per attribute assertion):
 
 | Field | Value |
 |---|---|
-| `target` | the character/entity URI the assertion is about |
-| `attribute` | the feature / role / event URI asserted (or the entity URI for the identity assertion) |
+| `target` | the entity URI the assertion is about |
+| `attribute` | the entity URI (or the feature/role/event URI when attaching to a specific assertion) |
 | `source` | `"<relpath>"` or `"<relpath>:<line>"` (from `key_lines`) |
 | `premise` | `None` (v0) |
 
-Emitted alongside the entity triples so SC-006 holds for every derived triple.
+Emitted alongside the entity triples so SC-006 holds for every derived entity.
 
 ---
 

@@ -27,14 +27,16 @@ section of [spec.md](spec.md)):
 
 1. **Frontmatter → triples, with frozen terms (R1).** Every documented character
    key maps to the term the frozen GOLEM/CIDOC ontology already defines for it:
-   `narrative_roles[]` → `dlp:plays → G11_Narrative_Role`; `features[]` →
+   `narrative_roles[]` → `edns:plays → G11_Narrative_Role`; `features[]` →
    `gc:GP0_has_feature → G17_Character_Feature`; `born`/`died` → biographical
    `G17_Character_Feature` (`crm:P2_has_type` birth/death) with the year via
-   `crm:P43_has_dimension → E54_Dimension —crm:P90_has_value→ xsd:gYear`. Nothing
-   is dropped and nothing new is minted, so FR-010 and SC-001 hold as written.
-   **Consequence (R1a):** iteration-5's *identity-only* GOLEM model must grow to
-   construct/emit these — a foundational extension done now (it also unblocks
-   iteration 10's validators), not deferred.
+   `crm:P43_has_dimension → E54_Dimension —crm:P90_has_value→ xsd:gYear` (`edns:`
+   = ExtendedDnS ns, distinct from DOLCE-Lite `dlp:`). Nothing is dropped and
+   nothing new is minted, so FR-010 and SC-001 hold as written.
+   **Consequence (R1a) — DONE:** iteration-5's identity-only model was extended
+   to construct/emit these and **merged to `main`** (it also unblocks iteration
+   10's validators). This iteration *consumes that model as-is*; see R1a in
+   [research.md](research.md) and §0 of [data-model.md](data-model.md).
 2. **Bible layout (R2).** The parser matches what `bookwright init` already
    scaffolds (design § 7): `bible/characters/*.md` and `bible/settings/*.md` are
    one-entity-per-file; `bible/timeline.md` and `bible/relationships.md` are
@@ -46,10 +48,11 @@ section of [spec.md](spec.md)):
 
 **Primary Dependencies**: `rdflib` (graph + Turtle + SPARQL), `typer` (CLI),
 `rich` (human rendering on stderr), `tomlkit`/`pydantic` via the iteration-2
-`Manifest`, the iteration-5 `bookwright.golem` package (extended here — typed
-entities + `AttributeAssignment` + `to_triples`), `python-slugify` (collision
-detection re-uses iter-5 slugs). **New runtime dependency**: `pyyaml` for
-frontmatter — see Constitution Check Gate II.
+`Manifest`, the iteration-5 `bookwright.golem` package (now on `main` with the
+character-attribute extension — `Character(born/died/features/narrative_roles)`,
+`CharacterFeature`/`Dimension`, `AttributeAssignment`, `to_triples`), consumed
+as-is; `python-slugify` (collision detection re-uses iter-5 slugs). **New runtime
+dependency**: `pyyaml` for frontmatter — see Constitution Check Gate II.
 
 **Storage**: Plain text only. Canonical output is Turtle at `bible/graph.ttl`.
 No cache is written in v0 (Principle I — a cache may exist later only if
@@ -89,7 +92,7 @@ validators, no `GrafeoIndexer`, no manuscript prose mining (all out of scope).
 | VII. agentskills.io compliance | ✅ N/A | No `SKILL.md` generated here. |
 | VIII. Test discipline | ✅ PASS | ≥ 80% coverage; unit (`indexers/`, `io/`) + integration (`graph build`/`query`) per the pyramid. |
 | IX. JSON-over-stdout contract | ✅ PASS | `build` and `query` accept `--json`; single JSON doc on stdout, human/progress on stderr; non-zero exit on error even with `--json`. |
-| X. Design document axioms | ✅ PASS | No axiom is reopened: GOLEM stays the (frozen) ontology, rdflib stays the v0 engine, SC-001 is honored as written. R1a *extends the typed model additively* using terms already in `frozen_terms()`; it does not change the frozen `golem.ttl` itself. |
+| X. Design document axioms | ✅ PASS | No axiom is reopened: GOLEM stays the (frozen) ontology, rdflib stays the v0 engine, SC-001 is honored as written. The R1a model extension (now on `main`) used only terms already in `frozen_terms()` and did not change the frozen `golem.ttl` itself. |
 
 **Gate II — `pyyaml` amendment (must clear before implementation).** Bible
 frontmatter is YAML; no declared runtime dependency parses YAML. Hand-rolling a
@@ -102,18 +105,18 @@ matching update to design § 14.1. This is a tracked prerequisite task (T0xx) an
 is *not* a violation once the amendment lands — it is the sanctioned path the
 constitution itself defines. No other new runtime dependency is introduced.
 
-**Iteration-5 model extension (R1a).** This plan grows the iteration-5
-`bookwright.golem` package (new `CharacterFeature`/`Dimension` entities,
-`Character.features`/`.roles` fields, new frozen-term predicate constants). This
-is **additive**: existing identity-only behaviour and tests are preserved (new
-fields default empty), and the iteration-5 term-closure test (SC-003)
-automatically guards every new term ∈ `frozen_terms()`. It revisits a
-"completed" iteration deliberately — the cheaper time to seat the model
-correctly, before iterations 7–11 build on it.
+**Iteration-5 model extension (R1a) — DONE.** The `bookwright.golem` extension
+(`CharacterFeature`/`CharacterRole`/`Dimension`, `Character.born/died/features/
+narrative_roles`, the `EDNS` namespace + frozen-term predicate constants) was
+implemented as a **completion of iteration 5** and merged to `main`. It is
+additive (identity-only behaviour + tests preserved) and the iteration-5
+closure test (SC-003) was extended to guard every new term. This iteration
+consumes it as a dependency — no GOLEM-model work remains here. All four gates
+are green on this rebased branch (`pytest` 437 passed, 98% coverage).
 
-**Result**: PASS, conditional on the Gate II amendment task completing before
-any frontmatter-parsing code is written. No entries in Complexity Tracking (the
-model extension is required by FR-010, not speculative generality).
+**Result**: PASS, conditional only on the Gate II amendment task (`pyyaml`)
+completing before any frontmatter-parsing code is written. No entries in
+Complexity Tracking.
 
 ## Project Structure
 
@@ -138,12 +141,9 @@ specs/006-graph-indexer/
 ```text
 src/bookwright/
 ├── cli.py                       # + app.add_typer(graph.app, name="graph")
-├── golem/                       # EXTENDED (R1a) — typed model grows to carry character attrs
-│   ├── namespaces.py            # + HAS_FEATURE/PLAYS/HAS_TYPE/HAS_DIMENSION/HAS_VALUE + G2/G17/E54/E55 CLASS_IRI
-│   ├── modules/
-│   │   ├── character.py         # + features/roles fields + cross_refs (GP0_has_feature, dlp:plays)
-│   │   └── feature.py           # NEW — CharacterFeature (G17), Dimension (E54)
-│   └── __init__.py              # export CharacterFeature, Dimension; CONCEPTS gains them
+├── golem/                       # DEPENDENCY (on main) — consumed as-is, no edits this iteration
+│   │                            #   Character(born/died/features/narrative_roles) materializes
+│   │                            #   CharacterFeature/CharacterRole/Dimension (data-model §0)
 ├── indexers/                    # NEW — the pluggable graph-engine seam
 │   ├── __init__.py              # INDEXER_REGISTRY, resolve_indexer(), re-exports
 │   ├── base.py                  # Indexer Protocol (load/save/add_triple/query/construct/count) + Triple
@@ -165,10 +165,7 @@ src/bookwright/
         └── envelope.py          # graph-command JSON success/error envelopes
 
 tests/
-├── golem/
-│   ├── test_feature.py          # NEW — CharacterFeature/Dimension triples; born/died chain
-│   ├── test_character_attrs.py  # NEW — Character.features/.roles edges; identity-only still holds
-│   └── test_frozen_ontology.py  # EXTENDED — closure covers GP0_has_feature/plays/P2/P43/P90, G2/G17/E54/E55
+│   # (tests/golem/* for the model extension already landed with iteration 5 on main)
 ├── indexers/
 │   ├── test_registry.py         # default, explicit, unknown-name error (US4)
 │   ├── test_rdflib_indexer.py   # load/save/add/query/construct/count round-trip
@@ -187,9 +184,9 @@ tests/
 ```
 
 **Structure Decision**: Single-project CLI, extending the existing
-`src/bookwright/` tree. The existing `golem/` package is extended additively
-(R1a) so the typed model — the single source of RDF emission — can carry the
-documented character attributes. Three new packages — `indexers/` (engine seam),
+`src/bookwright/` tree. The `golem/` package (with the R1a character-attribute
+extension) is already on `main` and is consumed unchanged. Three new packages —
+`indexers/` (engine seam),
 `io/` (plain-text parsing), and `commands/graph/` (the two verbs) — keep the
 engine, the parser, and the CLI surface independently testable and each module
 under the 500-line ceiling. The engine owns Turtle serialization (binding the

@@ -27,14 +27,14 @@ holds because every class/predicate below is a member of `frozen_terms()`.
 | Key | Frozen modeling (all terms ∈ `frozen_terms()`) |
 |---|---|
 | `name` | identity: slug → URI (iteration-5), the `rdf:type` assertion |
-| `narrative_roles[]` | one `gc:G11_Narrative_Role` per role; `Character —dlp:plays→ role` |
+| `narrative_roles[]` | one `gc:G11_Narrative_Role` per role; `Character —edns:plays→ role` |
 | `features[]` (free text) | one `gc:G17_Character_Feature` per item; `Character —gc:GP0_has_feature→ feature`; text via `rdfs:label` |
 | `born` / `died` (year) | biographical `gc:G17_Character_Feature`, `crm:P2_has_type` an `crm:E55_Type` individual (`birth`/`death`); year via `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ "YYYY"^^xsd:gYear` |
 
 This is the ontology's own prescription: `G17_Character_Feature` is documented as
 covering *"biographical (e.g., birth, death), physical, and psychological
 features… specified using crm:E55_Type,"* and the `G1_Character` class carries
-OWL restrictions on `dlp:plays → G11_Narrative_Role` and `gc:GP0_has_feature →
+OWL restrictions on `edns:plays → G11_Narrative_Role` and `gc:GP0_has_feature →
 G2_Feature`. `crm:P90_has_value` (the ontology's sole datatype property) is the
 frozen literal carrier; its domain is `E54_Dimension`, hence the
 feature→dimension→value chain.
@@ -62,51 +62,42 @@ existing `dlp:participant` edges (resolved to character URIs).
   violates SC-001 and reintroduces the ad-hoc-vocabulary drift the frozen
   ontology exists to prevent. Unnecessary, since frozen terms already fit.
 
-**Consequence (see R1a)**: the iteration-5 typed model — identity-only today —
-must grow to carry these attributes.
+**Consequence (see R1a)**: the iteration-5 typed model had to grow to carry
+these attributes.
 
 ---
 
-## R1a — Extend the iteration-5 GOLEM typed model (foundational, this iteration)
+## R1a — Extend the iteration-5 GOLEM typed model (DONE — completed in iteration 5, on `main`)
 
-**Decision**: Grow `src/bookwright/golem/` so the typed layer can *construct and
-emit* the R1 mapping; iteration 6's bible parser then builds rich typed entities
-rather than hand-assembling raw triples. The typed model stays the single source
-of RDF emission (consistency for iterations 7–11).
+**Decision (resolved):** the model extension was implemented as a **completion of
+iteration 5** (not in this branch), merged to `main`, and iteration 6 now
+*consumes it as-is*. The typed model remains the single source of RDF emission.
 
-Concretely:
-- **`namespaces.py`**: add `CLASS_IRI` entries `G2_Feature`,
-  `G17_Character_Feature`, `E54_Dimension`, `E55_Type`; add predicate constants
-  `HAS_FEATURE` (`gc:GP0_has_feature`), `PLAYS` (`dlp:plays`), `HAS_TYPE`
-  (`crm:P2_has_type`), `HAS_DIMENSION` (`crm:P43_has_dimension`), `HAS_VALUE`
-  (`crm:P90_has_value`), and re-use `RDFS.label`. All already in `frozen_terms()`.
-- **New entity classes** (e.g. `modules/feature.py`): `CharacterFeature` (G17,
-  carrying an optional `label`, optional `category`/E55-type, optional
-  `Dimension`) and `Dimension` (E54, carrying a literal `value` + datatype).
-- **`Character`**: add `features: tuple[CharacterFeature|URIRef, ...]`,
-  `roles: tuple[NarrativeRole|URIRef, ...]`, plus `cross_refs` for
-  `GP0_has_feature` and `dlp:plays`. Reuse the existing `NarrativeRole` (G11)
-  class — it already exists, identity-only.
-- The `CrossRef` mechanism handles single-hop edges; the two-hop
-  feature→dimension→value chain is emitted by the `CharacterFeature` /
-  `Dimension` entities' own `to_triples()` (each entity owns its triples).
+**As shipped on `main`** (see data-model §0 for the consumed surface):
+- `namespaces.py` gained the `EDNS` namespace
+  (`…/ExtendedDnS.owl#`, distinct from the DOLCE-Lite `DLP`), the predicate
+  constants `HAS_FEATURE`/`PLAYS`/`HAS_TYPE`/`HAS_DIMENSION`/`HAS_VALUE`, and
+  `CLASS_IRI` entries for `G2_Feature`/`G17_Character_Feature`/`E54_Dimension`/
+  `E55_Type` — all ∈ `frozen_terms()`.
+- `modules/feature.py` added `CharacterFeature` (free-text **or** biographical),
+  `CharacterRole` (G11, character-scoped — *not* the top-level `NarrativeRole`),
+  and `Dimension` (E54, emitting `xsd:gYear` via a BCE/short-year-safe
+  `gyear_literal`). These are excluded from the `CONCEPTS` registry.
+- `Character` gained `born: int|None`, `died: int|None`,
+  `features: tuple[str, ...]`, `narrative_roles: tuple[str, ...]`, and
+  **materializes** the feature/role/dimension nodes at construction (deduped,
+  character-scoped URIs). A character with none of the four emits only its
+  `rdf:type` assertion — identity-only behaviour preserved.
 
-**Scope discipline**: extend *only* what the documented character schema +
-events + relationships require. Do **not** pull in G18 textual features, F1
-works, G15 fandoms, narrative units/sequences, etc. (YAGNI / out-of-scope).
+**Verification (this branch, post-rebase on `main`)**: all four gates green —
+`ruff`, `ruff format`, `mypy --strict` (100 files), `pytest` 437 passed, 98%
+coverage. The iteration-5 closure test was extended to cover every new term.
 
-**Process note**: this revisits iteration-5's deliverable. The user explicitly
-authorized redoing prior work now rather than at higher cost later. The term
-**closure test (SC-003)** from iteration 5 already guards correctness: every new
-predicate/class is asserted ∈ `frozen_terms()`, so the extension cannot smuggle
-in an un-frozen term. The iteration-5 `golem_api` contract gains the new classes
-and `Character` fields; existing identity-only behaviour is preserved
-(new fields default to empty).
-
-**Mechanics (where the code lands)**: implemented on this `006-graph-indexer`
-branch as the first task block, because iteration 6 is the consumer and the
-extension has no value without it. If iteration 5 is already merged to `main`,
-this lands as an additive change (no breaking edits to existing iter-5 tests).
+**Implication for this iteration**: the bible mapper does **not** build
+feature/role/dimension nodes — it passes frontmatter scalars/tuples to
+`Character(...)` (and the other constructors) and lets the model emit. This is
+simpler than the original sketch and is reflected in data-model §0/§3 and
+`contracts/bible-format.md`.
 
 ---
 

@@ -17,15 +17,18 @@
   frozen-vocabulary constraint?**
   **A:** Map each to the term the **frozen GOLEM/CIDOC ontology already
   defines** — nothing dropped, nothing minted:
-  `narrative_roles[]` → `dlp:plays → golem:G11_Narrative_Role`;
+  `narrative_roles[]` → `edns:plays → golem:G11_Narrative_Role`;
   `features[]` → `golem:GP0_has_feature → golem:G17_Character_Feature` (text via
   `rdfs:label`); `born`/`died` → biographical `golem:G17_Character_Feature`
   (`crm:P2_has_type` birth/death) carrying the year via
-  `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ xsd:gYear`.
-  This honors FR-010 and SC-001 as written. **Consequence:** iteration-5's
-  identity-only typed model is extended additively now (new `CharacterFeature`
-  /`Dimension` entities, `Character.features`/`.roles`) so it can construct/emit
-  these — also unblocking iteration 10's validators. See plan R1/R1a.
+  `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ xsd:gYear`
+  (`plays` is `edns:` / ExtendedDnS, distinct from DOLCE-Lite `dlp:`).
+  This honors FR-010 and SC-001 as written. **Consequence (resolved):**
+  iteration-5's identity-only model was **completed** to construct/emit these
+  (`Character(born/died/features/narrative_roles)` materializing
+  `CharacterFeature`/`CharacterRole`/`Dimension`) and **merged to `main`**; this
+  iteration consumes it as-is. Also unblocks iteration 10's validators. See plan
+  R1/R1a.
 
 - **Q: Is the bible laid out as four directories (FR-009) or per design § 7?**
   **A:** Per design § 7 / what `bookwright init` actually scaffolds:
@@ -273,13 +276,14 @@ outcome.
 - **FR-010**: For each source file, the parser MUST convert the file's YAML
   frontmatter into triples drawn entirely from the frozen GOLEM/CIDOC vocabulary.
   For a character, the documented frontmatter maps as: `name` → identity +
-  `rdf:type golem:G1_Character`; `narrative_roles[]` → `dlp:plays
+  `rdf:type golem:G1_Character`; `narrative_roles[]` → `edns:plays
   golem:G11_Narrative_Role`; `features[]` → `golem:GP0_has_feature
   golem:G17_Character_Feature` (`rdfs:label`); `born`/`died` → biographical
   `golem:G17_Character_Feature` (`crm:P2_has_type`) with the year carried via
   `crm:P43_has_dimension → crm:E54_Dimension —crm:P90_has_value→ xsd:gYear`. The
-  iteration-5 GOLEM typed model is extended additively to construct/emit these
-  (see plan R1a); no class or predicate outside `frozen_terms()` is introduced.
+  iteration-5 GOLEM typed model was completed (on `main`) to construct/emit these
+  and is consumed as-is here (see plan R1a); no class or predicate outside
+  `frozen_terms()` is introduced.
 - **FR-011**: Every generated triple MUST carry a corresponding Attribute
   Assignment that points to the source file, and to the line within that file
   when the value can be located to a specific line.
@@ -346,15 +350,16 @@ outcome.
 
 ## Assumptions
 
-- **Iteration 5 domain model is available and is extended here**: typed GOLEM
+- **Iteration 5 domain model is available and now complete (on `main`)**: typed GOLEM
   classes that construct entities, generate deterministic ASCII slugs, and emit
   triples (including Attribute Assignment with source path and optional line) are
   available. Slug rules and URI patterns are owned by iteration 5 and reused
-  as-is. **However**, iteration 5's model is *identity-only*; to satisfy FR-010
-  this iteration extends it **additively** (new `CharacterFeature`/`Dimension`
-  entities and `Character.features`/`.roles` fields) using terms already in the
-  frozen ontology — see plan R1a. The extension is backward-compatible (existing
-  identity-only behaviour and tests preserved).
+  as-is. Iteration 5's model was originally *identity-only*; it has since been
+  **completed** (on `main`) to carry the documented character attributes —
+  `Character(born/died/features/narrative_roles)` materializing
+  `CharacterFeature`/`CharacterRole`/`Dimension` via frozen terms (plan R1a) —
+  and this iteration consumes that model as-is. The completion was
+  backward-compatible (existing identity-only behaviour and tests preserved).
 - **Indexer Protocol shape**: the engine interface follows design § 12.1
   (`load`, `save`, `add_triple`, `query`, `construct`, `count`); `GrafeoIndexer`
   is a deferred stub (v0.3) and MUST NOT be implemented here.

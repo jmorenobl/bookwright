@@ -5,8 +5,11 @@ is determined by **location** (R2 — matches `bookwright init` / design § 7).
 Iteration 7 authors templates that conform to this contract.
 
 All emitted classes/predicates are members of `frozen_terms()` (SC-001).
-Prefixes: `golem:` = `https://w3id.org/golem/ontology#`, `crm:` =
-CIDOC-CRM, `dlp:` = DOLCE ExtendedDnS, `rdfs:`/`xsd:` standard.
+Prefixes: `golem:` = `https://w3id.org/golem/ontology#`, `crm:` = CIDOC-CRM,
+`dlp:` = DOLCE-Lite (`…/DOLCE-Lite.owl#`, source of `participant`), `edns:` =
+DOLCE ExtendedDnS (`…/ExtendedDnS.owl#`, source of `plays`), `rdfs:`/`xsd:`
+standard. The mapper passes frontmatter to the iteration-5 `Character(...)`
+constructor; the model materializes the feature/role/dimension nodes (data-model §0).
 
 ---
 
@@ -20,28 +23,29 @@ died: 1900                      # optional → biographical feature (death year)
 features:                       # optional list → G17_Character_Feature + label
   - "ingeniero químico"
   - "miembro fundador de Destilerías Ayelo"
-narrative_roles:                # optional list → G11_Narrative_Role via dlp:plays
+narrative_roles:                # optional list → G11_Narrative_Role via edns:plays
   - protagonist
 ---
 ```
 
-Triples (sketch, `<C>` = `…/character/manuel-de-aparici`):
+Triples (sketch, `<C>` = `…/character/manuel-de-aparici`; node URIs are
+character-scoped, as materialized by the iteration-5 model — data-model §0):
 ```turtle
 <C> a golem:G1_Character .
-# narrative_roles
-<C> dlp:plays <…/narrative-role/protagonist> .
-<…/narrative-role/protagonist> a golem:G11_Narrative_Role .
-# features (free text)
-<C> golem:GP0_has_feature <F1> .
-<F1> a golem:G17_Character_Feature ; rdfs:label "ingeniero químico" .
-# born / died (biographical features with a typed dimension value)
-<C> golem:GP0_has_feature <Fbirth> .
-<Fbirth> a golem:G17_Character_Feature ;
+# narrative_roles → CharacterRole at {C}/role/{slug}
+<C> edns:plays <C/role/protagonist> .
+<C/role/protagonist> a golem:G11_Narrative_Role ; rdfs:label "protagonist" .
+# features (free text) → CharacterFeature at {C}/feature/{slug}
+<C> golem:GP0_has_feature <C/feature/ingeniero-quimico> .
+<C/feature/ingeniero-quimico> a golem:G17_Character_Feature ; rdfs:label "ingeniero químico" .
+# born → biographical feature at {C}/feature/bio/birth, typed dimension value
+<C> golem:GP0_has_feature <C/feature/bio/birth> .
+<C/feature/bio/birth> a golem:G17_Character_Feature ;
          crm:P2_has_type <…/type/birth> ;
-         crm:P43_has_dimension <Dbirth> .
-<Dbirth> a crm:E54_Dimension ; crm:P90_has_value "1828"^^xsd:gYear .
-<…/type/birth> a crm:E55_Type .
-# provenance (one per assertion; see contracts in data-model §4)
+         crm:P43_has_dimension <C/feature/bio/birth/dimension> .
+<C/feature/bio/birth/dimension> a crm:E54_Dimension ; crm:P90_has_value "1828"^^xsd:gYear .
+<…/type/birth> a crm:E55_Type .   # shared across characters at {uri_base}type/birth
+# provenance (per entity; see data-model §4)
 ```
 
 - **Required**: `name` (non-empty; slug must be non-empty — reuses iter-5
