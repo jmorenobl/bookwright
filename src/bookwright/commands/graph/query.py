@@ -14,8 +14,10 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from bookwright.core.errors import ManifestError
 from bookwright.core.manifest import Manifest
 from bookwright.indexers import (
+    GraphLoadError,
     GraphNotBuiltError,
     InvalidQueryError,
     UnknownIndexerError,
@@ -25,7 +27,7 @@ from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.project import find_project_root
 
 from . import app
-from .envelope import emit_error, emit_json
+from .envelope import emit_error, emit_json, error_payload
 
 EXIT_CONFIG = 2
 EXIT_INVALID_QUERY = 3
@@ -41,7 +43,15 @@ def run(
     """Run ``sparql`` against the project graph and print the rows."""
     try:
         rows = _query(sparql)
-    except (ProjectNotFoundError, GraphNotBuiltError, UnknownIndexerError) as exc:
+    except ManifestError as exc:
+        emit_error(error_payload("invalid_manifest", str(exc)), json_output)
+        raise typer.Exit(EXIT_CONFIG) from exc
+    except (
+        ProjectNotFoundError,
+        GraphNotBuiltError,
+        GraphLoadError,
+        UnknownIndexerError,
+    ) as exc:
         emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except InvalidQueryError as exc:

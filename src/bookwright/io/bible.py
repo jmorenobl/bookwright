@@ -94,8 +94,9 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
         result,
         collisions,
         concept="Character",
-        builder=lambda meta, rp: _build_character(uri_base, meta, rp, result),
+        builder=lambda meta, rp: _build_character(uri_base, meta),
         slug_index=slug_to_uri,
+        allowed_keys=CHARACTER_KEYS,
     )
     _map_single_dir(
         bible_dir / "settings",
@@ -105,6 +106,7 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
         concept="Setting",
         builder=lambda meta, rp: Setting(uri_base=uri_base, name=_require_name(meta)),
         slug_index=None,
+        allowed_keys=SETTING_KEYS,
     )
     _map_collection(
         bible_dir / "timeline.md",
@@ -174,15 +176,12 @@ def _record_unknown_keys(
             result.unknown_keys.append(UnknownKey(path=relpath, key=key))
 
 
-def _build_character(
-    uri_base: str, metadata: dict[str, Any], relpath: str, result: MapResult
-) -> Character:
+def _build_character(uri_base: str, metadata: dict[str, Any]) -> Character:
     name = _require_name(metadata)
     born = _coerce_year(metadata.get("born"), "born")
     died = _coerce_year(metadata.get("died"), "died")
     features = _coerce_str_list(metadata.get("features"), "features")
     roles = _coerce_str_list(metadata.get("narrative_roles"), "narrative_roles")
-    _record_unknown_keys(metadata, CHARACTER_KEYS, relpath, result)
     return Character(
         uri_base=uri_base,
         name=name,
@@ -218,6 +217,7 @@ def _map_single_dir(  # noqa: PLR0913 - one cohesive mapping step; splitting hur
     concept: str,
     builder: Any,
     slug_index: dict[str, URIRef] | None,
+    allowed_keys: frozenset[str],
 ) -> None:
     if not directory.is_dir():
         return
@@ -236,6 +236,10 @@ def _map_single_dir(  # noqa: PLR0913 - one cohesive mapping step; splitting hur
         except EmptySlugError as exc:
             result.skipped.append(SkippedFile(path=relpath, reason=exc.message))
             continue
+        # Only record soft warnings once the file actually produced an entity, so a
+        # subsequently skipped file never contributes `unknown_keys` (report stays
+        # consistent: a skipped file shows up only under `skipped`).
+        _record_unknown_keys(frontmatter.metadata, allowed_keys, relpath, result)
         if slug_index is not None:
             slug_index[_slug_of(entity)] = entity.uri
         result.mapped.append(
@@ -295,7 +299,6 @@ def _map_collection_item(  # noqa: PLR0913 - threads the shared mapping state
             SkippedFile(path=relpath, reason=f"a `{container}` item is missing `name`")
         )
         return
-    _record_unknown_keys(item, ITEM_KEYS, relpath, result)
     participants = _resolve_participants(item, name, relpath, result, slug_index)
     try:
         entity = factory(name, participants)
@@ -303,6 +306,8 @@ def _map_collection_item(  # noqa: PLR0913 - threads the shared mapping state
     except EmptySlugError as exc:
         result.skipped.append(SkippedFile(path=relpath, reason=exc.message))
         return
+    # Record soft warnings only after the item produced an entity (see _map_single_dir).
+    _record_unknown_keys(item, ITEM_KEYS, relpath, result)
     result.mapped.append(
         MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
     )
@@ -315,8 +320,16 @@ def _resolve_participants(
     result: MapResult,
     slug_index: dict[str, URIRef],
 ) -> tuple[URIRef, ...]:
-    raw = item.get("participants", [])
+    raw = item.get("participants")
+    if raw is None:
+        return ()
     if not isinstance(raw, list):
+        # A scalar/mapping where a list was expected can't resolve to characters;
+        # surface it as an unresolved reference (soft warning) instead of dropping
+        # it silently. The owning event/relationship is still built.
+        result.unresolved_participants.append(
+            UnresolvedParticipant(path=relpath, entity=entity_name, name=str(raw))
+        )
         return ()
     resolved: list[URIRef] = []
     for ref in raw:
@@ -334,7 +347,14 @@ def _resolve_participants(
 
 def _safe_parse(path: Path, relpath: str, result: MapResult) -> Any:
     try:
-        return parse_frontmatter(path.read_text(encoding="utf-8"))
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        # A non-UTF-8 or unreadable file is "unusable frontmatter" (FR-013): skip
+        # it and keep building, exactly like a YAML error — never abort the build.
+        result.skipped.append(SkippedFile(path=relpath, reason=f"unreadable file: {exc}"))
+        return None
+    try:
+        return parse_frontmatter(text)
     except yaml.YAMLError as exc:
         result.skipped.append(
             SkippedFile(path=relpath, reason=f"malformed YAML frontmatter: {exc}")

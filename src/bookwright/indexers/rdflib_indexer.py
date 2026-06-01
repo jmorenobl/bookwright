@@ -18,7 +18,7 @@ from rdflib.term import Literal, URIRef
 
 from bookwright.golem.namespaces import bind_prefixes
 
-from .errors import InvalidQueryError
+from .errors import GraphLoadError, InvalidQueryError
 
 
 class RdflibIndexer:
@@ -49,8 +49,15 @@ class RdflibIndexer:
     # --- persistence --------------------------------------------------------
 
     def load(self, ttl_path: Path) -> None:
-        """Parse the Turtle at ``ttl_path`` into the engine's graph."""
-        self._graph.parse(str(ttl_path), format="turtle")
+        """Parse the Turtle at ``ttl_path`` into the engine's graph.
+
+        A malformed file raises :class:`GraphLoadError` (a clean envelope) rather
+        than letting an rdflib parse error escape as a raw traceback.
+        """
+        try:
+            self._graph.parse(str(ttl_path), format="turtle")
+        except Exception as exc:  # rdflib raises a variety of parse errors
+            raise GraphLoadError(str(ttl_path), str(exc)) from exc
 
     def save(self, ttl_path: Path) -> None:
         """Serialize the graph to Turtle (short prefixes), creating parent dirs."""

@@ -59,6 +59,32 @@ class GraphNotBuiltError(IndexerError):
         }
 
 
+class GraphLoadError(IndexerError):
+    """``bible/graph.ttl`` exists but the engine could not parse it (FR-016).
+
+    Distinct from :class:`GraphNotBuiltError` (no file at all): the file is there
+    but malformed — e.g. a hand-edit broke the Turtle. Surfaced as a clean error
+    envelope, never a raw rdflib traceback.
+    """
+
+    code = "graph_load_failed"
+
+    def __init__(self, path: str, reason: str) -> None:
+        self.path = path
+        self.reason = reason
+        message = f"could not parse graph at {path}: {reason}"
+        super().__init__(message)
+        self.message = message
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "status": "error",
+            "code": self.code,
+            "message": self.message,
+            "details": {"path": self.path, "reason": self.reason},
+        }
+
+
 class InvalidQueryError(IndexerError):
     """A malformed SPARQL string was handed to ``query`` / ``construct`` (FR-016).
 

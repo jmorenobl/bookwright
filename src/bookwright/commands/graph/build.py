@@ -12,6 +12,7 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
+from bookwright.core.errors import ManifestError
 from bookwright.core.manifest import Manifest
 from bookwright.indexers import UnknownIndexerError, resolve_indexer
 from bookwright.io.bible import build_provenance, map_bible
@@ -25,7 +26,7 @@ from bookwright.io.project import find_project_root
 from bookwright.io.report import BuildReport
 
 from . import app
-from .envelope import emit_error, emit_json
+from .envelope import emit_error, emit_json, error_payload
 
 EXIT_CONFIG = 2
 EXIT_COLLISION = 3
@@ -44,6 +45,9 @@ def run(
     console = Console(stderr=True)
     try:
         report = _build()
+    except ManifestError as exc:
+        emit_error(error_payload("invalid_manifest", str(exc)), json_output)
+        raise typer.Exit(EXIT_CONFIG) from exc
     except ProjectNotFoundError as exc:
         emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc

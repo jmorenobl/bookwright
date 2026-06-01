@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from .base import Indexer, IndexTriple
 from .errors import (
+    GraphLoadError,
     GraphNotBuiltError,
     IndexerError,
     InvalidQueryError,
@@ -34,6 +35,7 @@ def resolve_indexer(name: str) -> type[Indexer]:
 
 __all__ = [
     "INDEXER_REGISTRY",
+    "GraphLoadError",
     "GraphNotBuiltError",
     "IndexTriple",
     "Indexer",

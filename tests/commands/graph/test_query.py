@@ -79,6 +79,24 @@ def test_query_invalid_sparql(tiny_novel: Path, runner: CliRunner) -> None:
     assert payload["code"] == "invalid_query"
 
 
+def test_query_corrupt_graph(tiny_novel: Path, runner: CliRunner) -> None:
+    """A hand-broken graph.ttl yields a clean envelope (exit 2), not a traceback."""
+    _build(runner)
+    (tiny_novel / "bible" / "graph.ttl").write_text("@@ not turtle @@", encoding="utf-8")
+    result = runner.invoke(app, ["graph", "query", CHARACTERS_QUERY, "--json"])
+    assert result.exit_code == 2
+    assert json.loads(result.stdout)["code"] == "graph_load_failed"
+
+
+def test_query_malformed_manifest(tiny_novel: Path, runner: CliRunner) -> None:
+    """An unparseable manifest.toml maps to the config envelope, not a traceback."""
+    _build(runner)
+    (tiny_novel / "manifest.toml").write_text("this = = invalid toml", encoding="utf-8")
+    result = runner.invoke(app, ["graph", "query", CHARACTERS_QUERY, "--json"])
+    assert result.exit_code == 2
+    assert json.loads(result.stdout)["code"] == "invalid_manifest"
+
+
 def test_query_outside_project(outside_project: Path, runner: CliRunner) -> None:
     result = runner.invoke(app, ["graph", "query", CHARACTERS_QUERY, "--json"])
     assert result.exit_code == 2

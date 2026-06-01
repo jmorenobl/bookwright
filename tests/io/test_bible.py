@@ -136,6 +136,47 @@ def test_skip_on_missing_name(tmp_path: Path) -> None:
     assert "name" in result.skipped[0].reason
 
 
+def test_skip_on_non_utf8_file(tmp_path: Path) -> None:
+    """A non-UTF-8 source file is skipped, not fatal (FR-013): the build keeps going."""
+    bible = _bible(tmp_path)
+    # 0xE9 ("é" in Latin-1) is an invalid UTF-8 start byte → UnicodeDecodeError on read.
+    (bible / "characters" / "latin1.md").write_bytes(b"---\nname: Jos\xe9\n---\n")
+    _write(bible / "characters" / "ok.md", '---\nname: "Aparici"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert len(result.entities) == 1
+    skipped = next(s for s in result.skipped if s.path == "bible/characters/latin1.md")
+    assert "unreadable" in skipped.reason
+
+
+def test_unknown_keys_not_recorded_for_skipped_file(tmp_path: Path) -> None:
+    """A file skipped (empty slug) never contributes `unknown_keys` warnings."""
+    bible = _bible(tmp_path)
+    _write(bible / "characters" / "punct.md", '---\nname: "!!!"\nhairstyle: "beard"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert result.entities == []
+    assert result.skipped  # rejected for an empty slug
+    assert result.unknown_keys == []
+
+
+def test_non_list_participants_recorded_as_unresolved(tmp_path: Path) -> None:
+    """A scalar `participants` value is surfaced as unresolved, not dropped silently."""
+    bible = _bible(tmp_path)
+    _write(
+        bible / "timeline.md",
+        """\
+        ---
+        events:
+          - name: "Duelo"
+            participants: "Nadie"
+        ---
+        """,
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    event = next(e for e in result.entities if isinstance(e, NarrativeEvent))
+    assert event.participants == ()
+    assert [(u.entity, u.name) for u in result.unresolved_participants] == [("Duelo", "Nadie")]
+
+
 def test_skip_on_non_integer_born(tmp_path: Path) -> None:
     bible = _bible(tmp_path)
     _write(bible / "characters" / "bad.md", '---\nname: "Aparici"\nborn: "long ago"\n---\n')

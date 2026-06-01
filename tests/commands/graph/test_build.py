@@ -113,6 +113,15 @@ def test_build_outside_project(outside_project: Path, runner: CliRunner) -> None
     assert payload["code"] == "not_a_project"
 
 
+def test_build_malformed_manifest(tiny_novel: Path, runner: CliRunner) -> None:
+    """An unparseable manifest.toml maps to the config envelope (exit 2), not a traceback."""
+    (tiny_novel / "manifest.toml").write_text("this = = invalid toml", encoding="utf-8")
+    exit_code, payload = _build_json(runner)
+    assert exit_code == 2
+    assert payload["code"] == "invalid_manifest"
+    assert not (tiny_novel / "bible" / "graph.ttl").exists()
+
+
 def test_build_missing_bible(project_factory: Callable[..., Path], runner: CliRunner) -> None:
     root: Path = project_factory(with_bible=False)
     exit_code, payload = _build_json(runner)
