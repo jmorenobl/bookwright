@@ -5,9 +5,7 @@
       "command": "codegraph",
       "args": [
         "serve",
-        "--mcp",
-        "--path",
-        "/Users/jorge/Projects/bookwright"
+        "--mcp"
       ]
     }
   }

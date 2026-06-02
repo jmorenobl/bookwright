@@ -98,9 +98,9 @@ def authored_templates() -> list[Path]:
 
 
 def resource_text_files() -> list[Path]:
-    """Every non-cache file under both packaged resource trees (for the sentinel sweep)."""
+    """Every non-cache file under all three packaged resource trees (for the sentinel sweep)."""
     found: list[Path] = []
-    for root in (PROJECT_DIR, TEMPLATES_DIR):
+    for root in (PROJECT_DIR, TEMPLATES_DIR, COMMANDS_DIR):
         found += [
             p
             for p in root.rglob("*")
