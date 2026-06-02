@@ -8,6 +8,15 @@
 
 **Input**: User description: "Necesidad: la calidad de un libro depende de la coherencia interna. Bookwright debe poder detectar automáticamente inconsistencias temporales, presencia de personajes, continuidad de settings y respeto a la focalización declarada. Los validators son código Python que opera sobre el grafo y son deterministas (a diferencia de los chequeos LLM)."
 
+## Clarifications
+
+### Session 2026-06-02
+
+- Q: What signal does the `temporal` validator use to detect timeline contradictions? → A: Graph-internal consistency only — compare declared event dates/time-spans (`P4_has_time-span`) against the ordering relations the indexer extracted (`follows`, `temporally-overlaps`); flag earlier-dated events asserted to follow later-dated ones, plus cycles in `follows`. Document order is not consulted.
+- Q: When `--severity` filters the reported output, does it also affect the command's failure signal? → A: No — the `--severity` (and `--scope`) filters affect displayed output only. The failure/exit signal is computed from all violations found before filtering, so any error-severity violation fails the run regardless of the display filter.
+- Q: With `--scope` active, are location-less (graph-wide) violations reported? → A: No — `--scope` reports only violations whose source falls within the scope; location-less violations (e.g. `follows` cycles, orphaned bible characters) are omitted under scope and surface only in a full unscoped run.
+- Q: Is `--severity` an exact-level filter or a threshold? → A: Threshold (this level and above), ordering error > warning > info. `--severity warning` shows warnings and errors; `--severity error` shows only errors; `--severity info` shows everything.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Detect internal inconsistencies on demand (Priority: P1)
@@ -188,10 +197,15 @@ project's validators folder and confirm its findings appear in a normal run.
 - **FR-008**: The system MUST provide a `validate` command that runs all active
   validators over the project and reports the collected violations.
 - **FR-009**: The command MUST support limiting the validated scope to a single
-  file or a single directory, reporting only violations whose source falls within
-  that scope.
+  file or a single directory, reporting only violations whose source location
+  falls within that scope. Location-less (graph-wide) violations have no source
+  to match and MUST be omitted when a scope is active; they are surfaced only in
+  a full, unscoped run.
 - **FR-010**: The command MUST support filtering reported violations by severity
-  (error, warning, or info).
+  using a threshold (the named level and above), with ordering
+  error > warning > info. Thus `--severity warning` reports warnings and errors,
+  `--severity error` reports only errors, and `--severity info` reports
+  everything.
 - **FR-011**: The command MUST support a machine-readable output mode that emits
   a single structured document — and only that document — on the program's
   primary output channel, with all human-oriented progress and prose directed
@@ -201,7 +215,10 @@ project's validators folder and confirm its findings appear in a normal run.
 - **FR-013**: The command MUST signal overall failure to its caller when any
   error-severity violation is present, and success when none is, so that a CI
   pipeline can gate on it. Warnings and informational findings alone MUST NOT
-  cause a failure signal.
+  cause a failure signal. The `--severity` and `--scope` filters affect the
+  displayed output only; the failure signal MUST be computed from all violations
+  found before filtering, so a display filter can never mask an error-severity
+  violation from the gate.
 - **FR-014**: One validator failing to run MUST NOT prevent the others from
   running or prevent results from being reported; the failure itself MUST be
   surfaced.
@@ -209,9 +226,12 @@ project's validators folder and confirm its findings appear in a normal run.
 #### Built-in validators (v0)
 
 - **FR-015**: The system MUST provide a **temporal** validator (default
-  severity: error) that detects contradictions in the timeline of events — for
-  example, an event ordered as a consequence of a later-dated event — using the
-  events and their temporal relationships recorded in the graph.
+  severity: error) that detects contradictions in the timeline of events using
+  only the graph: it compares each event's declared time-span against the
+  ordering relations the indexer extracted (`follows`, `temporally-overlaps`)
+  and flags (a) an event with an earlier declared date asserted to follow a
+  later-dated event and (b) cycles in the `follows` relation. The validator does
+  not consult the physical document order of scenes/chapters.
 - **FR-016**: The system MUST provide a **character_presence** validator (default
   severity: error) that cross-checks characters defined in the bible against
   characters mentioned in the manuscript, reporting both manuscript mentions with
@@ -278,9 +298,9 @@ project's validators folder and confirm its findings appear in a normal run.
 
 ## Assumptions
 
-- **Severity filter semantics**: `--severity X` reports only violations whose
-  severity equals X (an exact-level filter), not "X and above". This is revisited
-  in clarification if a threshold model is preferred.
+- **Severity filter semantics**: `--severity X` is a threshold — it reports
+  violations at level X and above (error > warning > info), per Clarifications
+  2026-06-02. It affects displayed output only, never the failure signal.
 - **Default severities**: temporal and character_presence default to error;
   setting_continuity and focalization default to warning, per the design's
   built-in table (§ 13.2). setting_continuity and focalization are heuristic and
