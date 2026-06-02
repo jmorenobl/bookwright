@@ -175,7 +175,11 @@ story refines *how* they differ. Independently testable per integration.
   capability is reserved for a later iteration, but no injection is generated now.
 - **FR-012**: When an integration declares `supports_dynamic_context = false`
   (generic), the materializer MUST NOT emit any dynamic-context (`!`​`shell`​`​`)
-  syntax; output stays within the agentskills.io standard.
+  syntax; output stays within the agentskills.io standard. (FR-012 is the
+  flag-gated instance of FR-011: FR-011 forbids auto-emission for *every* v0
+  integration; FR-012 restates the guarantee for the integration whose
+  `supports_dynamic_context` flag is `false`. They are not redundant — FR-011 is
+  the blanket v0 rule, FR-012 the per-flag invariant that outlives v0.)
 - **FR-013**: The linter MUST enforce, as an invariant, that any dynamic-context
   injection present in a body (whether user-added or emitted by a future iteration)
   only reads a project file (e.g., `!`​`cat bible/constitution.md`​`​`) or invokes

@@ -103,8 +103,9 @@ specs/009-materialize-skills/
 src/bookwright/integrations/
 ├── base.py              # SkillsIntegration contract + ONE shared setup() (thin loop);
 │                        #   no SKILL_DESCRIPTIONS / generate_skill_md here
-├── materialize.py       # NEW — generate_skill_md() + _iter_command_sources +
-│                        #   _transform_body + _render_frontmatter + _copy_references
+├── materialize.py       # NEW — generate_skill_md() + iter_command_sources (PUBLIC:
+│                        #   imported by base.py → cross-module ⇒ no leading underscore) +
+│                        #   _transform_body + _render_frontmatter + _copy_references (private)
 ├── lint.py              # NEW — lint_skill_md() ad-hoc agentskills.io linter + approx_tokens()
 ├── descriptions.py      # NEW — SKILL_DESCRIPTIONS data table + get_description() (cap in one place)
 ├── constants.py         # reused: SKILL_NAME_MAX_LENGTH, SKILL_DESCRIPTION_MAX_LENGTH,

@@ -51,7 +51,7 @@ Serialized via `yaml.safe_dump(..., allow_unicode=True, sort_keys=False)` betwee
 |---|---|---|
 | `name` | command name (== parent dir) | FR-003, lint name==dir |
 | `description` | `SKILL_DESCRIPTIONS` lookup (R3) | FR-004, `< 1024` |
-| `license` | `"Apache-2.0"` (design default) | FR-005, A-002 |
+| `license` | `fm.metadata.get("license", DEFAULT_SKILL_LICENSE)` → `"Apache-2.0"` in v0 (no source declares one) | FR-005, A-002 |
 | `metadata.author` | `"bookwright"` | FR-006 |
 | `metadata.version` | `bookwright.__version__` (e.g. `"0.0.1"`) | FR-006, A-003 |
 

@@ -37,10 +37,15 @@ def generate_skill_md(
 4. Transform body: `body.replace("{ARGS}", "$ARGUMENTS")` (FR-007); assert no `{ARGS}`
    or `{SCRIPT}` token remains (SC-003); leave all other content intact (FR-018). Emit
    **no** `` !`…` `` injection (FR-011/012).
-5. Build frontmatter (`name`, `description`, `license="Apache-2.0"`,
+5. Build frontmatter (`name`, `description`,
+   `license=fm.metadata.get("license", DEFAULT_SKILL_LICENSE)`,
    `metadata.author="bookwright"`, `metadata.version=bookwright.__version__`) →
    `yaml.safe_dump(allow_unicode=True, sort_keys=False)` between `---` fences (R5,
-   FR-003/005/006).
+   FR-003/005/006). The license **honours a source-declared `license`** and falls back
+   to `DEFAULT_SKILL_LICENSE` (`"Apache-2.0"`, `constants.py`) — implementing FR-005 as
+   written ("inherited when the source does not specify one"). No v0 source declares a
+   license, so every materialized skill inherits `Apache-2.0` (A-002); the conditional
+   read keeps spec and code aligned and is future-proof at zero cost.
 6. Copy cited references: for each distinct `references/<file>.md` matched in the body,
    copy `commands/references/<file>.md` → `skill_dir / "references" / <file>.md`
    (FR-010). A citation with no matching source file → `SkillMaterializationError`

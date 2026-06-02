@@ -8,8 +8,9 @@ spec clarifications; **zero NEEDS CLARIFICATION remain**. Decisions below.
 - **Decision**: decompose **by responsibility**, not by line surgery. `base.py` stays
   the plugin *contract* (`SkillsIntegration` + **one shared `setup()`**). The new
   concerns get dedicated modules:
-  - `materialize.py` — `generate_skill_md(command_path, target_dir, integration)` and
-    its private helpers (`_iter_command_sources`, `_transform_body`,
+  - `materialize.py` — `generate_skill_md(command_path, target_dir, integration)` plus
+    the public `iter_command_sources()` (imported by `base.py` → cross-module, so no
+    leading underscore) and its private helpers (`_transform_body`,
     `_render_frontmatter`, `_copy_references`). Filesystem-mutating.
   - `lint.py` — `lint_skill_md()` + `approx_tokens()`. Pure, read-only.
   - `descriptions.py` — the bilingual `SKILL_DESCRIPTIONS` data table + a
