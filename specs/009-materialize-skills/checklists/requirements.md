@@ -32,10 +32,10 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
-- One soft area flagged for `/speckit-clarify` rather than blocking: the exact
-  merge semantics of `SKILL_DESCRIPTIONS` enrichment vs. the already-rich
-  iteration-8 source descriptions (documented as A-001). A reasonable default is in
-  place, so no [NEEDS CLARIFICATION] marker was raised.
+- `/speckit-clarify` (Session 2026-06-02) resolved three decisions now recorded in
+  the spec: `SKILL_DESCRIPTIONS` authoritative-with-fallback (A-001/FR-004),
+  no auto-emitted dynamic-context in v0 (A-007/FR-011/FR-013), and hard-error on
+  lint failure (A-006/FR-016).
 - Spec names concrete artifacts (`SKILL.md`, `.claude/skills/…`, `$ARGUMENTS`,
   `--json`, capability flags). These are the feature's user-facing surface (files an
   author inspects), not internal tech choices, so they are retained intentionally

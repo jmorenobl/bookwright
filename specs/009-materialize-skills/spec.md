@@ -33,7 +33,9 @@ and `§ 11.5` (progressive disclosure).
 
 ### Session 2026-06-02
 
-(none yet — `/speckit-clarify` pending)
+- Q: How should the materialized `description` relate to `SKILL_DESCRIPTIONS` vs. the iteration-8 source frontmatter description? → A: `SKILL_DESCRIPTIONS` is **authoritative** — it is the single source of the materialized `description` (mirrors Spec Kit's description dict, `src/specify_cli/__init__.py:1059-1069`), seeded from the iteration-8 canonical bilingual text and capped at 1024 chars in one place. The source frontmatter `description` is used **only as a fallback** when a command has no `SKILL_DESCRIPTIONS` entry.
+- Q: When/how should the Claude integration emit dynamic-context injection (``!`shell` ``)? → A: **Not auto-injected in v0.** The capability stays declared (`supports_dynamic_context = true`) but the materializer emits no ``!`shell` `` syntax; bodies keep prose read-instructions. The FR-013 constraint (any injection must read a project file or invoke `bookwright`, never a non-existent wrapper) is retained as a **linter invariant** guarding any injection that does appear (user-added or future).
+- Q: What happens when a generated `SKILL.md` fails the agentskills.io linter during `init`? → A: **Hard error / abort.** Materialization for that integration aborts, the offending skill is reported, and no invalid `SKILL.md` is left on disk. A lint failure on the shipped commands is treated as a build break (Principle VII/VIII).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -107,12 +109,15 @@ story refines *how* they differ. Independently testable per integration.
 **Acceptance Scenarios**:
 
 1. **Given** the Claude integration (`supports_dynamic_context = true`), **When** a
-   skill is materialized, **Then** dynamic-context injection (the `!`​`shell`​`​`
-   syntax) may appear in the body, and every such injection either reads a project
-   file or invokes the `bookwright` CLI — never a non-existent Python wrapper.
+   skill is materialized in v0, **Then** no dynamic-context (`!`​`shell`​`​`) syntax
+   is auto-emitted; the body uses prose read-instructions, and the linter would
+   reject any injection that targeted a non-existent wrapper.
 2. **Given** the generic integration (`supports_dynamic_context = false`), **When**
    a skill is materialized, **Then** no dynamic-context (`!`​`shell`​`​`) syntax
    appears anywhere in the body.
+3. **Given** either integration, **When** a skill is materialized in v0, **Then** the
+   bodies differ only by token substitution (and the integration's `skills_dir`), not
+   by dynamic-context syntax.
 
 ### Edge Cases
 
@@ -120,7 +125,8 @@ story refines *how* they differ. Independently testable per integration.
   characters MUST be prevented (the materializer keeps it within the cap rather
   than emitting a non-compliant skill).
 - **Body over the size budget**: a materialized body exceeding the ~5000-token
-  Tier-2 budget is a lint failure and MUST be surfaced, not silently shipped.
+  Tier-2 budget is a lint failure and MUST abort that integration's materialization
+  (per FR-016), not be silently shipped.
 - **Missing referenced file**: a source body referencing a `references/<file>` that
   does not exist in the source tree MUST be reported clearly rather than producing
   a skill with a dangling reference.
@@ -143,9 +149,11 @@ story refines *how* they differ. Independently testable per integration.
   one `SKILL.md` (e.g., `.claude/skills/bookwright-constitution/SKILL.md`).
 - **FR-003**: The generated `SKILL.md` frontmatter MUST include `name` identical to
   the parent directory name.
-- **FR-004**: The generated `description` MUST be the source command's description
-  enriched with explicit triggers drawn from a `SKILL_DESCRIPTIONS` mapping, and
-  MUST remain under 1024 characters.
+- **FR-004**: The generated `description` MUST come from a `SKILL_DESCRIPTIONS`
+  mapping keyed by command name, which is the authoritative source of the enriched,
+  trigger-bearing description; the source command's frontmatter `description` is used
+  only as a fallback when no `SKILL_DESCRIPTIONS` entry exists. The resulting
+  `description` MUST remain under 1024 characters.
 - **FR-005**: The frontmatter MUST include a `license` field, inherited from the
   Bookwright design default (`Apache-2.0`) when the source does not specify one.
 - **FR-006**: The frontmatter MUST include `metadata.author = "bookwright"` and
@@ -161,24 +169,27 @@ story refines *how* they differ. Independently testable per integration.
   `references/golem-character.md`), those files MUST be copied into the skill's own
   `references/` subdirectory (e.g.,
   `.claude/skills/bookwright-constitution/references/golem-character.md`).
-- **FR-011**: When an integration declares `supports_dynamic_context = true` (Claude
-  Code), the materializer MAY emit dynamic-context injection (`!`​`shell`​`​`
-  syntax) in the body for capability-aware enrichment.
+- **FR-011**: In v0 the materializer MUST NOT auto-emit dynamic-context injection
+  (`!`​`shell`​`​` syntax) for any integration; bodies keep prose read-instructions.
+  The `supports_dynamic_context = true` flag on Claude remains declared so the
+  capability is reserved for a later iteration, but no injection is generated now.
 - **FR-012**: When an integration declares `supports_dynamic_context = false`
   (generic), the materializer MUST NOT emit any dynamic-context (`!`​`shell`​`​`)
   syntax; output stays within the agentskills.io standard.
-- **FR-013**: Any dynamic-context injection that is emitted MUST only read a project
-  file (e.g., `!`​`cat bible/constitution.md`​`​`) or invoke the `bookwright` CLI;
-  it MUST NOT point at a non-existent Python wrapper or other absent executable.
+- **FR-013**: The linter MUST enforce, as an invariant, that any dynamic-context
+  injection present in a body (whether user-added or emitted by a future iteration)
+  only reads a project file (e.g., `!`​`cat bible/constitution.md`​`​`) or invokes
+  the `bookwright` CLI; it MUST NOT point at a non-existent Python wrapper or other
+  absent executable. (In v0 no injection is emitted, so this guards customizations.)
 - **FR-014**: Materialization MUST be idempotent at the `SKILL.md` granularity: if
   `<skills_dir>/<command>/SKILL.md` already exists, it MUST NOT be overwritten,
   preserving user customizations.
 - **FR-015**: Each generated `SKILL.md` MUST pass an agentskills.io-spec linter that
   verifies: `name` matches the parent directory, `description` < 1024 characters,
   body within the ~5000-token Tier-2 budget, and valid YAML frontmatter.
-- **FR-016**: A skill that fails linting MUST be surfaced as an error (the failure
-  is reported, not silently shipped), so init does not leave an invalid skill on
-  disk as if it were valid.
+- **FR-016**: A skill that fails linting MUST cause that integration's
+  materialization to abort with a reported error identifying the offending skill,
+  and MUST NOT leave an invalid `SKILL.md` on disk (hard error, not skip-and-warn).
 - **FR-017**: Materialization MUST NOT write outside the integration's resolved
   `skills_dir` (which itself is constrained to the project root, per iteration 3).
 - **FR-018**: The body MUST preserve the source command's instructional content
@@ -194,8 +205,9 @@ story refines *how* they differ. Independently testable per integration.
   `SKILL.md` (Tier 1 + Tier 2) and an optional `references/` subdirectory (Tier 3).
 - **`SKILL.md` frontmatter**: `name`, enriched `description`, `license`,
   `metadata.author`, `metadata.version`.
-- **`SKILL_DESCRIPTIONS` mapping**: per-command trigger text used to enrich the
-  source description into the materialized `description`.
+- **`SKILL_DESCRIPTIONS` mapping**: the authoritative per-command enriched,
+  trigger-bearing `description` text (source frontmatter is fallback). Capped at
+  1024 chars in one place.
 - **Integration capability flags**: `supports_dynamic_context` (and the existing
   `supports_subagents`, `supports_tool_restrictions`) that gate capability-aware
   enrichment.
@@ -218,22 +230,19 @@ story refines *how* they differ. Independently testable per integration.
 - **SC-005**: Re-running materialization over already-materialized skills changes
   zero existing `SKILL.md` files (byte-for-byte identical), while regenerating any
   skill whose directory is missing.
-- **SC-006**: For the generic integration, zero generated bodies contain
-  dynamic-context (`!`​`shell`​`​`) syntax; for the Claude integration, every
-  dynamic-context injection that appears targets a project file or the `bookwright`
-  CLI (zero target a non-existent wrapper).
+- **SC-006**: Zero generated bodies (either integration) contain dynamic-context
+  (`!`​`shell`​`​`) syntax in v0; and the linter rejects 100% of injections that
+  target a non-existent wrapper (verified against a crafted invalid sample).
 - **SC-007**: No artifacts are written outside the resolved `skills_dir`.
 
 ## Assumptions
 
-- **A-001 (Description enrichment)**: `SKILL_DESCRIPTIONS` lives in the integrations
-  layer (per design § 11.4, alongside the Spec Kit precedent) and supplies the
-  trigger text merged into each command's source description. Because iteration 8
-  already authored rich, bilingual descriptions with explicit triggers, the
-  materializer treats the source description as the base and merges
-  `SKILL_DESCRIPTIONS` triggers without duplication, truncating/omitting as needed
-  to stay under the 1024-char cap. (Exact merge semantics to be confirmed in
-  `/speckit-clarify`.)
+- **A-001 (Description enrichment)** — *resolved in Clarifications*:
+  `SKILL_DESCRIPTIONS` lives in the integrations layer (per design § 11.4, alongside
+  the Spec Kit precedent) and is the **authoritative** source of each materialized
+  `description`, seeded from the iteration-8 canonical bilingual text. The source
+  frontmatter `description` is the fallback when a command has no dict entry. See
+  FR-004.
 - **A-002 (License default)**: The Bookwright design default license is `Apache-2.0`;
   source commands carry no `license`, so all materialized skills inherit
   `Apache-2.0` in v0.
@@ -246,13 +255,16 @@ story refines *how* they differ. Independently testable per integration.
   skill is (re)generated, its `references/` files are written as part of that
   generation; when the `SKILL.md` already exists, the whole skill directory is left
   untouched.
-- **A-006 (Lint failure handling)**: A lint failure aborts that integration's
-  materialization with a reported error rather than skipping the offending skill
-  silently. (Init's overall error-envelope behavior is iteration 10; this iteration
-  only surfaces the failure.)
-- **A-007 (Dynamic-context scope in v0)**: Claude dynamic-context injection, where
-  used, is limited to reading project files (e.g., `bible/constitution.md`) or
-  invoking the `bookwright` CLI — consistent with the "no Python wrappers" rule.
+- **A-006 (Lint failure handling)** — *resolved in Clarifications*: A lint failure
+  aborts that integration's materialization with a reported error identifying the
+  offending skill and leaves no invalid `SKILL.md` on disk. (Init's overall
+  error-envelope consolidation is iteration 10; this iteration raises/reports the
+  failure.) See FR-016.
+- **A-007 (Dynamic-context scope in v0)** — *resolved in Clarifications*: The v0
+  materializer emits no dynamic-context injection. The FR-013 invariant — any
+  injection that appears reads a project file or invokes the `bookwright` CLI, never
+  a non-existent wrapper — is enforced by the linter to guard user customizations
+  and future iterations. See FR-011, FR-013.
 
 ## Out of Scope
 
