@@ -40,3 +40,17 @@
   [NEEDS CLARIFICATION] marker: the exact-level vs. threshold semantics of the
   `--severity` filter. It has a reasonable default and is a good candidate for
   `/speckit-clarify` to confirm.
+- **2026-06-02 — FR-015 temporal-interval clarification pass.** Four questions
+  resolved and encoded into FR-015 and the Clarifications log: (1) all five
+  qualitative relations are in v0 scope; (2) begin/end years attach via typed
+  boundary nodes (`temporal-location` → interval → `P2_has_type` + `P90_has_value`
+  `gYear`), supporting open intervals, never `P4_has_time-span`; (3) all four
+  contradiction rules (a–d) are checked; (4) all four default to uniform `error`
+  severity. All four temporal relations and the `P2_has_type`/`P90_has_value`
+  predicates were verified present in the frozen `golem-1.1/golem.ttl`.
+- **Plan/research divergence to reconcile next.** `research.md` D11 and
+  `plan.md` still describe the earlier single-year, two-relation (`follows` /
+  `temporally-overlaps`) model. The spec now mandates a five-relation,
+  typed begin/end interval model with four contradiction rules. Re-run
+  `/speckit-plan` (and `/speckit-analyze`) so the plan/tasks catch up before
+  implementation.

@@ -16,6 +16,10 @@
 - Q: When `--severity` filters the reported output, does it also affect the command's failure signal? → A: No — the `--severity` (and `--scope`) filters affect displayed output only. The failure/exit signal is computed from all violations found before filtering, so any error-severity violation fails the run regardless of the display filter.
 - Q: With `--scope` active, are location-less (graph-wide) violations reported? → A: No — `--scope` reports only violations whose source falls within the scope; location-less violations (e.g. `follows` cycles, orphaned bible characters) are omitted under scope and surface only in a full unscoped run.
 - Q: Is `--severity` an exact-level filter or a threshold? → A: Threshold (this level and above), ordering error > warning > info. `--severity warning` shows warnings and errors; `--severity error` shows only errors; `--severity info` shows everything.
+- Q: Which qualitative temporal relations are in v0 scope for the `temporal` validator? → A: All five — `follows`/`precedes` (strict order), `temporally-overlaps` (symmetric), and `temporally-includes`/`temporally-included-in` (containment). All five are present in the vendored frozen GOLEM ontology (`TemporalRelations.owl#`), so emitting them passes the term-closure test; no ontology amendment and design § 16 is not reopened.
+- Q: How do begin/end years attach to an event's interval using only frozen terms (the model must allow open — begin-only or end-only — intervals)? → A: **Typed boundary nodes.** The event links via `TR:temporal-location` to an interval node, which links (again via `temporal-location`) to up to two child time nodes; each boundary node is tagged with `crm:P2_has_type` (a begin/end type) and carries exactly one `crm:P90_has_value "YYYY"^^xsd:gYear`. An open interval emits only the boundary it knows. This is unambiguous for open intervals (each boundary is self-labelled), uses only frozen predicates (`temporal-location`, `P2_has_type`, `P90_has_value`), and reuses the existing `gYear` literal pattern. `crm:P4_has_time-span` and CIDOC's native boundary predicates (`P82a/P82b/P81/P79/P80`) are deliberately **not** used — they are absent from the frozen ontology and would fail closure.
+- Q: Which contradiction rules must the validator check? → A: All four of FR-015's rules — (a) cycles in `follows`/`precedes`; (b) a pair asserted both strict-order **and** `temporally-overlaps`; (c) containment conflicting with strict order; (d) numeric begin/end years contradicting a declared relation. The full set is supported because all five relations are in scope.
+- Q: What default severity applies to each contradiction kind? → A: **Uniform error.** All four contradiction kinds (a–d), across order, overlap, and containment, default to `error` and therefore gate CI. They are deterministic graph/number contradictions, so none is downgraded to a warning; this is consistent with FR-015's stated default severity and the determinism principle (FR-019).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -229,30 +233,45 @@ project's validators folder and confirm its findings appear in a normal run.
 
 #### Built-in validators (v0)
 
-- **FR-015**: The system MUST provide a **temporal** validator (default
-  severity: error) that detects contradictions in the timeline of events using
-  only the graph — never the physical document order of scenes/chapters — over a
-  **multi-year interval model**. An event MAY declare a time interval (a begin
-  year and/or an end year, so a single event can span several years) and MAY
-  declare qualitative temporal relations to other events: `follows` / `precedes`
-  (strict order), `temporally-overlaps` (symmetric co-occurrence), and
-  `temporally-includes` / `temporally-included-in` (containment). Over this
-  relation network the validator MUST flag:
-  - (a) **cycles** in the `follows`/`precedes` strict-order relation;
-  - (b) an event asserted to **both** strictly order (`follows`/`precedes`)
-    **and** `temporally-overlaps` another event (mutually exclusive claims);
-  - (c) **containment conflicting with strict order** — A
-    `temporally-includes` B while B also `follows`/`precedes` A;
-  - (d) when numeric begin/end years are present on the involved intervals, a
-    declared relation that **contradicts the numbers** — e.g. an interval that
-    ends earlier asserted to `follow` an interval that begins later, or an
-    `includes` relation whose interval does not actually contain the other.
+- **FR-015**: The system MUST provide a **temporal** validator that detects
+  contradictions in the timeline of events using only the graph — never the
+  physical document order of scenes/chapters — over a **multi-year interval
+  model**. An event MAY declare a time interval and MAY declare qualitative
+  temporal relations to other events. All four contradiction kinds below default
+  to **error** severity (uniform — order, overlap, and containment contradictions
+  are equally deterministic and all gate CI).
+  - **Interval model**: an event's interval is attached using only frozen GOLEM
+    predicates — the event links via `TR:temporal-location` to an interval node,
+    which links to up to two child boundary nodes; each boundary node is tagged
+    with `crm:P2_has_type` (a begin-year / end-year type) and carries exactly one
+    `crm:P90_has_value "YYYY"^^xsd:gYear`. An event MAY declare a begin year
+    and/or an end year, so a single event can span several years and **open
+    intervals** (begin-only or end-only) are valid — only the known boundary is
+    emitted, and each boundary is self-labelled so it is never ambiguous. The
+    system MUST NOT use `crm:P4_has_time-span` or CIDOC's native boundary
+    predicates (`P82a`/`P82b`/`P81`/`P79`/`P80`): they are absent from the frozen
+    ontology and would fail the term-closure test.
+  - **Qualitative relations (v0 scope — all five)**: `follows` / `precedes`
+    (strict order), `temporally-overlaps` (symmetric co-occurrence), and
+    `temporally-includes` / `temporally-included-in` (containment).
+  - Over this relation network the validator MUST flag:
+    - (a) **cycles** in the `follows`/`precedes` strict-order relation;
+    - (b) an event asserted to **both** strictly order (`follows`/`precedes`)
+      **and** `temporally-overlaps` another event (mutually exclusive claims);
+    - (c) **containment conflicting with strict order** — A
+      `temporally-includes` B while B also `follows`/`precedes` A;
+    - (d) when numeric begin/end years are present on the involved intervals, a
+      declared relation that **contradicts the numbers** — e.g. an interval that
+      ends earlier asserted to `follow` an interval that begins later, or an
+      `includes` relation whose interval does not actually contain the other.
   All temporal predicates this validator relies on — `TR:follows`,
   `TR:precedes`, `TR:temporally-overlaps`,
   `TR:temporally-includes` / `TR:temporally-included-in`,
-  `TR:temporal-location`, the DOLCE time-interval, and
-  `CommonSenseMapping:duration` — already exist in the vendored, frozen GOLEM
-  ontology. No ontology amendment is required and design § 16 is not reopened.
+  `TR:temporal-location`, `crm:P2_has_type`, `crm:P90_has_value`, the DOLCE
+  time-interval, and `CommonSenseMapping:duration` — already exist in the
+  vendored, frozen GOLEM ontology (verified against
+  `resources/schemas/golem-1.1/golem.ttl`). No ontology amendment is required
+  and design § 16 is not reopened.
 - **FR-016**: The system MUST provide a **character_presence** validator that
   cross-checks characters defined in the bible against characters mentioned in
   the manuscript, reporting both manuscript mentions with no bible entry and
