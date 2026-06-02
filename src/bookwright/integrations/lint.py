@@ -112,6 +112,8 @@ def lint_skill_md(skill_dir: Path) -> None:
         )
 
     # Rule 2 — name_mismatch: metadata["name"] == dir and < SKILL_NAME_MAX_LENGTH.
+    # Once name == skill_name is established, the length check is on the (always
+    # non-empty) directory name, so no separate type/lower-bound guard is needed.
     name = metadata.get("name")
     if name != skill_name:
         raise SkillLintError(
@@ -119,11 +121,11 @@ def lint_skill_md(skill_dir: Path) -> None:
             rule="name_mismatch",
             detail=f"frontmatter name {name!r} != directory {skill_name!r}",
         )
-    if not isinstance(name, str) or not (0 < len(name) < SKILL_NAME_MAX_LENGTH):
+    if len(skill_name) >= SKILL_NAME_MAX_LENGTH:
         raise SkillLintError(
             skill=skill_name,
             rule="name_mismatch",
-            detail=f"name length out of range (0, {SKILL_NAME_MAX_LENGTH}): {name!r}",
+            detail=f"name length {len(skill_name)} not below {SKILL_NAME_MAX_LENGTH}",
         )
 
     # Rule 3 — description_too_long: 0 < len(description) < SKILL_DESCRIPTION_MAX_LENGTH.

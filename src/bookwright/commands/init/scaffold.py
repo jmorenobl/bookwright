@@ -21,7 +21,6 @@ from bookwright import integrations as _integrations
 from bookwright.core.manifest import Manifest
 from bookwright.io.fs import (
     BackupCreationError,
-    BackupEntry,
     BackupLedger,
     TargetOutsideProjectRootError,
     _register_target,
@@ -42,7 +41,6 @@ __all__ = [
     "GIT_EXISTING_WARNING",
     "GIT_MISSING_WARNING",
     "BackupCreationError",
-    "BackupEntry",
     "BackupLedger",
     "TargetOutsideProjectRootError",
     "copy_resource_file",

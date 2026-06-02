@@ -164,9 +164,9 @@ class SkillLintError(_IntegrationError):
 class SkillMaterializationError(_IntegrationError):
     """Raised by ``generate_skill_md`` on a pre-write authoring error (FR-010/FR-020).
 
-    ``rule`` ∈ {``dangling_reference``, ``name_frontmatter_mismatch``}. Both are
-    detected *before* the first filesystem write, so a rejected source leaves
-    **zero** on-disk state (nothing to clean up).
+    ``rule`` ∈ {``dangling_reference``, ``name_frontmatter_mismatch``,
+    ``residual_token``}. All are detected *before* the first filesystem write, so a
+    rejected source leaves **zero** on-disk state (nothing to clean up).
     """
 
     code = "skill_materialization_failed"

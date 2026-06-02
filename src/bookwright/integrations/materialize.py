@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 import yaml
 
 import bookwright
-from bookwright.integrations.constants import DEFAULT_SKILL_LICENSE, SKILL_DESCRIPTION_MAX_LENGTH
+from bookwright.integrations.constants import DEFAULT_SKILL_LICENSE
 from bookwright.integrations.descriptions import get_description
 from bookwright.integrations.errors import SkillMaterializationError
 from bookwright.integrations.lint import lint_skill_md
@@ -58,12 +58,22 @@ def iter_command_sources() -> list[Traversable]:
     )
 
 
-def _transform_body(body: str) -> str:
-    """Substitute the sole ``{ARGS}`` token; assert no residual token survives."""
+def _transform_body(skill_name: str, body: str) -> str:
+    """Substitute the sole ``{ARGS}`` token; reject any residual token (SC-003).
+
+    Raises ``SkillMaterializationError`` (``residual_token``) rather than asserting,
+    so the fail-loud guarantee survives ``python -O`` (which strips ``assert``).
+    Pre-write, so a rejected source still leaves zero on-disk state.
+    """
 
     transformed = body.replace("{ARGS}", "$ARGUMENTS")
     for token in _RESIDUAL_TOKENS:
-        assert token not in transformed, f"residual token {token!r} survived body transform"
+        if token in transformed:
+            raise SkillMaterializationError(
+                skill=skill_name,
+                rule="residual_token",
+                detail=f"residual token {token!r} survived body transform",
+            )
     return transformed
 
 
@@ -158,12 +168,12 @@ def generate_skill_md(
             detail=f"frontmatter name {fm_name!r} != filename stem {name!r}",
         )
 
-    # Step 3 — authoritative description (R3, FR-004); cap asserted in get_description.
+    # Step 3 — authoritative description (R3, FR-004). The 1024-char cap is owned
+    # by get_description and re-enforced loudly by lint_skill_md's Rule 3 below.
     description = get_description(name, parsed.metadata.get("description", ""))
-    assert len(description) < SKILL_DESCRIPTION_MAX_LENGTH
 
     # Step 4 — body transform (sole token substitution).
-    body = _transform_body(parsed.body)
+    body = _transform_body(name, parsed.body)
 
     # Step 5 — resolve cited references (pure; a dangling ref aborts pre-write).
     copy_list = _resolve_references(body)
