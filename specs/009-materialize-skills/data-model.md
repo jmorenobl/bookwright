@@ -10,8 +10,8 @@ Packaged Markdown under `bookwright.resources.commands/<name>.md` (iteration 8).
 
 | Field | Source | Notes |
 |---|---|---|
-| `name` | frontmatter `name` | equals file basename; `< 64` chars (already gated upstream) |
-| `description` | frontmatter `description` | bilingual ES/EN triggers; **fallback** only (R3) |
+| `name` | **filename stem** (authoritative) | the stem names both the skill dir and the frontmatter `name`; the frontmatter `name` is **validated to equal the stem** (FR-020) — a mismatch is a reported authoring error (`name_frontmatter_mismatch`), not a silently-ignored field; `< 64` chars |
+| `description` | frontmatter `description` | bilingual ES/EN triggers; **fallback** only (R3); mirrored by `SKILL_DESCRIPTIONS` under a CI equality gate in v0 (SC-009) |
 | `body` | text after frontmatter fence | contains `{ARGS}`, inline `bookwright … --json`, `references/<file>.md` citations |
 
 Roster (10, pinned by iteration-8 tests): `bookwright-constitution`,
@@ -41,6 +41,12 @@ def get_description(name: str, fallback: str) -> str:
 - **Lookup rule**: `get_description(name, source_frontmatter["description"])` →
   `SKILL_DESCRIPTIONS.get(name, fallback)`. Missing-key fallback to the source
   frontmatter description (R3).
+- **Equality gate (v0)**: a unit test asserts `SKILL_DESCRIPTIONS[name] ==
+  source_frontmatter["description"]` for all 10 roster commands (SC-009). The dict stays
+  the authoritative read seam (where the cap lives and where future per-skill tuning would
+  land), but the gate makes any divergence from the source an explicit, reviewed change —
+  never silent drift. "authoritative, trigger-bearing", **not** "enriched": in v0 the text
+  is the iteration-8 source verbatim.
 
 ## 3. Materialized `SKILL.md` frontmatter (output)
 
@@ -80,13 +86,26 @@ Serialized via `yaml.safe_dump(..., allow_unicode=True, sort_keys=False)` betwee
 | Missing skill dir | (re)generate in full incl. its `references/` | A-005, SC-005 |
 | Containment | never write outside resolved `skills_dir` (⊆ project root, iteration-3 guard reused) | FR-017, SC-007 |
 | Lint failure | remove the half-written offending skill dir, raise `SkillLintError`, abort this integration | FR-016, A-006 |
+| Ledger recording | every created dir/file is recorded so `init` rollback removes it — incl. pre-existing `skills_dir` | FR-019, SC-008 |
 
-**Rollback (R7 decision (b))**: `setup()` keeps its iteration-3 signature
-`(project_root, manifest, parsed_options)`. On a per-skill lint failure the materializer
-deletes *that* skill's directory before raising, so no invalid `SKILL.md` is left. The
-existing init `BackupLedger` already tracks the `mkdir`'d `skills_dir`, so whole-`init`
-rollback unwinds the rest; `scaffold.py` step 4 drops the now-obsolete
-`.bookwright-skills-placeholder` pre-record.
+**Rollback (R7 — ledger-threaded)**: `setup()` gains a keyword-only
+`ledger: FileLedger | None = None` (defaulting to `NullLedger()` for standalone callers);
+`scaffold.py` passes the live `BackupLedger`. The materializer creates each `<command>/`
+(and `references/`) directory via `mkdir_tracked` and writes each file via
+`write_bytes_atomic` — **recording every path it actually creates** through the ledger.
+On a per-skill lint failure it deletes *that* skill's directory before raising (so no
+invalid `SKILL.md` is left); the ledger entries for already-removed paths are inert at
+rollback (it guards with `if entry.target.exists()`). Whole-`init` rollback then unwinds
+**all** materialized artifacts, including the case where `skills_dir` pre-existed and
+`mkdir_tracked` recorded no parent (the iteration-3 assumption "the parent `skills_dir`
+mkdir covers the subtree" was false under `--force`/`--here`). `scaffold.py` step 4 drops
+the now-obsolete `.bookwright-skills-placeholder` pre-record — the ledger threading is its
+correct, general replacement.
+
+`mkdir_tracked` only records directories it actually creates (walk-up of non-existent
+parents), so re-materializing into a pre-existing skill dir never records (or rolls back)
+a directory the user already had. The `FileLedger` Protocol decouples the integration
+from `init`: it depends on the protocol, never on the concrete `BackupLedger`.
 
 ## 6. Error envelope: `SkillLintError`
 
@@ -99,6 +118,15 @@ class SkillLintError(_IntegrationError):
     def __init__(self, *, skill: str, rule: str, detail: str) -> None: ...
 ```
 
-`rule` ∈ {`name_mismatch`, `description_too_long`, `body_over_budget`,
-`invalid_frontmatter`, `forbidden_injection`, `dangling_reference`}. Consumed later by
-iteration-10's error-envelope consolidation without format change.
+Rules split by error type:
+
+- `SkillLintError` (post-write, user-edit-facing) — `rule` ∈ {`name_mismatch`,
+  `description_too_long`, `body_over_budget`, `invalid_frontmatter`,
+  `forbidden_injection`}.
+- `SkillMaterializationError` (pre/at generation, authoring-facing) — `rule` ∈
+  {`dangling_reference`, `name_frontmatter_mismatch`}. The latter fires when a source's
+  frontmatter `name` disagrees with its filename stem (FR-020) — turning the previously
+  ignored field into a checked authoring invariant.
+
+Both reuse `_IntegrationError.to_dict()`, so iteration-10's error-envelope consolidation
+consumes them without format change.

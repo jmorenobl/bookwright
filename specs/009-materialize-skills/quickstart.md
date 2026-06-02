@@ -84,4 +84,7 @@ on disk:
 - `src/bookwright/integrations/lint.py` — `lint_skill_md`, `approx_tokens`.
 - `src/bookwright/integrations/descriptions.py` — `SKILL_DESCRIPTIONS` + `get_description`.
 - `src/bookwright/integrations/{claude,generic}/__init__.py` — class vars only.
+- `src/bookwright/io/fs.py` — `FileLedger` protocol + `NullLedger` + `BackupLedger` +
+  `mkdir_tracked`/`write_bytes_atomic` (extracted from `init/scaffold.py`); `setup()`
+  records every materialized path here so a failed `init` rolls them back.
 - `src/bookwright/resources/commands/` — read-only source roster (iteration 8).

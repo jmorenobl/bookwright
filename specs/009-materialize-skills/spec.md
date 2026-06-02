@@ -66,7 +66,7 @@ and a body containing `$ARGUMENTS` (not `{ARGS}`).
    into the skill's own `references/` subdirectory and the body's references still
    resolve.
 3. **Given** a materialized `SKILL.md`, **When** its frontmatter is read, **Then**
-   it contains `name` (identical to the parent directory), an enriched
+   it contains `name` (identical to the parent directory), an authoritative
    `description`, `license`, `metadata.author = "bookwright"`, and
    `metadata.version` equal to the CLI version that generated it.
 4. **Given** a source command body containing the `{ARGS}` token, **When**
@@ -130,8 +130,17 @@ story refines *how* they differ. Independently testable per integration.
 - **Missing referenced file**: a source body referencing a `references/<file>` that
   does not exist in the source tree MUST be reported clearly rather than producing
   a skill with a dangling reference.
-- **`name` ≠ directory**: a source `name` that would not match its destination
-  directory MUST be caught by the linter before the skill is considered valid.
+- **`name` ≠ directory**: the materialized `name` is derived from the source filename
+  stem, which also names the destination directory, so generated skills always match by
+  construction. The linter's `name_mismatch` rule guards **hand-edited** skills where a
+  user changed the frontmatter `name` away from its directory.
+- **Source frontmatter `name` ≠ filename stem**: a source command whose frontmatter
+  `name` disagrees with its filename stem MUST be reported as an authoring error
+  (`name_frontmatter_mismatch`) at materialization, not silently ignored (FR-020).
+- **`init` over a pre-existing `skills_dir` (`--force` / `--here`)**: when `skills_dir`
+  already exists and materialization aborts midway (e.g. a lint failure on the 5th skill),
+  `init`'s rollback MUST remove every `<command>/` directory it created — leaving zero
+  orphaned skill directories (FR-019).
 - **No source commands present**: materialization over an empty `commands/` set
   completes without error and produces no skill directories.
 - **Generic integration with a re-targeted `--skills-dir`**: skills materialize
@@ -150,10 +159,14 @@ story refines *how* they differ. Independently testable per integration.
 - **FR-003**: The generated `SKILL.md` frontmatter MUST include `name` identical to
   the parent directory name.
 - **FR-004**: The generated `description` MUST come from a `SKILL_DESCRIPTIONS`
-  mapping keyed by command name, which is the authoritative source of the enriched,
-  trigger-bearing description; the source command's frontmatter `description` is used
-  only as a fallback when no `SKILL_DESCRIPTIONS` entry exists. The resulting
-  `description` MUST remain under 1024 characters.
+  mapping keyed by command name, which is the authoritative, trigger-bearing source of
+  the materialized `description`; the source command's frontmatter `description` is used
+  only as a fallback when no `SKILL_DESCRIPTIONS` entry exists. In v0 the dict value
+  **mirrors** each source's frontmatter `description` (the iteration-8 text is already
+  bilingual and trigger-bearing); this mirror is enforced by a CI equality gate (see
+  SC-002 / the descriptions test) so accidental drift fails the build, while a deliberate,
+  reviewed divergence remains a one-line change. The resulting `description` MUST remain
+  under 1024 characters.
 - **FR-005**: The frontmatter MUST include a `license` field, inherited from the
   Bookwright design default (`Apache-2.0`) when the source does not specify one.
 - **FR-006**: The frontmatter MUST include `metadata.author = "bookwright"` and
@@ -163,8 +176,12 @@ story refines *how* they differ. Independently testable per integration.
 - **FR-008**: `bookwright` CLI calls in the body MUST be written inline (e.g.,
   `bookwright graph build --json`); there MUST be no `{SCRIPT}` token and no
   reference to helper scripts under `.bookwright/scripts/`.
-- **FR-009**: Agent-facing subcommands invoked from skill bodies MUST use their
-  JSON output mode (e.g., `--json`) so the agent can parse the result.
+- **FR-009**: The materializer MUST preserve the source body's `bookwright … --json`
+  calls **verbatim** — it neither adds nor strips `--json`. The `--json` convention is a
+  property authored into the iteration-8 source commands; enforcing it across all source
+  bodies (a skill-body lint that contrasts `bookwright` calls against the real CLI) is the
+  responsibility of the iteration-11 validation system, not this iteration. A lightweight
+  regression test guards the known agent-facing calls (e.g. `bookwright graph build --json`).
 - **FR-010**: When a source body references files under `references/` (e.g.,
   `references/golem-character.md`), those files MUST be copied into the skill's own
   `references/` subdirectory (e.g.,
@@ -199,6 +216,18 @@ story refines *how* they differ. Independently testable per integration.
 - **FR-018**: The body MUST preserve the source command's instructional content
   (role, procedure, outputs, "what not to do") apart from the token substitutions
   and capability-aware enrichment defined above.
+- **FR-019**: Materialization MUST register every directory and file it creates with
+  `init`'s rollback ledger, so an aborted `init` removes all materialized artifacts even
+  when `skills_dir` pre-existed — leaving no orphaned `<command>/` skill directories. The
+  integration receives the ledger through a narrow `FileLedger` protocol (it depends on the
+  protocol, not on the concrete `BackupLedger`); when `setup()` is called outside `init`
+  (e.g. a unit test) a no-op `NullLedger` is used. This supersedes the iteration-3
+  arrangement where `scaffold.py` pre-recorded a single placeholder marker on the
+  integration's behalf.
+- **FR-020**: The materialized skill `name` MUST be derived from the source filename stem
+  (the single source of truth for both the skill directory name and the frontmatter
+  `name`). A source whose frontmatter `name` does not equal its filename stem MUST be
+  rejected at materialization (a reported authoring error), not silently ignored.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -207,11 +236,16 @@ story refines *how* they differ. Independently testable per integration.
   `bookwright …` calls. Read-only input to materialization.
 - **Materialized skill**: a `<skills_dir>/<command>/` directory holding one
   `SKILL.md` (Tier 1 + Tier 2) and an optional `references/` subdirectory (Tier 3).
-- **`SKILL.md` frontmatter**: `name`, enriched `description`, `license`,
+- **`SKILL.md` frontmatter**: `name`, authoritative `description`, `license`,
   `metadata.author`, `metadata.version`.
-- **`SKILL_DESCRIPTIONS` mapping**: the authoritative per-command enriched,
-  trigger-bearing `description` text (source frontmatter is fallback). Capped at
-  1024 chars in one place.
+- **`SKILL_DESCRIPTIONS` mapping**: the authoritative, trigger-bearing per-command
+  `description` text (source frontmatter is fallback); mirrors the source in v0 under a
+  CI equality gate. Capped at 1024 chars in one place.
+- **`FileLedger` protocol / `NullLedger`**: the narrow rollback-recording seam
+  (`record_new_file`, `record_new_directory`, `record_overwrite`) that `setup()` and the
+  materializer use so every created path participates in `init`'s transactional rollback;
+  `BackupLedger` satisfies it structurally, `NullLedger` is the no-op default for
+  standalone calls.
 - **Integration capability flags**: `supports_dynamic_context` (and the existing
   `supports_subagents`, `supports_tool_restrictions`) that gate capability-aware
   enrichment.
@@ -238,6 +272,12 @@ story refines *how* they differ. Independently testable per integration.
   (`!`​`shell`​`​`) syntax in v0; and the linter rejects 100% of injections that
   target a non-existent wrapper (verified against a crafted invalid sample).
 - **SC-007**: No artifacts are written outside the resolved `skills_dir`.
+- **SC-008**: An `init` that aborts mid-materialization over a **pre-existing**
+  `skills_dir` leaves zero materialized `<command>/` directories on disk (full rollback,
+  no orphans), verified against a crafted forced-failure run.
+- **SC-009**: `SKILL_DESCRIPTIONS` and the source frontmatter `description` agree for
+  100% of the roster in v0 (equality gate); any divergence is an explicit, reviewed change,
+  never silent drift.
 
 ## Assumptions
 
@@ -290,3 +330,8 @@ story refines *how* they differ. Independently testable per integration.
   as input.
 - **Iteration 6** (`bookwright graph …` JSON subcommands) and the broader CLI —
   referenced inline by materialized bodies (no new CLI behavior added here).
+- **Iterations 1 / 4** (`init` scaffold, `BackupLedger`, `mkdir_tracked`,
+  `write_bytes_atomic`) — the transactional-fs primitives are extracted into a shared
+  `bookwright/io/fs.py` so the materializer can record its mutations through the same
+  ledger (FR-019); `setup()` gains a keyword-only `ledger: FileLedger | None` and
+  `scaffold.py` passes the live ledger in.

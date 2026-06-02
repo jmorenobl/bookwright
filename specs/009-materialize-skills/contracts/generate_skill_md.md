@@ -7,13 +7,19 @@ def generate_skill_md(
     command_path: Traversable | Path,
     target_dir: Path,
     integration: SkillsIntegration,
+    *,
+    ledger: FileLedger,
 ) -> Path | None:
     """Materialize one source command into a per-skill directory.
 
     Returns the written SKILL.md path, or None if the skill already existed
     (idempotency skip). Raises SkillLintError on a lint failure (after removing
     the half-written skill dir). Raises SkillMaterializationError on a dangling
-    reference.
+    reference or a frontmatter `name` ≠ filename-stem mismatch.
+
+    Every directory and file it creates is recorded through `ledger`
+    (a FileLedger; NullLedger for standalone calls) so init can roll them back
+    (FR-019).
     """
 ```
 
@@ -25,10 +31,18 @@ def generate_skill_md(
   (`project_root / resolve_skills_dir(...)`), already containment-checked by `setup()`.
 - `integration` — the calling `SkillsIntegration` (provides `key`, capability flags;
   `supports_dynamic_context` is **read but not acted on** in v0 — FR-011).
+- `ledger` — a `FileLedger` (the narrow rollback-recording protocol from `bookwright.io.fs`,
+  satisfied structurally by `BackupLedger`; `NullLedger` no-ops it for standalone calls).
+  The materializer creates dirs via `mkdir_tracked(.., ledger)` and writes files via
+  `write_bytes_atomic(.., ledger)`, so every created path is rolled back on a failed
+  `init` — including over a pre-existing `skills_dir` (FR-019).
 
 ## Behaviour (must)
 
-1. Derive `name` from the source filename stem; `skill_dir = target_dir / name`.
+1. Derive `name` from the source filename stem (the single source of truth);
+   `skill_dir = target_dir / name`. **Validate** `fm.metadata.get("name") == name`; a
+   mismatch → `SkillMaterializationError(rule="name_frontmatter_mismatch")` (FR-020) —
+   the frontmatter `name` is checked, never silently ignored.
 2. **Idempotency** (FR-014): if `skill_dir / "SKILL.md"` exists → return `None`, write
    nothing.
 3. Resolve `description = descriptions.get_description(name, fm.metadata["description"])`
@@ -48,11 +62,14 @@ def generate_skill_md(
    read keeps spec and code aligned and is future-proof at zero cost.
 6. Copy cited references: for each distinct `references/<file>.md` matched in the body,
    copy `commands/references/<file>.md` → `skill_dir / "references" / <file>.md`
-   (FR-010). A citation with no matching source file → `SkillMaterializationError`
-   (`dangling_reference`).
-7. Write atomically into `skill_dir`; then **lint** the result via `lint_skill_md`
-   (see sibling contract). On `SkillLintError`, delete `skill_dir` and re-raise
-   (FR-016 — "no invalid SKILL.md on disk").
+   (FR-010), creating `skill_dir/references/` via `mkdir_tracked(.., ledger)` and writing
+   via `write_bytes_atomic(.., ledger)`. A citation with no matching source file →
+   `SkillMaterializationError` (`dangling_reference`).
+7. Create `skill_dir` via `mkdir_tracked(.., ledger)` and write `SKILL.md` via
+   `write_bytes_atomic(.., ledger)` (every created path recorded — FR-019); then **lint**
+   the result via `lint_skill_md` (see sibling contract). On `SkillLintError`, delete
+   `skill_dir` and re-raise (FR-016 — "no invalid SKILL.md on disk"); the now-stale ledger
+   entries are inert at rollback (it guards with `if entry.target.exists()`).
 8. Never write outside `target_dir` (FR-017).
 
 ## `setup()` driver (single shared method in `base.py` — FR-001)
@@ -61,21 +78,28 @@ One `setup()` lives in `base.py`; **neither v0 subclass overrides it** (the
 iteration-3 stance is kept — the only per-integration variation is already behind
 `resolve_skills_dir()` and the capability flags). "Rewriting both setups" (the plan
 input) means this shared body now materializes for real instead of writing a marker.
+`setup()` gains a keyword-only `ledger: FileLedger | None` (defaulting to `NullLedger()`),
+so the iteration-3 signature is **extended, not preserved** — this is the correct
+replacement for the marker pre-record that `scaffold.py` did on the integration's behalf.
 
 ```python
 # base.py
 from bookwright.integrations.materialize import generate_skill_md, iter_command_sources
+from bookwright.io.fs import FileLedger, NullLedger, mkdir_tracked
 
-def setup(self, project_root, manifest, parsed_options=None) -> None:
+def setup(self, project_root, manifest, parsed_options=None, *, ledger=None) -> None:
+    ledger = ledger or NullLedger()
     target = (project_root / self.resolve_skills_dir(parsed_options)).resolve()
     # reuse iteration-3 containment guards (resolves_to_project_root / escapes_project_root)
-    target.mkdir(parents=True, exist_ok=True)
+    mkdir_tracked(target, ledger)
     for command_path in iter_command_sources():   # packaged roster, R4
-        generate_skill_md(command_path, target, self)
+        generate_skill_md(command_path, target, self, ledger=ledger)
 ```
 
 - `materialize.py` imports `SkillsIntegration` under `TYPE_CHECKING` only (R1) — no
-  runtime import cycle with `base.py`.
+  runtime import cycle with `base.py`. `base.py` and `materialize.py` import the fs
+  primitives from `bookwright.io.fs` (which imports neither `commands` nor
+  `integrations`) — acyclic.
 - Empty roster → completes, creates no skill dirs (edge case "no source commands").
 - A `SkillLintError`/`SkillMaterializationError` from any command **propagates**
   (aborts this integration — FR-016); no `try/except` swallow.

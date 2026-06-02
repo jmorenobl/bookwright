@@ -135,15 +135,23 @@ spec clarifications; **zero NEEDS CLARIFICATION remain**. Decisions below.
 - **Rationale**: protects hand-edits (US2, SC-005, FR-014) with the simplest possible
   rule; reuses the existing ledger (`record_new_file`/`write_bytes_atomic`/
   `mkdir_tracked`) rather than inventing a second rollback path.
-- **Open coupling note**: `setup()`'s signature `(project_root, manifest,
-  parsed_options)` does not carry the ledger. Two options surface in Phase 1: (a)
-  `setup()` returns the list of created paths and `scaffold.py` records them; (b) the
-  materializer writes atomically and `init`'s existing top-level rollback removes the
-  `skills_dir` subtree it created. **Chosen (data-model § 5): (b)** — `setup()` keeps
-  its iteration-3 signature; on lint failure the materializer cleans up *its own*
-  partially-written skill dir (FR-016 "no invalid SKILL.md on disk"), and whole-`init`
-  failure is handled by the existing ledger that already tracks the `mkdir`'d
-  `skills_dir`. This avoids widening the `setup()` contract mid-iteration.
+- **Coupling resolution (FR-019)**: the iteration-3 `setup()` signature
+  `(project_root, manifest, parsed_options)` does not carry the ledger. Two options
+  surfaced: (a) **thread a narrow `FileLedger` into `setup()`/`generate_skill_md`** so the
+  materializer records every path it creates; (b) rely on `init`'s top-level rollback to
+  remove the `skills_dir` *subtree* it created. **Chosen: (a)** — option (b) is unsound
+  when `skills_dir` **pre-exists** (`--force`/`--here`): `mkdir_tracked` then records no
+  parent, the materializer's `<command>/` dirs are created un-tracked, and a failed `init`
+  would leave orphans (the marker pre-record was a one-file patch over exactly this hole).
+  So `setup()` gains a keyword-only `ledger: FileLedger | None = None` (`NullLedger()` for
+  standalone calls), `scaffold.py` passes the live `BackupLedger`, and the materializer
+  creates dirs / writes files via `mkdir_tracked` / `write_bytes_atomic`. On a per-skill
+  lint failure the materializer still deletes *its own* half-written dir (FR-016);
+  whole-`init` rollback unwinds the rest from the recorded entries (SC-008). The
+  `FileLedger` Protocol keeps the integration decoupled from `init` (depends on the
+  protocol, not `BackupLedger`); the fs primitives are extracted to `bookwright/io/fs.py`
+  so both layers share one tested rollback path. This is a deliberate, correctness-driven
+  extension of the `setup()` contract, not a mid-iteration widening for convenience.
 
 ## R8 — Lint failure = hard abort (FR-016) and the dynamic-context invariant (FR-013)
 

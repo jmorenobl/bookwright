@@ -17,6 +17,12 @@ def lint_skill_md(skill_dir: Path) -> None:
 |---|---|---|---|
 | 1 | `invalid_frontmatter` | `SKILL.md` exists and `parse_frontmatter` yields a non-empty `metadata` dict (valid YAML fence) | FR-015 |
 | 2 | `name_mismatch` | `metadata["name"] == skill_dir.name` and `len(name) < SKILL_NAME_MAX_LENGTH` (64) | FR-003, FR-015 |
+<!-- Rule 2 (name_mismatch) is post-write and guards HAND-EDITED skills (a user changed
+the frontmatter name away from its dir). It is distinct from the materializer's
+`name_frontmatter_mismatch` check (SkillMaterializationError, FR-020), which runs at
+generation and validates the SOURCE frontmatter name == filename stem. Generated skills
+pass rule 2 by construction (the materializer sets name from the stem). -->
+
 | 3 | `description_too_long` | `0 < len(metadata["description"]) < SKILL_DESCRIPTION_MAX_LENGTH` (1024) | FR-004, FR-015 |
 | 4 | `body_over_budget` | `approx_tokens(body) < SKILL_BODY_MAX_TOKENS` (5000) | FR-015, edge "body over budget" |
 | 5 | `forbidden_injection` | every `` !`…` `` injection in the body **invokes `bookwright`** or **reads a project file** with an allowlisted read command on a project-relative path — never an arbitrary executable, absent wrapper, or absolute/home path | FR-013, SC-006 |
