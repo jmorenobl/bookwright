@@ -18,16 +18,17 @@ event dates — exactly the signals the clarified `temporal` validator needs.
 layered way* so `temporal` works on real projects, not just on fixtures:
 
 1. Extend the **timeline frontmatter** (`bible/timeline.md`) so each event may
-   declare an optional `date:` (integer year) and `follows:` (list of event names);
-   optionally `overlaps:`.
+   declare an optional `begin:` / `end:` year (plus a `date:` shorthand for a
+   single-year point interval) and any of the five qualitative relation keys
+   (`follows:` / `precedes:` / `overlaps:` / `includes:` / `included_in:`, each a
+   list of event names).
 2. Extend the **`NarrativeEvent` GOLEM model + the indexer mapping** to emit, for
-   each event: a year literal (closure-safe modelling — see **D11**) and one
-   `TemporalRelations.owl#follows` (resp. `temporally-overlaps`) edge per declared
-   relation, with the names resolved through the same slug index used for
-   participants. Unresolved references become soft warnings, exactly like
-   participants.
-3. `temporal` stays a **pure graph consumer**: it queries the graph for event-year
-   literals and `follows`/`temporally-overlaps` edges. This keeps the layering
+   each event: a closure-safe **time interval** (begin/end boundaries — see **D11**)
+   and one `TemporalRelations.owl#` edge per declared qualitative relation, with the
+   referenced names resolved through the same slug index used for participants.
+   Unresolved references become soft warnings, exactly like participants.
+3. `temporal` stays a **pure graph consumer**: it queries the graph for each event's
+   begin/end boundaries and the five relation edges (D12). This keeps the layering
    clean (indexer extracts, validator checks) and matches the clarified spec
    literally.
 
@@ -35,7 +36,7 @@ Each validator's source of truth:
 
 | Validator | Primary source | What it reads |
 |---|---|---|
-| `temporal` | the graph (`bible/graph.ttl`) | per-event year literal + `follows`/`temporally-overlaps` edges (now emitted by the indexer) |
+| `temporal` | the graph (`bible/graph.ttl`) | per-event begin/end interval boundaries + the five `follows`/`precedes`/`overlaps`/`includes`/`included-in` edges (now emitted by the indexer) |
 | `character_presence` | bible + manuscript prose | bible character names vs. regex name matches in `manuscript/**.md` |
 | `setting_continuity` | bible + manuscript prose | setting names vs. contradicting descriptor terms in prose |
 | `focalization` | constitution + manuscript prose | declared person/focus vs. prose POV signals |
@@ -58,10 +59,12 @@ new dependency, no principle change); the timeline-format addition is backward
 compatible (all new keys optional).
 
 **Test consequence.** `temporal` fixtures now exercise the **real pipeline**: a
-`timeline.md` with `date:`/`follows:` keys → `graph build` → `validate`. A clean
-fixture (consistent dates/order) and a violation fixture (an earlier-dated event
-declared to follow a later one, plus a `follows` cycle) prove end-to-end behaviour,
-not a fabricated graph.
+`timeline.md` with `begin:`/`end:` and relation keys → `graph build` → `validate`. A
+clean fixture (consistent intervals/order) and violation fixtures covering each of
+FR-015's four rules — (a) a `follows` cycle, (b) a pair both ordered and overlapping,
+(c) containment conflicting with strict order, (d) numeric begin/end contradicting a
+declared relation — plus an open-interval (begin-only) fixture prove end-to-end
+behaviour, not a fabricated graph.
 
 **Alternatives considered.**
 - *`temporal` reads `timeline.md` frontmatter directly (skip the indexer).* Viable
@@ -259,39 +262,123 @@ content" and exits 2 (edge case), rather than silently succeeding.
 
 **Rationale.** FR-009, US2 scenarios 2–3, and the scope edge cases.
 
-## D11 — Closure-safe modelling of the event date (the `P4_has_time-span` problem)
+## D11 — Closure-safe interval-based temporal model (the `P4_has_time-span` problem)
 
-**Audit finding.** GOLEM's frozen ontology (`resources/schemas/golem-1.1/golem.ttl`)
-defines `TemporalRelations.owl#follows`, `precedes`, `temporally-overlaps`, and
-`temporal-location` — but **not** `crm:P4_has_time-span` (it appears only in a
-comment). The term-closure test (`tests/golem/test_namespaces.py`,
-`frozen_terms()`) asserts every emitted class/predicate IRI is present in the
-frozen ontology, so emitting `crm:P4_has_time-span` would fail CI.
+**Audit finding.** The merged indexer emits no temporal signal at all (D1), and the
+obvious CIDOC way to attach a date — `crm:P4_has_time-span` and the boundary
+predicates `P82a`/`P82b`/`P81`/`P79`/`P80` — is **not** in the vendored frozen
+ontology (`resources/schemas/golem-1.1/golem.ttl`): `P4_has_time-span` appears only
+in a comment, the others not at all. The term-closure test
+(`tests/golem/test_namespaces.py`, `frozen_terms()`) asserts every emitted
+class/predicate IRI is a member of the frozen set, so emitting any of them fails CI
+and would force a GOLEM fork (axiom X violation, design § 16). Verified against the
+ontology on 2026-06-02: every term the model below uses **is** in `frozen_terms()`;
+`P4_has_time-span` **is not** (script in the plan's Phase 0 notes).
 
-**Decision.** Model the event year with predicates that **are** frozen, reusing the
-proven year-literal pattern already used for character `born`/`died`:
+**Decision (multi-year interval model, all terms frozen).** An event carries a time
+**interval** (not a bare year), so it can span several years and support open
+intervals (begin-only / end-only). The interval is assembled entirely from frozen
+GOLEM / DOLCE-Lite / CIDOC predicates, reusing the proven `Dimension` + `gyear_literal`
+year-literal pattern (character `born`/`died`) and the `P2_has_type`-to-shared-`E55_Type`
+qualification pattern (biographical feature `birth`/`death`):
 
-- `event  TR:temporal-location  {event.uri}/time-span` (frozen object property,
-  semantically "perdurant → temporal region"), and
-- `{event.uri}/time-span  crm:P90_has_value  "1885"^^xsd:gYear`
-  (`P90_has_value` = the existing `HAS_VALUE` constant; `gyear_literal()` from
-  `golem/modules/feature.py` already formats the literal).
+| Triple | Frozen term used | Purpose |
+|---|---|---|
+| `event  CSM:duration  {event}/time-span` | `CommonSenseMapping.owl#duration` (⊑ `TR:temporal-location`, range `time-interval`) | event → its interval; being a sub-property of `temporal-location` it **entails** the spec's "links via `temporal-location`", but is semantically tighter ("event *has duration* this interval") |
+| `{event}/time-span  rdf:type  dlp:time-interval` | `DOLCE-Lite.owl#time-interval` | the interval node |
+| `{event}/time-span  TR:temporal-location  {event}/time-span/begin` (and `…/end`) | `TR:temporal-location` | interval → up to two child **boundary** nodes; an open interval emits only the boundary it knows |
+| `{event}/time-span/begin  rdf:type  dlp:time-interval` | `DOLCE-Lite.owl#time-interval` | each boundary is itself a (degenerate) interval |
+| `{event}/time-span/begin  crm:P2_has_type  {uri_base}type/begin` | `crm:P2_has_type` → shared `E55_Type` | **self-labels** the boundary as begin / end — makes open intervals unambiguous |
+| `{event}/time-span/begin  crm:P43_has_dimension  {…/begin}/dimension` → `crm:P90_has_value "1885"^^xsd:gYear` | `crm:P43_has_dimension`, `E54_Dimension`, `crm:P90_has_value`, `xsd:gYear` | the boundary's year, via the **exact** `Dimension`/`gyear_literal()` carrier already used for `born`/`died` |
 
-`follows` / `temporally-overlaps` are emitted as direct `event → event` edges using
-the frozen `TemporalRelations.owl#` predicates. New predicate constants
-(`FOLLOWS`, `TEMPORALLY_OVERLAPS`, the temporal namespace) are added to
-`golem/namespaces.py` and to the closure test's checked predicate list (they are in
-`frozen_terms()`, so the test passes).
+The five **qualitative relations** are emitted as direct `event → event` edges using
+the frozen `TemporalRelations.owl#` predicates: `TR:follows`, `TR:precedes`,
+`TR:temporally-overlaps`, `TR:temporally-includes`, `TR:temporally-included-in`. New
+constants (`FOLLOWS`, `PRECEDES`, `TEMPORALLY_OVERLAPS`, `TEMPORALLY_INCLUDES`,
+`TEMPORALLY_INCLUDED_IN`, `TEMPORAL_LOCATION`, `DURATION`, the `TR`/`CSM` namespaces,
+and `CLASS_IRI["TimeInterval"] = dlp:time-interval`) are added to `golem/namespaces.py`;
+the closure test covers them automatically because each is in `frozen_terms()`.
 
-`temporal` reads "the gYear reachable from each event via `temporal-location` →
-`P90_has_value`," so it is insensitive to the exact carrier node shape.
+`temporal` stays a **pure graph consumer**: per event it reads "the `gYear` reachable
+from the boundary tagged `type/begin` (resp. `type/end`)" — insensitive to whether
+`P90_has_value` sits directly on the boundary or (as here) on its `Dimension`, and to
+the exact interval-node shape — plus the five relation edges. This keeps the indexer
+as the sole extractor and matches the clarified spec literally.
 
-**Rationale.** Keeps the indexer's output closure-valid (no GOLEM ontology
-amendment, honouring axiom X "rdflib/GOLEM frozen"), reuses existing literal
-formatting, and gives `temporal` a real, comparable date per event.
+**Rationale.** Closure-valid (no ontology amendment, honouring axiom X and not
+reopening § 16); reuses three existing patterns verbatim (`Dimension`,
+`gyear_literal()`, `P2_has_type`→`E55_Type`); supports multi-year and open intervals;
+and gives the validator everything FR-015's four contradiction rules (a–d) need —
+numeric begin/end boundaries **and** the qualitative relation network.
 
-**Alternatives considered.** Add `P4_has_time-span` to the ontology — rejected:
-the ontology is a vendored, version-pinned external artifact (commit
-`f666128a…`); editing it forks GOLEM and breaks the provenance test. Store the year
-as a bare literal on the event via an ad-hoc predicate — rejected: any predicate
-not in `frozen_terms()` fails the closure test.
+**Alternatives considered.**
+- *`crm:P4_has_time-span` + CIDOC `P82a/P82b` begin/end-of-the-begin literals* — the
+  textbook CIDOC modelling, rejected: none of those predicates is in `frozen_terms()`;
+  emitting them fails closure and forks the vendored ontology (commit `f666128a…`).
+- *A single bare-year literal per event (the prior D11 draft).* Rejected: cannot
+  represent a multi-year span or an open interval, and FR-015(d) needs distinct
+  begin/end numbers to contradict `includes` / strict-order claims.
+- *Untyped begin/end via two ad-hoc predicates on the event.* Rejected: any predicate
+  outside `frozen_terms()` fails the closure test; `P2_has_type`-labelled boundaries
+  give the same expressiveness with only frozen terms.
+
+## D12 — `temporal` validator: the four contradiction rules over the interval graph
+
+**Decision.** `temporal` loads, for every `NarrativeEvent` in the graph, `(begin, end)`
+(either may be `None` — open or absent interval) and the five relation edges, then
+emits one `error`-severity `Violation` per detected contradiction (FR-015, uniform
+error severity per the 2026-06-02 clarification). The four rules:
+
+- **(a) Order cycle.** Treat `precedes` as the inverse of `follows` and fold both into
+  one directed "strict-order" graph (`A follows B` ⇒ edge `B→A` "B before A"); a cycle
+  (incl. a 2-cycle `A follows B` ∧ `B follows A`) is a contradiction. Detected by DFS
+  with a recursion stack over events sorted by URI (determinism, D8).
+- **(b) Order ∧ overlap on one pair.** A pair `(A,B)` asserted **both** a strict order
+  (`follows`/`precedes`, either direction) **and** `temporally-overlaps` — mutually
+  exclusive claims.
+- **(c) Containment vs. strict order.** `A temporally-includes B` (or `B
+  temporally-included-in A`) while the same pair also carries `follows`/`precedes` —
+  containment and strict succession cannot both hold.
+- **(d) Numbers contradict a relation.** Only when both intervals have the needed
+  numeric boundaries: `A follows B` but `A.end < B.begin` (A wholly before B, yet
+  claims to come after); symmetrically for `precedes`; and `A includes B` whose numbers
+  do **not** satisfy `A.begin ≤ B.begin ∧ B.end ≤ A.end`.
+
+Each `Violation` carries a message naming both events and the offending relation/years,
+`triples` = the implicated relation edge(s), and `source` resolved from the graph
+(D6); cyclic and pairwise findings are graph-wide (`source=None` when no single line
+applies). Identical findings are deduplicated (D8). The validator never consults
+document order (FR-015) and never reads files directly — it is a pure graph consumer.
+
+**Rationale.** Covers all four FR-015 rules with deterministic graph/number checks
+(no LLM, FR-019); uniform `error` matches the clarified default severity; reading
+boundaries through the "reachable gYear" abstraction keeps it decoupled from D11's
+exact carrier shape.
+
+**Alternatives considered.** Inferring missing relations from numbers (e.g. deriving
+`follows` from `A.begin > B.end`) — rejected: the spec asks the validator to detect
+*contradictions between declared signals*, not to synthesise an ordering; inferring
+edges would invent findings and hurt determinism's intelligibility.
+
+## D13 — Test-discipline: four spec edge cases that need dedicated coverage (Principle VIII)
+
+**Audit finding.** Four behaviours named in the spec's Edge Cases / FRs are currently
+covered only incidentally by the per-validator and `--json` tests. Principle VIII
+(test discipline, ≥80 %) makes them **explicit, dedicated tests**, each pinned to its
+source clause so a regression is caught at the responsible seam:
+
+| # | Behaviour | Spec anchor | Test home | Assertion |
+|---|---|---|---|---|
+| 1 | **Runner deduplicates identical violations** | Edge "Duplicate detection"; FR-019/SC-003; D8 | `tests/validation/test_runner.py` | a validator that returns the *same* `Violation` twice (and two validators that independently surface the byte-identical finding) collapses to exactly **one** entry in `report.violations`; order is stable |
+| 2 | **Project with no `graph.ttl`** | Edge "No graph yet / empty project"; cli-validate behaviour step 2 | `tests/validation/test_command.py` | running in a project that never ran `graph build` exits **0**, reports **zero** graph-sourced (`temporal`) findings, and does **not** error — the engine loads empty, file-based validators still run |
+| 3 | **Composed `--scope` + `--severity`** | Edge "Conflicting severity filter and scope"; FR-009+FR-010; SC-005 | `tests/validation/test_report.py` (+ one command-level integration) | with both filters active the reported set is exactly the **intersection** (scope ∧ severity-threshold); a violation failing *either* is excluded; the **gate/exit code is unchanged** by either filter (FR-013) |
+| 4 | **FR-020 — a run writes nothing** | FR-020; "Out of Scope" (no auto-fix) | `tests/validation/test_command.py` | snapshot the project tree (set of paths + mtimes/hashes) before a full `validate` run (human **and** `--json`) and assert it is **byte-identical** afterwards — no file created, modified, or deleted anywhere under the project root |
+
+**Rationale.** These four are the spec's load-bearing guarantees that are easy to
+regress silently (a dedupe that stops triggering, an empty-graph crash, a filter that
+leaks across the gate, an accidental cache/temp write). Pinning each to a named test
+makes the Principle VIII coverage *meaningful*, not just a line-count threshold.
+
+**Alternatives considered.** Folding them into the existing broad `test_command.py`
+`--json` test — rejected: a single mega-test hides which guarantee broke and tends to
+assert too little about each. One focused test per behaviour keeps failures legible.

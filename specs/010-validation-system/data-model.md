@@ -180,55 +180,126 @@ class UnknownValidatorError(Exception):
 
 Raised at exit 2 (FR-007). Carries the offending name(s) for a clear message.
 
-## Indexer-gap closure — timeline format + `NarrativeEvent` (research D1/D11)
+## Indexer-gap closure — interval timeline format + `NarrativeEvent` (research D1/D11/D12)
 
 To give `temporal` real graph data, three existing modules gain small, backward-
-compatible extensions (all new inputs optional):
+compatible extensions (all new inputs optional; an event with none of them behaves
+exactly as today).
 
-**`bible/timeline.md` frontmatter** — each `events:` item may add:
+**`bible/timeline.md` frontmatter** — each `events:` item may add a begin/end year and
+any of the five qualitative relation keys (each a list of event names resolved like
+`participants`):
 
 ```yaml
 events:
   - name: "Fundación de Destilerías Ayelo"
-    date: 1885                       # optional integer year
+    begin: 1885                       # optional begin year (open interval if `end` omitted)
+    end: 1912                         # optional end year   (open interval if `begin` omitted)
     participants: ["Manuel de Aparici"]
   - name: "Quiebra de la sociedad"
-    date: 1884                       # earlier year …
-    follows: ["Fundación de Destilerías Ayelo"]   # … but declared to follow → temporal violation
-    overlaps: []                     # optional list of event names
+    date: 1884                        # shorthand: a single-year (point) interval, begin == end == 1884
+    follows: ["Fundación de Destilerías Ayelo"]   # 1884 cannot follow [1885,1912] → temporal error (rule d)
+    precedes: []                      # TR:precedes
+    overlaps: []                      # TR:temporally-overlaps  (symmetric)
+    includes: []                      # TR:temporally-includes  (containment)
+    included_in: []                   # TR:temporally-included-in
 ```
+
+- `date:` is a convenience shorthand for `begin == end == <year>`; it is **mutually
+  exclusive** with `begin:`/`end:` (supplying both is a soft warning, like an unknown
+  key, and `date:` is ignored). The new keys join `ITEM_KEYS` so they are not flagged
+  as unknown.
 
 **`NarrativeEvent` (`golem/modules/event.py`)** gains optional fields:
 
 ```python
-date: int | None = None                       # year
-follows: tuple[GolemEntity | URIRef, ...] = ()        # → TR:follows edges
-overlaps: tuple[GolemEntity | URIRef, ...] = ()       # → TR:temporally-overlaps edges
+begin: int | None = None                                   # interval begin year
+end: int | None = None                                     # interval end year
+follows: tuple[GolemEntity | URIRef, ...] = ()             # → TR:follows
+precedes: tuple[GolemEntity | URIRef, ...] = ()            # → TR:precedes
+overlaps: tuple[GolemEntity | URIRef, ...] = ()            # → TR:temporally-overlaps
+includes: tuple[GolemEntity | URIRef, ...] = ()            # → TR:temporally-includes
+included_in: tuple[GolemEntity | URIRef, ...] = ()         # → TR:temporally-included-in
 ```
 
-Emitted triples (closure-safe, D11):
-- `event  TR:follows  other_event` per `follows` entry (likewise `temporally-overlaps`).
-- when `date` is set: `event  TR:temporal-location  {event.uri}/time-span` and
-  `{event.uri}/time-span  crm:P90_has_value  "1885"^^xsd:gYear` (reusing
-  `gyear_literal()` from `golem/modules/feature.py`).
+The five relations are declared as ordinary multi `cross_refs` (one frozen `TR:*`
+predicate each), so the base `to_triples()` emits them. The interval needs a custom
+`to_triples()` override (the base machinery cannot express the typed-boundary +
+dimension shape), reusing the existing `Dimension` class and `gyear_literal()`.
 
-**`io/bible.py`** timeline mapper resolves `follows`/`overlaps` names through the
-same slug index used for participants; unresolved names become
-`UnresolvedParticipant`-style soft warnings (no abort).
+**Emitted interval triples (closure-safe, D11 — every term ∈ `frozen_terms()`):**
+
+```
+event              CSM:duration          {event}/time-span          # ⊑ TR:temporal-location
+{event}/time-span  rdf:type              dlp:time-interval
+# for each present boundary B ∈ {begin, end} (open interval emits only the known one):
+{event}/time-span  TR:temporal-location  {event}/time-span/B
+{event}/time-span/B  rdf:type            dlp:time-interval
+{event}/time-span/B  crm:P2_has_type     {uri_base}type/B           # self-labels begin / end
+{uri_base}type/B     rdf:type            crm:E55_Type
+{event}/time-span/B  crm:P43_has_dimension  {event}/time-span/B/dimension
+{…/B}/dimension      rdf:type            crm:E54_Dimension
+{…/B}/dimension      crm:P90_has_value   "1885"^^xsd:gYear          # gyear_literal()
+```
+
+The begin/end `E55_Type` individuals (`{uri_base}type/begin`, `{uri_base}type/end`)
+mirror the existing `birth`/`death` type individuals. `crm:P4_has_time-span` and CIDOC
+`P82a/P82b/P81/P79/P80` are **not** emitted (absent from `frozen_terms()`, D11).
+
+**`io/bible.py`** timeline mapper coerces `begin`/`end`/`date` to int years (reusing
+`_coerce_year`), enforces the `date` ↔ `begin`/`end` exclusivity, and resolves the
+five relation lists through the same `slug_index` used for participants; unresolved
+names become `UnresolvedParticipant`-style soft warnings (no abort).
+
+## Temporal reading model (`validation/validators/temporal.py` + `validation/queries.py`)
+
+`temporal` is a **pure graph consumer**. `queries.py` exposes read-only helpers that
+project the interval graph into a plain in-memory shape the validator reasons over:
+
+```python
+@dataclass(frozen=True)
+class EventInterval:
+    uri: str
+    begin: int | None        # gYear reachable via boundary tagged type/begin, else None
+    end: int | None          # gYear reachable via boundary tagged type/end, else None
+
+def load_intervals(indexer) -> dict[str, EventInterval]   # one per G5_Narrative_Event
+def load_relations(indexer) -> dict[str, set[tuple[str, str]]]
+    # keyed by relation localname: {"follows": {(a,b),…}, "precedes": …, "overlaps": …,
+    #                                "includes": …, "included-in": …}
+```
+
+- `load_intervals` reads the `gYear` reachable from each event via
+  `(CSM:duration|TR:temporal-location)/TR:temporal-location/{boundary}` where the
+  boundary's `crm:P2_has_type` is `…type/begin` (resp. `end`), then
+  `(crm:P90_has_value | crm:P43_has_dimension/crm:P90_has_value)` — so it is insensitive
+  to whether the year sits on the boundary directly or on its `Dimension`.
+- The four FR-015 contradiction rules (a–d) are computed exactly as research **D12**;
+  each yields one `error`-severity `Violation` whose `triples` carry the implicated
+  relation edge(s) and whose `source` is `resolve_source(indexer, …)` (D6) or `None`
+  for graph-wide findings (cycles, pairwise conflicts). Findings are deduped (D8).
 
 ## Graph predicate constants
 
-In `golem/namespaces.py` (so the closure test covers them — all ∈ `frozen_terms()`):
+In `golem/namespaces.py` (so the closure test covers them — all ∈ `frozen_terms()`,
+verified 2026-06-02):
 
 ```python
-TR = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/TemporalRelations.owl#")
-FOLLOWS = TR["follows"]                       # frozen ✓
-TEMPORALLY_OVERLAPS = TR["temporally-overlaps"]  # frozen ✓
-TEMPORAL_LOCATION = TR["temporal-location"]   # frozen ✓ (event → time node)
-# HAS_VALUE (crm:P90_has_value) already exists in namespaces.py and is frozen ✓.
-# NOTE: crm:P4_has_time-span is NOT in the frozen ontology — do not emit it (D11).
+TR  = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/TemporalRelations.owl#")
+CSM = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/CommonSenseMapping.owl#")
+
+DURATION              = CSM["duration"]                    # frozen ✓ (⊑ temporal-location)
+TEMPORAL_LOCATION     = TR["temporal-location"]            # frozen ✓ (interval → boundary)
+FOLLOWS               = TR["follows"]                      # frozen ✓
+PRECEDES              = TR["precedes"]                      # frozen ✓
+TEMPORALLY_OVERLAPS   = TR["temporally-overlaps"]          # frozen ✓ (symmetric)
+TEMPORALLY_INCLUDES   = TR["temporally-includes"]          # frozen ✓
+TEMPORALLY_INCLUDED_IN= TR["temporally-included-in"]       # frozen ✓
+# CLASS_IRI gains:  "TimeInterval": DLP["time-interval"]   # frozen ✓ (DOLCE-Lite)
+# Reused unchanged & already frozen: HAS_TYPE (crm:P2_has_type), HAS_DIMENSION
+#   (crm:P43_has_dimension), HAS_VALUE (crm:P90_has_value), Dimension/E54, Type/E55.
+# NOTE: crm:P4_has_time-span and CIDOC P82a/P82b/P81/P79/P80 are NOT frozen — never emit (D11).
 ```
 
-`validation/queries.py` imports these read-only for its SPARQL (`FOLLOWS`,
-`TEMPORALLY_OVERLAPS`, and the `temporal-location → P90_has_value` path for the
-year). `CRM` and the provenance predicates come from `golem.namespaces` unchanged.
+`validation/queries.py` imports these read-only for its SPARQL/triple traversal. `CRM`
+and the provenance predicates come from `golem.namespaces` unchanged.

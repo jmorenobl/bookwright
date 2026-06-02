@@ -50,31 +50,34 @@ character) are omitted under an active `--scope` and appear only in a full run.
 
 | Validator | Severity | Checks |
 |---|---|---|
-| `temporal` | error | timeline contradictions in the graph: an earlier-dated event asserted to *follow* a later one, and cycles in `follows`. Declare per-event `date:`/`follows:` in `bible/timeline.md` (see below), then `graph build`. |
+| `temporal` | error | timeline contradictions in the graph over a multi-year **interval** model: `follows`/`precedes` cycles, a pair both ordered and overlapping, containment vs. strict order, and numeric begin/end contradicting a declared relation. Declare per-event `begin:`/`end:` (or `date:`) and relation keys in `bible/timeline.md` (see below), then `graph build`. |
 | `character_presence` | error / warning | a bible character never mentioned in the manuscript → **error**; a proper-noun mention with no bible entry → **warning** (heuristic name matching, no NER — may flag places/orgs, so it never fails the build). |
 | `setting_continuity` | warning | the same setting is not described with contradicting terms (e.g. *coastal* vs *inland*) across files. |
 | `focalization` | warning | the manuscript respects the narrative person / focal character declared under "Voz narrativa" in the constitution. |
 
 ### Declaring a timeline for the `temporal` validator
 
-In `bible/timeline.md`, events may carry an optional year and ordering (all keys
-optional and backward compatible):
+In `bible/timeline.md`, events may carry an optional time **interval** and any of the
+five qualitative relations (all keys optional and backward compatible):
 
 ```yaml
 ---
 events:
   - name: "Fundación de Destilerías Ayelo"
-    date: 1885
+    begin: 1885            # begin year; omit `end` for an open (begin-only) interval
+    end: 1912              # end year; a single-year event can use `date: 1885` instead
     participants: ["Manuel de Aparici"]
   - name: "Quiebra de la sociedad"
-    date: 1884
-    follows: ["Fundación de Destilerías Ayelo"]   # 1884 cannot follow 1885 → temporal error
+    date: 1884             # shorthand for begin == end == 1884
+    follows: ["Fundación de Destilerías Ayelo"]   # 1884 cannot follow [1885,1912] → temporal error
+    # also available: precedes / overlaps / includes / included_in (lists of event names)
 ---
 ```
 
-After `bookwright graph build`, `bookwright validate` reports the contradiction. An
-unresolved `follows`/`overlaps` name is a soft build warning, like an unresolved
-participant.
+After `bookwright graph build`, `bookwright validate` reports the contradiction.
+`date:` is a shorthand for a single-year (point) interval and is mutually exclusive
+with `begin:`/`end:`. An unresolved relation name is a soft build warning, like an
+unresolved participant.
 
 ## Configure which validators run
 

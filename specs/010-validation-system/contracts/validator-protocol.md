@@ -79,7 +79,7 @@ The active list is returned sorted by `name` (determinism, FR-019).
 
 | name | `severity_default` | Source it reads | Detects |
 |---|---|---|---|
-| `temporal` | `error` | graph | event with an earlier year asserted to `follows` a later-dated one; cycles in `follows` (FR-015). Year + edges are emitted by the timeline indexer (research D1/D11). |
+| `temporal` | `error` | graph | timeline contradictions over a multi-year **interval** model + the five `TR:*` relations (FR-015): (a) `follows`/`precedes` cycles, (b) a pair both ordered and `temporally-overlaps`, (c) containment vs. strict order, (d) numeric begin/end contradicting a declared relation. All four uniform `error`. Intervals (typed begin/end boundaries) + relation edges are emitted by the timeline indexer (research D1/D11/D12). |
 | `character_presence` | `error` | bible + manuscript | bible character never mentioned → **error**; manuscript proper-noun mention absent from bible → **warning** (heuristic). Per-violation severity, FR-002/FR-016, research D3. |
 | `setting_continuity` | `warning` | bible + manuscript | same setting described with contradicting descriptor terms across files (FR-017) |
 | `focalization` | `warning` | constitution + manuscript | prose violating the declared narrative person / focal character (FR-018) |
