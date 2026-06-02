@@ -157,6 +157,10 @@ project's validators folder and confirm its findings appear in a normal run.
   unknown validator name clearly rather than silently ignoring it.
 - **Duplicate detection**: the same underlying inconsistency should be reported
   once, not multiplied per mention.
+- **No parsable narrative-voice declaration**: when the constitution contains no
+  narrative-voice / point-of-view declaration the focalization validator can
+  parse, the validator reports nothing (zero findings) rather than erroring —
+  there is no declared rule to violate.
 
 ## Requirements *(mandatory)*
 
@@ -227,16 +231,39 @@ project's validators folder and confirm its findings appear in a normal run.
 
 - **FR-015**: The system MUST provide a **temporal** validator (default
   severity: error) that detects contradictions in the timeline of events using
-  only the graph: it compares each event's declared time-span against the
-  ordering relations the indexer extracted (`follows`, `temporally-overlaps`)
-  and flags (a) an event with an earlier declared date asserted to follow a
-  later-dated event and (b) cycles in the `follows` relation. The validator does
-  not consult the physical document order of scenes/chapters.
-- **FR-016**: The system MUST provide a **character_presence** validator (default
-  severity: error) that cross-checks characters defined in the bible against
-  characters mentioned in the manuscript, reporting both manuscript mentions with
-  no bible entry and bible entries never mentioned in the manuscript. Mention
-  detection in v0 is simple name matching, not advanced entity recognition.
+  only the graph — never the physical document order of scenes/chapters — over a
+  **multi-year interval model**. An event MAY declare a time interval (a begin
+  year and/or an end year, so a single event can span several years) and MAY
+  declare qualitative temporal relations to other events: `follows` / `precedes`
+  (strict order), `temporally-overlaps` (symmetric co-occurrence), and
+  `temporally-includes` / `temporally-included-in` (containment). Over this
+  relation network the validator MUST flag:
+  - (a) **cycles** in the `follows`/`precedes` strict-order relation;
+  - (b) an event asserted to **both** strictly order (`follows`/`precedes`)
+    **and** `temporally-overlaps` another event (mutually exclusive claims);
+  - (c) **containment conflicting with strict order** — A
+    `temporally-includes` B while B also `follows`/`precedes` A;
+  - (d) when numeric begin/end years are present on the involved intervals, a
+    declared relation that **contradicts the numbers** — e.g. an interval that
+    ends earlier asserted to `follow` an interval that begins later, or an
+    `includes` relation whose interval does not actually contain the other.
+  All temporal predicates this validator relies on — `TR:follows`,
+  `TR:precedes`, `TR:temporally-overlaps`,
+  `TR:temporally-includes` / `TR:temporally-included-in`,
+  `TR:temporal-location`, the DOLCE time-interval, and
+  `CommonSenseMapping:duration` — already exist in the vendored, frozen GOLEM
+  ontology. No ontology amendment is required and design § 16 is not reopened.
+- **FR-016**: The system MUST provide a **character_presence** validator that
+  cross-checks characters defined in the bible against characters mentioned in
+  the manuscript, reporting both manuscript mentions with no bible entry and
+  bible entries never mentioned in the manuscript. Mention detection in v0 is
+  simple name matching, not advanced entity recognition. Per FR-002 (per-violation
+  severity), this validator MUST emit its two finding kinds at **different**
+  severities: the deterministic **orphan-in-bible** finding (a bible entry never
+  mentioned in the manuscript) at **error** so it gates CI, and the heuristic
+  **unrecognised-mention** finding (a manuscript name with no bible entry,
+  derived from fuzzy name matching) at **warning** — because a false positive
+  from name matching MUST never fail the build.
 - **FR-017**: The system MUST provide a **setting_continuity** validator (default
   severity: warning) that detects contradictory descriptions of the same setting
   across different files, citing the conflicting source locations.
@@ -301,10 +328,14 @@ project's validators folder and confirm its findings appear in a normal run.
 - **Severity filter semantics**: `--severity X` is a threshold — it reports
   violations at level X and above (error > warning > info), per Clarifications
   2026-06-02. It affects displayed output only, never the failure signal.
-- **Default severities**: temporal and character_presence default to error;
-  setting_continuity and focalization default to warning, per the design's
-  built-in table (§ 13.2). setting_continuity and focalization are heuristic and
-  intentionally lean toward warnings to avoid false-positive build failures.
+- **Default severities**: temporal defaults to error; setting_continuity and
+  focalization default to warning, per the design's built-in table (§ 13.2).
+  setting_continuity and focalization are heuristic and intentionally lean toward
+  warnings to avoid false-positive build failures. character_presence is split
+  per finding kind (FR-016, exercising the per-violation severity allowed by
+  FR-002): its deterministic orphan-in-bible finding is an error (gates CI) while
+  its heuristic unrecognised-mention finding is a warning, so a name-matching
+  false positive never fails the build.
 - **Empty enabled list means all**: an empty `enabled` list in the manifest
   activates all built-in validators, matching the manifest comment in the design.
 - **Mention extraction is name-based**: character_presence uses simple name
@@ -315,7 +346,12 @@ project's validators folder and confirm its findings appear in a normal run.
 - **Graph is the source of structured truth**: validators read the
   already-built project graph and the project's text/config files; building or
   refreshing the graph is the responsibility of the existing indexer, not this
-  feature.
+  feature. **Bounded exception**: so the `temporal` validator has data to
+  consume, this feature extends the existing **timeline indexer** to recognise
+  optional keys in `bible/timeline.md` (per-event begin/end years → time
+  intervals, and qualitative temporal relations → temporal edges in the graph).
+  This is a narrow, additive extension of one indexer path; general
+  graph-building remains the indexer's responsibility and is otherwise untouched.
 - **Relationship to LLM continuity checks**: the deterministic validators here
   are distinct from the LLM-based continuity review available through the
   `bookwright-continuity` authoring command; that command may invoke this
@@ -329,4 +365,9 @@ project's validators folder and confirm its findings appear in a normal run.
 - Advanced natural-language entity recognition, alias/coreference resolution for
   character matching.
 - Sandboxing or trust isolation of user-supplied custom validators.
-- Building or refreshing the graph index (owned by the indexer feature).
+- Building or refreshing the graph index (owned by the indexer feature) — with
+  one **bounded exception**: this feature extends the timeline indexer to read
+  optional `bible/timeline.md` keys into time intervals and qualitative temporal
+  edges, giving the `temporal` validator data to consume (see the "Graph is the
+  source of structured truth" assumption). General graph-building stays out of
+  scope and remains the indexer's responsibility.
