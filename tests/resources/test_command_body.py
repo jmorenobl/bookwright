@@ -13,14 +13,12 @@ from pathlib import Path
 
 import pytest
 
-from bookwright.io.frontmatter import parse_frontmatter
-
 from .helpers import (
     GENERATIVE_COMMANDS,
     REPORT_ONLY_COMMANDS,
+    command_body,
     command_files,
     looks_spanish,
-    read_text,
 )
 
 #: (FR-007..FR-014) one ES heading-keyword per required section; presence required.
@@ -42,7 +40,7 @@ def _headings(body: str) -> list[str]:
 
 @pytest.mark.parametrize("path", command_files(), ids=lambda p: p.name)
 def test_body_required_sections_and_language(path: Path) -> None:
-    body = parse_frontmatter(read_text(path)).body
+    body = command_body(path)
     assert body.strip(), f"{path.name}: empty body"
     assert looks_spanish(body), f"{path.name}: body does not look Spanish"
 
@@ -59,8 +57,7 @@ def test_body_required_sections_and_language(path: Path) -> None:
     ids=lambda p: p.name,
 )
 def test_generative_marker_and_update_in_place(path: Path) -> None:
-    body = parse_frontmatter(read_text(path)).body
-    lowered = body.lower()
+    lowered = command_body(path).lower()
     # FR-016a: update-in-place rule stated.
     assert "actualización en sitio" in lowered, f"{path.name}: no update-in-place rule"
     # FR-016/FR-013: the [PENDING: token guidance, or a link to the shared protocol.
@@ -75,7 +72,7 @@ def test_generative_marker_and_update_in_place(path: Path) -> None:
     ids=lambda p: p.name,
 )
 def test_report_only_states_no_writes(path: Path) -> None:
-    lowered = parse_frontmatter(read_text(path)).body.lower()
+    lowered = command_body(path).lower()
     # FR-012: an explicit report-only / "writes nothing" statement.
     assert "no escribe nada" in lowered or "solo lectura" in lowered, (
         f"{path.name}: no report-only statement"
@@ -86,5 +83,5 @@ def test_report_only_states_no_writes(path: Path) -> None:
 def test_graph_build_is_inline(name: str) -> None:
     # FR-017: the two graph-consuming commands write the CLI call inline.
     path = next(p for p in command_files() if p.stem == name)
-    body = parse_frontmatter(read_text(path)).body
+    body = command_body(path)
     assert "bookwright graph build --json" in body, f"{name}: missing inline graph build"

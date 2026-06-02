@@ -12,9 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from bookwright.io.frontmatter import parse_frontmatter
-
-from .helpers import command_files, looks_spanish, read_text
+from .helpers import command_files, command_metadata, looks_spanish
 
 #: Lightweight English-presence markers (descriptions are bilingual ES+EN).
 _EN_MARKERS: tuple[str, ...] = (
@@ -33,13 +31,13 @@ _EN_MARKERS: tuple[str, ...] = (
 def _descriptions() -> dict[str, str]:
     out: dict[str, str] = {}
     for path in command_files():
-        out[path.stem] = parse_frontmatter(read_text(path)).metadata["description"]
+        out[path.stem] = command_metadata(path)["description"]
     return out
 
 
 @pytest.mark.parametrize("path", command_files(), ids=lambda p: p.name)
 def test_description_is_bilingual(path: Path) -> None:
-    description = parse_frontmatter(read_text(path)).metadata["description"]
+    description = command_metadata(path)["description"]
     assert looks_spanish(description), f"{path.name}: description lacks ES trigger"
     lowered = f" {description.lower()} "
     assert any(m in lowered for m in _EN_MARKERS), f"{path.name}: description lacks EN trigger"

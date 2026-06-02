@@ -33,11 +33,16 @@ constitución y el brief; trabajas sobre el proyecto inicializado.
 3. Trabaja en **orden fijo**: primero las entidades derivadas de la constitución
    (personajes y escenarios nombrados allí), luego el resto. Escribe cada archivo
    a medida que avanzas, no al final.
-4. Por cada personaje, estampa el molde `character.md.tmpl` en
-   `bible/characters/<slug>.md` (el *slug* se deriva del `name`; ver
-   `references/golem-character.md`). Por cada universo amplio, estampa
-   `setting.md.tmpl` en `bible/settings/<slug>.md`; por cada lugar concreto,
-   `location.md.tmpl` en `bible/locations/<slug>.md`.
+4. Por cada personaje, construye la ficha en `bible/characters/<slug>.md`
+   siguiendo el contrato de campos y secciones de `references/golem-character.md`
+   (el *slug* se deriva del `name`). Por cada universo amplio, crea
+   `bible/settings/<slug>.md`: frontmatter con **solo** la clave `name` (cadena
+   obligatoria) y secciones en prosa *Cultura*, *Sistema / era* y *Geografía
+   amplia* — es el universo narrativo amplio (región, era, cultura), no un lugar
+   concreto. Por cada lugar concreto, crea `bible/locations/<slug>.md`: **no se
+   indexa en v0**, así que va sin frontmatter ingerido; ánclalo en los cinco
+   sentidos con secciones *Qué se ve / oye / huele / toca* y *Atmósfera
+   dominante*.
 5. Puebla los contenedores indexados respetando su contrato de clave única:
    `bible/timeline.md` (clave `events:`, ver
    `references/golem-events-timeline.md`) y `bible/relationships.md` (clave
@@ -60,9 +65,10 @@ creaste, qué quedó `[PENDING: …]` y qué conviene aclarar a continuación.
 ## Archivos a leer
 
 - `bible/constitution.md` y el brief.
-- Los moldes en `resources/templates/bible/` (`character`, `setting`, `location`).
-- `references/golem-character.md`, `references/golem-relationships.md`,
-  `references/golem-events-timeline.md`.
+- `references/golem-character.md` para el contrato de campos y secciones de las
+  fichas de personaje (escenarios y localizaciones traen su contrato en el
+  paso 4).
+- `references/golem-relationships.md`, `references/golem-events-timeline.md`.
 
 ## Archivos a escribir
 

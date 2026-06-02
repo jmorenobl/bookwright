@@ -1,16 +1,20 @@
-"""Shared path constants and enumerators for the iteration-7 template suite.
+"""Shared path constants and enumerators for the iteration-7 template +
+iteration-8 command-source suites.
 
-Not a test module (no ``test_`` prefix → not collected). Locates the two
-packaged resource trees on disk and classifies the authored documents the
-validation tests sweep. Imports only the shipped ``bookwright`` package.
+Not a test module (no ``test_`` prefix → not collected). Locates the packaged
+resource trees on disk, classifies the authored documents the validation tests
+sweep, and exposes thin frontmatter accessors. Imports only the shipped
+``bookwright`` package.
 """
 
 from __future__ import annotations
 
 from math import ceil
 from pathlib import Path
+from typing import Any
 
 import bookwright
+from bookwright.io.frontmatter import parse_frontmatter
 
 _pkg_init = bookwright.__file__
 assert _pkg_init is not None, "bookwright package has no __file__"
@@ -135,6 +139,16 @@ def reference_files() -> list[Path]:
     if not REFERENCES_DIR.is_dir():
         return []
     return sorted(p for p in REFERENCES_DIR.glob("*.md") if p.is_file())
+
+
+def command_body(path: Path) -> str:
+    """Frontmatter-stripped body of the command source at ``path``."""
+    return parse_frontmatter(read_text(path)).body
+
+
+def command_metadata(path: Path) -> dict[str, Any]:
+    """Parsed frontmatter metadata of the command source at ``path``."""
+    return parse_frontmatter(read_text(path)).metadata
 
 
 def approx_tokens(text: str) -> int:

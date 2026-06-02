@@ -12,9 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from bookwright.io.frontmatter import parse_frontmatter
-
-from .helpers import COMMANDS_DIR, EXPECTED_COMMANDS, command_files, read_text
+from .helpers import COMMANDS_DIR, EXPECTED_COMMANDS, command_files, command_metadata
 
 
 def test_exactly_the_ten_expected_commands_exist() -> None:
@@ -27,21 +25,21 @@ def test_exactly_the_ten_expected_commands_exist() -> None:
 
 @pytest.mark.parametrize("path", command_files(), ids=lambda p: p.name)
 def test_frontmatter_contract(path: Path) -> None:
-    fm = parse_frontmatter(read_text(path))  # FR-003: parses, no raise.
+    meta = command_metadata(path)  # FR-003: parses, no raise.
 
-    name = fm.metadata.get("name")
+    name = meta.get("name")
     assert isinstance(name, str) and name, f"{path.name}: missing/empty name"
     assert name == path.stem, f"{path.name}: name {name!r} != basename {path.stem!r}"  # FR-002
     assert len(name) < 64, f"{path.name}: name >= 64 chars"  # Constitution VII
 
-    description = fm.metadata.get("description")
+    description = meta.get("description")
     assert isinstance(description, str) and description.strip(), (
         f"{path.name}: missing/empty description"
     )
     assert len(description) < 1024, f"{path.name}: description >= 1024 chars"  # FR-004
 
-    assert "scripts" not in fm.metadata, f"{path.name}: forbidden 'scripts' key"  # FR-005
-    assert "handoffs" not in fm.metadata, f"{path.name}: forbidden 'handoffs' key"  # FR-006
+    assert "scripts" not in meta, f"{path.name}: forbidden 'scripts' key"  # FR-005
+    assert "handoffs" not in meta, f"{path.name}: forbidden 'handoffs' key"  # FR-006
 
 
 def test_commands_tree_ships_only_markdown() -> None:
