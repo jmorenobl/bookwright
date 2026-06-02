@@ -145,10 +145,13 @@ class InvalidIntegrationError(_IntegrationError):
 class SkillLintError(_IntegrationError):
     """Raised by ``lint_skill_md`` on the first agentskills.io violation (FR-015).
 
-    Post-write and user-edit-facing: a generated skill is linted right after it
-    is written, and any hand-edited skill that drifts out of compliance trips the
-    same rules. ``generate_skill_md`` deletes the offending skill dir before this
-    error escapes (FR-016 — "no invalid SKILL.md on disk").
+    Post-write: a freshly generated skill is linted right after it is written, and
+    ``generate_skill_md`` deletes the offending skill dir before this error escapes
+    (FR-016 — "no invalid SKILL.md on disk"). Note that ``generate_skill_md`` does
+    NOT re-lint a *pre-existing* ``SKILL.md``: idempotency (FR-014) skips it
+    untouched, so re-validation of hand-edited skills is the job of the standalone
+    ``lint_skill_md`` call (and the iteration-11 validation system that reuses it),
+    not of ``setup()``.
     """
 
     code = "skill_lint_failed"

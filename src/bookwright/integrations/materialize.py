@@ -90,12 +90,15 @@ def _render_frontmatter(name: str, description: str, license_: str, version: str
     return f"---\n{block}---\n"
 
 
-def _resolve_references(body: str) -> list[tuple[str, Traversable]]:
+def _resolve_references(skill_name: str, body: str) -> list[tuple[str, Traversable]]:
     """Resolve each distinct ``references/<file>.md`` cited in ``body`` (pure, no writes).
 
     A citation with no matching packaged source raises ``SkillMaterializationError``
     (``dangling_reference``) — before any directory is created. Returns the resolved
     ``(filename, source_node)`` copy-list consumed by :func:`_copy_references`.
+
+    ``skill_name`` is the citing command's name, carried onto the error so the JSON
+    envelope's ``skill`` field identifies the skill (not the missing reference file).
     """
 
     refs_root = files("bookwright.resources").joinpath("commands").joinpath("references")
@@ -107,7 +110,7 @@ def _resolve_references(body: str) -> list[tuple[str, Traversable]]:
         node = refs_root.joinpath(filename)
         if not node.is_file():
             raise SkillMaterializationError(
-                skill=filename,
+                skill=skill_name,
                 rule="dangling_reference",
                 detail=f"cited reference {filename!r} has no packaged source",
             )
@@ -176,7 +179,7 @@ def generate_skill_md(
     body = _transform_body(name, parsed.body)
 
     # Step 5 — resolve cited references (pure; a dangling ref aborts pre-write).
-    copy_list = _resolve_references(body)
+    copy_list = _resolve_references(name, body)
 
     # Step 6 — frontmatter (honour a source-declared license, else the design default).
     license_ = parsed.metadata.get("license", DEFAULT_SKILL_LICENSE)

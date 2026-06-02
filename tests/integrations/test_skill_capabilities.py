@@ -99,6 +99,16 @@ def test_empty_injection_is_rejected(tmp_path: Path) -> None:
     assert exc.value.rule == "forbidden_injection"
 
 
+def test_injection_with_unbalanced_quotes_is_rejected(tmp_path: Path) -> None:
+    # shlex.split would raise ValueError; it must surface as a structured
+    # SkillLintError, not escape the JSON envelope (Principle IX).
+    skill_dir = tmp_path / "bookwright-x"
+    _write_skill(skill_dir, 'Broken: !`cat "unterminated` here.\n')
+    with pytest.raises(SkillLintError) as exc:
+        lint_skill_md(skill_dir)
+    assert exc.value.rule == "forbidden_injection"
+
+
 def test_injection_read_command_with_home_path_is_rejected(tmp_path: Path) -> None:
     skill_dir = tmp_path / "bookwright-x"
     _write_skill(skill_dir, "Leak: !`cat ~/secrets`\n")

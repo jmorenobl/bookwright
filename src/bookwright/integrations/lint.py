@@ -60,7 +60,17 @@ def _check_injections(skill_name: str, body: str) -> None:
 
     for match in _INJECTION.finditer(body):
         cmd = match.group(1)
-        argv = shlex.split(cmd)
+        try:
+            argv = shlex.split(cmd)
+        except ValueError as exc:
+            # Unbalanced quotes etc. — surface as a structured lint failure
+            # rather than letting shlex's ValueError escape the JSON envelope
+            # (Principle IX). lint_skill_md is user-edit-facing.
+            raise SkillLintError(
+                skill=skill_name,
+                rule="forbidden_injection",
+                detail=f"unparseable dynamic-context injection {cmd!r}: {exc}",
+            ) from exc
         if not argv:
             raise SkillLintError(
                 skill=skill_name,
