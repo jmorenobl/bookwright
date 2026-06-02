@@ -7,6 +7,7 @@ validation tests sweep. Imports only the shipped ``bookwright`` package.
 
 from __future__ import annotations
 
+from math import ceil
 from pathlib import Path
 
 import bookwright
@@ -19,6 +20,41 @@ _PKG_ROOT = Path(_pkg_init).resolve().parent
 PROJECT_DIR = _PKG_ROOT / "resources" / "project"
 #: Re-instanceable molds + the verify-only manifest template.
 TEMPLATES_DIR = _PKG_ROOT / "resources" / "templates"
+#: Iteration-8 command sources (the 10 ``*.md``) + their tier-3 references subtree.
+COMMANDS_DIR = _PKG_ROOT / "resources" / "commands"
+REFERENCES_DIR = COMMANDS_DIR / "references"
+
+#: The 10 command source basenames fixed by FR-001 (design § 10.4 order).
+EXPECTED_COMMANDS: tuple[str, ...] = (
+    "bookwright-constitution",
+    "bookwright-bible",
+    "bookwright-outline",
+    "bookwright-scenes",
+    "bookwright-draft",
+    "bookwright-synopsis",
+    "bookwright-clarify",
+    "bookwright-analyze",
+    "bookwright-continuity",
+    "bookwright-checklist",
+)
+
+#: Command classification — single executable source of truth (spec "Command
+#: classification"). Generative commands write project files and carry the marker
+#: + update-in-place rules; report-only commands write nothing.
+GENERATIVE_COMMANDS: tuple[str, ...] = (
+    "bookwright-constitution",
+    "bookwright-bible",
+    "bookwright-outline",
+    "bookwright-scenes",
+    "bookwright-draft",
+    "bookwright-synopsis",
+)
+REPORT_ONLY_COMMANDS: tuple[str, ...] = (
+    "bookwright-clarify",
+    "bookwright-analyze",
+    "bookwright-continuity",
+    "bookwright-checklist",
+)
 
 #: Scaffolding markers that must never survive into an authored or stamped file.
 SENTINELS: tuple[str, ...] = (
@@ -85,3 +121,31 @@ def looks_spanish(text: str) -> bool:
         " del ",
     )
     return sum(marker in haystack for marker in markers) >= 3
+
+
+def command_files() -> list[Path]:
+    """The 10 command source ``*.md`` directly under ``commands/`` (excludes references/)."""
+    if not COMMANDS_DIR.is_dir():
+        return []
+    return sorted(p for p in COMMANDS_DIR.glob("*.md") if p.is_file())
+
+
+def reference_files() -> list[Path]:
+    """Every tier-3 reference ``*.md`` under ``commands/references/``."""
+    if not REFERENCES_DIR.is_dir():
+        return []
+    return sorted(p for p in REFERENCES_DIR.glob("*.md") if p.is_file())
+
+
+def approx_tokens(text: str) -> int:
+    """Token estimate for the < 5000-token body budget (FR-015, R1).
+
+    Counts with ``tiktoken``'s ``cl100k_base`` encoding when the package is
+    importable; otherwise falls back to the deterministic ``ceil(len / 4)``
+    char heuristic so the gate never requires a network/model download.
+    """
+    try:
+        import tiktoken  # type: ignore[import-not-found,import-untyped,unused-ignore]  # noqa: PLC0415
+    except ImportError:
+        return ceil(len(text) / 4)
+    return len(tiktoken.get_encoding("cl100k_base").encode(text))
