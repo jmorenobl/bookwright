@@ -16,7 +16,6 @@ from bookwright.commands.init import (
     envelope,
     git,
     resolve,
-    scaffold,
     validate,
 )
 from bookwright.commands.init.envelope import (
@@ -26,11 +25,7 @@ from bookwright.commands.init.envelope import (
     error_envelope,
     success_envelope,
 )
-from bookwright.commands.init.scaffold import (
-    BackupCreationError,
-    BackupLedger,
-    TargetOutsideProjectRootError,
-)
+from bookwright.io.fs import BackupLedger
 
 # ---------- validate ----------
 
@@ -265,81 +260,9 @@ def test_serialize_options_record_uses_indent_2() -> None:
     assert "  " in decoded
 
 
-# ---------- scaffold ----------
-
-
-def test_ledger_refuses_writes_outside_root(tmp_path: Path) -> None:
-    ledger = BackupLedger(tmp_path)
-    with pytest.raises(TargetOutsideProjectRootError):
-        ledger.record_new_file(tmp_path.parent / "outside.txt")
-
-
-def test_ledger_rollback_unlinks_new_file(tmp_path: Path) -> None:
-    ledger = BackupLedger(tmp_path)
-    target = tmp_path / "newfile.txt"
-    scaffold.write_bytes_atomic(target, b"hi", ledger)
-    assert target.read_text() == "hi"
-
-    ledger.rollback()
-    assert not target.exists()
-
-
-def test_ledger_rollback_restores_overwritten_file(tmp_path: Path) -> None:
-    target = tmp_path / "pre.txt"
-    target.write_text("ORIGINAL", encoding="utf-8")
-
-    ledger = BackupLedger(tmp_path)
-    scaffold.write_bytes_atomic(target, b"NEW", ledger)
-    assert target.read_text() == "NEW"
-
-    ledger.rollback()
-    assert target.read_text() == "ORIGINAL"
-
-
-def test_ledger_rollback_restores_directory(tmp_path: Path) -> None:
-    ledger = BackupLedger(tmp_path)
-    new_dir = tmp_path / "dir" / "sub"
-    scaffold.mkdir_tracked(new_dir, ledger)
-    assert new_dir.exists()
-
-    ledger.rollback()
-    assert not new_dir.exists()
-    assert not (tmp_path / "dir").exists()
-
-
-def test_ledger_record_overwrite_on_failure_raises(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    target = tmp_path / "exists.txt"
-    target.write_text("hi", encoding="utf-8")
-
-    def boom(*_a, **_kw):  # type: ignore[no-untyped-def]
-        raise PermissionError("forbidden")
-
-    monkeypatch.setattr("bookwright.commands.init.scaffold.shutil.copy2", boom)
-    ledger = BackupLedger(tmp_path)
-    with pytest.raises(BackupCreationError):
-        ledger.record_overwrite(target)
-
-
-def test_ledger_commit_prunes_cache(tmp_path: Path) -> None:
-    target = tmp_path / "pre.txt"
-    target.write_text("ORIGINAL", encoding="utf-8")
-
-    ledger = BackupLedger(tmp_path)
-    scaffold.write_bytes_atomic(target, b"NEW", ledger)
-    ledger.commit()
-
-    cache = tmp_path / ".bookwright" / "cache"
-    assert not cache.exists() or not any(cache.rglob("*"))
-
-
-def test_mkdir_tracked_noop_when_exists(tmp_path: Path) -> None:
-    ledger = BackupLedger(tmp_path)
-    existing = tmp_path / "already-here"
-    existing.mkdir()
-    scaffold.mkdir_tracked(existing, ledger)
-    assert ledger.entries == ()
+# NOTE: the BackupLedger / mkdir_tracked / write_bytes_atomic unit tests moved
+# to tests/io/test_fs.py when those primitives were extracted into
+# bookwright.io.fs (iteration 9, T021).
 
 
 # ---------- git ----------

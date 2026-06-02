@@ -114,15 +114,15 @@ def test_quickstart_section_4_setup(tmp_project: Path) -> None:
 
     skills_dir = tmp_project / ".cursor/skills"
     assert skills_dir.is_dir()
-    marker = skills_dir / ".bookwright-skills-placeholder"
-    assert marker.read_text(encoding="utf-8") == (
-        "bookwright integration: generic — SKILL.md materialization deferred to iteration 9\n"
-    )
+    # setup() now materializes one SKILL.md per command (no placeholder marker).
+    skill = skills_dir / "bookwright-bible" / "SKILL.md"
+    assert skill.is_file()
+    assert not (skills_dir / ".bookwright-skills-placeholder").exists()
 
-    # Idempotent: second call leaves bytes identical.
-    bytes_before = marker.read_bytes()
+    # Idempotent: re-running leaves an existing SKILL.md byte-for-byte unchanged.
+    bytes_before = skill.read_bytes()
     instance.setup(tmp_project, manifest, parsed)
-    assert marker.read_bytes() == bytes_before
+    assert skill.read_bytes() == bytes_before
 
 
 # §5 — Resolve the skills dir without running setup

@@ -140,3 +140,40 @@ class InvalidIntegrationError(_IntegrationError):
             "this is a programming error in the integration class"
         )
         super().__init__(message)
+
+
+class SkillLintError(_IntegrationError):
+    """Raised by ``lint_skill_md`` on the first agentskills.io violation (FR-015).
+
+    Post-write and user-edit-facing: a generated skill is linted right after it
+    is written, and any hand-edited skill that drifts out of compliance trips the
+    same rules. ``generate_skill_md`` deletes the offending skill dir before this
+    error escapes (FR-016 — "no invalid SKILL.md on disk").
+    """
+
+    code = "skill_lint_failed"
+
+    def __init__(self, *, skill: str, rule: str, detail: str) -> None:
+        self.skill = skill
+        self.rule = rule
+        self.detail = detail
+        message = f"skill {skill!r} failed lint rule {rule!r}: {detail}"
+        super().__init__(message)
+
+
+class SkillMaterializationError(_IntegrationError):
+    """Raised by ``generate_skill_md`` on a pre-write authoring error (FR-010/FR-020).
+
+    ``rule`` ∈ {``dangling_reference``, ``name_frontmatter_mismatch``}. Both are
+    detected *before* the first filesystem write, so a rejected source leaves
+    **zero** on-disk state (nothing to clean up).
+    """
+
+    code = "skill_materialization_failed"
+
+    def __init__(self, *, skill: str, rule: str, detail: str) -> None:
+        self.skill = skill
+        self.rule = rule
+        self.detail = detail
+        message = f"skill {skill!r} materialization failed ({rule}): {detail}"
+        super().__init__(message)

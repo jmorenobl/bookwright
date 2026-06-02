@@ -150,7 +150,7 @@ def test_filesystem_error_rolls_back(
             raise OSError(28, "fake no space")
         real_replace(src, dst)
 
-    monkeypatch.setattr("bookwright.commands.init.scaffold.os.replace", flaky_replace)
+    monkeypatch.setattr("bookwright.io.fs.os.replace", flaky_replace)
 
     snapshot = dirhash(scaffold_in_tmp)
 
@@ -198,7 +198,7 @@ def test_backup_creation_error_rolls_back(
     def flaky_copy(src: str, dst: str) -> None:
         raise PermissionError("backup forbidden")
 
-    monkeypatch.setattr("bookwright.commands.init.scaffold.shutil.copy2", flaky_copy)
+    monkeypatch.setattr("bookwright.io.fs.shutil.copy2", flaky_copy)
 
     target = scaffold_in_tmp / "mi-libro"
     target.mkdir()

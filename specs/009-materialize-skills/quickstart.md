@@ -45,12 +45,21 @@ Output is standard-only (identical bodies, different `skills_dir`).
 
 ## Idempotency
 
+Materialization is idempotent **per `SKILL.md`**: an existing skill file is never
+overwritten (your edits survive), while a deleted skill is regenerated in full.
+
+Note that `bookwright init` is single-shot per project — re-running it on a project
+that already has `.bookwright/` returns `{"code": "already_initialized"}` and writes
+nothing. The idempotency guard takes effect whenever materialization runs **again** —
+e.g. after de-initializing (removing `.bookwright/`) and re-running `init`, or a future
+re-scaffold/sync:
+
 ```bash
-uv run bookwright init …                       # materializes skills
-$EDITOR .claude/skills/bookwright-bible/SKILL.md   # tweak a step
-uv run bookwright init …                       # re-run → your edit is byte-for-byte preserved
-rm -rf .claude/skills/bookwright-draft/        # delete one
-uv run bookwright init …                       # only bookwright-draft is regenerated
+uv run bookwright init my-novel                # materializes skills
+$EDITOR my-novel/.claude/skills/bookwright-bible/SKILL.md   # tweak a step
+rm -rf my-novel/.claude/skills/bookwright-draft/            # delete one
+rm -rf my-novel/.bookwright/                   # de-initialize so init will run again
+uv run bookwright init my-novel --force        # bible edit preserved; only bookwright-draft regenerated
 ```
 
 ## Run the tests

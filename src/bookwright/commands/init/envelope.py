@@ -20,7 +20,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from bookwright import __version__ as _BOOKWRIGHT_VERSION
 from bookwright.core.iso639_1 import ISO_639_1_CODES
-from bookwright.integrations import MalformedOptionError
+from bookwright.integrations import (
+    MalformedOptionError,
+    SkillLintError,
+    SkillMaterializationError,
+)
 
 from .git import GitInitError
 from .scaffold import BackupCreationError, TargetOutsideProjectRootError
@@ -204,6 +208,16 @@ def classify_filesystem_failure(  # noqa: PLR0911 — one branch per contract §
             "malformed_option",
             5,
             {"value": exc.value, "rule": exc.rule},
+        )
+    if isinstance(exc, (SkillLintError, SkillMaterializationError)):
+        # The skills materializer (SkillsIntegration.setup()) aborts the
+        # integration on a lint failure or an authoring error. Surface the
+        # structured error verbatim (its `code` distinguishes the two) so the
+        # JSON envelope carries the skill/rule/detail triple (FR-016/FR-020).
+        return (
+            exc.code,
+            6,
+            {"skill": exc.skill, "rule": exc.rule, "detail": exc.detail},
         )
     if isinstance(exc, BackupCreationError):
         return (

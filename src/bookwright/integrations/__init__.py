@@ -24,6 +24,8 @@ from bookwright.integrations.errors import (
     InvalidIntegrationError,
     InvalidOptionDeclarationError,
     MalformedOptionError,
+    SkillLintError,
+    SkillMaterializationError,
     UnknownIntegrationError,
     UnknownOptionError,
 )
@@ -142,6 +144,8 @@ __all__ = [
     "InvalidIntegrationError",
     "InvalidOptionDeclarationError",
     "MalformedOptionError",
+    "SkillLintError",
+    "SkillMaterializationError",
     "SkillsIntegration",
     "UnknownIntegrationError",
     "UnknownOptionError",

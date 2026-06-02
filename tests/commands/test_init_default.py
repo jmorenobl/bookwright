@@ -46,7 +46,8 @@ def test_default_scaffold_named_mode(
     assert (project_root / "manuscript" / ".gitkeep").is_file()
     assert (project_root / ".bookwright" / "vocabularies" / "propp.ttl").is_file()
     assert (project_root / ".bookwright" / "vocabularies" / "greimas.ttl").is_file()
-    assert (project_root / ".claude" / "skills" / ".bookwright-skills-placeholder").is_file()
+    assert (project_root / ".claude" / "skills" / "bookwright-bible" / "SKILL.md").is_file()
+    assert not (project_root / ".claude" / "skills" / ".bookwright-skills-placeholder").exists()
 
     manifest = Manifest.load(project_root / "manifest.toml")
     assert manifest.book.title == "mi-libro"

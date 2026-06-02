@@ -24,7 +24,6 @@ import pytest
 
 from bookwright.core import Manifest
 from bookwright.integrations import (
-    SKILL_PLACEHOLDER_MARKER_NAME,
     IntegrationOption,
     SkillsIntegration,
     UnknownOptionError,
@@ -39,10 +38,10 @@ _SRC_ROOT = pathlib.Path(__file__).resolve().parents[2] / "src" / "bookwright" /
 # If you intentionally edit any of these files, recompute its sha256 and
 # update the value below; the diff makes the change auditable.
 _PINNED_FILE_HASHES: dict[str, str] = {
-    # base.py refreshed in R19: `config: ClassVar[dict] = {}` replaced with
-    # `MappingProxyType({})` so a forgetful subclass that mutates the
-    # shared default raises TypeError instead of polluting siblings.
-    "base.py": "ea47db16dd4d11613a66b26b9efb55f2ba59818b9e63674a264388368e52b48f",
+    # base.py refreshed in iteration 9 (T010): the placeholder-marker stub
+    # `setup()` was rewritten to materialize one SKILL.md per command via
+    # `generate_skill_md`, gaining a keyword-only `ledger` parameter (FR-001/019).
+    "base.py": "6335ec24cbe184b6e740c4cdd809092a57a0fe82af32839128c63dea3ec1f5f2",
     "claude/__init__.py": "cd981edd40b5a2cf2de33600f4935accc07d3d77f06241e6740e8f95e0d39ab5",
     "generic/__init__.py": "eff8e531d559ac3c9512c1987593fd07a6ea777cd2b2ed768659642a2ea3c359",
 }
@@ -108,13 +107,12 @@ def test_fake_integration_registers_and_satisfies_surface(
     instance = FakeIntegration()
     assert instance.resolve_skills_dir(None) == Path(".fake/skills")
 
-    # setup() materializes the same way Claude/Generic do.
+    # setup() materializes the same way Claude/Generic do (shared base body).
     instance.setup(tmp_project, minimal_manifest, None)
     skills_dir = tmp_project / ".fake/skills"
     assert skills_dir.is_dir()
-    assert (skills_dir / SKILL_PLACEHOLDER_MARKER_NAME).read_text(
-        encoding="utf-8"
-    ) == "bookwright integration: fake — SKILL.md materialization deferred to iteration 9\n"
+    assert (skills_dir / "bookwright-bible" / "SKILL.md").is_file()
+    assert not (skills_dir / ".bookwright-skills-placeholder").exists()
 
 
 def test_parse_options_is_generic_over_options(

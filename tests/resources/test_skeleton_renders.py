@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bookwright.commands.init.scaffold import BackupLedger, render_resource_tree
+from bookwright.commands.init.scaffold import render_resource_tree
+from bookwright.io.fs import BackupLedger
 
 from .helpers import PROJECT_DIR
 

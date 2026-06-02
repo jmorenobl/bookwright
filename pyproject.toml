@@ -70,6 +70,11 @@ select = ["E", "W", "F", "I", "B", "UP", "RUF", "SIM", "PL"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["PLR2004", "E731", "F841", "RUF005", "SIM108"]
+# Verbatim bilingual ES/EN description data table mirroring the iteration-8
+# source frontmatter under the SC-009 equality gate: the strings must stay
+# byte-for-byte faithful, so long lines (E501) and Spanish typographic dashes
+# (RUF001 EN DASH) are intentional and may not be rewrapped or transliterated.
+"src/bookwright/integrations/descriptions.py" = ["E501", "RUF001"]
 
 [tool.mypy]
 strict = true
