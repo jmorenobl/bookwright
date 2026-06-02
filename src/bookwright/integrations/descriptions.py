@@ -33,8 +33,10 @@ def get_description(name: str, fallback: str) -> str:
     """Authoritative lookup with source-frontmatter fallback (R3, FR-004).
 
     Returns `SKILL_DESCRIPTIONS[name]` when present, else `fallback` (the source
-    frontmatter description). Asserts the result is under the cap in this **one**
-    place — the over-cap case is otherwise a hard lint failure downstream.
+    frontmatter description). The 1024-char cap is *enforced* at runtime by
+    ``lint_skill_md`` Rule 3 (which survives ``python -O``); the ``assert`` below
+    is only a developer-time tripwire on the static table — over-cap is a coding
+    error caught by tests (the SC-009 equality gate), never a user-data case.
     """
 
     result = SKILL_DESCRIPTIONS.get(name, fallback)

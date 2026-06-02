@@ -32,18 +32,15 @@ _INJECTION = re.compile(r"!`([^`]*)`")
 def approx_tokens(text: str) -> int:
     """Token estimate for the Tier-2 body budget (R6).
 
-    Counts with ``tiktoken``'s ``cl100k_base`` encoding when the package is
-    importable; otherwise falls back to the deterministic ``ceil(len / 4)``
-    char heuristic — the same heuristic as the iteration-8 source-side gate, so
-    a body that passed iteration 8 passes here. ``tiktoken`` is an optional
-    import, never a runtime dependency.
+    Deterministic ``ceil(len / 4)`` char heuristic — the *same* definition of
+    "token" as the iteration-8 source-side authoring gate, so a body that passed
+    iteration 8 passes here, and the verdict never depends on which packages
+    happen to be installed. The budget is a 5x-margin regression guard, not an
+    authoring constraint, so the precision of a real tokenizer buys nothing here;
+    if iteration 11 needs exact counts it can introduce one where justified.
     """
 
-    try:
-        import tiktoken  # type: ignore[import-not-found,import-untyped,unused-ignore]  # noqa: PLC0415
-    except ImportError:
-        return math.ceil(len(text) / 4)
-    return len(tiktoken.get_encoding("cl100k_base").encode(text))
+    return math.ceil(len(text) / 4)
 
 
 def _check_injections(skill_name: str, body: str) -> None:

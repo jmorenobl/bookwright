@@ -67,12 +67,14 @@ skill dir before the error escapes (FR-016).
 
 ```python
 def approx_tokens(text: str) -> int:
-    # tiktoken cl100k_base count if importable, else math.ceil(len(text) / 4)
+    # deterministic: math.ceil(len(text) / 4)
 ```
 
 Same heuristic as the iteration-8 source-side budget gate, so a body that passed
-iteration 8 passes here (regression-guard parity, R6). `tiktoken` is an **optional**
-import — not added to the runtime dependency set.
+iteration 8 passes here (regression-guard parity, R6). The verdict is deterministic
+— it never depends on which packages are installed. No `tiktoken` dependency
+(runtime or optional); if iteration 11 needs exact counts it can add one where
+justified.
 
 ## Pass criteria (tests)
 

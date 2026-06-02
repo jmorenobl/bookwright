@@ -78,7 +78,7 @@ def test_rule_description_too_long(tmp_path: Path) -> None:
 
 def test_rule_body_over_budget(tmp_path: Path) -> None:
     skill_dir = tmp_path / "bookwright-x"
-    # approx_tokens uses ceil(len/4) (or tiktoken); make a body well over 5000 tokens.
+    # approx_tokens uses ceil(len/4); make a body well over 5000 tokens.
     huge_body = "palabra " * 6000
     assert approx_tokens(huge_body) >= 5000
     _write_skill(skill_dir, name="bookwright-x", description="hi", body=huge_body)
