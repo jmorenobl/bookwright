@@ -94,7 +94,7 @@ writes never escape `skills_dir` (⊆ project root).
 
 **Scope discipline**: no preset plumbing, no Grafeo, no third integration, no
 dynamic-context auto-injection (deferred). The lint check is the minimum needed for
-VII; the full validation system stays in iteration 10/11. The `io/fs.py` extraction and
+VII; the full validation system stays in iteration 11. The `io/fs.py` extraction and
 `FileLedger` Protocol are a **refactor in service of FR-019 correctness** (transactional
 rollback over a pre-existing `skills_dir`), not speculative generality — they remove the
 iteration-3 marker workaround rather than add new surface. **No violations — Complexity

@@ -129,7 +129,9 @@ story refines *how* they differ. Independently testable per integration.
   (per FR-016), not be silently shipped.
 - **Missing referenced file**: a source body referencing a `references/<file>` that
   does not exist in the source tree MUST be reported clearly rather than producing
-  a skill with a dangling reference.
+  a skill with a dangling reference. The check is **pre-write** (reference existence is
+  resolved before any directory is created), so the rejection leaves zero on-disk state —
+  no half-written skill directory to clean up.
 - **`name` ≠ directory**: the materialized `name` is derived from the source filename
   stem, which also names the destination directory, so generated skills always match by
   construction. The linter's `name_mismatch` rule guards **hand-edited** skills where a
@@ -313,8 +315,8 @@ story refines *how* they differ. Independently testable per integration.
 ## Out of Scope
 
 - Implementing new validators / the consolidated validation system — that is
-  iteration 10/11. This iteration only adds the agentskills.io lint check needed to
-  guarantee generated skills are spec-compliant.
+  iteration 11 (error-envelope consolidation is iteration 10). This iteration only adds
+  the agentskills.io lint check needed to guarantee generated skills are spec-compliant.
 - Preset / genre-package generation (post-v0).
 - Authoring auxiliary helper scripts under `.bookwright/scripts/` — none exist;
   skills call the `bookwright` CLI directly.

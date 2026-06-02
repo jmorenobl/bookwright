@@ -51,7 +51,15 @@ def generate_skill_md(
 4. Transform body: `body.replace("{ARGS}", "$ARGUMENTS")` (FR-007); assert no `{ARGS}`
    or `{SCRIPT}` token remains (SC-003); leave all other content intact (FR-018). Emit
    **no** `` !`…` `` injection (FR-011/012).
-5. Build frontmatter (`name`, `description`,
+5. **Resolve cited references — pure, no filesystem mutation**: collect each distinct
+   `references/<file>.md` cited in the body and resolve it to its packaged source
+   `commands/references/<file>.md`. A citation with no matching source file →
+   `SkillMaterializationError` (`dangling_reference`), raised **before any directory is
+   created or file written**. Together with the step-1 `name_frontmatter_mismatch` check,
+   this makes every *authoring* error pre-write: a rejected source leaves **zero** on-disk
+   state — no half-written `skill_dir` to clean up, in `init` *or* standalone/`NullLedger`
+   callers. Returns the resolved `(file, source_path)` copy-list, consumed in step 7.
+6. Build frontmatter (`name`, `description`,
    `license=fm.metadata.get("license", DEFAULT_SKILL_LICENSE)`,
    `metadata.author="bookwright"`, `metadata.version=bookwright.__version__`) →
    `yaml.safe_dump(allow_unicode=True, sort_keys=False)` between `---` fences (R5,
@@ -60,16 +68,16 @@ def generate_skill_md(
    written ("inherited when the source does not specify one"). No v0 source declares a
    license, so every materialized skill inherits `Apache-2.0` (A-002); the conditional
    read keeps spec and code aligned and is future-proof at zero cost.
-6. Copy cited references: for each distinct `references/<file>.md` matched in the body,
-   copy `commands/references/<file>.md` → `skill_dir / "references" / <file>.md`
-   (FR-010), creating `skill_dir/references/` via `mkdir_tracked(.., ledger)` and writing
-   via `write_bytes_atomic(.., ledger)`. A citation with no matching source file →
-   `SkillMaterializationError` (`dangling_reference`).
-7. Create `skill_dir` via `mkdir_tracked(.., ledger)` and write `SKILL.md` via
-   `write_bytes_atomic(.., ledger)` (every created path recorded — FR-019); then **lint**
-   the result via `lint_skill_md` (see sibling contract). On `SkillLintError`, delete
-   `skill_dir` and re-raise (FR-016 — "no invalid SKILL.md on disk"); the now-stale ledger
-   entries are inert at rollback (it guards with `if entry.target.exists()`).
+7. **All writes happen here — the single first mutation point** (every created path
+   recorded through `ledger` — FR-019): create `skill_dir` via `mkdir_tracked(.., ledger)`,
+   write `SKILL.md` via `write_bytes_atomic(.., ledger)`, and copy each reference resolved
+   in step 5 into `skill_dir / "references" / <file>.md` (creating `skill_dir/references/`
+   via `mkdir_tracked(.., ledger)`, writing via `write_bytes_atomic(.., ledger)`, FR-010).
+   Then **lint** the result via `lint_skill_md` (see sibling contract). On `SkillLintError`,
+   delete `skill_dir` and re-raise (FR-016 — "no invalid SKILL.md on disk"); the now-stale
+   ledger entries are inert at rollback (it guards with `if entry.target.exists()`). A lint
+   failure is thus the **only** post-write error and the only one that needs on-disk
+   cleanup — authoring errors never reach this point.
 8. Never write outside `target_dir` (FR-017).
 
 ## `setup()` driver (single shared method in `base.py` — FR-001)

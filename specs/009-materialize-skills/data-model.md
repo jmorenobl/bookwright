@@ -75,8 +75,9 @@ Serialized via `yaml.safe_dump(..., allow_unicode=True, sort_keys=False)` betwee
   verbatim (FR-008/009); all other instructional content unchanged (FR-018).
 - **References**: each `references/<file>.md` citation found in the body is copied from
   the packaged `commands/references/<file>.md` into this skill's `references/`
-  (FR-010, SC-004). A cited file missing from the source tree is a reported error
-  (edge case "missing referenced file").
+  (FR-010, SC-004). Existence of every cited source is resolved **pre-write** (before any
+  directory is created); a missing source is a reported error (`dangling_reference`, edge
+  case "missing referenced file") that leaves **zero** on-disk state.
 
 ## 5. Idempotency & containment state (behavioural)
 
@@ -85,6 +86,7 @@ Serialized via `yaml.safe_dump(..., allow_unicode=True, sort_keys=False)` betwee
 | Existing `SKILL.md` | skip entire skill (no overwrite, no re-copy) — byte-identical | FR-014, SC-005 |
 | Missing skill dir | (re)generate in full incl. its `references/` | A-005, SC-005 |
 | Containment | never write outside resolved `skills_dir` (⊆ project root, iteration-3 guard reused) | FR-017, SC-007 |
+| Authoring error (`name`≠stem, dangling ref) | detected **pre-write** → `SkillMaterializationError`, abort this integration with **zero** on-disk state (nothing to clean up) | FR-020, FR-010, edge cases |
 | Lint failure | remove the half-written offending skill dir, raise `SkillLintError`, abort this integration | FR-016, A-006 |
 | Ledger recording | every created dir/file is recorded so `init` rollback removes it — incl. pre-existing `skills_dir` | FR-019, SC-008 |
 
@@ -93,9 +95,11 @@ Serialized via `yaml.safe_dump(..., allow_unicode=True, sort_keys=False)` betwee
 `scaffold.py` passes the live `BackupLedger`. The materializer creates each `<command>/`
 (and `references/`) directory via `mkdir_tracked` and writes each file via
 `write_bytes_atomic` — **recording every path it actually creates** through the ledger.
-On a per-skill lint failure it deletes *that* skill's directory before raising (so no
-invalid `SKILL.md` is left); the ledger entries for already-removed paths are inert at
-rollback (it guards with `if entry.target.exists()`). Whole-`init` rollback then unwinds
+Authoring errors (`name_frontmatter_mismatch`, `dangling_reference`) are raised *before*
+the first write — there is nothing on disk to delete — so the lint check is the **only**
+post-write failure. On a per-skill lint failure it deletes *that* skill's directory before
+raising (so no invalid `SKILL.md` is left); the ledger entries for already-removed paths
+are inert at rollback (it guards with `if entry.target.exists()`). Whole-`init` rollback then unwinds
 **all** materialized artifacts, including the case where `skills_dir` pre-existed and
 `mkdir_tracked` recorded no parent (the iteration-3 assumption "the parent `skills_dir`
 mkdir covers the subtree" was false under `--force`/`--here`). `scaffold.py` step 4 drops
@@ -107,7 +111,7 @@ parents), so re-materializing into a pre-existing skill dir never records (or ro
 a directory the user already had. The `FileLedger` Protocol decouples the integration
 from `init`: it depends on the protocol, never on the concrete `BackupLedger`.
 
-## 6. Error envelope: `SkillLintError`
+## 6. Error envelopes: `SkillLintError` / `SkillMaterializationError`
 
 New structured error in `integrations/errors.py`, inheriting `_IntegrationError` so it
 reuses the pinned `to_dict()` shape (`code`, `message`, + public attrs).
