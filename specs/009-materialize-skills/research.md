@@ -113,16 +113,20 @@ spec clarifications; **zero NEEDS CLARIFICATION remain**. Decisions below.
 
 ## R6 — Token-budget estimation for the Tier-2 body cap
 
-- **Decision**: reuse the iteration-8 `approx_tokens` heuristic — `tiktoken` count if
-  importable, else `ceil(len(text)/4)` — exposed as a helper in `integrations/lint.py`.
+- **Decision**: reuse the iteration-8 `approx_tokens` heuristic — the deterministic
+  `ceil(len(text)/4)` char estimate — exposed as a helper in `integrations/lint.py`.
   Cap constant `SKILL_BODY_MAX_TOKENS = 5000` added to `constants.py`. Bodies are copied
   unchanged from already-budget-passing iteration-8 sources, so this is a regression
   guard, not a new constraint.
 - **Rationale**: identical heuristic to the source-side gate keeps the two checks
-  consistent (a source that passed iteration 8 must pass here); no hard `tiktoken`
-  dependency added (it is not in the runtime set — optional import only).
+  consistent (a source that passed iteration 8 must pass here). The estimate is
+  deterministic — the verdict never depends on which packages happen to be installed
+  (CI vs. a user's machine), and no `tiktoken` dependency is added (runtime or optional).
+  The budget is a 5x-margin regression guard, so a real tokenizer's precision buys
+  nothing; iteration 11 can introduce one where exact counts are justified.
 - **Alternatives rejected**: a byte-length cap (diverges from the source gate);
-  mandating `tiktoken` (would require a constitutional amendment).
+  an optional `tiktoken` branch (re-introduces a non-deterministic, install-dependent
+  verdict near the cap); mandating `tiktoken` (would require a constitutional amendment).
 
 ## R7 — Idempotency granularity and rollback integration
 

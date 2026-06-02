@@ -1,7 +1,7 @@
 """FR-015 / SC-002 — every command body stays under the tier-2 token budget.
 
-Measured with ``helpers.approx_tokens`` (tiktoken if importable, else the
-deterministic ``ceil(len/4)`` char heuristic).
+Measured with ``helpers.approx_tokens`` (deterministic ``ceil(len/4)`` char
+heuristic).
 """
 
 from __future__ import annotations

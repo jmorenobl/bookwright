@@ -154,12 +154,9 @@ def command_metadata(path: Path) -> dict[str, Any]:
 def approx_tokens(text: str) -> int:
     """Token estimate for the < 5000-token body budget (FR-015, R1).
 
-    Counts with ``tiktoken``'s ``cl100k_base`` encoding when the package is
-    importable; otherwise falls back to the deterministic ``ceil(len / 4)``
-    char heuristic so the gate never requires a network/model download.
+    Deterministic ``ceil(len / 4)`` char heuristic — the same definition of
+    "token" used by ``integrations.lint.approx_tokens`` so the source-side gate
+    and the materialized-side lint stay in lock-step (a source that passes here
+    passes lint), and the verdict never depends on installed packages.
     """
-    try:
-        import tiktoken  # type: ignore[import-not-found,import-untyped,unused-ignore]  # noqa: PLC0415
-    except ImportError:
-        return ceil(len(text) / 4)
-    return len(tiktoken.get_encoding("cl100k_base").encode(text))
+    return ceil(len(text) / 4)
