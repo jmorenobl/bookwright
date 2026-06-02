@@ -129,7 +129,7 @@ Where a command needs extended domain material — the GOLEM character ontology,
 **Body structure** — each body MUST contain these sections (Spanish prose):
 
 - **FR-007**: Agent role/context — who the agent is for this command (e.g. "editor narrativo experimentado").
-- **FR-008**: Expected input — what the command consumes, including any positional argument (`<scene_id>`, `<artifact>`) and the `{ARGS}`/`$ARGUMENTS` substitution.
+- **FR-008**: Expected input — what the command consumes, including any positional argument (`<scene_id>`, `<artifact>`). The source references the argument via the neutral placeholder `{ARGS}` and MUST NOT hard-code an agent-specific token (e.g. `$ARGUMENTS`); iteration-9 materialization maps `{ARGS}` to each agent's substitution syntax (FR-006). `{ARGS}` (single brace) is chosen so it survives Jinja-based materialization, unlike `{{…}}`.
 - **FR-009**: A numbered step-by-step procedure.
 - **FR-010**: Expected output — the report shape and/or the files produced.
 - **FR-011**: "Files to read" — the concrete project paths the command consumes.
@@ -139,9 +139,11 @@ Where a command needs extended domain material — the GOLEM character ontology,
 
 **Token & marker conventions**
 
+*Command classification (single source of truth, referenced throughout):* **generative** commands = `bookwright-constitution`, `bookwright-bible`, `bookwright-outline`, `bookwright-scenes`, `bookwright-draft`, `bookwright-synopsis` (they write project files); **report-only** commands = `bookwright-clarify`, `bookwright-analyze`, `bookwright-continuity`, `bookwright-checklist` (they write nothing). The marker and update-in-place rules below apply per this classification.
+
 - **FR-015**: Each body MUST stay under 5000 tokens (agentskills.io tier-2 limit), measured with `tiktoken` when available, otherwise by a character-based approximation.
 - **FR-016**: Generative commands MUST instruct the agent to emit the fill-marker as the exact token `[PENDING: <question>]` (English token, Spanish question), and to quote it when it lands in a string-typed YAML field.
-- **FR-016a**: Each generative command (`constitution`, `bible`, `outline`, `scenes`, `draft`) MUST state an update-in-place rule: read any already-populated target, preserve human-authored content and resolved `[PENDING]` answers, fill only gaps and still-open `[PENDING: …]` markers, and never overwrite or duplicate authored prose.
+- **FR-016a**: Each generative command MUST state an update-in-place rule: read any already-populated target, preserve human-authored content and resolved `[PENDING]` answers, fill only gaps and still-open `[PENDING: …]` markers, and never overwrite or duplicate authored prose. (`bookwright-synopsis` additionally regenerates its short/long version blocks to track current state while preserving any human content outside them — see FR-023.)
 
 **CLI integration**
 
@@ -150,11 +152,11 @@ Where a command needs extended domain material — the GOLEM character ontology,
 **Per-command behavior** (each command's body MUST encode the contract from § 10.4):
 
 - **FR-018**: `bookwright-constitution` reads the brief/conversation + constitution mold, writes `bible/constitution.md`, runs the graph build, and reports pending fields + activated vocabularies + the suggestion to run `bookwright-clarify` before `bookwright-bible`.
-- **FR-019**: `bookwright-bible` reads constitution + brief and, in a **single invocation**, does a complete first pass over the full bible set — stamping the iteration-7 molds once per entity in a fixed order (constitution-derived entities first), writing each file as it goes, and marking thin entries `[PENDING: …]` rather than inventing canon. `bible/pov-structure.md` is written only when multi-POV.
+- **FR-019**: `bookwright-bible` reads constitution + brief and, in a **single invocation**, does a complete first pass over the full bible set — stamping the iteration-7 molds once per entity in a fixed order (constitution-derived entities first), writing each file as it goes, and marking thin entries `[PENDING: …]` rather than inventing canon. It ensures the entity directories `bible/characters/`, `bible/settings/`, and `bible/locations/` exist (creating any that are absent) before stamping. `bible/pov-structure.md` is *populated* only when the constitution declares multiple POVs; otherwise the command leaves a brief `POV único — no aplica` note (the file pre-exists from `init`).
 - **FR-020**: `bookwright-outline` reads constitution + bible and writes `outline/arcs.md`, `outline/structure.md`, `outline/synopsis.md`.
 - **FR-021**: `bookwright-scenes` reads outline + bible and writes `outline/scenes.md` with per-scene narrative function, characters present, location, and beats.
 - **FR-022**: `bookwright-draft <scene_id>` reads outline + scene + bible and writes the scene into the correct `manuscript/cap-NN.md` section, honoring voice/focalization/constraints.
-- **FR-023**: `bookwright-synopsis` updates `outline/synopsis.md` with a 250–350-word short version and a 1000–2000-word long version.
+- **FR-023**: `bookwright-synopsis` (generative) updates `outline/synopsis.md` with a 250–350-word short version and a 1000–2000-word long version reflecting current project state. It regenerates those two version blocks on each run, preserves any human-authored content outside them, and marks `[PENDING: …]` where source material is missing rather than inventing plot.
 - **FR-024**: `bookwright-clarify` reads any artifact and returns a question list; report-only.
 - **FR-025**: `bookwright-analyze` reads constitution + bible + outline + scenes and reports pre-draft cross-artifact inconsistencies; report-only.
 - **FR-026**: `bookwright-continuity` reads manuscript + bible, builds the graph, and reports bible-compliance + character-arc consistency + timeline coherence; report-only.
@@ -202,3 +204,4 @@ Where a command needs extended domain material — the GOLEM character ontology,
 - **CLI subcommands already exist**: `bookwright graph build --json` (iteration 6) and the `init` skeleton (iteration 4) are present on `main`; this iteration only references them, it does not implement them.
 - **Reference file set**: the exact roster under `references/` (e.g. `golem-character.md`, `propp-functions.md`, `greimas-actants.md`) is finalized during planning/implementation from what the bodies actually cite; the binding rule is FR-029 (no dangling references), not a fixed list.
 - **`manuscript/cap-NN.md` granularity**: `bookwright-draft` writes the scene into the chapter file/section implied by the scene's `scene_id` and the outline's structure; the precise filename mapping follows the iteration-7 chapter mold and the scenes list, not a new numbering scheme invented here.
+- **Skeleton `bible/locations/`**: the iteration-4 `init` skeleton on `main` ships `bible/characters/` and `bible/settings/` but not `bible/locations/`, despite a `location.md.tmpl` mold existing. `bookwright-bible` creates `bible/locations/` defensively (FR-019); restoring skeleton symmetry (`bible/locations/.gitkeep`) is a separate iteration-4 hygiene fix, tracked outside this iteration's diff.
