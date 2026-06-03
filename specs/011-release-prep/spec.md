@@ -12,6 +12,13 @@
 
 This is the consolidation iteration that takes Bookwright from "feature-complete on `main`" to "shippable as v0.1.0". It adds nothing to the runtime feature set: instead it proves the existing system works end-to-end, makes it usable by people who have never seen the source code, and packages it for distribution. Three classes of deliverable: **realistic fixtures**, **end-to-end tests** that exercise the whole workflow over those fixtures, and **user- and contributor-facing documentation** (a navigable docs site, README quickstart, changelog, contributing guide, license).
 
+## Clarifications
+
+### Session 2026-06-03
+
+- Q: What language should the v0.1.0 documentation site (MkDocs) and README quickstart be written in? → A: Spanish-only (docs site + quickstart in Spanish, aligning with the design corpus; the English-code/CLI surface stays English).
+- Q: On a `claude`→`generic` integration swap re-initialized with `--here --force`, what happens to the stale `.claude/skills/` directory? → A: Leave it untouched — no code change; the swap test asserts skills are correctly materialized under `.agents/skills/` and does NOT assert removal of the old directory.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Realistic fixture projects for end-to-end testing (Priority: P1)
@@ -43,7 +50,7 @@ A maintainer (and CI) needs automated tests that walk a brand-new user's path fr
 
 1. **Given** an empty working directory, **When** the full-workflow test runs `bookwright init`, edits the manifest and constitution, then runs `bookwright graph build`, `bookwright graph query`, and `bookwright validate` in sequence, **Then** each step produces its expected result and the final state is a valid project.
 2. **Given** a project that has materialized its skills, **When** the materialization test inspects each generated `SKILL.md`, **Then** every file satisfies the agentskills.io standard (valid YAML frontmatter; `name` ≤ 64 chars and matching its parent directory; `description` ≤ 1024 chars).
-3. **Given** a project initialized with `--integration claude`, **When** the manifest is switched to `generic` and the project is re-initialized with `--here --force`, **Then** the skills are correctly materialized under `.agents/skills/` (and the integration swap leaves no orphaned `.claude/skills/` artifacts that contradict the new manifest).
+3. **Given** a project initialized with `--integration claude`, **When** the manifest is switched to `generic` and the project is re-initialized with `--here --force`, **Then** the skills are correctly materialized under `.agents/skills/`. The previous `.claude/skills/` directory is left untouched (re-init only overwrites collisions under the new target); the test asserts the new location is correct and does not assert removal of the old one.
 
 ---
 
@@ -85,7 +92,7 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 ### Edge Cases
 
 - **Non-fiction false positives**: the essay and memoir fixtures must not trip narrative-continuity validators designed for fiction (e.g. character-presence checks on a project with no fictional characters). Validation against a clean fixture must report zero violations.
-- **Integration swap residue**: switching a project from `claude` to `generic` must produce skills in the new location; the spec must state whether stale skills in the old location are removed, left, or flagged, so the swap test asserts a defined outcome.
+- **Integration swap residue**: switching a project from `claude` to `generic` produces skills in the new location (`.agents/skills/`); stale skills in the previous location (`.claude/skills/`) are **left untouched** (no cleanup is performed). The swap test asserts the new location is correct and does not assert removal of the old one.
 - **Docs drift**: if a documented command name, flag, or quickstart step no longer matches the shipped CLI, the docs build or an E2E/quickstart check should surface the mismatch rather than silently shipping stale docs.
 - **Coverage just under threshold**: if the new E2E tests pull coverage measurement around the 80% line, the gate must fail closed (block release) rather than round up.
 - **Existing draft artifacts**: README, CHANGELOG, and CONTRIBUTING already exist in partial form — this iteration finalizes/updates them rather than assuming a blank slate, and must not regress content already present.
@@ -106,12 +113,12 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 
 - **FR-006**: An E2E test MUST exercise the full workflow — `bookwright init`, editing the manifest and constitution, `bookwright graph build`, `bookwright graph query`, `bookwright validate` — and assert the expected outcome at each step.
 - **FR-007**: An E2E test MUST verify that every generated `SKILL.md` conforms to the agentskills.io standard (valid YAML frontmatter; `name` ≤ 64 chars matching its parent directory; `description` ≤ 1024 chars).
-- **FR-008**: An E2E test MUST verify the integration swap: after `bookwright init --integration claude`, changing the manifest to `generic` and re-initializing with `--here --force` materializes skills correctly under `.agents/skills/`.
+- **FR-008**: An E2E test MUST verify the integration swap: after `bookwright init --integration claude`, changing the manifest to `generic` and re-initializing with `--here --force` materializes skills correctly under `.agents/skills/`. The test MUST assert only the new location; it MUST NOT require removal of the previous `.claude/skills/` directory (no cleanup behavior is added in this iteration).
 - **FR-009**: The E2E tests MUST run as part of the standard test suite and contribute to the coverage measurement.
 
 #### Documentation
 
-- **FR-010**: The repository MUST have a `README.md` covering what Bookwright is, quick installation, a 5-minute quickstart, and links to the documentation site.
+- **FR-010**: The repository MUST have a canonical README (Spanish — `README.es.md`) covering what Bookwright is, quick installation, a 5-minute quickstart, and links to the documentation site. `README.md` (English) MAY remain as a short pointer to the canonical README and the docs.
 - **FR-011**: The project MUST provide a documentation site built with MkDocs (mkdocs-material theme) containing pages for: index, getting-started, architecture, commands, validation, extending, and FAQ.
 - **FR-012**: The commands documentation MUST include one page (or clearly delineated section) per shipped command.
 - **FR-013**: The architecture page MAY be a summary of the design document and MUST link to the full design document rather than duplicating it wholesale.
@@ -150,13 +157,13 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 
 ## Assumptions
 
-- **Documentation language**: the documentation site and README quickstart are written in **English**, consistent with the project convention that code, identifiers, and user-facing English docs use English while the two large design documents stay in Spanish. The existing `README.es.md` (Spanish) is retained but a fully bilingual docs site is out of scope for v0.1.0.
+- **Documentation language** (clarified 2026-06-03): the documentation site and the canonical quickstart are written in **Spanish**, aligning with the project's Spanish design corpus and the bilingual author. Code, identifiers, CLI surface, command names, flags, and commit messages remain in English. A fully bilingual docs site is out of scope for v0.1.0; the existing `README.es.md` becomes the canonical user-facing README, and `README.md` may remain as a short English pointer to it but is not required to carry the full quickstart.
 - **Existing draft files**: `README.md`, `CHANGELOG.md`, and `CONTRIBUTING.md` already exist in partial form and an Apache-2.0 `LICENSE` is already present; this iteration finalizes/updates them to the v0.1.0 state rather than creating them from scratch.
 - **Shipped command set**: the documented and tested commands are those present on `main` after iterations 1–11 — CLI subcommands (`init`, `graph`, `validate`, `check`, `version`) and the 10 source/Agent-Skill commands (`bible`, `outline`, `synopsis`, `scenes`, `draft`, `clarify`, `analyze`, `checklist`, `constitution`, `continuity`). No new commands are introduced here.
 - **Integration scope**: only `claude` and `generic` integrations are exercised, matching v0 scope; no Copilot/Gemini/Cursor-specific behavior is documented or tested.
 - **Fixture coherence over richness**: fixtures are deliberately minimal; "coherent" means internally consistent and validatable, not literarily rich.
 - **Distribution name**: the installable distribution is referenced as `bookwright-cli` (the name used in the manual-validation step), exposing a `bookwright` console command.
-- **Integration-swap residue policy**: the swap test asserts that skills appear in the new integration's directory; the exact handling of skills left in the previous integration's directory is defined during planning and locked by the test (default assumption: re-init with `--force` regenerates the active integration's skills and the test asserts the new location is correct).
+- **Integration-swap residue policy** (clarified 2026-06-03): re-init with `--force` regenerates the active integration's skills and overwrites only collisions under the new target; the previously-active integration's directory (`.claude/skills/`) is left untouched. No cleanup behavior is added in this iteration, keeping it pure polish/consolidation. The swap test asserts the new location (`.agents/skills/`) is correct and does not assert removal of the old directory.
 
 ## Out of Scope
 
