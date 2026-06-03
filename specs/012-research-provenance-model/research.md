@@ -220,12 +220,15 @@ contradicts US1 §3 and the malformed-front-matter edge case.
 
 **Decision**: After the existing bible mapping/emission loop in `build.py:_build()`,
 add a research pass: resolve `research_dir = bible_dir / "research"`, call
-`map_research(project_root, research_dir, uri_base, manifest.book.language)`, and
-feed each entity's `to_triples()` through `engine.add_triple(*triple)` into the
-same engine before `engine.save()`. `ResearchError` is caught in the command body
-and rendered through the existing error envelope (exit 2). The `BuildReport` gains
-optional research counters (sources/findings/anchors) for the human/`--json`
-summary; existing fields are unchanged so current build tests still pass.
+`map_research(project_root, research_dir, uri_base, manifest.book.language,
+entity_index, timeline_uri(uri_base))` (the bible `entity_index` from D11; the
+well-known timeline IRI from D10), and feed each entity's `to_triples()` through
+`engine.add_triple(*triple)` into the same engine before `engine.save()`.
+`ResearchError` is added to the command's existing `except` tuple and rendered
+through the existing error envelope (exit 2). The `BuildReport` gains optional
+research counters (sources/findings/anchors) plus the `ResearchWarning` list (D12)
+for the human/`--json` summary, exit code unchanged; existing fields are unchanged so
+current build tests still pass.
 
 **Rationale**: one graph, one save — research and narrative triples land in the
 same `bible/graph.ttl` (FR-013). No new command, no second serialization. Findings
