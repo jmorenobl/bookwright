@@ -2,35 +2,73 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: pre-implementation
+## Repository state: v0.1.0 shipped, M4 in progress
 
-There is **no Python source code in this repo yet**. The implementation has
-not started. What exists:
+The v0 toolkit is **fully implemented and released** (`v0.1.0`, 2026-06-03):
+iterations 1–11 are on `main` with a real `src/bookwright/` package, ~200
+Python files, the full test suite, docs, and CI gates green. Work has moved
+on to **M4 / v0.2** — the research & provenance model — on branch
+`012-research-provenance-model`.
+
+The canonical references:
 
 - `bookwright-design.md` (Spanish, ~74 KB) — canonical design spec. Section
-  numbering is load-bearing; iteration prompts reference it as
+  numbering is load-bearing; specs and iteration prompts cite it as
   `bookwright-design.md § N.M`. Section 16 lists axiomatic decisions that
-  MUST NOT be reopened.
+  MUST NOT be reopened. § 20 covers the research system now being built.
 - `bookwright-implementation-plan.md` (Spanish, ~45 KB) — ordered iteration
-  plan. Section 2 has the dependency map; sections 3+ have one
-  ready-to-paste `/speckit-specify` prompt per iteration.
-- `.specify/memory/constitution.md` — ratified v1.0.0. **Binding** on every
-  PR. Three principles are explicitly NON-NEGOTIABLE: plain-text source of
-  truth (I), Agent Skills only — no legacy `commands/` directories (VI),
-  and test discipline with ≥80 % coverage (VIII).
-- `.specify/` — Spec Kit scaffolding (templates, hook config in
-  `extensions.yml`, the git extension scripts).
-- `.claude/skills/speckit-*` — the 14 Spec Kit slash-command skills that
-  drive the workflow.
+  plan. § 2 has the dependency map; § 3+ have one ready-to-paste
+  `/speckit-specify` prompt per iteration.
+- `.specify/memory/constitution.md` — ratified, currently **v1.3.0**.
+  **Binding** on every PR. Three principles are explicitly NON-NEGOTIABLE:
+  plain-text source of truth (I), Agent Skills only — no legacy `commands/`
+  directories (VI), and test discipline with ≥ 80 % coverage (VIII).
+- `specs/NNN-<name>/` — per-iteration `{spec,plan,tasks}.md` (plus
+  `research.md`, `data-model.md`, `contracts/`, `quickstart.md`). The
+  iteration's plan is the most precise statement of what its code does.
+- `.claude/skills/speckit-*` — the Spec Kit slash-command skills that drive
+  the workflow.
 
-Implementation lives in the future. Every feature lands through a numbered
-iteration from the implementation plan, not as a freehand commit.
+Every feature lands through a numbered iteration, not as a freehand commit.
+
+## Common commands
+
+```
+uv sync                          # install deps + dev group into .venv
+uv run bookwright <subcommand>   # run the CLI (version | check | init | validate | graph | integration)
+uv run pytest                    # full suite (excludes `manual` marker, enforces ≥80% coverage)
+uv run pytest tests/golem/test_triples.py::test_name   # single test
+uv run pytest -m manual          # opt-in packaged-install / subprocess smoke (slow, networked)
+uv run ruff check && uv run ruff format --check
+uv run mypy --strict             # files = src + tests (configured in pyproject)
+```
+
+All four gates (`ruff check`, `ruff format --check`, `mypy --strict`,
+`pytest`) run in CI on every push / PR. The coverage threshold is
+single-sourced in `[tool.coverage.report]` (`fail_under = 80`,
+`precision = 2`) — do **not** add `--cov-fail-under` anywhere; one source, no
+drift.
+
+## Code intelligence: use codegraph first
+
+This repo has a **codegraph** index (a local SQLite knowledge graph of every
+symbol, edge, and file, kept fresh by a file watcher in `.codegraph/`, not
+committed). Before grepping/reading to understand the code, query it via the
+`mcp__codegraph__*` tools — it's faster and already built:
+
+- `codegraph_context` — primary entry point for "what's the deal with area X".
+- `codegraph_trace` — full call path from X to Y (follows dynamic dispatch).
+- `codegraph_callers` / `codegraph_callees` / `codegraph_impact` — who calls
+  what, and what a change would break.
+- `codegraph_explore` / `codegraph_node` — survey or read specific symbols.
+
+Answer architecture/trace/where-is-X questions directly with 2–3 of these
+calls; fall back to raw Read/Grep only to confirm a detail codegraph missed.
 
 ## How work is done here
 
-The project is built **with** Spec Kit, **for** narrative authoring. Every
-iteration runs this fixed sequence — do not skip steps, do not write code
-directly outside this flow:
+Built **with** Spec Kit, **for** narrative authoring. Every iteration runs
+this fixed sequence — do not skip steps, do not write code outside this flow:
 
 ```
 /speckit-specify <iteration prompt from bookwright-implementation-plan.md>
@@ -41,125 +79,152 @@ directly outside this flow:
 /speckit-implement
 ```
 
-Each iteration produces a feature branch `NNN-<short-name>` with its own
-`specs/NNN-<short-name>/{spec,plan,tasks}.md`. Merge to `main` only when
-tests are green and `/speckit-analyze` reports no issues; subsequent
-iterations assume earlier code is on `main`.
+Each iteration is a branch `NNN-<short-name>` with its own `specs/` dir. Merge
+to `main` only when tests are green and `/speckit-analyze` reports no issues;
+later iterations assume earlier code is on `main`. The auto-git hooks in
+`.specify/extensions.yml` offer to commit between phases.
 
-The auto-git hooks in `.specify/extensions.yml` will offer to commit
-between phases. `before_constitution` and `before_specify` are mandatory
-(`optional: false`); the rest are optional prompts.
+## Iterations (shipped + planned)
 
-## Iteration order (do not reorder)
+`specs/` holds one directory per iteration. 001–011 are merged (v0.1.0);
+012 is the active branch.
 
-From `bookwright-implementation-plan.md` § 2:
-
-| # | Iteration | Depends on | Milestone |
+| # | Iteration | Milestone | Status |
 |---|---|---|---|
-| 1 | Bootstrap repo + empty CLI | — | M0 |
-| 2 | Manifest model | 1 | M0 |
-| 3 | Integration architecture | 1, 2 | M0 |
-| 4 | `bookwright init` command | 1, 2, 3 | M0 |
-| 5 | GOLEM domain model | 1 | M1 |
-| 6 | Graph indexer + `graph` commands | 5 | M1 |
-| 7 | Bible / outline / constitution templates | 4 | M2 |
-| 8 | Author the 10 source commands | 7 | M2 |
-| 9 | Materialize commands as Agent Skills | 3, 8 | M2 |
-| 10 | Error-envelope consolidation (`BookwrightError`) | 2, 5, 6 | M3 |
-| 11 | Validation system | 6, 9, 10 | M3 |
-| 12 | Fixtures + E2E tests + docs | 1–11 | M3 |
+| 001 | Repo bootstrap + empty CLI | M0 | ✅ merged |
+| 002 | Manifest model (`pydantic` + `tomlkit`) | M0 | ✅ merged |
+| 003 | Integration architecture (plugin registry) | M0 | ✅ merged |
+| 004 | `bookwright init` command | M0 | ✅ merged |
+| 005 | GOLEM domain model (`rdflib`) | M1 | ✅ merged |
+| 006 | Graph indexer + `graph build`/`query` | M1 | ✅ merged |
+| 007 | Bible / outline / constitution templates | M2 | ✅ merged |
+| 008 | The 10 source commands (Markdown) | M2 | ✅ merged |
+| 009 | Materialize commands as Agent Skills | M2 | ✅ merged |
+| 010 | Validation system | M3 | ✅ merged |
+| 011 | Release prep (fixtures, E2E, docs, v0.1.0) | M3 | ✅ merged |
+| 012 | Research provenance model (Source/Finding/Anchor) | M4 | 🔨 active |
 
-When a `/speckit-specify` prompt references `§ 6`, `§ 11`, `§ 15.1`, etc.,
-that's a section in `bookwright-design.md`. Open it.
+Planned next in M4/v0.2 (per the 012 plan): iter 14 `bookwright-research`
+skill + `[research]` manifest block, iter 15 `factual_anchor` validator,
+iter 16 `bookwright-verify` LLM check. v0.3 adds decoupled vector search.
 
-## Stack the implementation MUST use
+When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
+`bookwright-design.md`. Open it.
 
-Locked by Constitution Principle II and the Technical Constraints section.
-Substituting any of these requires a constitutional amendment:
+## Architecture (the big picture)
 
-- **Language**: Python 3.11+ only.
-- **Package manager / lockfile**: `uv` + committed `uv.lock`.
-- **Build backend**: `hatchling`.
-- **Runtime deps (minimum set, in this order)**: `typer`, `rich`, `rdflib`,
-  `pydantic` (v2), `tomlkit`, `jinja2`, `python-slugify`, `platformdirs`,
-  `uuid-utils`. Note: `uuid-utils`, **not** `uuid7` — the plan was already
-  re-aligned to this in commit `4debfc9`.
-- **Layout**: `src/bookwright/…` for production code, `tests/` at the root.
-  No exceptions (Principle III).
-- **Per-command modules**: each CLI subcommand in its own file under
-  `src/bookwright/commands/<name>.py`, ≤500 lines (Principle IV).
-- **Lint / type / test**: `ruff check`, `ruff format --check`,
-  `mypy --strict`, `pytest`. All four are CI gates on every push / PR.
+`bookwright` is a CLI (`src/bookwright/cli.py`) that assembles a `typer` app
+from per-command modules. The layers, in dependency order:
 
-Once iteration 1 lands, the canonical commands will be:
+- **`core/`** — the manifest (`manifest.py`, `pydantic` model round-tripped
+  through `tomlkit` so author comments survive), the project error/warning
+  hierarchy (`errors.py`, every public error has a `.to_json()` contract),
+  and language helpers (`iso639_1.py`).
+- **`golem/`** — the GOLEM narrative domain model serialized to Turtle/RDF.
+  Each concept is an **immutable Pydantic v2 model** subclassing `GolemEntity`
+  (`base.py`): identity (its `URIRef`) is computed once in `model_post_init`
+  from a slug. Concepts live in `golem/modules/*` (character, event, setting,
+  narrative, relationship, inference, feature) and register in the `CONCEPTS`
+  name→class map. **Provenance is structural**: an entity declares
+  `DerivedAssertion`s and `CrossRef` edges; the base emits triples uniformly,
+  and the indexer reifies each assertion as a CIDOC-CRM
+  `crm:E13_Attribute_Assignment` resolving the originating *field* (never a
+  file path) to a `file:line` locator. The ontology is **frozen** — the
+  17-class closure (`CLASS_IRI`) and `golem.ttl` must not gain classes
+  (Constitution X); new vocabulary goes in separate `.ttl` files.
+- **`indexers/`** — the `Indexer` `Protocol` (`base.py`) is the only seam the
+  `graph` verbs depend on; `RdflibIndexer` is the one concrete engine.
+  `rdflib` is permanent; `Grafeo`/`GrafeoIndexer` is **cancelled**.
+- **`io/`** — plain-text readers/writers. `frontmatter.py` parses YAML
+  front-matter + Markdown body **with line tracking** (`key_lines`) so the
+  indexer can build `file:line` provenance. `bible.py` maps `bible/*.md` into
+  GOLEM entities; `project.py`, `manuscript.py`, `fs.py`, `report.py` round
+  it out. (Iteration 012 adds `research.py`, an analogue of `bible.py`.)
+- **`integrations/`** — materializes the 10 source commands as **Agent
+  Skills**. `SkillsIntegration` is the plugin base; `INTEGRATION_REGISTRY`
+  (populated on import via `_register_builtins`) holds `claude` and `generic`.
+  No monolithic dispatcher (Constitution V).
+- **`validation/`** — continuity checks (`validators/*`: character presence,
+  focalization, setting continuity, temporal) run by `runner.py` against the
+  graph via SPARQL (`queries.py`), registered in `registry.py`.
+- **`commands/`** — one sub-package/module per CLI verb. Each agent-facing
+  command pairs its logic with an `envelope.py` that emits the `--json`
+  contract. `init/` is the largest (conflict matrix, rollback ledger,
+  optional git init, scaffold from `resources/project/`).
+- **`resources/`** — packaged data read at runtime via `importlib.resources`:
+  `project/` (the scaffold tree, `.j2` / `.tmpl` templates), `commands/`
+  (the 10 source-command Markdown + `references/`), `schemas/golem-1.1/`
+  (frozen ontology + VERSION), `vocabularies/` (`propp.ttl`, `greimas.ttl`,
+  and the new `sources.ttl`).
 
-```
-uv sync                          # install deps into .venv
-uv run bookwright <subcommand>   # run the CLI
-uv run pytest                    # full test suite
-uv run pytest tests/path/to/test_file.py::test_name   # single test
-uv run ruff check && uv run ruff format --check
-uv run mypy --strict src tests
-```
+**Data flow**: `bible/*.md` → `map_bible` → GOLEM entities → `RdflibIndexer`
+→ derived cache `bible/graph.ttl` → `bookwright validate` (SPARQL). The graph
+is **always a derived cache**, reconstructible from plain text, never the
+source of truth (Constitution I).
 
-Until iteration 1 merges, none of those commands work — there is no
-`pyproject.toml` yet.
+## Stack (locked by Constitution II — substituting any requires an amendment)
 
-## Domain knobs you will encounter
+- **Python 3.11+** only. **`uv`** + committed `uv.lock`. **`hatchling`** build
+  backend. **src-layout** (`src/bookwright/`, `tests/` at root), no exceptions.
+- Runtime deps: `typer`, `rich`, `rdflib`, `pydantic` v2, `tomlkit`, `jinja2`,
+  `python-slugify`, `platformdirs`, `uuid-utils` (**not** `uuid7`), plus
+  `pyyaml` and `packaging`. Dev group: `mypy`, `ruff`, `pytest`,
+  `pytest-cov`, `pre-commit`, `types-pyyaml`. Docs group (never imported by
+  `src/`): `mkdocs` + `mkdocs-material`.
+- Every source file ≤ 500 lines, one CLI subcommand per module (Principle IV).
 
+## Domain knobs / non-negotiable behaviors
+
+- **Agent Skills, never legacy commands**: emit one `SKILL.md` per command
+  under the integration's `skills_dir`. Writing to `.claude/commands/` or
+  analogues is a Principle VI violation that blocks merge. Principle VII
+  enforces agentskills.io limits: `name` ≤ 64 chars matching its parent
+  directory, `description` ≤ 1024 chars, valid YAML front-matter (the
+  `lint_skill_md` gate checks this).
+- **JSON-over-stdout (Principle IX)**: any agent-consumed subcommand accepts
+  `--json` and then emits a single JSON document on stdout and *only* that.
+  Human prose / progress goes to stderr.
 - **Integrations**: only `claude` (writes `.claude/skills/`) and `generic`
-  (writes `.agents/skills/` by default) ship in v0. A monolithic
-  `AGENT_CONFIG`-style dispatcher is forbidden — use the
-  `SkillsIntegration` + `INTEGRATION_REGISTRY` plugin shape (Principle V).
-- **Agent Skills, never legacy commands**: the toolkit MUST emit one
-  `SKILL.md` per command under the integration's `skills_dir`. Writing to
-  `.claude/commands/` or analogous directories is a Principle VI violation
-  and will block merge (Principle VII enforces agentskills.io constraints:
-  `name` ≤ 64 chars matching its parent directory, `description` ≤ 1024
-  chars, valid YAML frontmatter).
-- **JSON-over-stdout contract**: any subcommand consumed by an agent
-  accepts `--json` and, when set, emits a single JSON document on stdout
-  and **only** that. Human prose / progress goes to stderr (Principle IX).
-- **Domain model**: GOLEM ontology, serialized as Turtle (RDF). `rdflib`
-  is the permanent graph engine; `Grafeo` / `GrafeoIndexer` is **cancelled**
-  (will not be implemented). The v0.3 vector search is decoupled (ChromaDB
-  over rdflib), not Grafeo. See `bookwright-design.md` § 12.3, § 15.5, § 20.12.
+  (writes `.agents/skills/`) ship. Use the `SkillsIntegration` +
+  `INTEGRATION_REGISTRY` plugin shape (Principle V).
 
-## Out of v0 scope — do not implement these
+## Scope discipline — do NOT implement ahead of the plan
 
-From the Constitution's Scope & Release Discipline section. A PR that adds
-plumbing whose only justification is "future X" MUST be rejected:
+A PR that adds plumbing whose only justification is "future X" MUST be
+rejected (Constitution "Scope & Release Discipline").
 
-- Research & verification system (Source/Finding/Anchor, `bookwright-research` /
-  `bookwright-verify`, `factual_anchor`) → v0.2 / M4 (design § 20)
-- Vector search (ChromaDB over rdflib, decoupled from Grafeo) → v0.3
-- Export to EPUB / PDF / print via pandoc → v1.0
+- v0.2 / M4 (design § 20) — research & verification: the **provenance model**
+  is iteration 012; the `bookwright-research`/`bookwright-verify` skills and
+  `factual_anchor` validator are **later** iterations — don't pull them in.
+- v0.3 — vector search (ChromaDB over rdflib, decoupled from Grafeo).
+- v1.0 — export to EPUB / PDF / print via pandoc.
 
-**Cancelled — do NOT implement (owner decision):** preset / genre-package
+**Cancelled — never implement (owner decision):** preset / genre-package
 system (template resolution is 2 layers, overrides → core); `GrafeoIndexer` /
-Grafeo engine; multi-integration beyond `claude` / `generic` (Copilot, Gemini,
-Cursor/Codex-specific) and the `bookwright integrate` command; extension system
-(distributable validators, pre-commit hooks). See design § 15.5.
+Grafeo engine; multi-integration beyond `claude` / `generic` and the
+`bookwright integrate` command; extension system. See design § 15.5, § 20.12.
 
 ## Language conventions
 
-- The two design documents (`bookwright-design.md`,
-  `bookwright-implementation-plan.md`) are written in **Spanish**. Keep
-  edits to them in Spanish; the user authored them deliberately in that
-  language.
-- Source code, identifiers, commit messages, and the constitution itself
-  are in **English**.
+- `bookwright-design.md`, `bookwright-implementation-plan.md`, the README, and
+  the `docs/` site are **Spanish** — the user authored them deliberately so.
+  Keep edits to them in Spanish.
+- Source code, identifiers, commit messages, the constitution, and per-spec
+  artifacts are **English**.
+- Agent Skills must trigger on both ES and EN author prompts.
 
-## Spec Kit specifics worth knowing
+## Spec Kit specifics
 
 - Pinned at `v0.8.16` stable (commit `ffa1a45`). Don't upgrade without a
-  reason that's worth chasing template churn.
-- Skill names are hyphenated (`speckit-plan`, not `speckit.plan`). The
-  `extensions.yml` hook entries still use dot form (`speckit.git.commit`);
-  the dispatcher converts dots to hyphens when invoking.
-- `.specify/extensions.yml` `auto_execute_hooks: true` is on. Mandatory
-  hooks (`before_constitution`, `before_specify`) execute without
-  prompting; optional ones (commit hooks) ask first.
+  reason worth chasing template churn.
+- Don't modify Spec Kit *core* (templates, scripts, manifests). Per-project
+  *copies* (`.specify/extensions.yml`, `git-config.yml`) are editable.
+- Skill names are hyphenated (`speckit-plan`). `extensions.yml` hook entries
+  use dot form (`speckit.git.commit`); the dispatcher converts dots to
+  hyphens when invoking.
+- `auto_execute_hooks: true`. Mandatory hooks (`before_constitution`,
+  `before_specify`) execute without prompting; optional commit hooks ask
+  first.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
