@@ -38,7 +38,8 @@ El patrón operacional es **idéntico al de Spec Kit**; lo que cambia es el domi
 - **Texto plano como fuente de verdad**: todo lo importante (manuscrito, bible, constitution, grafo) es Markdown, TOML o Turtle. Auditables por humanos, versionables en git, supervivientes a la desaparición del toolkit.
 - **Funcionar con cualquier agente IA mainstream**: Claude Code es el target principal, pero el diseño no se acopla a él. Soporte explícito en v0: Claude (Code + claude.ai). Soporte futuro trivial: Copilot, Gemini, Cursor.
 - **Workflow batch, no conversacional**: el usuario consolida información en un input estructurado y un command la destila en artefactos. El agente no es un compañero de escritura frase-a-frase.
-- **Consistencia narrativa verificable**: el grafo derivado del manuscrito y la bible permite chequeos automáticos (continuidad temporal, presencia de personajes, focalización, anclas históricas si las hay).
+- **Consistencia narrativa verificable**: el grafo derivado del manuscrito y la bible permite chequeos automáticos (continuidad temporal, presencia de personajes, focalización, anclas históricas si las hay). Las "anclas históricas" dejan de ser una aspiración y se materializan en el sistema de investigación y verificación de § 20.
+- **Investigación como parte del proceso**: escribir no-ficción o ficción documentada exige investigar (fuentes oficiales, en idioma original, contrastando procedencias nacionales). Bookwright no busca por el autor —eso lo hace el agente— pero estructura la investigación, la ancla al grafo y la hace verificable contra el manuscrito. Ver § 20.
 
 ### 1.2 No-objetivos (explícitos)
 
@@ -46,7 +47,7 @@ El patrón operacional es **idéntico al de Spec Kit**; lo que cambia es el domi
 - **No genera la novela**. Asiste destilación, validación y refinamiento. El borrador final lo escribe el autor.
 - **No publica**. La exportación a EPUB/PDF/print queda fuera de scope de v0. Hay hooks para ello en el diseño pero no se implementa en v0.
 - **No es un preset de Spec Kit**. Comparte patrón y código heredado/inspirado, pero es una herramienta separada con identidad propia. La razón: el dominio diverge demasiado y la audiencia (escritores) no debe conocer Spec Kit.
-- **No requiere Grafeo en v0**. La opción de indexer con Grafeo queda como extensión futura. v0 usa `rdflib`.
+- **No usa Grafeo**. El motor de grafo es `rdflib`, de forma permanente. `GrafeoIndexer` queda descartado (ver § 15.5); la búsqueda vectorial de v0.3 se implementará desacoplada, sobre `rdflib` + un vector store (ChromaDB o equivalente).
 - **No genera assets multimedia**. Sin generación de imágenes, audio, ni interactivos.
 
 ---
@@ -170,6 +171,7 @@ GOLEM proporciona el patrón `E55_Type` para enchufar vocabularios sin extender 
 - `greimas.ttl` — modelo actancial de Greimas.
 - `booker-seven-plots.ttl` — los siete plots básicos.
 - `essay-structures.ttl` — estructuras retóricas para no-ficción (tesis, argumento, contraargumento, etc.).
+- `sources.ttl` — tipos de Fuente (primaria, secundaria, oficial, académica, periodística, testimonial) y niveles de fiabilidad para el sistema de investigación, más las propiedades `bw:` que reifican Fuente/Hallazgo/Ancla sobre `E13_Attribute_Assignment`. Ver § 20.8. (Añadido en v0.2.)
 
 Los usuarios pueden añadir vocabularios propios en `<proyecto>/.bookwright/vocabularies/`.
 
@@ -201,6 +203,9 @@ nombre, UUIDv7 para aserciones):
 | Rol narrativo (`G11_Narrative_Role`) | `narrative-role` | slug |
 | Secuencia narrativa (`G7_Narrative_Sequence`) | `narrative-sequence` | slug |
 | Aserción de atributo (`E13_Attribute_Assignment`) | `assertion` | UUIDv7 |
+| Fuente de investigación (`source`, v0.2) | `source` | slug |
+| Hallazgo (`finding`, v0.2 — aserción) | `finding` | UUIDv7 |
+| Ancla (`anchor`, v0.2 — aserción) | `anchor` | UUIDv7 |
 
 El segmento por concepto evita que dos entidades de tipos distintos que
 comparten slug colapsen en la misma URI.
@@ -252,8 +257,7 @@ Bookwright usa el sistema **Integration** plugin-based de Spec Kit (introducido 
 | `--no-git` | flag | False | Salta inicialización de git. |
 | `--integration` | string | `claude` | Integración target. v0: `claude`, `generic`. |
 | `--integration-options` | string | — | Opciones específicas del plugin de integración. Solo aplica si el plugin declara opciones. v0: `generic` acepta `--skills-dir` para override del default `.agents/skills/`. |
-| `--script` | choice | auto | `sh` o `ps`. Detecta por SO si no se indica. Reservado para v0.2+ (en v0 no hay scripts auxiliares: los SKILL.md invocan el CLI `bookwright` directamente). |
-| `--preset` | string | — | Preset de género (v0.2+, no en v0). |
+| `--script` | choice | auto | `sh` o `ps`. Detecta por SO si no se indica. Reservado para futuro (en v0 no hay scripts auxiliares: los SKILL.md invocan el CLI `bookwright` directamente). |
 
 **Defaults por integración:**
 
@@ -293,14 +297,15 @@ Ejemplo: `bookwright graph query "..." --json`:
 {"status": "ok", "violations": [{"validator": "temporal", "severity": "error", "message": "...", "source": "manuscript/cap-04.md:42"}], "violation_count": 1}
 ```
 
-### 5.4 Resolución de templates (4 capas, como Spec Kit)
+### 5.4 Resolución de templates (2 capas)
 
 Cuando un command necesita un template, lo resuelve en orden:
 
-1. **Overrides**: `.bookwright/templates/overrides/{name}`
-2. **Presets**: `.bookwright/presets/{preset-id}/templates/{name}` (priority-based, lowest number wins)
-3. **Extensions**: `.bookwright/extensions/{ext-id}/templates/{name}` (futuro)
-4. **Core**: `.bookwright/templates/{name}` (default)
+1. **Overrides**: `.bookwright/templates/overrides/{name}` (personalización del autor)
+2. **Core**: `.bookwright/templates/{name}` (default)
+
+Las capas de presets y extensions que figuraban en versiones anteriores quedan
+descartadas junto con esos sistemas (ver § 15.5).
 
 Función `resolve_template()` en `src/bookwright/core/templates.py`, idiomática Python (no bash como Spec Kit).
 
@@ -329,7 +334,6 @@ bookwright/
 │   ├── command-format.md                # formato de los commands
 │   └── extending/
 │       ├── adding-vocabularies.md
-│       ├── custom-presets.md            # post-v0
 │       └── writing-skills.md
 │
 ├── src/
@@ -369,11 +373,10 @@ bookwright/
 │       │       ├── narrative.py
 │       │       └── inference.py
 │       │
-│       ├── indexers/                    # motor de grafo intercambiable
+│       ├── indexers/                    # motor de grafo (rdflib, permanente)
 │       │   ├── __init__.py
-│       │   ├── base.py                  # Indexer Protocol
-│       │   ├── rdflib_indexer.py        # default v0
-│       │   └── grafeo_indexer.py        # stub, post-v0
+│       │   ├── base.py                  # Indexer Protocol (mantiene la puerta abierta a otros motores)
+│       │   └── rdflib_indexer.py        # único motor; GrafeoIndexer descartado (§ 15.5)
 │       │
 │       ├── validation/
 │       │   ├── __init__.py
@@ -424,7 +427,10 @@ bookwright/
 │           │   │   ├── themes.md.tmpl            # ← motif registry + symbol tracker
 │           │   │   ├── world-building.md.tmpl    # ← reglas del mundo (post-v0 para no-ficción)
 │           │   │   ├── locations.md.tmpl         # ← anclas sensoriales por localización
-│           │   │   ├── research.md.tmpl          # ← open questions + source notes
+│           │   │   ├── research/                 # ← investigación (v0.2, § 20.7)
+│           │   │   │   ├── _index.md.tmpl         #     mapa de temas + preguntas abiertas
+│           │   │   │   ├── sources.md.tmpl        #     registro de Fuentes con procedencia
+│           │   │   │   └── topic.md.tmpl          #     hallazgos + anclas por tema
 │           │   │   ├── glossary.md.tmpl          # ← invented terms + consistency log
 │           │   │   └── subplots.md.tmpl          # ← beat sheets de subtramas
 │           │   ├── outline/
@@ -447,12 +453,9 @@ bookwright/
 │           │   ├── bookwright-clarify.md
 │           │   ├── bookwright-analyze.md            # ← pre-draft: spec↔plan↔scenes
 │           │   ├── bookwright-continuity.md         # ← post-draft: manuscrito↔bible
-│           │   └── bookwright-checklist.md
-│           └── presets/                 # post-v0, estructura ya prevista
-│               ├── novel/
-│               ├── historical-fiction/
-│               ├── essay/
-│               └── memoir/
+│           │   ├── bookwright-checklist.md
+│           │   ├── bookwright-research.md           # ← investigación (v0.2, § 20.4)
+│           │   └── bookwright-verify.md             # ← verificación vs anclas (v0.2, § 20.6)
 │
 ├── tests/
 │   ├── conftest.py
@@ -491,7 +494,7 @@ bookwright/
 - **Comandos por archivo**: Spec Kit los concentra en un módulo de 2000+ líneas; eso envejece mal. Aquí cada comando es un archivo bajo `commands/`, registrado en `cli.py` via Typer sub-apps.
 - **`golem/modules/` espeja la modularización de GOLEM**: lectura cruzada paper ↔ código.
 - **`integrations/` plugin-based desde el día uno**: Spec Kit ha hecho ya el refactor de `AGENT_CONFIG` (diccionario monolítico) a `INTEGRATION_REGISTRY` con una jerarquía de clases base (`IntegrationBase`, `SkillsIntegration`, `MarkdownIntegration`) y un dataclass `IntegrationOption` para declarar opciones por plugin. Bookwright nace con la arquitectura nueva pero solo usa `SkillsIntegration` (el modelo Markdown-puro queda fuera del scope por la deprecación de commands en Claude Code; ver § 11). Cada integración es un subpaquete autocontenido en `src/bookwright/integrations/<key>/` con `__init__.py` exponiendo la clase de la integración y, opcionalmente, `references/` para archivos auxiliares que se materializan en los skills.
-- **Indexer Protocol**: permite migrar de `rdflib` a `grafeo` (futuro) sin tocar commands ni validators.
+- **Indexer Protocol**: aísla el motor de grafo detrás de una interfaz, de modo que añadir capacidades (p. ej. la búsqueda vectorial de v0.3) o cambiar de motor no obliga a tocar commands ni validators. En la práctica `rdflib` es el único motor; `GrafeoIndexer` queda descartado (§ 15.5).
 - **Validator Protocol con registry**: cada chequeo es independiente, autodescubierto. El usuario puede añadir validators custom en `<proyecto>/.bookwright/validators/`.
 - **`resources/` es la clave**: contiene todo lo que el CLI distribuye. Accedido via `importlib.resources.files("bookwright.resources")`. Cero rutas hardcoded. Cero llamadas a la red en `init`.
 - **Templates dentro del wheel** (no GitHub Releases como Spec Kit). v0 tiene una sola integración principal, no se justifica la complejidad de release-based templates. Se migra a release-based si y cuando se justifique.
@@ -528,7 +531,10 @@ my-book/
 │   ├── pov-structure.md                 # Sólo si multi-POV
 │   ├── themes.md                        # Motif registry + symbol tracker
 │   ├── glossary.md                      # Invented terms + consistency log
-│   ├── research.md                      # Open questions + source notes (clave en histórica)
+│   ├── research/                        # Investigación: hallazgos, fuentes y anclas (§ 20, v0.2)
+│   │   ├── _index.md                    #   mapa de temas + preguntas abiertas globales
+│   │   ├── sources.md                   #   registro de Fuentes (procedencia)
+│   │   └── <tema>.md                    #   hallazgos + anclas por tema
 │   ├── subplots.md                      # Beat sheets de subtramas
 │   └── graph.ttl                        # Turtle: fuente de verdad del grafo
 │
@@ -547,12 +553,10 @@ my-book/
 │   │   ├── greimas.ttl
 │   │   └── ...                          # los que el usuario active
 │   ├── templates/                       # Templates resolubles (capa "core")
-│   │   ├── overrides/                   # Capa 1 de resolución
+│   │   ├── overrides/                   # Capa "overrides" de resolución
 │   │   ├── manifest.toml.tmpl
 │   │   ├── constitution.md.tmpl
 │   │   └── ...
-│   ├── presets/                         # Capa 2 (post-v0)
-│   ├── extensions/                      # Capa 3 (post-v0)
 │   └── cache/                           # Reconstruible, en .gitignore
 │
 └── .claude/                             # Sólo si --integration claude
@@ -792,9 +796,9 @@ Durante `bookwright init`, la integración resuelta toma cada `.md` de `resource
 |---|---|---|---|
 | `claude` | `.claude/skills/` | Agent Skills + extensiones de Claude Code | ✓ |
 | `generic` | `.agents/skills/` | Agent Skills puro (agentskills.io) | ✓ |
-| `copilot` | `.github/skills/` | Agent Skills (VS Code) | post-v0 |
-| `cursor` | `.cursor/skills/` | Agent Skills + extensiones Cursor | post-v0 |
-| `codex` | `.agents/skills/` | Agent Skills puro | post-v0 (cubierto por `generic`) |
+| `copilot` | `.github/skills/` | Agent Skills (VS Code) | no planificado |
+| `cursor` | `.cursor/skills/` | Agent Skills + extensiones Cursor | no planificado |
+| `codex` | `.agents/skills/` | Agent Skills puro | cubierto por `generic` |
 
 Para añadir una integración futura basta con crear `src/bookwright/integrations/<key>/__init__.py` con una clase que herede de `SkillsIntegration` y declare su `skills_dir` y `extensions` (capacidades opcionales del agente que se quieren aprovechar: dynamic context injection, subagents, etc.). El registro central en `integrations/__init__.py::_register_builtins()` la añade a `INTEGRATION_REGISTRY`. Mismo patrón que el documentado en `AGENTS.md` de Spec Kit.
 
@@ -803,7 +807,7 @@ Para añadir una integración futura basta con crear `src/bookwright/integration
 | Command | Input | Output | Fase |
 |---|---|---|---|
 | `/bookwright-constitution` | Brief / conversación | `bible/constitution.md` | 1. Setup |
-| `/bookwright-bible` | Constitution + brief | `bible/characters/*.md`, `bible/settings/*.md`, `bible/locations/*.md`, `bible/timeline.md`, `bible/relationships.md`, `bible/themes.md`, `bible/glossary.md`, `bible/research.md`, `bible/subplots.md`, `bible/pov-structure.md` (si multi-POV), `bible/graph.ttl` | 2. Setup |
+| `/bookwright-bible` | Constitution + brief | `bible/characters/*.md`, `bible/settings/*.md`, `bible/locations/*.md`, `bible/timeline.md`, `bible/relationships.md`, `bible/themes.md`, `bible/glossary.md`, `bible/research/_index.md`, `bible/subplots.md`, `bible/pov-structure.md` (si multi-POV), `bible/graph.ttl` | 2. Setup |
 | `/bookwright-outline` | Constitution + bible | `outline/arcs.md`, `outline/structure.md`, `outline/synopsis.md` | 3. Structure |
 | `/bookwright-scenes` | Outline + bible | `outline/scenes.md` | 4. Pre-draft |
 | `/bookwright-draft <scene_id>` | Outline + scene | `manuscript/cap-NN.md` (sección de la escena) | 5. Draft |
@@ -812,6 +816,8 @@ Para añadir una integración futura basta con crear `src/bookwright/integration
 | `/bookwright-analyze` | Constitution + bible + outline + scenes | Reporte pre-draft de inconsistencias cruzadas | tras 2-4 |
 | `/bookwright-continuity` | Manuscrito + bible + grafo | Reporte post-draft: bible compliance, character arcs, timeline coherence | tras 5 |
 | `/bookwright-checklist <artifact>` | Un artefacto concreto | Reporte de completitud | cualquier momento |
+| `/bookwright-research <tema>` (v0.2) | Tema + constitution + bible | `bible/research/<tema>.md`, fuentes con procedencia, anclas, preguntas abiertas; tríadas al grafo. Ver § 20.4 | 2. Setup / cualquier momento |
+| `/bookwright-verify` (v0.2) | Manuscrito + anclas + grafo | Reporte semántico: pasajes que contradicen lo investigado (anacronismos, errores de procedimiento/culturales). Ver § 20.6 | tras 5 |
 
 ---
 
@@ -1038,7 +1044,13 @@ Bookwright estructura cada skill para aprovechar esto:
 
 Esto significa que el `SKILL.md` principal puede ser corto (<2000 tokens) y solo expandirse cuando se necesita explicar GOLEM o vocabularios específicos. Bookwright v0 no usa el subdirectorio `scripts/` del estándar: el CLI `bookwright` ya es ejecutable y los SKILL.md lo invocan directamente.
 
-### 11.6 Añadir una integración post-v0
+### 11.6 Añadir una integración (capacidad latente, no planificada)
+
+> El soporte multi-integración (Copilot, Gemini, Cursor/Codex específicos) queda
+> **descartado del roadmap**: el target es Claude Code, y `claude` + `generic`
+> cubren el uso (§ 15.5). Esta sección documenta que la arquitectura
+> `INTEGRATION_REGISTRY` lo permitiría si alguna vez hiciera falta —no es un
+> compromiso de implementación.
 
 Proceso para añadir, por ejemplo, soporte de Cursor con sus extensiones específicas:
 
@@ -1093,13 +1105,20 @@ Implementación con `rdflib`:
 - `query`: usa SPARQLWrapper interno de rdflib.
 - Performance esperado: aceptable para grafos <10k triples (la mayoría de libros).
 
-### 12.3 `GrafeoIndexer` (stub v0, implementación post-v0)
+### 12.3 Búsqueda vectorial (v0.3, sobre rdflib — sin Grafeo)
 
-Misma interfaz. Implementación posterior cuando:
-- Algún proyecto Bookwright real demuestre que rdflib es bottleneck.
-- O un usuario quiera explícitamente vector search HNSW.
+`GrafeoIndexer` queda **descartado** (no se implementará; ver § 15.5): `rdflib`
+es el motor de grafo permanente y cubre los grafos de tamaño libro (<10k triples)
+sin problema.
 
-El cambio será transparente para commands, validators y el resto del CLI.
+La **búsqueda vectorial sí se mantiene** como capacidad de v0.3, pero
+**desacoplada de Grafeo**: se implementa como una capa de recuperación semántica
+sobre el corpus (sobre todo `bible/research/` y el manuscrito), usando un vector
+store ligero (ChromaDB o equivalente, embebido y en fichero) en paralelo al grafo
+rdflib, no como un indexer alternativo. El grafo sigue siendo la fuente de verdad
+estructurada; los vectores son un índice secundario reconstruible que vive en
+`.bookwright/cache/` (en `.gitignore`). Su coste y viabilidad se analizan en
+§ 20.12.
 
 ### 12.4 Selección del indexer
 
@@ -1146,6 +1165,7 @@ class Validator(Protocol):
 | `character_presence` | error | Que los personajes mencionados en manuscrito existan en la bible y viceversa. |
 | `setting_continuity` | warning | Que los settings se mantengan coherentes (ej. clima, descripciones). |
 | `focalization` | warning | Que la persona narrativa declarada en constitution se respete. |
+| `factual_anchor` (v0.2) | warning (estructura) / error (anacronismo) | Integridad estructural de las anclas de investigación: que cada ancla tenga Fuente con procedencia completa, que las entidades enlazadas existan, y detección de anacronismos contra la timeline. Ver § 20.6. |
 
 ### 13.3 Registry
 
@@ -1177,7 +1197,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-grafeo = ["grafeo>=0.5"]   # opcional, futuro
+# Búsqueda vectorial (v0.3), opcional y desacoplada del grafo. Ver § 12.3 y § 20.12.
+vectors = ["chromadb>=0.5"]
 
 [project.scripts]
 bookwright = "bookwright.cli:app"
@@ -1297,11 +1318,32 @@ dev = [
 
 ### 15.5 Post-v0 (no incluido en este documento)
 
-- v0.2: sistema de presets (genre packages); commands `bookwright-export`, `bookwright-feedback`, `bookwright-polish`, `bookwright-revise`, `bookwright-query`, `bookwright-status`.
-- v0.3: `GrafeoIndexer`, vector search (ChromaDB o equivalente).
-- v0.4: soporte multi-integración (Copilot, Gemini, Codex); comandos `bookwright integrate list/install/switch`.
-- v0.5: extension system para hooks pre-commit y validators distribuidos.
+- **M4 — Investigación y verificación** (§ 20, propuesto como **v0.2.0**): sistema
+  de investigación con procedencia (Fuente/Hallazgo/Ancla sobre el módulo
+  Inference), skills `bookwright-research` y `bookwright-verify`, validator
+  `factual_anchor`, vocabulario `sources.ttl`, `bible/research/`. El plan
+  detallado de iteraciones (13–17) vive en `bookwright-implementation-plan.md`.
+- v0.3: **búsqueda vectorial** (ChromaDB o equivalente) sobre el grafo `rdflib`, para recuperación semántica del corpus de fuentes (`bible/research/`) y el manuscrito. Desacoplada de Grafeo (ver § 12.3 y el análisis de coste en § 20.12). Sinergia con M4: mejora la recuperación, pero M4 no la requiere.
+- v0.4: commands de autoría adicionales: `bookwright-export`, `bookwright-feedback`, `bookwright-polish`, `bookwright-revise`, `bookwright-query`, `bookwright-status`.
 - v1.0: export a EPUB/PDF (`bookwright-export` con pandoc).
+
+> **Funcionalidades descartadas (no se implementarán).** Decisiones del
+> propietario, posteriores al cuerpo original del documento:
+> - **Sistema de presets / genre-packages**: un resolver de templates por género.
+>   La resolución de templates es de **2 capas** (overrides → core, § 5.4).
+> - **`GrafeoIndexer` / motor Grafeo**: `rdflib` es el motor permanente y basta
+>   para grafos de tamaño libro. La búsqueda vectorial de v0.3 **se conserva**,
+>   pero implementada aparte (ChromaDB sobre rdflib), no vía Grafeo.
+> - **Multi-integración** (Copilot, Gemini, Cursor/Codex específicos) y el
+>   comando `bookwright integrate`: el target es Claude Code; `claude` y
+>   `generic` ya cubren el uso. La arquitectura `INTEGRATION_REGISTRY` deja la
+>   puerta abierta (§ 11.6) por si alguna vez hiciera falta, sin compromiso de
+>   roadmap.
+> - **Extension system** (validators distribuibles, hooks pre-commit): si hace
+>   falta algo, se implementa directamente en la aplicación.
+>
+> El preset externo `fiction-book-writing` (§ 17.2) sigue siendo solo inspiración
+> de templates, no un sistema a construir.
 
 ---
 
@@ -1334,7 +1376,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 
 - La estructura `.specify/` → `.bookwright/` (memory, templates, init-options.json). Sin `scripts/`: el CLI Bookwright es Python puro y los SKILL.md lo invocan directo.
 - El formato de command templates con YAML frontmatter + tokens substituibles (en Bookwright solo `{ARGS}`; `{SCRIPT}` desaparece porque no hay wrappers).
-- La resolución de templates por capas (overrides → presets → extensions → core).
+- La resolución de templates por capas (overrides → core).
 - La arquitectura plugin-based de integrations (`INTEGRATION_REGISTRY`, `SkillsIntegration`, `IntegrationOption`). Nota: Bookwright solo necesita `SkillsIntegration` porque todas las integraciones de v0 producen Agent Skills (commands legacy ya no es opción).
 - El patrón de generación de SKILL.md desde command templates con `SKILL_DESCRIPTIONS` enriquecidas.
 - El contrato CLI ↔ agente vía JSON sobre stdout.
@@ -1344,7 +1386,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 
 - El acoplamiento al ciclo de release de Spec Kit (Bookwright es proyecto independiente).
 - El soporte de bash + powershell (Bookwright es Python puro).
-- El sistema completo de extensions (lo dejamos para post-v0).
+- El sistema completo de extensions (descartado, no se implementará; ver § 15.5).
 - El download de templates desde GitHub releases (Bookwright empaqueta dentro del wheel).
 - La nomenclatura software-céntrica (`specify`, `plan`, `tasks`, `implement`).
 
@@ -1365,7 +1407,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 
 - El inventario de documentos canónicos: synopsis (corta+larga), themes con motif registry, locations con sensory anchors, glossary, research, subplots, pov-structure.
 - El comando `continuity` (post-draft) como complemento a `analyze` (pre-draft).
-- La idea de incluir RAG vector search en el indexer (futuro v0.3).
+- La idea de incluir RAG / búsqueda vectorial para recuperación semántica (futuro v0.3, desacoplada del motor de grafo; ver § 12.3 y § 20.12).
 - El patrón de export con pandoc (futuro v1.0).
 
 **Licencia del preset:** MIT. Permite reutilización de estructura de templates con atribución.
@@ -1401,7 +1443,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 ### 17.4 Otras referencias menores
 
 - **GOLEM upstream** (GOLEM-lab/golem-ontology): la ontología en sí. Apache-2.0. Bookwright congela una versión y la distribuye en `resources/schemas/`.
-- **Grafeo** (grafeo.dev): considerado para v0 como motor de grafo, descartado por madurez. Vuelve como opción en v0.3 vía `GrafeoIndexer`.
+- **Grafeo** (grafeo.dev): considerado para v0 como motor de grafo, descartado por madurez. Descartado también de forma permanente: `rdflib` es el motor único (ver § 15.5). La búsqueda vectorial de v0.3 no depende de él.
 
 ---
 
@@ -1428,6 +1470,9 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 | **Fandom** (G15) | Comunidad alrededor de una obra (no central para Bookwright v0). |
 | **E13_Attribute_Assignment** | Patrón CIDOC CRM para reificar la afirmación de un atributo. Base del módulo Inference. |
 | **E55_Type** | Patrón CIDOC CRM para enchufar vocabularios controlados sin extender el esquema. |
+| **Fuente** (Source, v0.2) | Documento o testimonio consultado en la investigación, con procedencia (autor, idioma original, tipo, fiabilidad, fecha, cita). Ver § 20.3. |
+| **Hallazgo** (Finding, v0.2) | Afirmación sobre el mundo real sostenida por una o más Fuentes, reificada como `E13_Attribute_Assignment`. Ver § 20.3. |
+| **Ancla** (Anchor, v0.2) | Hallazgo promovido a restricción vinculante que el manuscrito no puede contradecir; enlaza a la entidad narrativa que constriñe. Materializa las "anclas históricas" de § 1.1. Ver § 20.3. |
 
 ---
 
@@ -1446,7 +1491,312 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 - **DOLCE**: Descriptive Ontology for Linguistic and Cognitive Engineering. www.loa.istc.cnr.it/dolce/overview.html
 - **rdflib**: rdflib.readthedocs.io
 - **Typer**: typer.tiangolo.com
-- **Grafeo**: grafeo.dev (motor de grafo opcional, futuro v0.3).
+- **ChromaDB**: trychroma.com (vector store embebido para la búsqueda vectorial de v0.3).
+
+---
+
+## 20. Extensión de diseño: Investigación y verificación (v0.2)
+
+> **Nota de procedencia.** Esta sección se añade *después* del cuerpo original
+> del documento (§§ 1–19), por eso ocupa el número 20 pese a ser materia de
+> primera clase y no apéndice. Se ratifica como extensión del diseño, no como
+> revisión: no toca ninguna decisión de § 16. Las únicas ediciones aguas arriba
+> son aditivas (filas nuevas en tablas de §§ 1.1, 4.4, 4.5, 7, 10.4, 13.2 y un
+> hito nuevo en § 15.5) y se referencian desde aquí.
+
+### 20.1 Por qué la investigación es de primera clase
+
+Escribir un libro es, en una fracción enorme de los casos, **investigar** antes
+y durante la escritura. Una novela negra ambientada en España exige conocer
+cómo opera de verdad el gremio de detectives privados (licencia TIP, límites
+legales, jerga del oficio); una novela sobre la Segunda Guerra Mundial exige
+manejar fuentes oficiales —alemanas, polacas, británicas, estadounidenses,
+francesas— **en su idioma original**, porque la versión nacional de un hecho
+cambia con la fuente. El diseño original de Bookwright (§§ 1–19) trataba la
+investigación como un único documento pasivo, `bible/research.md` ("open
+questions + source notes"). Eso es un esbozo, no un sistema: captura el
+*producto* mínimo pero ignora el *proceso* (investigar de verdad, con
+procedencia y multilingüismo) y la *restricción* (que lo investigado **obligue**
+a la ficción y sea verificable). La propia § 1.1 prometía "anclas históricas si
+las hay" como chequeo, pero ningún validator de § 13.2 las implementaba: una
+promesa sin cableado. Esta sección cierra ese hueco.
+
+El principio rector, coherente con la filosofía DDA (§ 2) y los axiomas de § 16:
+
+- **Bookwright no busca; estructura, ancla y verifica.** La búsqueda real de
+  fuentes (web, archivos oficiales, lectura en idioma original, juicio de
+  fiabilidad) la ejecuta el agente que corre el `SKILL.md`, que ya tiene esa
+  capacidad. Bookwright aporta lo que el agente no tiene: un modelo de
+  procedencia, un sitio canónico en texto plano, integración en el grafo y
+  validación determinista. No se añade ninguna dependencia de runtime para
+  acceso a la red (respeta § 14 y el axioma "texto plano fuente de verdad").
+- **La investigación es extra-diegética; la ficción es diegética.** GOLEM modela
+  el mundo *de la historia*. La investigación modela el mundo *real* que lo
+  constriñe. El puente entre ambos ya existe dentro de GOLEM y no exige
+  inventar ontología (axioma 3): el módulo **Inference**.
+
+### 20.2 El puente diégesis ↔ mundo real: el módulo Inference
+
+GOLEM incluye el módulo **Inference**, construido sobre `E13_Attribute_Assignment`
+de CIDOC CRM, cuyo propósito declarado (§ 4.2) es la *"trazabilidad de
+afirmaciones: fuente, método, premisa"*. Es exactamente el aparato que la
+investigación necesita: toda afirmación sobre el mundo —"un detective privado en
+España necesita una licencia TIP", "en 1943 la Wehrmacht denominaba X a Y"— se
+reifica como una aserción con su fuente, su método y la entidad narrativa a la
+que aplica.
+
+Esto significa que un hallazgo de investigación **no es metadato suelto**: es un
+nodo del mismo grafo `graph.ttl` que ya contiene personajes, settings y eventos.
+Una afirmación investigada puede así enlazarse a la entidad GOLEM que restringe
+(un `G1_Character`, un `G12_Setting`, un `G5_Narrative_Event`, la timeline) y
+participar en las mismas queries SPARQL y validaciones que el resto del dominio.
+Esa es la pieza que convierte "investigación" en "investigación **validable**".
+
+### 20.3 Las tres entidades: Fuente, Hallazgo, Ancla
+
+El sistema introduce tres conceptos, todos serializables en Turtle vía los
+puntos de extensión existentes (`E13_Attribute_Assignment` para reificar,
+`E55_Type` para tipar), sin extender el esquema GOLEM:
+
+1. **Fuente** (`source`). Un documento o testimonio consultado. Registra:
+   referencia bibliográfica o URL (más copia/archivo cuando proceda), **autor**,
+   **idioma original**, **tipo** (vocabulario controlado: primaria, secundaria,
+   oficial, académica, periodística, testimonial), **fiabilidad** (alta / media
+   / baja, con justificación), **fecha de acceso** y **cita textual** relevante
+   (en idioma original + traducción cuando difiera del idioma del libro). Se tipa
+   con `E55_Type` desde el vocabulario `sources.ttl` (§ 20.8).
+
+2. **Hallazgo** (`finding`). Una afirmación concreta sobre el mundo, sostenida
+   por una o más Fuentes. Se reifica como `E13_Attribute_Assignment`: *qué* se
+   afirma, *quién* lo afirmó (el agente investigador o el autor), *sobre qué*
+   entidad recae y *con qué fuente(s)*. Un hallazgo puede quedar en estado
+   abierto (pregunta sin resolver), preservando el rol original de
+   `research.md`.
+
+3. **Ancla** (`anchor`). Un Hallazgo **promovido a restricción**: un hecho que el
+   manuscrito no puede contradecir. No toda investigación es ancla —mucha es
+   color o contexto—; el autor (o el skill) marca explícitamente cuáles lo son.
+   Un ancla enlaza al elemento narrativo que constriñe y, cuando lleva una
+   referencia temporal (`P4_has_time-span`), habilita detección de anacronismos
+   reutilizando la infraestructura del validator `temporal` (§ 13.2). El ancla es
+   la materialización de las "anclas históricas" prometidas en § 1.1.
+
+Resumen de la cadena de procedencia:
+
+```
+Fuente (oficial, idioma original, fiabilidad)
+   └─documenta→ Hallazgo (E13_Attribute_Assignment)
+                   └─[si se promueve]→ Ancla ──restringe──▶ G1_Character / G12_Setting / G5_Event / timeline
+                                                                      ▲
+                                                          verificación del manuscrito
+```
+
+### 20.4 El proceso: el skill `bookwright-research`
+
+Se añade un command/skill nuevo (§ 10.4), `/bookwright-research <tema>`, que
+conduce al agente por un **protocolo de investigación riguroso** en vez de
+dejarlo improvisar. El protocolo, codificado en su `SKILL.md`:
+
+1. **Descomponer** el tema en sub-preguntas concretas y verificables.
+2. **Buscar fuentes autorizadas**, con preferencia explícita por **fuentes
+   primarias y oficiales en el idioma original**. Para temas con cargas
+   nacionales (guerras, fronteras, gremios regulados), consultar
+   **deliberadamente fuentes de varias procedencias** (p. ej. alemana, polaca,
+   británica, estadounidense, francesa) en lugar de una sola.
+3. **Registrar cada hallazgo con procedencia completa** (los campos de Fuente de
+   § 20.3), incluyendo cita en idioma original.
+4. **Contrastar versiones en conflicto**: cuando las fuentes nacionales o
+   primarias discrepan, registrar cada versión con su procedencia en vez de
+   colapsarlas en una sola "verdad". La discrepancia es un dato, no un error.
+5. **Marcar anclas**: señalar qué hallazgos son restricciones vinculantes y a qué
+   entidad narrativa enlazan.
+6. **Dejar abiertas** las preguntas sin resolver (continuidad con el rol clásico
+   de `research.md` y con `/bookwright-clarify`).
+7. **Persistir**: escribir los hallazgos en `bible/research/<tema>.md` (§ 20.7) y
+   dejar el grafo listo para reindexar.
+
+El multilingüismo es requisito de primer orden del protocolo, no un extra: la
+Fuente guarda idioma y cita original, y la regla 4 obliga a preservar la
+pluralidad de procedencias.
+
+### 20.5 La restricción: anclas en el grafo
+
+`bookwright graph build` (indexer de § 12, iteración 6) aprende a parsear
+`bible/research/` y a emitir las tríadas de Fuente, Hallazgo y Ancla al
+`graph.ttl`. Se añade un lector `io/research.py` análogo a `io/bible.py`. A
+partir de ahí, las anclas son consultables como cualquier otra entidad, por
+ejemplo:
+
+```sparql
+# Anclas que restringen a un personaje concreto y carecen de fuente fiable
+SELECT ?anchor ?claim WHERE {
+  ?anchor a golem:E13_Attribute_Assignment ;
+          bw:constrains <…/character/ana-sanchez/> ;
+          bw:claim ?claim .
+  FILTER NOT EXISTS { ?anchor bw:source ?s . ?s bw:reliability "alta" }
+}
+```
+
+(El prefijo `bw:` designa las propiedades de Bookwright sobre el patrón
+`E13`/`E55`; se define en `sources.ttl`. No se introducen clases GOLEM nuevas.)
+
+### 20.6 La verificación: dos capas, código y LLM
+
+Igual que el diseño ya separa validators de código (§ 13, deterministas) de
+chequeos LLM (commands como `bookwright-continuity`), la verificación de la
+investigación tiene **dos capas complementarias**:
+
+- **Validator de código `factual_anchor`** (nuevo en § 13.2, determinista).
+  Comprueba la *integridad estructural* de las anclas, no su veracidad: que cada
+  ancla tenga al menos una Fuente con los campos de procedencia obligatorios;
+  que las entidades a las que enlazan existan; emite *warning* sobre anclas sin
+  fuente o de fiabilidad baja; y, cuando un ancla lleva `time-span`, detecta
+  **anacronismos** contra la timeline reutilizando la lógica de `temporal`.
+  Severidad por defecto: `warning` (estructura), `error` (anacronismo duro).
+
+- **Command/skill `bookwright-verify`** (nuevo en § 10.4, semántico). El agente
+  lee el manuscrito **contra las anclas** y reporta pasajes que contradicen lo
+  investigado: anacronismos, errores de procedimiento (el detective hace algo
+  ilegal o imposible en España), inexactitudes culturales o lingüísticas. Es a
+  la investigación lo que `bookwright-continuity` es a la bible: un reporte
+  post-borrador, no un auto-fix. Se ejecuta tras la fase 5 (Draft).
+
+La división respeta la filosofía existente: lo que se puede comprobar con
+código determinista (¿el ancla está bien formada? ¿hay choque temporal duro?) lo
+hace un validator; lo que exige juicio (¿este párrafo contradice el hecho
+investigado?) lo hace el LLM vía skill.
+
+### 20.7 Almacenamiento: `bible/research/`
+
+`bible/research.md` (un único fichero) se sustituye por un **directorio**
+`bible/research/` (ver edición en § 7), con un fichero por tema de
+investigación más un registro de fuentes:
+
+```
+bible/
+└── research/
+    ├── _index.md            # mapa de temas + preguntas abiertas globales
+    ├── sources.md           # registro de Fuentes (procedencia consolidada)
+    ├── <tema>.md            # hallazgos + anclas de un tema (front-matter estructurado)
+    └── ...
+```
+
+Cada `<tema>.md` lleva front-matter YAML con la lista estructurada de hallazgos y
+anclas (parseable por `io/research.py`) y prosa legible debajo. Sigue siendo
+texto plano, versionable y superviviente a la desaparición del toolkit
+(axioma 4). El `graph.ttl` se deriva de estos ficheros, nunca al revés.
+
+### 20.8 Vocabulario controlado y segmentos URI
+
+- **Vocabulario** (edición en § 4.4): se añade `sources.ttl`, que define los
+  tipos de Fuente (`primaria`, `secundaria`, `oficial`, `académica`,
+  `periodística`, `testimonial`) y los niveles de fiabilidad vía `E55_Type`,
+  más las propiedades `bw:` que reifican Fuente/Hallazgo/Ancla sobre `E13`.
+- **Segmentos URI** (edición en § 4.5): tres conceptos nuevos —`source`
+  (token: slug), `finding` (token: UUIDv7, por ser aserción) y `anchor` (token:
+  UUIDv7)— siguiendo la regla de composición `{uri_base}{segmento}/{token}` ya
+  establecida.
+
+### 20.9 Configuración: bloque `[research]` del manifest
+
+Se añade un bloque opcional al `manifest.toml` (§ 8), con defaults sensatos para
+que un proyecto que no investigue no pague coste alguno:
+
+```toml
+[research]
+enabled = true                      # si false, el sistema queda inerte
+# Procedencias de interés para el protocolo multilingüe (informativo para el skill).
+source_languages = ["de", "pl", "en", "fr"]
+# Fiabilidad mínima para que un hallazgo pueda promoverse a ancla.
+min_reliability_for_anchor = "media"
+```
+
+Además, `factual_anchor` se suma a la lista de validators activables en
+`[validators].enabled` (§ 8.1), y `sources` a `[vocabularies].active`.
+
+### 20.10 Encaje con los axiomas (§ 16) y disciplina de scope
+
+- **No reabre ningún axioma.** Texto plano (4) intacto; rdflib, no Grafeo (2) —el
+  sistema funciona leyendo Markdown sin búsqueda vectorial; GOLEM sin ontología
+  propia (3) —se usa Inference/`E13` y `E55`; solo Agent Skills (7) —research y
+  verify son skills, no commands legacy; sin scripts shell (6).
+- **Sinergia con vector search (v0.3), sin dependerla.** La búsqueda vectorial
+  (ChromaDB sobre rdflib, v0.3 — **no** Grafeo) mejoraría la recuperación
+  semántica sobre un corpus grande de fuentes, pero **no es prerrequisito**: la
+  primera versión opera con el agente leyendo los Markdown de `bible/research/`
+  directamente. No se adelanta plomería de v0.3 (respeta la disciplina de scope).
+  El análisis de coste y viabilidad de los vectores está en § 20.12.
+- **Versión: v0.2.0, milestone propio.** Por su peso, este sistema es el hito
+  **M4** (§ 15.5) y se libera como **v0.2.0**. El antiguo plan de un sistema de
+  presets/genre-packages queda descartado (no se implementará), así que vector
+  search ocupa v0.3 sin desplazamientos. El preset externo `fiction-book-writing`
+  (§ 17.2) sigue siendo solo inspiración de templates.
+
+### 20.11 Resumen de artefactos nuevos
+
+| Artefacto | Dónde | Tipo |
+|---|---|---|
+| `/bookwright-research <tema>` | command source + skill | Proceso (LLM) |
+| `/bookwright-verify` | command source + skill | Verificación (LLM) |
+| `factual_anchor` | `src/bookwright/validation/` | Verificación (código) |
+| `io/research.py` | indexer | Persistencia grafo |
+| `sources.ttl` | `resources/vocabularies/` | Vocabulario `E55`/`E13` |
+| `bible/research/` | proyecto generado | Almacenamiento texto plano |
+| `[research]` | `manifest.toml` | Configuración |
+| segmentos `source`/`finding`/`anchor` | § 4.5 | URIs |
+
+### 20.12 Búsqueda vectorial: viabilidad y coste (v0.3)
+
+> Análisis pedido por el propietario al decidir mantener los vectores tras
+> descartar Grafeo. Conclusión adelantada: **es viable, barato y de bajo riesgo**
+> implementarlo desacoplado, sin Grafeo. No es trabajo de M4 (v0.2); es v0.3.
+
+**Qué problema resuelve.** El grafo `rdflib` responde preguntas *estructuradas*
+(¿qué anclas restringen a este personaje? ¿qué eventos hay antes de 1944?). No
+responde preguntas *semánticas* sobre el texto libre ("¿dónde menciono algo
+parecido a la burocracia de fronteras?", "tráeme las notas de investigación
+relacionadas con esta escena"). Cuando `bible/research/` crece a decenas de temas
+y cientos de citas, el agente no puede cargarlo entero en contexto; necesita
+recuperar los fragmentos relevantes. Eso es *retrieval* semántico: vectores.
+
+**Por qué no necesita Grafeo.** Grafeo agrupaba grafo + vectores en una sola
+librería. Pero las dos capacidades son ortogonales: el grafo es la fuente de
+verdad estructurada (rdflib) y los vectores son un **índice secundario
+reconstruible**. Separarlos es la arquitectura estándar (p. ej. RAG sobre
+cualquier corpus) y evita atarse a una librería de un solo mantenedor (la misma
+razón del axioma 2). El `Indexer Protocol` (§ 12.1) ya aísla esto: la capa
+vectorial se añade *al lado*, no *dentro* del motor de grafo.
+
+**Forma de la implementación.**
+
+1. **Chunking + embeddings**: trocear `bible/research/` y el manuscrito en
+   fragmentos (por hallazgo, por escena), generar embeddings y guardarlos en un
+   vector store embebido (ChromaDB, en `.bookwright/cache/`, en `.gitignore`).
+2. **Comando** `bookwright graph reindex --vectors` (o flag de `graph build`) que
+   construye/actualiza el índice; reconstruible en cualquier momento desde el
+   texto plano (no rompe el axioma 4).
+3. **Consumo**: los skills `bookwright-research` y `bookwright-verify` recuperan
+   los k fragmentos más cercanos antes de razonar, en vez de leer todo el corpus.
+4. **Dependencia opcional**: el extra `vectors` del `pyproject` (§ 14.1). Si no se
+   instala, todo lo demás funciona; los vectores son una mejora, no un requisito
+   (degradación elegante a "el agente lee los Markdown directamente").
+
+**Coste y riesgo.**
+
+| Dimensión | Valoración |
+|---|---|
+| **Dependencias** | 1 extra opcional (`chromadb`). No toca el core ni el grafo. |
+| **Embeddings** | Decisión abierta: locales (`sentence-transformers`, sin coste por uso, ~80–400 MB de modelo) o API (coste mínimo por token, sin modelo local). Se elige en v0.3. |
+| **Almacenamiento** | Índice en `cache/`, reconstruible, fuera de git. Irrelevante para el tamaño del repo. |
+| **Esfuerzo** | ~1 iteración (chunking + store + comando reindex + integración en 2 skills). Contenido, sin tocar M0–M4. |
+| **Riesgo de scope** | Bajo: aislado tras el Protocol y el extra opcional; si se abandona, se borra sin tocar el grafo ni los commands. |
+| **Determinismo** | Los vectores son *retrieval*, no validación. No afectan a `factual_anchor` ni a los validators deterministas; solo mejoran qué lee el LLM. |
+
+**Recomendación.** Mantener los vectores como **v0.3**, después de M4. M4 los
+**aprovecha si están** pero no los necesita: la primera versión de investigación
+opera con el agente leyendo `bible/research/` directamente, y los vectores se
+enchufan después como mejora de recuperación cuando el corpus lo justifique. Así
+no se adelanta plomería (disciplina de scope) y el valor llega incremental.
 
 ---
 

@@ -71,10 +71,8 @@ Restricciones técnicas:
 
 Fuera de scope hasta post-v0:
 
-- Preset system (v0.2).
-- GrafeoIndexer (v0.3).
-- Multi-integración más allá de claude/generic (v0.4).
-- Extension system (v0.5).
+- Sistema de investigación y verificación (M4 / v0.2, iteraciones 13–17).
+- Búsqueda vectorial (v0.3, ChromaDB sobre rdflib — sin GrafeoIndexer).
 - Export EPUB/PDF (v1.0).
 
 Consulta bookwright-design.md para el detalle exhaustivo de cualquier punto.
@@ -119,8 +117,22 @@ Cada iteración sigue este flujo:
 | 10 | Consolidación de envelopes de error | 2, 5, 6 | M3 |
 | 11 | Sistema de validación | 6, 9, 10 | M3 |
 | 12 | Fixtures, tests E2E y documentación | 1-11 | M3 |
+| 13 | Modelo de procedencia: Fuente / Hallazgo / Ancla | 5, 6 | M4 |
+| 14 | Skill `bookwright-research` + `bible/research/` | 7, 8, 9, 13 | M4 |
+| 15 | Validator `factual_anchor` | 11, 13 | M4 |
+| 16 | Skill `bookwright-verify` | 13, 14 | M4 |
+| 17 | Fixture histórica, E2E de investigación y docs | 13-16 | M4 |
 
-Estimación total: 6-8 semanas a tiempo parcial, 3-4 semanas a tiempo completo. Cada iteración entre medio día y dos días de trabajo del agente más revisión humana.
+Las iteraciones 1–12 conforman v0.1.0 (hitos M0–M3) y ya están completadas. Las
+iteraciones **13–17 son el hito M4 — Investigación y verificación**, que se
+libera como **v0.2.0** (ver `bookwright-design.md` § 20 y § 15.5). Roadmap post-M4:
+v0.3 búsqueda vectorial (ChromaDB sobre rdflib, sin Grafeo), v0.4 commands de
+autoría, v1.0 export. Descartados: presets, GrafeoIndexer, multi-integración y
+extension system (ver § 15.5 del diseño).
+
+Estimación total (1–12): 6-8 semanas a tiempo parcial, 3-4 semanas a tiempo
+completo. M4 (13–17): 1-2 semanas adicionales. Cada iteración entre medio día y
+dos días de trabajo del agente más revisión humana.
 
 ---
 
@@ -353,7 +365,7 @@ Comportamiento esperado:
 - `bookwright graph build` lee los archivos de bible/ y manuscript/ del proyecto actual, extrae instancias del modelo GOLEM y genera bible/graph.ttl con todos los triples.
 - `bookwright graph build --force` reconstruye desde cero ignorando caché.
 - `bookwright graph query "<SPARQL>"` ejecuta una query SPARQL sobre el grafo construido y devuelve resultados. Soporta --json para output parseable.
-- El indexer está detrás de un Protocol (interfaz abstracta); la implementación de v0 usa rdflib. En el futuro se podrá enchufar GrafeoIndexer u otros sin tocar este código.
+- El indexer está detrás de un Protocol (interfaz abstracta); la implementación usa rdflib, el motor permanente. El Protocol mantiene la puerta abierta a añadir capacidades (p. ej. la capa de búsqueda vectorial de v0.3) sin tocar este código. GrafeoIndexer queda descartado.
 - El motor a usar se lee de manifest.toml > [bookwright] indexer (default: "rdflib").
 - El parser de bible markdown identifica personajes por archivos .md en bible/characters/, settings por bible/settings/*.md, etc. La estructura mínima del frontmatter de cada archivo determina qué triples se generan.
 - Cada triple generado lleva su correspondiente AttributeAssignment apuntando al archivo de origen y a la línea cuando aplique.
@@ -541,7 +553,6 @@ Validaciones automatizadas:
 Fuera de scope:
 
 - Implementar nuevos validators (eso es iter 10).
-- Generación de presets (post-v0).
 - Solo la materialización de los SKILL.md.
 
 Referencia: ver bookwright-design.md § 11.4 (Generación de SKILL.md desde commands) y § 11.5 (progressive disclosure).
@@ -686,7 +697,7 @@ Calidad final:
 Fuera de scope:
 
 - Optimizaciones de performance del indexer (eso es post-v0 si rdflib resulta lento).
-- Sistema de presets (v0.2).
+- Sistema de investigación y verificación (M4 / v0.2, iteraciones 13–17).
 - Vector search (v0.3).
 
 Referencia: ver bookwright-design.md § 15.4 (M3) y § 15.5 (post-v0).
@@ -695,6 +706,204 @@ Referencia: ver bookwright-design.md § 15.4 (M3) y § 15.5 (post-v0).
 **Pista para `/speckit-plan`:** *"Esta iteración es polish y consolidación. Fixtures son trabajo creativo (escribir un esqueleto de novela, ensayo, memoria) — pueden ser muy cortos pero deben ser coherentes. Tests E2E usan las fixtures como input. MkDocs con tema material; la sección de architecture puede ser un resumen automático con links al doc de diseño completo (que va junto al repo). Validación manual al final con un usuario externo si es posible."*
 
 **Criterio de aceptación:** todos los criterios listados en el prompt se cumplen. Release v0.1.0 publicado en GitHub con wheel y sdist adjuntos.
+
+---
+
+## 3.bis Hito M4 — Investigación y verificación (v0.2.0)
+
+> Estas iteraciones implementan el sistema de § 20 del documento de diseño.
+> Asumen v0.1.0 (iteraciones 1–12) ya en `main`. Mismo flujo Spec Kit que el
+> resto. Principio rector: **Bookwright no busca; estructura, ancla y verifica.**
+> La búsqueda real de fuentes la hace el agente que ejecuta el skill; el toolkit
+> aporta modelo de procedencia, persistencia en texto plano, integración en el
+> grafo y validación. No se añaden dependencias de runtime para acceso a red.
+
+### Iteración 13 — Modelo de procedencia: Fuente / Hallazgo / Ancla
+
+**Objetivo:** modelar la investigación como datos de primera clase en el grafo,
+reutilizando el módulo Inference de GOLEM (`E13_Attribute_Assignment`) y el patrón
+`E55_Type`, sin extender el esquema. Es el cimiento del que dependen las demás.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: la investigación que sostiene un libro (fuentes oficiales, en idioma original, con su fiabilidad) debe poder representarse en el grafo del proyecto, no solo como prosa suelta. Necesitamos un modelo de procedencia con tres entidades —Fuente, Hallazgo y Ancla— que se serialicen en Turtle y se enlacen a las entidades narrativas GOLEM que constriñen.
+
+Comportamiento esperado:
+
+- Una Fuente registra: referencia/URL, autor, idioma original, tipo (primaria, secundaria, oficial, académica, periodística, testimonial), fiabilidad (alta/media/baja con justificación), fecha de acceso y cita textual (original + traducción si difiere del idioma del libro).
+- Un Hallazgo es una afirmación sobre el mundo real sostenida por una o más Fuentes; se reifica como E13_Attribute_Assignment (qué se afirma, quién lo afirma, sobre qué entidad recae, con qué fuentes). Un Hallazgo puede quedar en estado "abierto" (pregunta sin resolver).
+- Un Ancla es un Hallazgo promovido a restricción vinculante, enlazado a la entidad narrativa que constriñe (G1_Character, G12_Setting, G5_Narrative_Event o la timeline) y, opcionalmente, con un time-span para detección de anacronismos.
+- Existe un vocabulario controlado sources.ttl que define los tipos de Fuente y niveles de fiabilidad vía E55_Type, más las propiedades bw: que reifican Fuente/Hallazgo/Ancla sobre E13.
+- Los ficheros de investigación viven en bible/research/ (un .md por tema con front-matter estructurado, más _index.md y sources.md). io/research.py los parsea y emite las tríadas; bookwright graph build las incorpora a graph.ttl.
+- Se generan URIs por composición para los segmentos source (slug), finding (UUIDv7) y anchor (UUIDv7), siguiendo la convención de § 4.5.
+
+Fuera de scope:
+
+- El skill que dirige la investigación (iteración 14).
+- El validator factual_anchor (iteración 15) y la verificación LLM (iteración 16).
+- Búsqueda vectorial sobre el corpus de fuentes (v0.3). El agente lee los Markdown directamente.
+- No se crean clases GOLEM nuevas: solo E13/E55 y propiedades bw:.
+
+Referencia: ver bookwright-design.md § 20.2, § 20.3, § 20.5, § 20.7, § 20.8 y § 4 (modelo GOLEM, módulo Inference).
+```
+
+**Pista para `/speckit-plan`:** *"Modela Fuente/Hallazgo/Ancla en `src/bookwright/golem/` reutilizando el patrón E13_Attribute_Assignment ya usado para aserciones; NO añadas clases GOLEM nuevas. Crea `resources/vocabularies/sources.ttl`. Crea `src/bookwright/io/research.py` análogo a `io/bible.py` y engánchalo en el RdflibIndexer (iteración 6). Front-matter YAML para los hallazgos/anclas, prosa Markdown debajo. Tests: fixture de `bible/research/<tema>.md` → verificar tríadas E13 emitidas, enlace a entidad, y URIs correctas."*
+
+**Criterio de aceptación:** sobre una fixture con `bible/research/`, `bookwright graph build` emite las tríadas de Fuente/Hallazgo/Ancla y una query SPARQL recupera las anclas que constriñen a un personaje dado. Cobertura > 85% en el código nuevo.
+
+---
+
+### Iteración 14 — Skill `bookwright-research` + `bible/research/`
+
+**Objetivo:** dar al autor un comando que dirija al agente por un protocolo de
+investigación riguroso (fuentes oficiales/primarias, idioma original, contraste
+de procedencias) y persista los resultados en `bible/research/` y el grafo.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: investigar es parte del proceso de escritura. El autor necesita un command que, dado un tema (p. ej. "detectives privados en España" o "logística de la Wehrmacht en 1943"), guíe al agente para investigar con rigor y deje los hallazgos estructurados, con procedencia, anclados al grafo.
+
+Comportamiento esperado:
+
+- Existe un command source bookwright-research que se materializa como Agent Skill (igual que los 10 de v0.1, ver iteración 8 y 9), disponible en las integraciones claude y generic.
+- El SKILL.md codifica un protocolo: (1) descomponer el tema en sub-preguntas verificables; (2) buscar fuentes autorizadas, con preferencia explícita por fuentes primarias y oficiales EN IDIOMA ORIGINAL; (3) para temas con cargas nacionales, consultar deliberadamente fuentes de varias procedencias en vez de una sola; (4) registrar cada hallazgo con procedencia completa, incluyendo cita en idioma original; (5) cuando las fuentes discrepan, registrar cada versión con su procedencia en lugar de colapsarlas; (6) marcar qué hallazgos son anclas y a qué entidad narrativa enlazan; (7) dejar abiertas las preguntas sin resolver.
+- El resultado se escribe en bible/research/<tema>.md (con _index.md y sources.md actualizados), en el formato que io/research.py (iteración 13) sabe parsear.
+- Se añaden templates de bible/research/ a los resources (resolubles por capas, como el resto de templates de iteración 7).
+- /bookwright-bible se actualiza para crear bible/research/_index.md en vez del antiguo research.md, y /bookwright-clarify sigue pudiendo recoger las preguntas abiertas.
+- Se añade el bloque [research] al manifest (enabled, source_languages, min_reliability_for_anchor) con defaults; el modelo de manifest (iteración 2) se extiende.
+
+Fuera de scope:
+
+- El motor de búsqueda: lo aporta el agente, no Bookwright. El skill instruye; no implementa fetch ni añade dependencias de red.
+- La verificación del manuscrito contra anclas (iteración 16).
+- El validator de integridad estructural (iteración 15).
+
+Referencia: ver bookwright-design.md § 20.4, § 20.7, § 20.9, y § 10/§ 11 (formato de commands y materialización a skills).
+```
+
+**Pista para `/speckit-plan`:** *"Redacta `resources/commands/bookwright-research.md` siguiendo el formato de command source de § 10.1 y los 10 ya existentes; el procedimiento es el protocolo de 7 pasos. Reutiliza la materialización a SKILL.md de la iteración 9 (no dupliques el pipeline). Añade `resources/templates/bible/research/` (_index, sources, tema). Extiende el modelo de manifest (iteración 2) con el bloque `[research]` y sus validaciones. El skill debe triggerear en español e inglés (preferencia del usuario). Tests: el SKILL.md generado valida contra agentskills.io; el bloque [research] se carga y valida."*
+
+**Criterio de aceptación:** `bookwright init` genera el skill bookwright-research válido en ambas integraciones; un proyecto con `[research]` carga sin error; el flujo manual (correr el skill en un agente) produce un `bible/research/<tema>.md` parseable por `graph build`. Cobertura > 85% en el código nuevo.
+
+---
+
+### Iteración 15 — Validator `factual_anchor`
+
+**Objetivo:** verificación determinista de la integridad estructural de las
+anclas y detección de anacronismos, integrada en `bookwright validate`.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: las anclas de investigación solo sirven si están bien formadas y no chocan con la cronología. Necesitamos un validator de código (determinista, complementario a los chequeos LLM) que audite la integridad de las anclas sobre el grafo.
+
+Comportamiento esperado:
+
+- Un validator factual_anchor implementa el Validator Protocol de la iteración 11 (validate(project, indexer) -> list[Violation]).
+- Comprueba la integridad ESTRUCTURAL, no la veracidad: que cada ancla tenga al menos una Fuente con todos los campos de procedencia obligatorios; que las entidades narrativas a las que enlaza existan en el grafo; y emite warning sobre anclas sin fuente o de fiabilidad por debajo de manifest.research.min_reliability_for_anchor.
+- Cuando un ancla lleva time-span, detecta anacronismos contra la timeline reutilizando la lógica del validator temporal (iteración 11). Anacronismo duro = error; problema estructural = warning.
+- Se autodescubre por el registry existente y se activa vía manifest.toml > [validators].enabled. bookwright validate lo incluye con soporte --json, --scope y --severity ya existentes.
+
+Fuera de scope:
+
+- Juicio semántico sobre si el manuscrito contradice un hecho (eso es bookwright-verify, iteración 16, vía LLM).
+- Auto-fix. El validator reporta, no arregla.
+
+Referencia: ver bookwright-design.md § 20.6 y § 13 (Sistema de Validación).
+```
+
+**Pista para `/speckit-plan`:** *"Crea `src/bookwright/validation/factual_anchor.py` siguiendo el patrón de los 4 validators de la iteración 11. Para anacronismos, reutiliza/extrae la comparación de time-spans del validator temporal en vez de duplicarla. Tests: fixtures con (a) ancla sin fuente → warning, (b) ancla con fiabilidad baja → warning, (c) ancla con entidad inexistente → error/warning, (d) ancla con time-span anacrónico → error, (e) fixture limpia → 0 violations."*
+
+**Criterio de aceptación:** sobre fixtures con violaciones conocidas, `bookwright validate --json` detecta exactamente las esperadas; sobre la fixture limpia, 0 violations. Cobertura > 85% en `src/bookwright/validation/`.
+
+---
+
+### Iteración 16 — Skill `bookwright-verify`
+
+**Objetivo:** verificación semántica (LLM) del manuscrito contra las anclas:
+detectar pasajes que contradicen lo investigado. Es a la investigación lo que
+`bookwright-continuity` es a la bible.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: tras escribir el borrador, el autor necesita saber si el texto contradice lo que investigó: anacronismos, errores de procedimiento (el detective hace algo ilegal o imposible en España), inexactitudes culturales o lingüísticas. Eso exige juicio, no solo código: lo resuelve un agente leyendo el manuscrito contra las anclas.
+
+Comportamiento esperado:
+
+- Existe un command source bookwright-verify materializado como Agent Skill en claude y generic.
+- El SKILL.md instruye al agente a cargar las anclas del grafo (vía bookwright graph query) y leer el manuscrito buscando pasajes que las contradigan; produce un reporte estructurado por capítulo/escena con cita del pasaje, ancla violada, fuente de la ancla y severidad.
+- Se ejecuta en la fase post-draft (tras la fase 5, Draft), igual que bookwright-continuity.
+- El reporte es legible por humanos y, donde aplique, referencia archivo y línea.
+
+Fuera de scope:
+
+- La integridad estructural de las anclas (iteración 15, determinista).
+- Auto-corrección del manuscrito. El skill reporta; el autor decide.
+
+Referencia: ver bookwright-design.md § 20.6 y el command bookwright-continuity como patrón análogo.
+```
+
+**Pista para `/speckit-plan`:** *"Redacta `resources/commands/bookwright-verify.md` tomando `bookwright-continuity` como plantilla estructural (mismo patrón de reporte post-draft). Reutiliza la materialización a SKILL.md de la iteración 9. El skill consume el grafo vía `bookwright graph query` (anclas) y los .md del manuscrito. Trigger bilingüe ES/EN. Tests: SKILL.md válido contra agentskills.io en ambas integraciones."*
+
+**Criterio de aceptación:** `bookwright init` genera el skill bookwright-verify válido en ambas integraciones; el flujo manual sobre la fixture histórica (iteración 17) produce un reporte que señala los anacronismos inyectados.
+
+---
+
+### Iteración 17 — Fixture histórica, E2E de investigación y docs
+
+**Objetivo:** validar el sistema de investigación de extremo a extremo y
+documentarlo, cerrando v0.2.0.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: antes de release v0.2.0 necesitamos una fixture realista con investigación, tests E2E del flujo investigar→anclar→validar→verificar, y documentación del nuevo sistema.
+
+Comportamiento esperado:
+
+Fixture:
+
+- tests/fixtures/tiny-historical/: una mini-novela documentada (ambientación histórica con anclas reales: fechas, hechos, procedimientos), con bible/research/ relleno (al menos 1 tema, varias Fuentes con procedencia, varias anclas), y un capítulo de manuscrito que contiene un anacronismo deliberado para que la verificación lo detecte.
+
+Tests E2E:
+
+- test_research_workflow.py recorre: graph build (con bible/research/) → graph query (recupera anclas) → validate (factual_anchor detecta el ancla mal formada inyectada y el anacronismo de time-span) → verificación manual del reporte de bookwright-verify sobre el anacronismo del manuscrito.
+- Verificar que un proyecto sin [research]/sin bible/research/ sigue funcionando igual (el sistema es inerte si no se usa).
+
+Documentación:
+
+- Página docs/research.md (MkDocs): qué es la investigación en Bookwright, el modelo Fuente/Hallazgo/Ancla, el protocolo del skill, cómo se verifica, multilingüismo y procedencia.
+- Actualizar docs/commands con bookwright-research y bookwright-verify, y docs/validation con factual_anchor.
+- CHANGELOG.md: entrada v0.2.0 con el sistema de investigación y verificación.
+
+Calidad final:
+
+- pytest > 80% global (manteniendo el umbral de v0.1), > 85% en el código nuevo de M4.
+- ruff, mypy --strict, pre-commit, CI verdes. mkdocs build sin warnings.
+
+Fuera de scope:
+
+- Búsqueda vectorial sobre fuentes (v0.3). El agente lee los Markdown directamente.
+
+Referencia: ver bookwright-design.md § 20 completo y § 15.5 (M4).
+```
+
+**Pista para `/speckit-plan`:** *"La fixture tiny-historical es trabajo creativo pero corto y coherente; el anacronismo debe ser inequívoco para tests deterministas. Los tests E2E usan las fixtures como input, igual que la iteración 12. Docs en MkDocs material, integradas con el sitio existente. Verifica explícitamente que el sistema es inerte cuando [research].enabled=false o no hay bible/research/."*
+
+**Criterio de aceptación:** todos los criterios del prompt se cumplen; el flujo E2E de investigación pasa; `mkdocs build` limpio; CHANGELOG con v0.2.0. Release v0.2.0 listo para publicar.
 
 ---
 
@@ -718,7 +927,14 @@ Spec Kit es bueno generando spec/plan/tasks pero puede divagar en decisiones de 
 
 ### 4.5 Después de v0.1.0
 
-Las iteraciones de v0.2 en adelante (presets, GrafeoIndexer, multi-integración, extensions, export) seguirán el mismo patrón. Cuando llegue el momento, redactar un plan equivalente a éste, también versionado.
+El hito **M4 — Investigación y verificación (v0.2.0)** ya tiene su plan detallado
+arriba (§ 3.bis, iteraciones 13–17) y su diseño en `bookwright-design.md` § 20.
+
+Las iteraciones post-M4 que sí se mantienen (búsqueda vectorial en v0.3, commands
+de autoría en v0.4, export en v1.0) seguirán el mismo patrón. Cuando llegue el
+momento, redactar un plan equivalente a éste, también versionado. Quedan
+descartados (no se implementarán): presets, GrafeoIndexer/Grafeo, multi-integración
+y extension system; ver `bookwright-design.md` § 15.5.
 
 ---
 

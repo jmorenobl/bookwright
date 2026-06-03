@@ -121,19 +121,25 @@ Until iteration 1 merges, none of those commands work — there is no
   accepts `--json` and, when set, emits a single JSON document on stdout
   and **only** that. Human prose / progress goes to stderr (Principle IX).
 - **Domain model**: GOLEM ontology, serialized as Turtle (RDF). `rdflib`
-  in v0; `Grafeo` is deferred to v0.3 and MUST NOT be pulled forward.
+  is the permanent graph engine; `Grafeo` / `GrafeoIndexer` is **cancelled**
+  (will not be implemented). The v0.3 vector search is decoupled (ChromaDB
+  over rdflib), not Grafeo. See `bookwright-design.md` § 12.3, § 15.5, § 20.12.
 
 ## Out of v0 scope — do not implement these
 
 From the Constitution's Scope & Release Discipline section. A PR that adds
 plumbing whose only justification is "future X" MUST be rejected:
 
-- Preset / genre-package system → v0.2
-- `GrafeoIndexer`, vector search → v0.3
-- Integrations beyond `claude` / `generic` (Copilot, Gemini, Cursor-specific)
-  → v0.4
-- Extension system (distributable validators, pre-commit hooks) → v0.5
+- Research & verification system (Source/Finding/Anchor, `bookwright-research` /
+  `bookwright-verify`, `factual_anchor`) → v0.2 / M4 (design § 20)
+- Vector search (ChromaDB over rdflib, decoupled from Grafeo) → v0.3
 - Export to EPUB / PDF / print via pandoc → v1.0
+
+**Cancelled — do NOT implement (owner decision):** preset / genre-package
+system (template resolution is 2 layers, overrides → core); `GrafeoIndexer` /
+Grafeo engine; multi-integration beyond `claude` / `generic` (Copilot, Gemini,
+Cursor/Codex-specific) and the `bookwright integrate` command; extension system
+(distributable validators, pre-commit hooks). See design § 15.5.
 
 ## Language conventions
 
