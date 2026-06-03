@@ -91,6 +91,6 @@ AND   the test makes NO assertion about removal of the old .claude/skills/ dir
 - **R1**: No E2E test writes outside `tmp_path`; fixtures are consumed via
   `shutil.copytree(fixture, tmp_path/...)` (D2).
 - **R2**: E2E tests run in the default pytest selection (no `manual`
-  marker) → they count toward the > 80% coverage gate (FR-009, SC-005).
+  marker) → they count toward the ≥ 80% coverage gate (FR-009, SC-005).
 - **R3**: Any subprocess-based smoke (real `bookwright` on PATH / installed
   wheel) lives **separately** and is the only path exempt from coverage.

@@ -119,5 +119,5 @@ user (the iteration's manual-validation step).
 - [ ] E2E suite green and counted toward coverage.
 - [ ] `mkdocs build --strict` clean; seven page areas; per-command docs.
 - [ ] CHANGELOG v0.1.0, CONTRIBUTING (×3 how-tos), Apache-2.0 LICENSE.
-- [ ] ruff / ruff format / mypy --strict / pre-commit / coverage > 80% green.
+- [ ] ruff / ruff format / mypy --strict / pre-commit / coverage ≥ 80% green.
 - [ ] Wheel builds, installs into a clean env, quickstart runs end-to-end.

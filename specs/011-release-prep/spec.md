@@ -120,7 +120,7 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 
 - **FR-010**: The repository MUST have a canonical README (Spanish — `README.es.md`) covering what Bookwright is, quick installation, a 5-minute quickstart, and links to the documentation site. `README.md` (English) MAY remain as a short pointer to the canonical README and the docs.
 - **FR-011**: The project MUST provide a documentation site built with MkDocs (mkdocs-material theme) containing pages for: index, getting-started, architecture, commands, validation, extending, and FAQ.
-- **FR-012**: The commands documentation MUST include one page (or clearly delineated section) per shipped command.
+- **FR-012**: The commands documentation MUST include one page (or clearly delineated section) per shipped **executable CLI** command — the Typer leaf-command set (`init`, `check`, `version`, `validate`, `graph build`, `graph query`). The 10 authoring Agent-Skill commands (`bible`, `outline`, `synopsis`, `scenes`, `draft`, `clarify`, `analyze`, `checklist`, `constitution`, `continuity`) are LLM-driven `SKILL.md` prompts, not executable CLI commands; they are documented conceptually under getting-started / validation / extending rather than as per-command pages, and the docs↔CLI drift test (FR-015) enforces parity against this executable leaf set (DOC-2).
 - **FR-013**: The architecture page MAY be a summary of the design document and MUST link to the full design document rather than duplicating it wholesale.
 - **FR-014**: The documentation site MUST build with zero warnings.
 - **FR-015**: Documentation content (command names, flags, quickstart steps) MUST match the behavior of the shipped CLI.
@@ -149,7 +149,7 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 - **SC-001**: All three fixtures pass `bookwright validate` with exit 0 (zero `error`-severity violations; heuristic warnings allowed) in their shipped state, and the `tiny-novel` graph query returns exactly the expected 3 characters / 2 settings / 5 events.
 - **SC-002**: The E2E suite (full workflow, skills materialization, integration swap) passes on a clean checkout with a 100% pass rate.
 - **SC-003**: A person who has never read the source completes the entire init → edit → build → query → validate workflow using only the README quickstart and an installed distribution, in 5 minutes or less.
-- **SC-004**: The documentation site builds with zero warnings and exposes all seven required page areas (index, getting-started, architecture, commands, validation, extending, FAQ), with one page/section per shipped command.
+- **SC-004**: The documentation site builds with zero warnings and exposes all seven required page areas (index, getting-started, architecture, commands, validation, extending, FAQ), with one page/section per shipped executable CLI command (the Typer leaf set; see FR-012).
 - **SC-005**: Reported automated-test coverage is **at least 80%** (Constitution VIII), enforced fail-closed with no round-up (`[tool.coverage.report] precision = 2`, `fail_under = 80`).
 - **SC-006**: Every quality gate — tests, `ruff check`, `ruff format --check`, `mypy --strict`, pre-commit, and CI — reports green on the release branch.
 - **SC-007**: A wheel built locally installs into a clean isolated environment and the `bookwright` CLI runs the quickstart end-to-end without access to the source tree.

@@ -129,7 +129,7 @@ the drift test passes.
 and a documented manual packaged-install validation — the last wrapper before tagging.
 
 **Independent Test**: CHANGELOG/CONTRIBUTING/LICENSE present and accurate;
-full quality suite green with coverage > 80%; a locally built wheel installs into
+full quality suite green with coverage ≥ 80%; a locally built wheel installs into
 a clean env and runs the quickstart.
 
 ### Implementation for User Story 4
@@ -148,7 +148,7 @@ a clean env and runs the quickstart.
 ## Phase 7: Polish & Cross-Cutting Concerns
 
 - [ ] T029 [P] Confirm every new test file (`tests/fixtures/test_fixtures.py`, `tests/e2e/*.py`) is ≤ 500 lines (Principle IV, VR-8); split if any exceeds
-- [ ] T030 Execute the maintainer `quickstart.md` walkthrough end-to-end and tick every "Done criteria" box (fixtures valid & counts 3/2/5; E2E green & counted; docs strict-clean with 7 areas; CHANGELOG/CONTRIBUTING/LICENSE; all gates > 80%; wheel installs and quickstart runs)
+- [ ] T030 Execute the maintainer `quickstart.md` walkthrough end-to-end and tick every "Done criteria" box (fixtures valid & counts 3/2/5; E2E green & counted; docs strict-clean with 7 areas; CHANGELOG/CONTRIBUTING/LICENSE; all gates green & coverage ≥ 80%; wheel installs and quickstart runs)
 
 ---
 

@@ -14,7 +14,7 @@ valid Bookwright project that builds, queries, and validates clean;
 (2) an **E2E test suite** (`tests/e2e/`) that drives the real CLI
 in-process over those fixtures and a fresh `init`, locking down the full
 workflow, skills-materialization compliance, and the claude→generic
-integration swap, all counting toward the > 80% coverage gate; (3)
+integration swap, all counting toward the ≥ 80% coverage gate; (3)
 **user/contributor documentation** — a Spanish MkDocs (`material`) site that
 builds with `--strict` (zero warnings), a finalized `README.es.md`,
 `CHANGELOG.md` v0.1.0 entry, `CONTRIBUTING.md` (×3 extension how-tos), and
@@ -22,8 +22,10 @@ an Apache-2.0 `LICENSE` — plus CI gates for docs-build and artifact-build
 and a manual packaged-install validation. Technical approach is recorded in
 [research.md](research.md); the binding decisions are: in-process
 `CliRunner` for coverage (D1), rebuild `graph.ttl` in `tmp_path` rather than
-commit it (D2), per-fixture `[validators] disabled` to keep non-fiction
-clean with **no validator code change** (D3), and a `docs` dependency group
+commit it (D2), the **full** built-in validator set on every fixture
+(`[validators] disabled = []`) — non-fiction stays clean because off-genre
+validators are inert, with **no validator code change and no masking config**
+(revised D3), and a `docs` dependency group
 so MkDocs needs **no constitutional amendment** (D6).
 
 ## Technical Context
@@ -97,8 +99,9 @@ differs by artifact type (executable command vs. skill prompt).
 **Scope & Release Discipline**: deliverables map 1:1 to design § 15.4 (M3)
 and the iteration-12 prompt. No deferred capability (presets v0.2, Grafeo
 v0.3, extra integrations v0.4, extension system v0.5, export v1.0) is pulled
-forward. The non-fiction validator scope is handled by the **existing**
-manifest `[validators]` knob, not new plumbing (D3).
+forward. The non-fiction fixtures stay clean under the **full** validator set
+(`[validators] disabled = []`) because the off-genre validators are inert, so
+no validator code and no masking config is added (revised D3).
 
 **Result**: PASS — no violations. Complexity Tracking left empty.
 
@@ -171,8 +174,8 @@ driven by a root `mkdocs.yml`.
 ## Phase 0 — Research
 
 Complete. See [research.md](research.md): D1 (in-process `CliRunner` for
-coverage), D2 (rebuild `graph.ttl` in `tmp_path`), D3 (per-fixture
-`[validators] disabled`, no code change), D4 (docs↔CLI drift test), D5
+coverage), D2 (rebuild `graph.ttl` in `tmp_path`), D3 (full validator set,
+`[validators] disabled = []`, clean off-genre, no code change), D4 (docs↔CLI drift test), D5
 (MkDocs `material` + `strict`, curated architecture page), D6 (`docs`
 dependency group → no amendment), D7 (manual packaged-install), D8 (CI docs
 + build gates), D9 (fixture shape to iter-6 mapper keys). All
