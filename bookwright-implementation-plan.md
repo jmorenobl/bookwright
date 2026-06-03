@@ -122,6 +122,7 @@ Cada iteración sigue este flujo:
 | 15 | Validator `factual_anchor` | 11, 13 | M4 |
 | 16 | Skill `bookwright-verify` | 13, 14 | M4 |
 | 17 | Fixture histórica, E2E de investigación y docs | 13-16 | M4 |
+| 18 | Saneamiento de tags de trazabilidad prohibidos | — | Mantenimiento |
 
 Las iteraciones 1–12 conforman v0.1.0 (hitos M0–M3) y ya están completadas. Las
 iteraciones **13–17 son el hito M4 — Investigación y verificación**, que se
@@ -129,6 +130,12 @@ libera como **v0.2.0** (ver `bookwright-design.md` § 20 y § 15.5). Roadmap pos
 v0.3 búsqueda vectorial (ChromaDB sobre rdflib, sin Grafeo), v0.4 commands de
 autoría, v1.0 export. Descartados: presets, GrafeoIndexer, multi-integración y
 extension system (ver § 15.5 del diseño).
+
+La **iteración 18 es mantenimiento transversal** (no pertenece a ningún hito de
+producto): cancela la deuda de tags de trazabilidad prohibidos por
+`CONTRIBUTING.md` acumulada en `src/` y `tests/`, y añade un gate que impide su
+reaparición. No depende de ninguna otra iteración y conviene ejecutarla cuando no
+haya ramas de feature en vuelo, para minimizar conflictos de merge.
 
 Estimación total (1–12): 6-8 semanas a tiempo parcial, 3-4 semanas a tiempo
 completo. M4 (13–17): 1-2 semanas adicionales. Cada iteración entre medio día y
@@ -904,6 +911,60 @@ Referencia: ver bookwright-design.md § 20 completo y § 15.5 (M4).
 **Pista para `/speckit-plan`:** *"La fixture tiny-historical es trabajo creativo pero corto y coherente; el anacronismo debe ser inequívoco para tests deterministas. Los tests E2E usan las fixtures como input, igual que la iteración 12. Docs en MkDocs material, integradas con el sitio existente. Verifica explícitamente que el sistema es inerte cuando [research].enabled=false o no hay bible/research/."*
 
 **Criterio de aceptación:** todos los criterios del prompt se cumplen; el flujo E2E de investigación pasa; `mkdocs build` limpio; CHANGELOG con v0.2.0. Release v0.2.0 listo para publicar.
+
+---
+
+## 3.ter Mantenimiento — deuda técnica
+
+Iteraciones que no entregan funcionalidad de producto sino que cancelan deuda
+acumulada. No pertenecen a ningún hito y pueden intercalarse cuando convenga.
+
+### Iteración 18 — Saneamiento de tags de trazabilidad prohibidos
+
+**Objetivo:** dejar `src/` y `tests/` con **cero** tags de trazabilidad prohibidos
+por `CONTRIBUTING.md` ("Traceability tags in code"), y añadir un gate que impida
+su reaparición. Auditoría inicial: ~57 ocurrencias en 40 ficheros (20 `T0xx` +
+37 `US`/`+US`), repartidas entre código ya mergeado (iteraciones 1–11) y algunos
+tests recientes. Es deuda contra una convención propia del proyecto, no un bug:
+los `T0xx` (IDs de `tasks.md`) y `US`/`+US` (user-stories) son bookkeeping de
+planificación sin artefacto durable —los números de tareas no se congelan al
+merge y quedan obsoletos—, a diferencia de `FR`/`SC`/`D` y `bookwright-design.md
+§ N.M`, que sí son referencias durables.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: CONTRIBUTING.md prohíbe explícitamente los tags de trazabilidad T0xx (IDs de tasks.md) y US-x/+USx (user-stories) en código fuente y tests, porque son bookkeeping de planificación sin artefacto durable que queda obsoleto tras el merge. Sin embargo, el código ya mergeado (iteraciones 1–11) y algunos tests recientes los contienen (~57 ocurrencias en ~40 ficheros). Queremos cancelar esa deuda por completo y dejarla en cero permanente.
+
+Comportamiento esperado:
+
+- Tras la iteración, una búsqueda de T0xx (T seguido de tres dígitos) y de US-x/USx/+USx sobre src/ y tests/ no devuelve ninguna ocurrencia (excluyendo binarios y __pycache__).
+- Cada tag se trata según aporte:
+  - Si el tag aportaba trazabilidad real (un T0xx que justificaba un fragmento), se sustituye por la referencia durable equivalente: el FR/SC/D del spec de la iteración propietaria de ese fichero, o bookwright-design.md § N.M. Si no existe un equivalente durable claro, se reescribe a prosa neutra que explique el porqué sin citar el ID de tarea.
+  - Si el tag era un marcador de sección decorativo (p. ej. "# --- sources.md (US1) ---" o un docstring "US1 - Acceptance Scenarios..."), se reescribe a una etiqueta descriptiva del comportamiento, sin el ID.
+- Es un cambio exclusivamente de comentarios y docstrings: cero cambios en lógica de código, firmas, nombres de tests o aserciones. El comportamiento observable y la cobertura no cambian.
+- Se añade un gate de no-regresión que falla si reaparece un T0xx o US-x en src/ o tests/, integrado en la suite/CI (Principio VIII) de modo que la deuda quede en cero de forma permanente.
+
+Restricciones (de CONTRIBUTING.md, sección "Traceability tags in code"):
+
+- Las referencias resuelven relativas a la iteración del fichero: al sustituir un T0xx por un FR/SC/D, usa el número del spec de la iteración propietaria de ese subárbol, no de otra.
+- Los números FR/SC/D ya mergeados están congelados: no renumerar ni reescribir referencias durables existentes; solo eliminar/convertir las prohibidas.
+- Permitido y NO objetivo de limpieza: "iteración N" en prosa, y los IDs en specs/ (la prohibición es solo para src/ y tests/).
+
+Fuera de scope:
+
+- Tocar artefactos bajo specs/ (spec.md, plan.md, tasks.md, etc.): ahí los IDs de tarea son legítimos.
+- Renumerar o "mejorar" referencias FR/SC/D existentes.
+- Cualquier refactor de código que vaya más allá de comentarios/docstrings.
+
+Referencia: ver CONTRIBUTING.md (sección "Traceability tags in code") y la constitución § VIII (disciplina de tests / gates de CI).
+```
+
+**Pista para `/speckit-plan`:** *"Barrido determinista: `grep -rnIE '\bT0[0-9]{2}\b|\bUS-?[0-9]+\b|\+US[0-9]+' src/ tests/` (excluye binarios). Clasifica cada hit en {convertible a FR/SC/D durable, convertible a § N.M, reescribir a prosa neutra} y edita en consecuencia, fichero por fichero, resolviendo cada FR/SC/D contra el spec de la iteración dueña del subárbol. El gate de no-regresión es preferible como test en `tests/` (corre en CI sin depender de pre-commit): un test que ejecuta el mismo grep sobre src/ y tests/ y asevera cero coincidencias, excluyéndose a sí mismo y a los ficheros que legítimamente mencionen el patrón en una cadena de regex. No modifiques lógica: usa `git diff` para confirmar que solo cambian comentarios/docstrings."*
+
+**Criterio de aceptación:** el grep de tags prohibidos sobre `src/` y `tests/` devuelve vacío; el nuevo gate falla si se reintroduce un `T0xx`/`US-x`; `ruff`, `mypy --strict`, `pytest` y la cobertura se mantienen sin cambios (mismo número de tests, mismo comportamiento); `git diff` muestra exclusivamente cambios en comentarios y docstrings.
 
 ---
 
