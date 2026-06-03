@@ -83,7 +83,7 @@ cross-component behavior. Three files, each a focused contract:
 |------|--------|---------|---------|
 | `test_full_workflow.py` | `init` → edit manifest+constitution → `graph build` → `graph query` → `validate` | each step's expected result; final state valid | FR-006, SC-002 |
 | `test_skills_materialization.py` | `init` (materializes skills) | every `SKILL.md` passes the shipped linter `lint_skill_md` (valid YAML; `name == dir` & `< SKILL_NAME_MAX_LENGTH`; `description < SKILL_DESCRIPTION_MAX_LENGTH`) | FR-007, SC-002 |
-| `test_integration_swap.py` | `init --integration claude` → manifest → `generic` → re-init `--here --force` | skills correct under `.agents/skills/`; **no** assertion about old `.claude/skills/` | FR-008, SC-002 |
+| `test_integration_swap.py` | `init --integration claude` → `integration use generic` | skills correct under `.agents/skills/`; manifest records `generic`; **no** assertion about old `.claude/skills/` | FR-008, SC-002 |
 
 ### Validation rules
 

@@ -121,10 +121,11 @@ app (`bookwright.cli:app`) for its registered command names and asserts
 the docs `commands` section documents exactly that set — neither missing
 a shipped command nor documenting a non-existent one. The check compares
 the command inventory (`init`, `check`, `version`, `validate`, `graph
-build`, `graph query`) against the page/section list under `docs/`. The
-introspection MUST descend into registered sub-`Typer` groups so the
-inventory contains leaf paths (`graph build`, `graph query`), not the bare
-`graph` group, otherwise the comparison reports false drift.
+build`, `graph query`, `integration use`) against the page/section list
+under `docs/`. The introspection MUST descend into registered sub-`Typer`
+groups so the inventory contains leaf paths (`graph build`, `graph query`,
+`integration use`), not the bare `graph` / `integration` groups, otherwise
+the comparison reports false drift.
 
 **Rationale**: FR-015 requires documented command names/flags to match the
 shipped CLI, and the edge case asks that drift "surface rather than

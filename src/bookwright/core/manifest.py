@@ -443,6 +443,34 @@ class Manifest(BaseModel):
             **overrides,
         )
 
+    def set_integration(self, *, key: str, skills_dir: str) -> None:
+        """Update the ``[integration]`` block in place, preserving comments and order.
+
+        Mutates **both** the validated model field and the backing ``tomlkit``
+        document, so a subsequent :meth:`dump` writes the new ``key`` /
+        ``skills_dir`` while every other key, comment, and the block ordering
+        round-trip untouched (FR-020). The ``[integration.options]`` sub-table is
+        left as-is — the two v0 integrations both default to no options, and a
+        future per-integration option migration is an additive concern.
+
+        Requires an instance produced by :meth:`load` or :meth:`build` (i.e. one
+        carrying a ``tomlkit`` document); a bare construction raises ``RuntimeError``,
+        the same contract as :meth:`dump`.
+        """
+
+        document = self._document
+        if document is None:
+            raise RuntimeError(
+                "Manifest.set_integration() requires an instance produced by "
+                "Manifest.load() or Manifest.build()."
+            )
+        table = document["integration"]
+        table["key"] = key
+        table["skills_dir"] = skills_dir
+        self.integration = self.integration.model_copy(
+            update={"key": key, "skills_dir": skills_dir}
+        )
+
     def dump(self, path: Path | str, *, overwrite: bool = False) -> Path:
         """Atomically write the manifest to `path`. See contracts/manifest_api.md."""
 

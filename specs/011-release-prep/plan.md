@@ -51,7 +51,11 @@ smoke + a manual `pipx`/`uv tool` packaged-install check (D7).
 (Principle III). This iteration adds `tests/fixtures/`, `tests/e2e/`,
 `docs/`, and `mkdocs.yml`; touches `pyproject.toml` (docs group),
 `.github/workflows/tests.yml` (docs + build gates), and the root metadata
-files. No `src/bookwright/` runtime code changes.
+files. The single `src/bookwright/` change is the corrective swap command
+`integration use` (`commands/integration/use.py` + `Manifest.set_integration`),
+added because FR-008's original `init --here --force` mechanism is forbidden by
+the ratified FR-028 (see spec's 2026-06-03 swap-mechanism correction); `init` and
+its guard are untouched. No other runtime code changes.
 
 **Performance Goals**: Manual packaged-install quickstart completes
 init → edit → build → query → validate in **≤ 5 minutes** for a first-time
@@ -65,7 +69,8 @@ agentskills.io (Principle VII).
 
 **Scale/Scope**: 3 fixtures, 3 E2E test files (+ fixture-validity tests),
 ~7 docs page areas (one page/section per shipped command), 5 metadata files,
-1 CI workflow update. No new CLI command, no new domain model.
+1 CI workflow update. One corrective CLI command (`integration use`), no new
+domain model.
 
 ## Constitution Check
 
@@ -77,7 +82,7 @@ before Phase 0 and re-checked after Phase 1.*
 | I. Plain text as source of truth | ✅ | Fixtures are Markdown/TOML; no committed `graph.ttl` or skills dir — derived cache rebuilt in `tmp_path` (D2). |
 | II. Modern Python stack | ✅ | **No runtime dependency added.** MkDocs/mkdocs-material go in a `docs` dev group, never imported by `src/` at runtime → no amendment (D6). |
 | III. src-layout | ✅ | New work under `tests/` (`fixtures/`, `e2e/`) and `docs/` only; no production code moves. |
-| IV. Modular command surface | ✅ | No new subcommand. Each new test file kept ≤ 500 lines (VR-8). |
+| IV. Modular command surface | ✅ | One new leaf subcommand (`integration use`) in its own ≤500-line module (`commands/integration/use.py`); no monolithic dispatcher. Each new test file kept ≤ 500 lines (VR-8). |
 | V. Plugin-based integrations | ✅ | Swap test exercises the existing `claude`/`generic` registry; no `AGENT_CONFIG`, no new integration. |
 | VI. Agent Skills only | ✅ | Materialization test asserts SKILL.md only; negative assertion that no `*/commands/` dir is written. |
 | VII. agentskills.io compliance | ✅ | `test_skills_materialization.py` reuses the shipped linter `lint_skill_md` — direct enforcement (name `< SKILL_NAME_MAX_LENGTH` & == dir, description `< SKILL_DESCRIPTION_MAX_LENGTH`, valid YAML); no re-encoded bounds. |
@@ -158,11 +163,12 @@ CONTRIBUTING.md          # + new integration / custom validator / vocabulary
 LICENSE                  # Apache-2.0 (present)
 ```
 
-**Structure Decision**: Single project, src-layout (Principle III). All new
-artifacts are tests, docs, or root metadata; `src/bookwright/` is **not
-modified** — this is consolidation, not feature work. Fixtures and E2E tests
-live under `tests/` (Principle III); the docs site is a sibling `docs/` tree
-driven by a root `mkdocs.yml`.
+**Structure Decision**: Single project, src-layout (Principle III). New
+artifacts are tests, docs, root metadata, and the one corrective swap command
+under `src/bookwright/commands/integration/` (plus `Manifest.set_integration`);
+otherwise `src/bookwright/` is unchanged — this is consolidation with a single
+spec-mandated fix. Fixtures and E2E tests live under `tests/` (Principle III);
+the docs site is a sibling `docs/` tree driven by a root `mkdocs.yml`.
 
 ## Complexity Tracking
 

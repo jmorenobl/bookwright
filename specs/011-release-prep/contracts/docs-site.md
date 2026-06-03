@@ -34,7 +34,7 @@ nav:
 | `index.md` | Explains what Bookwright is. |
 | `getting-started.md` | Install + 5-minute quickstart; steps match shipped CLI (FR-015). |
 | `architecture.md` | Curated summary that **links** `bookwright-design.md § N.M`; does **not** duplicate it wholesale (FR-013). |
-| `commands/` | One page **or clearly delineated section per shipped command**: `init`, `check`, `version`, `validate`, `graph build`, `graph query` (FR-012). |
+| `commands/` | One page **or clearly delineated section per shipped command**: `init`, `check`, `version`, `validate`, `graph build`, `graph query`, `integration use` (FR-012). |
 | `validation.md` | The 4 built-in validators + how to add a custom validator. |
 | `extending.md` | New integration / custom validator / vocabulary. |
 | `faq.md` | Common questions. |

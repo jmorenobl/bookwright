@@ -1,0 +1,42 @@
+# Bookwright project manifest — fixture `tiny-essay`.
+#
+# A finished minimal non-fiction essay: no fictional characters, three short
+# chapters, and a bibliography. ALL built-in validators stay active (revised D3):
+# with an empty character roster `character_presence` emits no orphan *errors*,
+# and with no third-person declaration `focalization` is silent — so the essay
+# validates clean (zero error-severity) without disabling anything.
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.1"
+manifest_version = "1"
+uri_base = "https://example.org/tiny-essay/"
+indexer = "rdflib"
+
+[book]
+title = "Notas sobre el mapa y el territorio"
+type = "essay"
+language = "es"
+authors = ["Equipo Bookwright"]
+status = "drafting"
+
+[vocabularies]
+active = []
+
+[validators]
+enabled = []
+disabled = []
+custom = []
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"

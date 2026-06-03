@@ -67,22 +67,27 @@ THEN  it does not raise — i.e. for each skill:
 
 ## C3 — `tests/e2e/test_integration_swap.py` (FR-008)
 
-**Scenario**: claude → generic swap via re-init (spec US2 AS-3; clarified
-2026-06-03).
+**Scenario**: claude → generic swap via the dedicated `integration use` command
+(spec US2 AS-3; swap-mechanism correction 2026-06-03). The original
+`init --here --force` re-init is impossible — iteration-4's FR-028 makes `init`
+refuse to re-initialize an existing project (`.bookwright/` present →
+`already_initialized`, even with `--force`), and `init` never reads the manifest's
+`[integration]`. The swap is therefore its own command.
 
 ```
 GIVEN a tmp_path project `init --integration claude` (skills under .claude/skills/)
-WHEN  edit manifest.toml [integration] → generic
-AND   invoke `init --here --force`
+WHEN  invoke `bookwright integration use generic`
 THEN  exit 0
 AND   skills are correctly materialized under .agents/skills/ (valid SKILL.md set)
+AND   the manifest's [integration] block now records `generic` / `.agents/skills`
 AND   the test makes NO assertion about removal of the old .claude/skills/ dir
 ```
 
 **Assertions**:
-- Positive: `.agents/skills/<name>/SKILL.md` set exists and is valid.
+- Positive: `.agents/skills/<name>/SKILL.md` set exists and passes the shipped
+  linter (`lint_skill_md`); the manifest reflects the new integration.
 - Explicitly **does not** assert `.claude/skills/` is gone (no cleanup
-  behavior added this iteration — spec Assumptions / edge case).
+  behavior — spec Assumptions / residue policy).
 
 ---
 
