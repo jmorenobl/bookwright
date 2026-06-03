@@ -120,8 +120,11 @@ The rendered, navigable set of pages generated from `docs/` by MkDocs
 - **VR-10**: `mkdocs build --strict` completes with **zero warnings**
   (FR-014, SC-004) — `strict: true` in `mkdocs.yml` (D5).
 - **VR-11**: The documented command set **equals** the registered Typer
-  command set (`init`, `check`, `version`, `validate`, `graph build`,
-  `graph query`) — enforced by the D4 drift test (FR-015).
+  leaf set (`init`, `check`, `version`, `validate`, `graph build`,
+  `graph query`, `integration use` — descending into both the `graph` and
+  `integration` sub-`Typer` groups) — enforced by the D4 drift test (FR-015).
+  `integration use` is the corrective swap command added this iteration
+  (2026-06-03 swap-mechanism correction; FR-008, FR-012).
 - **VR-12**: The architecture page **links** the design doc rather than
   copying it (FR-013).
 
