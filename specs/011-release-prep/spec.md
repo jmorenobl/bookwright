@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-03
 
-**Status**: Draft
+**Status**: Completed
 
 **Input**: User description: "Bookwright v0.1 está cerca de listo. Antes del primer release necesitamos fixtures realistas para tests E2E, un sitio de documentación navegable, y un changelog que registre qué hay en esta versión." (Iteration 12 from `bookwright-implementation-plan.md`; references `bookwright-design.md` § 15.4 (M3) and § 15.5 (post-v0))
 
