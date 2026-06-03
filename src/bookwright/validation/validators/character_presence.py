@@ -76,6 +76,7 @@ _STOP_WORDS = frozenset(
         "february",
         "march",
         "april",
+        "may",
         "june",
         "july",
         "august",
