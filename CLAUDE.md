@@ -164,5 +164,5 @@ Cursor/Codex-specific) and the `bookwright integrate` command; extension system
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[specs/011-release-prep/plan.md](specs/011-release-prep/plan.md)
+[specs/012-research-provenance-model/plan.md](specs/012-research-provenance-model/plan.md)
 <!-- SPECKIT END -->
