@@ -1,261 +1,229 @@
 ---
-description: "Task list for the Validation System feature (iteration 11)"
+description: "Task list for the validation system feature"
 ---
 
 # Tasks: Validation System
 
 **Input**: Design documents from `/specs/010-validation-system/`
 
-**Prerequisites**: plan.md ✓, spec.md ✓, research.md ✓ (D1–D11), data-model.md ✓,
-contracts/ ✓ (`validator-protocol.md`, `cli-validate.md`), quickstart.md ✓
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/validator-protocol.md, contracts/cli-validate.md, quickstart.md
 
-**Tests**: REQUIRED. Constitution Principle VIII mandates ≥80 % coverage and test
-discipline; the plan's Testing section pins one violation + one clean fixture per
-validator and integration tests for the command. Test tasks are therefore included.
+**Tests**: REQUIRED. The spec's Success Criteria (SC-001..008), the plan's Testing
+section, and Constitution Principle VIII (≥80% coverage, non-negotiable) all mandate
+tests. Each validator gets a violation fixture + a clean fixture; the command gets
+integration tests for `--json` / `--scope` / `--severity` / exit-code gating.
 
-**Organization**: Tasks are grouped by user story. Foundational phase builds the
-shared engine (base types, context, queries, runner, report, registry) and the
-deliberate indexer-gap closure (research D1/D11); the three user stories layer the
-validators, the command surface, and the configuration/extension behaviour on top.
+**Organization**: Tasks are grouped by user story (US1 P1 → US2 P2 → US3 P3) for
+independent implementation and testing. The subsystem is one cohesive engine, so
+US2/US3 extend files US1 created (incremental delivery), but each story stays
+independently testable through the `bookwright validate` command.
 
 ## Format: `[ID] [P?] [Story] Description`
 
-- **[P]**: Can run in parallel (different files, no dependency on incomplete tasks)
-- **[Story]**: US1 / US2 / US3 (omitted for Setup, Foundational, Polish)
-- All paths are repository-relative (single project, src-layout — Constitution III)
+- **[P]**: Can run in parallel (different files, no dependencies on incomplete tasks)
+- **[Story]**: US1 / US2 / US3 (Setup, Foundational, Polish carry no story label)
+- Exact file paths are given in every task
 
 ## Path Conventions
 
-- Production code: `src/bookwright/…`
-- Tests: `tests/…` at repository root
-- Custom validators (runtime, user-authored): `<project>/.bookwright/validators/*.py`
+Single project, src-layout (Constitution III): production code under
+`src/bookwright/`, tests under `tests/` at the repo root.
 
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Create the package skeleton so every later task has a home.
+**Purpose**: Create the package skeleton so subsequent modules import cleanly.
 
-- [ ] T001 Create the `validation` package skeleton: empty `src/bookwright/validation/__init__.py`, `src/bookwright/validation/validators/__init__.py`, and `tests/validation/__init__.py` (placeholders, filled in later phases)
+- [ ] T001 Create the validation package + test skeleton: `src/bookwright/validation/__init__.py` (placeholder), `src/bookwright/validation/validators/__init__.py`, `tests/validation/__init__.py`, and an empty `tests/validation/conftest.py` stub, per plan.md Project Structure.
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: The shared engine and the indexer-gap closure. **No user story can
-begin until this phase completes** — every validator and the command depend on the
-base types, context, runner, report, and registry, and `temporal` depends on the
-graph signals emitted by the closure.
+**Purpose**: Core types, namespaces, graph helpers, discovery, and the runner that
+EVERY user story depends on.
 
-**⚠️ CRITICAL**: Blocks all of US1/US2/US3.
+**⚠️ CRITICAL**: No user-story work can begin until this phase is complete.
 
-### Core types and context (`base.py`)
+- [ ] T002 Implement core finding types in `src/bookwright/validation/base.py`: `Severity` str-Enum with `_RANK` + `at_least()` (error>warning>info), frozen `Violation` (validator/severity/message/source/triples) with `source_file()`/`source_line()`/`to_json()`, frozen `ValidatorError` (validator/message/phase), the `@runtime_checkable` `Validator` Protocol (name, severity_default, `validate(project, indexer)`), and `UnknownValidatorError(names)` with `to_json()` — per data-model.md and contracts/validator-protocol.md.
+- [ ] T003 Implement `ValidationContext` in `src/bookwright/validation/base.py` (depends on T002): `root` + `manifest` with lazily-cached accessors `bible()`, `character_names()`, `setting_names()`, `manuscript_files()` (glob `**/*.md` under manuscript dir, sorted, skip unreadable), `constitution_text()`; paths from `manifest.paths`, `uri_base` from `manifest.bookwright` — per data-model.md.
+- [ ] T004 [P] Extend `src/bookwright/golem/namespaces.py`: add `TR` and `CSM` namespaces and the frozen constants `DURATION`, `TEMPORAL_LOCATION`, `FOLLOWS`, `PRECEDES`, `TEMPORALLY_OVERLAPS`, `TEMPORALLY_INCLUDES`, `TEMPORALLY_INCLUDED_IN`, plus `"TimeInterval": DLP["time-interval"]` in `CLASS_IRI`; verify every added term is in `frozen_terms()` (D11). Do NOT add `crm:P4_has_time-span` or CIDOC P82a/P82b/P81/P79/P80.
+- [ ] T005 [P] Implement `src/bookwright/validation/queries.py` (depends on T002, T004): frozen `EventInterval(uri, begin, end)`, `load_intervals(indexer)` (gYear reachable via `(CSM:duration|TR:temporal-location)/TR:temporal-location/{boundary}` typed by `crm:P2_has_type` begin/end, then `(P90_has_value | P43_has_dimension/P90_has_value)`), `load_relations(indexer)` (the five `TR:*` edge sets keyed by localname), and `resolve_source(indexer, uri)` reading the CIDOC provenance edge (D6) → `relpath[:line]|None`.
+- [ ] T006 Implement discovery in `src/bookwright/validation/registry.py` (depends on T002): `discover_validators(custom_dir)` → `(builtins, customs, list[ValidatorError])` — built-ins via `pkgutil.iter_modules` over `bookwright.validation.validators` collecting protocol-conforming instances (sorted, D8); customs via `importlib.util.spec_from_file_location` over sorted `*.py` under `<root>/.bookwright/validators/`, with import failure / no-conforming-object / duplicate-name surfaced as `ValidatorError(phase="load")` and skipped (FR-004/005, contract). A custom whose `name` collides with a built-in is skipped as `ValidatorError(load)` ("collides with a built-in; rename it") — **built-in wins, never silently shadowed** — so the returned built-in / custom dicts are disjoint by name (D2).
+- [ ] T007 Implement `src/bookwright/validation/runner.py` (depends on T002, T003): `run_validators(active, project, indexer)` runs each validator under per-validator try/except isolation (FR-014, D9), collecting `list[Violation]` and `list[ValidatorError](phase="run")`; deduplicate identical `Violation` values and return the list sorted by the explicit total-order key `(validator, severity-rank descending, source or "", message, triples)` so SC-003 is byte-identical across runs/platforms (D8) — not a bare "stable sort".
+- [ ] T008 [P] Write `tests/validation/test_base.py` (depends on T002, T003): `Severity` ordering + `at_least` threshold, `Violation` shape / `to_json` / `source_file`/`source_line` split, `ValidationContext` cached accessors over a scaffolded project.
 
-- [ ] T002 Implement `Severity` (str Enum: error/warning/info), module-level `_RANK` ordinal, and `Severity.at_least(threshold)` in `src/bookwright/validation/base.py` (data-model.md "Severity"; FR-010 threshold, FR-013 gate)
-- [ ] T003 Implement the frozen `Violation` dataclass (validator, severity, message, source, triples) with `source_file()` / `source_line()` helpers and `to_json()` in `src/bookwright/validation/base.py` (data-model.md "Violation"; FR-002/003, SC-004)
-- [ ] T004 Implement `ValidatorError` (validator, message, phase=load|run), the `@runtime_checkable` `Validator` Protocol (name, severity_default, `validate(project, indexer)`), and `UnknownValidatorError(names)` with `to_json()` in `src/bookwright/validation/base.py` (data-model.md; contracts/validator-protocol.md; FR-001, FR-007, FR-014)
-- [ ] T005 Implement `ValidationContext` (root, manifest + lazily-cached `bible()`, `character_names()`, `setting_names()`, `manuscript_files()`, `constitution_text()` accessors, sorted/deduped per D8) in `src/bookwright/validation/base.py`, reading paths from `manifest.paths` and `uri_base` from `manifest.bookwright`, defensively skipping unreadable files (data-model.md "ValidationContext")
-- [ ] T006 Re-export `Severity, Violation, ValidatorError, Validator, ValidationContext, UnknownValidatorError, discover_validators, resolve_active, run_validators` from `src/bookwright/validation/__init__.py` (plan Source Code map; supports the quickstart custom-validator import surface)
-
-### Indexer-gap closure (research D1/D11 — extends existing iter-5/6 modules)
-
-- [ ] T007 [P] Add the temporal namespace + predicate constants to `src/bookwright/golem/namespaces.py`: `TR` namespace, `FOLLOWS`, `TEMPORALLY_OVERLAPS`, `TEMPORAL_LOCATION`; add them to `__all__`; confirm each resolves inside `frozen_terms()` (do NOT add `crm:P4_has_time-span` — not frozen, D11)
-- [ ] T008 Extend `NarrativeEvent` in `src/bookwright/golem/modules/event.py` with optional `date: int | None`, `follows`, `overlaps` fields and emit closure-safe triples: `event TR:temporal-location {uri}/time-span`, `{uri}/time-span crm:P90_has_value "<year>"^^xsd:gYear` (reuse `gyear_literal()`/`HAS_VALUE`), and one `TR:follows` / `TR:temporally-overlaps` edge per relation (data-model.md "NarrativeEvent"; depends on T007)
-- [ ] T009 Extend the `timeline.md` mapper in `src/bookwright/io/bible.py` to read optional `date:` / `follows:` / `overlaps:` keys (widen `ITEM_KEYS`), resolve `follows`/`overlaps` event names through the existing slug index, and emit `UnresolvedParticipant`-style soft warnings for unresolved refs (no abort) (data-model.md; D1; depends on T007, T008)
-
-### Engine (`queries.py`, `runner.py`, `report.py`, `registry.py`)
-
-- [ ] T010 [P] Implement `src/bookwright/validation/queries.py`: read-only import of the temporal predicates, `resolve_source(indexer, uri) -> str | None` via the CIDOC provenance edge (`crm:P140_assigned_attribute_to` ← `crm:P16_used_specific_object`, prefer line-bearing, D6), and helpers to read each event's gYear (via `temporal-location → P90_has_value`) and its `follows`/`temporally-overlaps` edges (depends on T002–T004, T007)
-- [ ] T011 [P] Implement `src/bookwright/validation/runner.py`: `run_validators(active, context, indexer)` running each validator under per-validator try/except (raises → `ValidatorError(phase="run")`, never abort — FR-014/D9), then dedupe identical `Violation`s and stable-sort by `(validator, source, message)` (D8) (depends on T002–T004)
-- [ ] T012 [P] Implement `src/bookwright/validation/report.py`: `ScopeFilter(rel, is_dir, matches())` (None → False, D10) and `ValidationReport` (`violations`, `errors`, `ran`; `failed` gate = any pre-filter error-severity violation; `reported(scope, severity)` = scope then severity threshold; `to_json(scope, severity)`; `render(console, scope, severity)` grouped by validator) (data-model.md "ValidationReport"/"ScopeFilter"; FR-009/010/012/013, SC-004; depends on T002–T004)
-- [ ] T013 [P] Implement `src/bookwright/validation/registry.py`: `discover_validators(custom_dir)` (built-ins via `pkgutil.iter_modules` over `validation.validators`; customs via `importlib.util.spec_from_file_location` over sorted `*.py`; duplicate-name and malformed/non-conforming files → attributed `ValidatorError(phase="load")`, skipped — D2/D9, SC-007) and `resolve_active(builtins, customs, cfg)` implementing the D7 config algorithm, sorted by name (D8), raising `UnknownValidatorError` for any referenced name ∉ discovered set (FR-004/005/006/007; depends on T002–T004)
-
-### Foundational unit tests
-
-- [ ] T014 [P] Unit-test Severity ordering/`at_least`, `Violation` shape + `to_json` + dedupe hashability, and `ValidationContext` accessors in `tests/validation/test_base.py` (depends on T002–T005)
-- [ ] T015 [P] Extend `tests/golem/test_namespaces.py` to assert `FOLLOWS`, `TEMPORALLY_OVERLAPS`, `TEMPORAL_LOCATION` ∈ `frozen_terms()` (D11; depends on T007)
-- [ ] T016 [P] Extend `tests/golem/test_triples.py` to assert a dated `NarrativeEvent` emits `temporal-location`/time-span/`gYear` and one `follows`/`temporally-overlaps` edge per relation (depends on T008)
-- [ ] T017 [P] Extend `tests/io/test_bible.py` to cover `timeline.md` `date:`/`follows:`/`overlaps:` mapping and the unresolved-ref soft warning (depends on T009)
-
-**Checkpoint**: Engine + closure complete and unit-tested. User stories can begin.
+**Checkpoint**: Engine primitives ready — user stories can begin.
 
 ---
 
-## Phase 3: User Story 1 — Detect internal inconsistencies on demand (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Detect internal inconsistencies on demand (Priority: P1) 🎯 MVP
 
-**Goal**: A writer runs one command and gets a clear, grouped, human-readable report
-naming every inconsistency (location, rule, why); a clean project reports none.
+**Goal**: A single `bookwright validate` runs the four built-in validators and prints
+a grouped, human-readable report naming each inconsistency (location, rule, why); a
+clean project reports none. Exit 0/1 gates on error-severity findings.
 
 **Independent Test**: On a project with one deliberately injected inconsistency of
-each of the four kinds, `bookwright validate` (default human mode) reports all four
-with correct locations and explanations; a clean project prints "no violations
-found" and exits 0 (spec US1; SC-001/SC-002).
+each kind, the human report names each with its location, rule, and explanation
+(SC-001); a fully consistent project reports zero and exits 0 (SC-002).
 
-### The four built-in validators
+### Indexer-gap closure (gives `temporal` real graph data — D1/D11/D12)
 
-- [ ] T018 [P] [US1] Implement `temporal` (severity_default=error) in `src/bookwright/validation/validators/temporal.py`: pure graph consumer using `queries.py` — flag an event whose declared year is earlier than an event it is asserted to `follows`, and cycles in `follows`; attach source via `resolve_source` (FR-015; D11; contract table)
-- [ ] T019 [P] [US1] Implement `character_presence` (severity_default=error) in `src/bookwright/validation/validators/character_presence.py`: word-boundary regex per bible roster name over manuscript prose; orphan bible entry → **error**, unknown proper-noun mention (non-sentence-initial, stop-set excluded) → **warning**; dedupe per candidate (FR-016; D3)
-- [ ] T020 [P] [US1] Implement `setting_continuity` (severity_default=warning) in `src/bookwright/validation/validators/setting_continuity.py`: built-in ES+EN contradiction lexicon (antonym frozensets); same setting tagged with ≥2 terms from one group across different files → one warning per pair citing both `file:line` (FR-017; D4)
-- [ ] T021 [P] [US1] Implement `focalization` (severity_default=warning) in `src/bookwright/validation/validators/focalization.py`: parse constitution "Voz narrativa" line for declared person + optional focal bible character; flag first-person pronouns outside quoted dialogue under declared third person, and interiority verbs attached to a non-focal character under third-limited (FR-018; D5)
+- [ ] T009 [US1] Extend `NarrativeEvent` in `src/bookwright/golem/modules/event.py` (depends on T004): add optional `begin`/`end` int years and the five relation refs (`follows`/`precedes`/`overlaps`/`includes`/`included_in`) as multi `cross_refs` (one frozen `TR:*` predicate each), plus a custom `to_triples()` emitting the closure-safe typed-boundary interval (`CSM:duration` → `dlp:time-interval`; each present boundary self-labelled via `crm:P2_has_type` begin/end and carrying one `xsd:gYear` through the existing `Dimension`/`gyear_literal()` pattern). Open intervals emit only the known boundary.
+- [ ] T010 [US1] Extend the timeline mapper in `src/bookwright/io/bible.py` (depends on T009): read optional `begin:`/`end:`/`date:` and the five relation keys from each `events:` item; coerce years via `_coerce_year`; enforce `date` ↔ `begin`/`end` mutual exclusivity (both → soft warning, `date` ignored); resolve relation lists through the existing `slug_index` (unresolved name → `UnresolvedParticipant`-style soft warning, no abort); add the new keys to `ITEM_KEYS`.
 
-### The command
+### Built-in validators
 
-- [ ] T022 [US1] Implement `bookwright validate` (default human mode) in `src/bookwright/commands/validate.py`: locate project root, load manifest, resolve indexer + load `paths.graph` (empty engine if absent — "no graph" edge case), discover built-ins + `resolve_active`, build `ValidationContext`, `run_validators`, `report.render(...)` to stdout, exit via the `failed` gate (0/1) (FR-008/012; cli-validate.md Behaviour; depends on T010–T013, T018–T021)
-- [ ] T023 [US1] Register the command in `src/bookwright/cli.py` via `app.command("validate")(validate.run)` (cli-validate.md; depends on T022)
+- [ ] T011 [P] [US1] Implement `src/bookwright/validation/validators/temporal.py` (depends on T005): pure graph consumer reading `load_intervals` + `load_relations`, emitting one `error` `Violation` per FR-015 contradiction — (a) `follows`/`precedes` cycle, (b) pair both strictly ordered and `temporally-overlaps`, (c) containment conflicting with strict order, (d) numeric begin/end contradicting a declared relation — with `triples` carrying the implicated edges and `source` via `resolve_source` or `None`; deduped, never consults document order (D12).
+- [ ] T012 [P] [US1] Implement `src/bookwright/validation/validators/character_presence.py` (depends on T002, T003): roster from `project.character_names()`; word-boundary regex per name over `project.manuscript_files()`. Bible name never matched → orphan finding at **error**; conservative proper-noun candidate (pinned heuristic, D3: `\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,}\b`, non-sentence-initial, not in the stop-set, no roster slug-match) → unknown-mention at **warning** (D3, FR-016). **Collapse unknown-mentions per distinct name** — one finding per name citing the first occurrence, not one per mention (edge case "not multiplied per mention"). `severity_default = error`.
+- [ ] T013 [P] [US1] Implement `src/bookwright/validation/validators/setting_continuity.py` (depends on T002, T003): per `project.setting_names()`, scan manuscript for a descriptor from a small built-in contradiction lexicon (antonym groups, e.g. coastal/inland); same setting tagged with two terms from one group across different files → `warning` citing both `file:line` (D4, FR-017). `severity_default = warning`.
+- [ ] T014 [P] [US1] Implement `src/bookwright/validation/validators/focalization.py` (depends on T002, T003): parse the constitution declaration line under **either** label (case-insensitive) — Spanish "Voz narrativa" or English "Narrative voice" — for declared person + focal character; flag first-person pronouns outside dialogue when third-person declared, and interiority verbs on a non-focal bible character (head-hopping) under third-person-limited; no parsable declaration → zero findings (D5, FR-018, edge case). `severity_default = warning`.
 
-### US1 tests
+### Report, command wiring, package exports
 
-- [ ] T024 [US1] Add project scaffolds + per-validator violation/clean fixtures (including a `timeline.md` with `date:`/`follows:` driving a real `graph build` for `temporal`) in `tests/validation/conftest.py` (plan Testing; D1 end-to-end; depends on T018–T021)
-- [ ] T025 [P] [US1] Test `temporal` end-to-end (timeline.md → graph build → validate): injected earlier-follows-later + `follows` cycle, plus clean fixture, in `tests/validation/test_temporal.py` (SC-001/003; depends on T018, T024)
-- [ ] T026 [P] [US1] Test `character_presence`: orphan→error + unknown-mention→warning + clean, in `tests/validation/test_character_presence.py` (SC-001; depends on T019, T024)
-- [ ] T027 [P] [US1] Test `setting_continuity`: coastal/inland contradiction across files + clean, in `tests/validation/test_setting_continuity.py` (SC-001; depends on T020, T024)
-- [ ] T028 [P] [US1] Test `focalization`: head-hopping / person-mismatch + clean, in `tests/validation/test_focalization.py` (SC-001; depends on T021, T024)
-- [ ] T029 [US1] Integration test: full human report names all four injected findings with locations; clean project → "no violations" + exit 0; one raising validator is surfaced as an error without aborting the run (FR-014 edge case), in `tests/validation/test_command.py` (SC-001/002; depends on T022, T024)
+- [ ] T015 [US1] Implement `src/bookwright/validation/report.py` ValidationReport (depends on T002): `violations`/`errors`/`ran`, the `failed` gate property (any `severity == error`, pre-filter, FR-013), and `render(console)` grouping findings by validator for a human reader (FR-012). (Filters + JSON land in US2.)
+- [ ] T016 [US1] Fill `src/bookwright/validation/__init__.py` re-exports (depends on T002, T006, T007): `Severity`, `Violation`, `ValidatorError`, `Validator`, `ValidationContext`, `discover_validators`, `run_validators` (the quickstart imports `from bookwright.validation import Severity, Violation`).
+- [ ] T017 [US1] Implement `src/bookwright/commands/validate.py` (depends on T006, T007, T015, T016): locate project root, load `manifest.toml`, resolve the indexer from `manifest.bookwright.indexer` loading `manifest.paths.graph` if present else an empty indexer (no-graph edge → zero graph findings), `discover_validators`, run all discovered built-ins via the runner, render the human report to stdout with progress on stderr, exit 0/1 per the gate. (Config resolution → US3; flags → US2.)
+- [ ] T018 [US1] Register the command in `src/bookwright/cli.py` via `app.command("validate")(validate.run)` (depends on T017).
 
-**Checkpoint**: MVP. A writer can run validation and act on a real, deterministic
-human report. Independently testable end-to-end.
+### Tests for User Story 1
 
----
+- [ ] T019 [P] [US1] Build `tests/validation/conftest.py` (depends on T003): project-scaffold builder + per-validator violation and clean fixtures (timeline with a temporal contradiction, manuscript mention with no bible entry, orphan bible entry, coastal/inland setting, head-hopping prose, plus a fully clean project).
+- [ ] T020 [P] [US1] Write `tests/validation/test_temporal.py` (depends on T011, T010): FR-015 rules a–d **each pinned to SC-009** (one fixture per rule → exactly one `error` finding carrying the implicated relation edge(s) in `triples`; a clean timeline → zero temporal findings), an open (begin-only/end-only) interval, and end-to-end (write `bible/timeline.md` → build graph → validate reports the contradiction with source location).
+- [ ] T021 [P] [US1] Write `tests/validation/test_character_presence.py` (depends on T012): orphan-in-bible → error, unknown manuscript mention → warning, clean project → none; **an unknown name appearing on several lines yields exactly one warning citing the first occurrence** (dedup-per-name, "not multiplied per mention" edge case).
+- [ ] T022 [P] [US1] Write `tests/validation/test_setting_continuity.py` (depends on T013): coastal/inland contradiction → warning citing both locations; consistent setting → none.
+- [ ] T023 [P] [US1] Write `tests/validation/test_focalization.py` (depends on T014): head-hopping / first-person-in-third-person → warning; no parsable "Voz narrativa" → zero findings (edge case).
+- [ ] T024 [P] [US1] Write `tests/validation/test_runner.py` (depends on T007, T011-T014): per-validator isolation — a raising validator yields a `ValidatorError` while others still produce findings (FR-014); dedup of identical violations (D13.1).
+- [ ] T025 [P] [US1] Extend `tests/golem/test_triples.py` (depends on T009): a `NarrativeEvent` with begin/end + a `follows` ref emits the typed-boundary interval (gYear via Dimension) and the frozen `TR:follows` edge.
+- [ ] T026 [P] [US1] Extend `tests/golem/test_namespaces.py` (depends on T004): `FOLLOWS`, `TEMPORALLY_OVERLAPS`, `TEMPORAL_LOCATION`, `DURATION`, and `TimeInterval` are all in `frozen_terms()`.
+- [ ] T027 [P] [US1] Extend `tests/io/test_bible.py` (depends on T010): timeline `begin`/`end`/`date` + the five relation keys map correctly; `date` + `begin`/`end` together warns; an unresolved relation name produces a soft warning.
+- [ ] T028 [US1] Write `tests/validation/test_command.py` baseline (depends on T017, T018): a project with one injected inconsistency **per built-in validator** (temporal, character_presence, setting_continuity, focalization) → human report names each with validator/rule/why and a location **or** the implicated events, and exits 1 (SC-001); a **location-less** finding (a `follows` cycle) still renders its rule and implicated events (FR-003/FR-012); a clean project → "no violations found" and exit 0 (SC-002).
 
-## Phase 4: User Story 2 — Machine-readable results for CI and editors (Priority: P2)
-
-**Goal**: Structured output plus scope/severity narrowing and a CI-gating exit code.
-
-**Independent Test**: With mixed-severity findings, `--json` emits a single parseable
-document (one entry per reported violation, no prose on stdout); `--scope FILE`
-limits reported findings to that file; `--severity error` excludes warnings/info;
-an error-severity run exits 1, a warning-only run exits 0 (spec US2; SC-004/005/006).
-
-### Implementation
-
-- [ ] T030 [US2] Extend `src/bookwright/commands/validate.py` with `--json`, `--scope PATH`, `--severity LEVEL` options: route prose to stderr and one JSON doc to stdout under `--json` (Principle IX), build/validate the `ScopeFilter` (non-existent/outside-project scope → `empty_scope`, exit 2 — D10), pass scope+severity to `report.to_json`/`render`, and keep the exit gate computed from the **unfiltered** set (FR-009/010/011/013; cli-validate.md envelopes; depends on T022)
-
-### US2 tests
-
-- [ ] T031 [P] [US2] Unit-test `ValidationReport` scope filtering (location-less omitted under scope), severity threshold, and the pre-filter `failed` gate in `tests/validation/test_report.py` (FR-013, SC-005; depends on T012)
-- [ ] T032 [US2] Extend `tests/validation/test_command.py`: `--json` single-document/stderr-purity contract, `--scope` file+dir narrowing, `--severity` threshold, exit-code matrix (0/1), byte-identical re-run ordering, and `empty_scope` exit 2 (SC-003/004/005/006; depends on T030)
-
-**Checkpoint**: US1 + US2 work. Results are CI- and editor-consumable.
+**Checkpoint**: `bookwright validate` delivers the core human-readable coherence report — MVP complete and independently demoable.
 
 ---
 
-## Phase 5: User Story 3 — Configure and extend which validators run (Priority: P3)
+## Phase 4: User Story 2 - Machine-readable results for CI and editors (Priority: P2)
 
-**Goal**: Manifest `[validators]` selection (enabled/disabled/custom) and drop-in
-custom validators discovered from `.bookwright/validators/`.
+**Goal**: `--json` emits a single structured document on stdout (prose on stderr);
+`--scope` and `--severity` narrow the displayed report; the exit code gates on the
+unfiltered error set so a filter can never hide an error from CI.
 
-**Independent Test**: Disabling a built-in in the manifest removes its findings;
-dropping a custom validator file into the project's validators folder makes its
-findings appear; naming a non-existent validator exits 2; a malformed custom file is
-skipped with an attributed message and does not crash the run (spec US3; SC-007/008).
+**Independent Test**: `--json` on a mixed-severity project → one parseable document,
+one entry per reported violation, nothing else on stdout (SC-004); `--scope file`
+reduces findings to that file (SC-005); `--severity error` excludes warnings/info;
+an error-severity run signals failure regardless of filters (SC-006).
 
-### Implementation
+### Implementation for User Story 2
 
-- [ ] T033 [US3] Wire configuration + extension into `src/bookwright/commands/validate.py`: pass `manifest.validators` and the `<root>/.bookwright/validators/` custom dir through `discover_validators` + `resolve_active`, surface `discover_validators` load errors in the report's `errors[]`, and map `UnknownValidatorError` to the `unknown_validator` exit-2 envelope (FR-005/006/007; cli-validate.md error envelope; depends on T022, T013)
+- [ ] T029 [US2] Extend `src/bookwright/validation/report.py` (depends on T015): frozen `ScopeFilter(rel, is_dir, matches)` (False for `source=None` — location-less omitted under scope, FR-009), `reported(*, scope, severity)` applying scope then the `Severity.at_least` threshold (FR-010), and `to_json(*, scope, severity)` emitting the `status`/`failed`/`violations`/`errors`/`summary` shape (total vs reported, `by_severity` over the unfiltered set, **always emitting all three severity keys — 0 when absent — for a shape-stable document**) per data-model.md / contracts/cli-validate.md.
+- [ ] T030 [US2] Extend `src/bookwright/commands/validate.py` (depends on T017, T029): add `--scope`/`--severity`/`--json` options; resolve `--scope` under the root (non-existent / outside project → `empty_scope`, exit 2, D10); under `--json` emit exactly one JSON document on stdout with all prose on stderr (Principle IX); add the exit-2 JSON/human error envelopes (`no_project`, `invalid_manifest`, `empty_scope`); keep the gate computed from the unfiltered set (FR-013).
+- [ ] T031 [P] [US2] Write `tests/validation/test_report.py` (depends on T029): scope filtering (incl. location-less omission), severity threshold ordering, composed `--scope` ∧ `--severity` intersection with the gate unaffected (D13.3), and `to_json` summary counts.
+- [ ] T032 [US2] Extend `tests/validation/test_command.py` (depends on T030): `--json` is a single parseable document with prose on stderr (SC-004); `--scope` and `--severity` narrow the report; exit 1 on any unfiltered error even when filtered out (SC-006); no-`graph.ttl` project → exit 0 / zero graph findings (D13.2); FR-020 — a full run (human and `--json`) leaves the project tree byte-identical (D13.4); a re-run yields byte-identical `violations[]` ordering (SC-003); a `--scope` that is absent or outside the project → exit 2 `empty_scope`, **while a valid in-project scope with no violations → exit 0 with an empty report** (the two branches MUST be distinguished, D10).
 
-### US3 tests
+**Checkpoint**: Results are CI- and editor-consumable; US1 and US2 both work independently.
 
-- [ ] T034 [US3] Extend `tests/validation/conftest.py` with a working custom-validator fixture and a malformed/non-conforming custom-file fixture under `.bookwright/validators/` (SC-007; depends on T024)
-- [ ] T035 [P] [US3] Unit-test `discover_validators` + `resolve_active`: built-in discovery, empty-enabled=all, enabled intersect, disabled subtract, custom allow-list, unknown-name → `UnknownValidatorError`, duplicate-name + malformed-skip load errors, in `tests/validation/test_registry.py` (FR-004/005/006/007, SC-007; depends on T013, T034)
-- [ ] T036 [US3] Extend `tests/validation/test_command.py`: disabling a built-in removes its findings, a custom validator's findings appear, an unknown enabled name exits 2, a malformed custom is reported under `errors` without crashing (SC-007/008; depends on T033, T034)
+---
 
-**Checkpoint**: All three user stories independently functional.
+## Phase 5: User Story 3 - Configure and extend which validators run (Priority: P3)
+
+**Goal**: `[validators]` in the manifest (enabled/disabled/custom) governs the active
+set, and custom `.py` validators dropped in `.bookwright/validators/` run alongside
+built-ins; an unknown configured name is a clear exit-2 error.
+
+**Independent Test**: Disabling a built-in removes its findings (SC-008); a custom
+validator file is discovered, run, and reported (SC-007); a malformed custom file is
+skipped with an attributed message and does not crash; an enabled name that does not
+exist → exit 2 (FR-007).
+
+### Implementation for User Story 3
+
+- [ ] T033 [US3] Implement `resolve_active(builtins, customs, cfg)` in `src/bookwright/validation/registry.py` (depends on T006): apply the D7 algorithm — `custom` non-empty allow-lists customs; `candidates = builtins ∪ customs` minus `disabled`; non-empty `enabled` intersects; any `enabled`/`disabled`/`custom` name absent from `builtins ∪ customs` raises `UnknownValidatorError`; return the active list sorted by `name` (FR-006/007, D8).
+- [ ] T034 [US3] Wire config into `src/bookwright/commands/validate.py` (depends on T030, T033): call `resolve_active` with `manifest.validators` so the run honors `[validators]`; surface `UnknownValidatorError` as the `unknown_validator` exit-2 envelope (JSON + human); custom load failures appear in the report's `errors[]` without aborting.
+- [ ] T035 [P] [US3] Write `tests/validation/test_registry.py` (depends on T033, T006): built-in auto-discovery; empty `enabled` = all built-ins; non-empty `enabled` intersects; `disabled` subtracts; `custom` allow-list; unknown name → `UnknownValidatorError`; malformed custom file → `ValidatorError(load)` skip; a custom validator named like a built-in → skipped with an attributed load error while the built-in still runs (cross-tier collision, built-in wins); a conforming custom file is discovered and returned.
+- [ ] T036 [US3] Extend `tests/validation/test_command.py` (depends on T034): disabling a built-in removes its findings (SC-008); a dropped-in custom validator's findings appear (SC-007); a malformed custom file → attributed `errors[]` entry, no crash; an unknown configured name → exit 2 with the `unknown_validator` envelope.
+
+**Checkpoint**: All three stories independently functional; the subsystem is configurable and extensible.
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-**Purpose**: Determinism, gates, and docs across the whole feature.
+**Purpose**: Quality gates and docs across the whole feature.
 
-- [ ] T037 [P] Walk the quickstart.md scenarios end-to-end (run, `--json`, `--scope`, `--severity`, configure `[validators]`, drop in a custom validator) and reconcile any drift between docs and behaviour
-- [ ] T038 [P] Run `uv run ruff check`, `uv run ruff format --check`, and `uv run mypy --strict src tests`; fix findings (CI gates)
-- [ ] T039 Run `uv run pytest --cov`; confirm ≥80 % coverage (Constitution VIII) and fill any gaps (notably runner isolation and report edge cases)
-- [ ] T040 [P] Verify every new/edited module stays <500 lines (Principle IV) and confirm no new runtime dependency was introduced (Constitution II, plan Technical Context)
+- [ ] T037 [P] Run `uv run ruff check`, `uv run ruff format --check`, and `uv run mypy --strict src tests` over the new `validation/` package, `commands/validate.py`, and the edited `golem`/`io` modules; fix all findings (CI gates, CLAUDE.md).
+- [ ] T038 [P] Confirm ≥80% coverage for `src/bookwright/validation/` (Constitution VIII) via `uv run pytest --cov=bookwright.validation`; add targeted unit tests for any uncovered branch.
+- [ ] T039 Execute quickstart.md end-to-end against a scaffolded project (run a validation, `--json`, `--scope`, `--severity`, configure `[validators]`, drop in the `no_todo` custom validator) and confirm each documented behavior matches.
 
 ---
 
 ## Dependencies & Execution Order
 
-### Phase dependencies
+### Phase Dependencies
 
-- **Setup (P1)**: no dependencies.
-- **Foundational (P2)**: depends on Setup. **Blocks US1/US2/US3.**
-- **US1 (P3)**: depends on Foundational. Delivers the MVP.
-- **US2 (P4)**: depends on Foundational; its command work (T030) extends the US1 command (T022) and its tests extend `test_command.py` — so US2 lands after US1 in practice.
-- **US3 (P5)**: depends on Foundational; T033 extends the US1 command and uses the foundational registry (T013); tests extend `test_command.py`. Lands after US1.
-- **Polish (P6)**: depends on all targeted stories.
+- **Setup (Phase 1)**: no dependencies.
+- **Foundational (Phase 2)**: depends on Setup; BLOCKS all user stories.
+- **User Story 1 (Phase 3)**: depends on Foundational. The MVP.
+- **User Story 2 (Phase 4)**: depends on US1 (extends report.py + validate.py).
+- **User Story 3 (Phase 5)**: depends on US1 (extends registry.py + validate.py); independent of US2.
+- **Polish (Phase 6)**: depends on all desired stories being complete.
 
-### Critical-path notes within Foundational
+### Within Each User Story
 
-- `base.py` tasks T002→T003→T004→T005 are the **same file** — sequential.
-- Closure: T007 → T008 → T009 (namespaces before event before bible mapper).
-- T010–T013 are different files, all depend only on `base.py` (and T010 also on T007) → parallelizable once base + namespaces exist.
+- Indexer-gap (T009→T010) before `temporal` end-to-end tests.
+- Validators (T011-T014) before the runner test (T024) and command test (T028).
+- `report.py`/`__init__.py` before the command; command before its tests.
 
-### Cross-story file contention (intentional, incremental)
+### Parallel Opportunities
 
-`src/bookwright/commands/validate.py` and `tests/validation/test_command.py` and
-`tests/validation/conftest.py` are each touched in more than one story (US1 builds,
-US2/US3 extend). This follows the incremental-delivery model (P1→P2→P3); these files
-are **not** parallel-safe across stories.
+- Foundational: T004 (namespaces), T005 (queries), and T008 (test_base) run in parallel after T002/T003.
+- US1 validators T011-T014 are four parallel files; test files T020-T027 are parallel once their targets exist.
+- US2 T031 (test_report) parallel with command work once T029 lands.
+- US3 T035 (test_registry) parallel once T033 lands.
 
 ---
 
-## Parallel Opportunities
-
-- **Foundational engine** (after T002–T006 land): T010, T011, T012, T013 in parallel (distinct files).
-- **Closure** runs alongside base work: T007 is `[P]` vs the base-file tasks.
-- **Foundational tests**: T014, T015, T016, T017 in parallel.
-- **US1 validators**: T018, T019, T020, T021 in parallel (one file each).
-- **US1 validator tests**: T025, T026, T027, T028 in parallel (after fixtures T024).
-- **Polish**: T037, T038, T040 in parallel.
-
-### Parallel Example — Foundational engine
+## Parallel Example: User Story 1
 
 ```bash
-# After base.py (T002–T006) and namespaces (T007) are in place:
-Task: "Implement validation/queries.py"   # T010
-Task: "Implement validation/runner.py"     # T011
-Task: "Implement validation/report.py"     # T012
-Task: "Implement validation/registry.py"   # T013
-```
+# The four built-in validators are independent files:
+Task: "Implement temporal.py validator (T011)"
+Task: "Implement character_presence.py validator (T012)"
+Task: "Implement setting_continuity.py validator (T013)"
+Task: "Implement focalization.py validator (T014)"
 
-### Parallel Example — US1 validators
-
-```bash
-Task: "Implement validators/temporal.py"            # T018
-Task: "Implement validators/character_presence.py"  # T019
-Task: "Implement validators/setting_continuity.py"  # T020
-Task: "Implement validators/focalization.py"        # T021
+# Then their tests, also parallel:
+Task: "test_temporal.py (T020)"
+Task: "test_character_presence.py (T021)"
+Task: "test_setting_continuity.py (T022)"
+Task: "test_focalization.py (T023)"
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP first (US1 only)
+### MVP First (User Story 1)
 
-1. Phase 1 Setup → Phase 2 Foundational (engine + closure, fully tested).
-2. Phase 3 US1: four validators + `validate` command (human mode) + fixtures + tests.
-3. **STOP and VALIDATE**: run against the seeded violation/clean fixtures (SC-001/002).
+1. Setup (T001) → Foundational (T002-T008).
+2. US1 (T009-T028): indexer-gap closure, four validators, runner, human report, command.
+3. **STOP and VALIDATE**: inject one inconsistency of each kind, run `bookwright validate`, confirm the report (SC-001) and a clean project exits 0 (SC-002).
 
-### Incremental delivery
+### Incremental Delivery
 
-1. Foundational ready (engine + closure green).
-2. US1 → human report MVP → demo.
-3. US2 → `--json`/`--scope`/`--severity` + CI exit gate → demo.
-4. US3 → manifest config + custom validators → demo.
-5. Polish → lint/type/coverage/docs → merge when `/speckit-analyze` is clean.
+1. Foundation ready.
+2. US1 → human coherence report (MVP).
+3. US2 → `--json` / `--scope` / `--severity` + CI gate.
+4. US3 → manifest config + custom validators.
+5. Polish → lint/type/coverage gates + quickstart validation.
 
 ---
 
 ## Notes
 
-- Determinism (FR-019/SC-003) is load-bearing: stable discovery order, `sorted(glob)`
-  for manuscript files, finding sort `(validator, source, message)`, and dedupe — all
-  in Foundational, exercised by the re-run test in T032.
-- The gate (FR-013) is always computed from the **unfiltered** error-severity set; a
-  `--scope`/`--severity` filter can never mask a CI failure.
-- The closure (T007–T009, T015–T017) crosses into iteration-5/6 territory by design
-  (research D1/D11); `/speckit-analyze` must confirm cross-artifact consistency.
-- Commit after each task or logical group. The feature writes nothing to the project
-  (FR-020) beyond what tests scaffold in temp dirs.
+- [P] = different files, no dependency on incomplete tasks.
+- Tests are required (Constitution VIII); write them with each story and confirm they fail before implementing where practical.
+- The subsystem writes nothing (FR-020); a full run must leave the project tree byte-identical (T032).
+- Determinism (FR-019/SC-003): stable sort of discovery, file iteration, and emitted findings; dedup identical violations.
+- Commit after each task or logical group; the `after_tasks` hook will offer a commit when this file lands.

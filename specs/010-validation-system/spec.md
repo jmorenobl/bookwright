@@ -282,14 +282,22 @@ project's validators folder and confirm its findings appear in a normal run.
   mentioned in the manuscript) at **error** so it gates CI, and the heuristic
   **unrecognised-mention** finding (a manuscript name with no bible entry,
   derived from fuzzy name matching) at **warning** — because a false positive
-  from name matching MUST never fail the build.
+  from name matching MUST never fail the build. Each distinct unknown name MUST
+  yield **at most one** unrecognised-mention finding regardless of how many times
+  it appears in the manuscript (per the "duplicate detection" edge case — findings
+  are collapsed per name, not multiplied per mention); the finding cites the first
+  occurrence in document order.
 - **FR-017**: The system MUST provide a **setting_continuity** validator (default
   severity: warning) that detects contradictory descriptions of the same setting
   across different files, citing the conflicting source locations.
 - **FR-018**: The system MUST provide a **focalization** validator (default
   severity: warning) that detects passages violating the narrative
   person/point-of-view declared in the project's constitution, citing the
-  offending source location.
+  offending source location. The declaration MUST be recognised in both project
+  languages — the Spanish "Voz narrativa" and the English "Narrative voice" label
+  (case-insensitive), with person keywords accepted in either
+  (primera/segunda/tercera persona ↔ first/second/third person). An unrecognised or
+  absent declaration yields zero findings (edge case).
 
 #### Boundaries
 
@@ -320,8 +328,12 @@ project's validators folder and confirm its findings appear in a normal run.
 ### Measurable Outcomes
 
 - **SC-001**: On a reference project seeded with one deliberately injected
-  inconsistency of each of the four kinds, a validation run reports all four,
-  each with a correct source location and an explanation of the rule violated.
+  inconsistency for **each of the four built-in validators** (temporal,
+  character_presence, setting_continuity, focalization), a single validation run
+  reports all four findings, each naming the validator, the rule violated, and
+  either a precise source location **or — when the finding is inherently
+  graph-wide — the implicated entities via the finding's graph relationships**, so
+  the author can act on it without reading validator source.
 - **SC-002**: On a fully consistent reference project, a validation run reports
   zero violations and signals success.
 - **SC-003**: Re-running validation on an unchanged project produces identical
@@ -341,6 +353,13 @@ project's validators folder and confirm its findings appear in a normal run.
   crash the run.
 - **SC-008**: Disabling a built-in validator in the manifest removes its findings
   from the report on the next run.
+- **SC-009**: On a reference project seeded with one instance of **each of the
+  four `temporal` contradiction rules** (FR-015 a–d) — a `follows` cycle, an
+  order∧overlap pair, a containment-vs-order conflict, and a numeric begin/end
+  contradiction — a validation run reports exactly four `error`-severity temporal
+  findings, each carrying the implicated relation edge(s) in its graph
+  relationships; a timeline exhibiting none of the four reports zero temporal
+  findings.
 
 ## Assumptions
 

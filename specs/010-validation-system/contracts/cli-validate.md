@@ -23,8 +23,8 @@ hide an error from CI.
 ## Behaviour
 
 1. Locate project root (`find_project_root`); load `manifest.toml`.
-2. Resolve the engine from `manifest.bookwright.indexer`; load
-   `manifest.paths.graph` if it exists, else use an empty engine (no error — "no
+2. Resolve the indexer from `manifest.bookwright.indexer`; load
+   `manifest.paths.graph` if it exists, else use an empty indexer (no error — "no
    graph yet" edge case → zero graph findings).
 3. Discover built-in + custom validators; resolve the active set from
    `[validators]` (validator-protocol.md). Unknown name → exit 2.
@@ -77,7 +77,9 @@ commands). Shape (SC-004 — exactly one entry per **reported** violation):
 - `status`: `"ok"` when the reported list is empty, else `"violations"`.
 - `failed`: the gate (any error-severity violation pre-filter) — drives exit 1.
 - `total`: unfiltered violation count; `reported`: count in `violations[]`.
-- `by_severity`: counts over the **unfiltered** set.
+- `by_severity`: counts over the **unfiltered** set; **always carries all three keys**
+  (`error`, `warning`, `info`), each `0` when absent, so the document shape is
+  invariant for consumers (SC-004, SC-003).
 
 ## JSON / human error envelope (config & usage failures)
 
@@ -97,5 +99,9 @@ Non-`--json` mode writes a single `bookwright: error: <message>` line to stderr.
 - `failed` / exit code reflect the **unfiltered** error-severity count regardless of
   `--scope` / `--severity` (FR-013, SC-006).
 - Re-running on an unchanged project yields a byte-identical JSON `violations[]`
-  ordering (FR-019, SC-003).
+  ordering — guaranteed by the explicit total-order key `(validator, severity desc,
+  source, message, triples)` (FR-019, SC-003, D8).
+- A `--scope` that is absent or outside the project → exit 2 `empty_scope`; a **valid**
+  in-project scope with zero findings → exit 0 with an empty report. The two MUST be
+  distinguished — a clean scope is not an error.
 - A clean project → `status:"ok"`, `failed:false`, exit 0 (SC-002).

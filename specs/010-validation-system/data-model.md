@@ -66,7 +66,7 @@ class Validator(Protocol):
 ```
 
 - Matches design § 13.1. `project` is the `ValidationContext`; `indexer` is the
-  loaded graph engine (an empty engine when no `graph.ttl` exists).
+  loaded graph indexer (an empty indexer when no `graph.ttl` exists).
 - Built-ins are small classes implementing this protocol, instantiated once at
   discovery. `severity_default` is the validator's default; individual violations
   may carry a different severity (FR-001/002). Concretely, `character_presence` has
@@ -120,6 +120,11 @@ class ValidationReport:
 - `failed` ignores `scope`/`severity` (FR-013): the gate is computed from the full
   set.
 - `reported(...)` applies scope then the severity **threshold** (`Severity.at_least`).
+- **Ordering (D8, SC-003).** `violations` is deduped then sorted by the explicit total
+  key `(validator, _RANK[severity] descending, source or "", message, triples)`; the
+  runner produces this order once and `reported(...)` preserves it (filtering removes
+  entries, never reorders). This makes the human report and the JSON `violations[]`
+  byte-identical across runs/platforms.
 - `to_json` shape (Principle IX / SC-004):
 
 ```json
@@ -138,7 +143,10 @@ class ValidationReport:
 
 `status` is `"violations"` iff `reported(...)` is non-empty; `failed` is the gate
 (independent of filters). `total` counts unfiltered violations; `reported` counts
-the filtered list emitted in `violations[]`.
+the filtered list emitted in `violations[]`. `by_severity` **always carries all three
+keys** (`error`, `warning`, `info`), each `0` when absent, so the document shape is
+invariant — a JSON consumer never has to branch on a missing key (SC-004 parseability,
+SC-003 byte-identical).
 
 ## ScopeFilter (`report.py`)
 
@@ -169,6 +177,13 @@ def resolve_active(builtins, customs, cfg: ValidatorsBlock) -> list[Validator]
 ```
 
 Algorithm = research D7. `resolve_active` returns validators sorted by `name` (D8).
+
+**Cross-tier collision (D2, built-in wins).** `discover_validators` drops any custom
+whose `name` collides with a built-in, appending a `ValidatorError(phase="load")`
+("collides with a built-in; rename it") to the load-failures list and keeping the
+built-in. So the returned `builtins` / `customs` dicts are **disjoint by name** and
+`resolve_active` never resolves a shadow — a project `.py` can never silently replace
+an integrated coherence check.
 
 ## UnknownValidatorError (`base.py` or `registry.py`)
 

@@ -84,6 +84,14 @@ Custom: for each sorted `*.py` under `<project>/.bookwright/validators/`,
 objects. Names must be unique within each tier; a duplicate name is a load error
 surfaced (not silently shadowed).
 
+**Cross-tier collision (built-in wins).** A custom validator whose `name` equals a
+built-in's is **not** allowed to override the built-in: the built-in wins, the custom
+is skipped with an attributed `ValidatorError(phase="load")` ("custom validator name
+'<n>' collides with a built-in; rename it"), and the run continues. Silent override
+of an integrated coherence check by project code would erode the determinism
+guarantee (FR-019) and surprise CI, so it is reported, never absorbed. This reuses
+the same non-fatal "skip with attributed message" path as a malformed custom file.
+
 **Rationale.** Package iteration needs no install step and no `pyproject` plumbing,
 is fully deterministic, and keeps the subsystem self-contained — matching the
 design's "se autodescubren en `bookwright.validation`." Custom validators are
@@ -108,7 +116,14 @@ name is multi-token, also its first token as an alias). Two findings:
   and does **not** match any roster name (after slug-normalized comparison) — →
   violation located at `file:line` of the first occurrence. Sentence-initial tokens
   and a small built-in stop-set (e.g. weekday/month/"Capítulo") are excluded to
-  curb false positives.
+  curb false positives. **Pinned heuristic (so the warning is deterministically
+  testable, T021):** a candidate token matches
+  `\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,}\b` (length ≥ 3, accents included), is preceded in the
+  sentence by a non-terminal token (i.e. not the first word after `.`/`!`/`?`/
+  newline), is not in the built-in stop-set, and does not slug-match any roster name;
+  contiguous capitalized tokens (optionally honorific-prefixed) coalesce into one
+  candidate. Intentionally conservative — it may miss or over-report, which is
+  exactly why the finding is a `warning`, never a gate.
 
 **Severity split (robustness, user-approved).** The two directions carry *different*
 severities even though the validator's `severity_default` is `error`:
@@ -121,7 +136,13 @@ severities even though the validator's `severity_default` is `error`:
   spec-compliant: FR-002 allows per-violation severity, and scenario 2 / SC-001 do
   not pin a severity — they require the finding to be *reported*, which it is.
 
-Duplicate mentions of the same candidate collapse to one finding (dedupe, edge case).
+**Collapse per name (edge case "not multiplied per mention").** Each distinct
+unknown candidate name produces **exactly one** unrecognised-mention finding however
+many times it occurs; the cited source is the lowest `relpath:line` (first occurrence
+in deterministic file/line order). This is stronger than identical-`Violation` dedup
+(D8): N mentions of one unknown name on N different lines are N *distinct* findings,
+so the validator MUST collapse them by name before emission — otherwise one
+missing-from-bible name would flood the report.
 
 **Rationale.** This is "simple name matching, not advanced entity recognition"
 (FR-016) and fully deterministic (SC-003). It satisfies scenarios 2 and 3 and the
@@ -159,10 +180,12 @@ scope) and still need a contradiction lexicon to compare against prose.
 ## D5 — `focalization` POV detection
 
 **Decision.** Read `paths.constitution` (default `bible/constitution.md`). Locate
-the "Voz narrativa" line; classify declared **person** by keyword regex
-(primera/segunda/tercera persona; first/second/third person). If exactly one bible
-character name appears on that line, treat it as the **focal** character; otherwise
-no focal character is set. Manuscript signals:
+the declaration line under **either** label (case-insensitive) — the Spanish "Voz
+narrativa" **or** the English "Narrative voice" — so an English-authored constitution
+is not silently ignored (the project is bilingual by constitution). Classify declared
+**person** by keyword regex (primera/segunda/tercera persona; first/second/third
+person). If exactly one bible character name appears on that line, treat it as the
+**focal** character; otherwise no focal character is set. Manuscript signals:
 
 - **Person mismatch.** When third person is declared, flag first-person subject
   pronouns (`I`, `we`, `yo`, `nosotros/as`) that occur **outside** quotation marks
@@ -210,6 +233,10 @@ discovered custom names.
 4. Any name appearing in `enabled`, `disabled`, or `custom` that is **not** in the
    originally discovered `B ∪ C` set → **unknown-validator error** (FR-007).
 
+`B` and `C` are **disjoint by construction**: any custom whose name collides with a
+built-in was dropped at discovery (D2, built-in wins), so `B ∪ C` has no shadowing
+ambiguity and `resolve_active` never has to break a tie.
+
 **Decision (exit codes).** `0` success (no error-severity violation, no config
 error); `1` gate fail (≥1 error-severity violation, computed from the **unfiltered**
 set per FR-013); `2` config/usage error (no project, invalid/missing manifest,
@@ -227,12 +254,18 @@ project-specific validators, so empty=all / non-empty=allow-list mirrors `enable
 
 ## D8 — Determinism
 
-**Decision.** Sort discovery output by validator name; iterate manuscript files via
-`sorted(glob)`; sort findings by `(validator, source, message)` before emission;
-deduplicate byte-identical findings (edge case "duplicate detection"). No use of
-set iteration order, dict insertion order across processes, or wall-clock.
+**Decision.** Sort discovery output by validator (module) name; iterate manuscript
+files via `sorted(glob)` on the posix relpath; deduplicate byte-identical findings
+(edge case "duplicate detection"), **then** sort the surviving findings by the
+explicit **total order key** `(validator, _RANK[severity] descending, source or "",
+message, triples)` before emission. This key is fully specified — not "stable sort"
+left to chance — so `violations[]` is **byte-identical across runs, processes, and
+platforms** (SC-003), independent of `dict` insertion order or filesystem order. No
+use of set iteration order, dict insertion order across processes, or wall-clock.
 
-**Rationale.** SC-003 (identical findings every run). Required for CI stability.
+**Rationale.** SC-003 (identical findings every run) and SC-004 (a parseable,
+shape-stable document) both demand a deterministic, named ordering — a merely
+"stable" sort without a pinned key is platform-fragile. Required for CI stability.
 
 ## D9 — Failure isolation
 
@@ -259,6 +292,13 @@ equals the scope file or is contained in the scope directory. Location-less
 violations are **omitted** under an active scope (clarification). If the scope path
 does not exist or is outside the project, the command reports "scope matched no
 content" and exits 2 (edge case), rather than silently succeeding.
+
+**Two distinct outcomes — do not conflate.** `empty_scope` (exit 2) is *only* for a
+scope path that is **absent or outside the project** (a typo / wrong path — a usage
+error). A scope that **resolves to an existing in-project path** but happens to
+contain no violations is **not** an error: it exits **0** with an empty report. Both
+branches are tested (T032) so a future refactor cannot turn a valid, clean scope into
+a false exit 2.
 
 **Rationale.** FR-009, US2 scenarios 2–3, and the scope edge cases.
 
@@ -370,7 +410,7 @@ source clause so a regression is caught at the responsible seam:
 | # | Behaviour | Spec anchor | Test home | Assertion |
 |---|---|---|---|---|
 | 1 | **Runner deduplicates identical violations** | Edge "Duplicate detection"; FR-019/SC-003; D8 | `tests/validation/test_runner.py` | a validator that returns the *same* `Violation` twice (and two validators that independently surface the byte-identical finding) collapses to exactly **one** entry in `report.violations`; order is stable |
-| 2 | **Project with no `graph.ttl`** | Edge "No graph yet / empty project"; cli-validate behaviour step 2 | `tests/validation/test_command.py` | running in a project that never ran `graph build` exits **0**, reports **zero** graph-sourced (`temporal`) findings, and does **not** error — the engine loads empty, file-based validators still run |
+| 2 | **Project with no `graph.ttl`** | Edge "No graph yet / empty project"; cli-validate behaviour step 2 | `tests/validation/test_command.py` | running in a project that never ran `graph build` exits **0**, reports **zero** graph-sourced (`temporal`) findings, and does **not** error — the indexer loads empty, file-based validators still run |
 | 3 | **Composed `--scope` + `--severity`** | Edge "Conflicting severity filter and scope"; FR-009+FR-010; SC-005 | `tests/validation/test_report.py` (+ one command-level integration) | with both filters active the reported set is exactly the **intersection** (scope ∧ severity-threshold); a violation failing *either* is excluded; the **gate/exit code is unchanged** by either filter (FR-013) |
 | 4 | **FR-020 — a run writes nothing** | FR-020; "Out of Scope" (no auto-fix) | `tests/validation/test_command.py` | snapshot the project tree (set of paths + mtimes/hashes) before a full `validate` run (human **and** `--json`) and assert it is **byte-identical** afterwards — no file created, modified, or deleted anywhere under the project root |
 

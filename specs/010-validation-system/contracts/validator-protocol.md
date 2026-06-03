@@ -53,6 +53,13 @@ but **omitted under an active `--scope`** (location-less has nothing to match).
   does **not** crash the command (edge case; SC-007).
 - Names MUST be unique within a tier; a duplicate is a load error, not a silent
   shadow.
+- A **custom** validator whose `name` collides with a **built-in's** is rejected the
+  same way: the built-in wins, the custom is skipped with an attributed
+  `ValidatorError(phase="load")` ("custom validator name '<n>' collides with a
+  built-in; rename it"), and the run continues. A built-in coherence check is **never**
+  silently shadowed by project code — silent override would erode the determinism
+  guarantee (FR-019). The discovered built-in / custom sets are therefore disjoint by
+  name.
 
 ## Configuration (FR-006 / FR-007)
 
