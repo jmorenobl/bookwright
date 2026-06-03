@@ -34,12 +34,26 @@ Esto genera la estructura de directorios (`bible/`, `outline/`, `manuscript/`),
 el `manifest.toml`, y materializa los *Agent Skills* de Bookwright en
 `.claude/skills/`.
 
-### 2. Edita los documentos canónicos
+### 2. Destila tu idea con las skills
 
-Abre `bible/constitution.md` y declara la voz narrativa; añade fichas de
-personaje bajo `bible/characters/<slug>.md` con *frontmatter* `name`, y registra
-eventos en `bible/timeline.md`. Todo es texto plano: edítalo en tu editor
-favorito.
+Aquí está el corazón de Bookwright: **no rellenas los documentos a mano, invocas
+skills que lo hacen por ti**. Vuelca tu idea en un Markdown libre (`idea.md`) y,
+desde tu agente (Claude Code o compatible con agentskills.io), abre el proyecto e
+invoca las skills en orden, pasándoles tu brief:
+
+```
+/bookwright-constitution lee idea.md y destila la constitución
+/bookwright-bible          ← personajes, settings, cronología, relaciones
+/bookwright-outline        ← arcos y estructura de actos/capítulos
+/bookwright-scenes         ← desglose en escenas concretas
+/bookwright-draft          ← redacta la prosa de una escena
+```
+
+Cada skill lee tu brief y el molde estampado por `init`, rellena lo que el
+material sostiene y marca `[PENDING: ¿…?]` lo que falta —sin inventar canon. Para
+ver qué quedó abierto, invoca `/bookwright-clarify`; para comprobar si un
+artefacto está completo, `/bookwright-checklist`. El recorrido completo, con las
+10 skills, está en [El flujo de autoría](authoring.md).
 
 ### 3. Construye el grafo
 
@@ -68,6 +82,7 @@ advertencias heurísticas (`warning`) son informativas y no bloquean.
 
 ## Siguiente paso
 
-- Conoce cada comando en [Comandos](commands/init.md).
+- Entiende el flujo completo de skills en [El flujo de autoría](authoring.md).
+- Conoce cada comando del CLI en [Comandos](commands/init.md).
 - Entiende los validadores en [Validación](validation.md).
 - Cambia de integración con [`bookwright integration use`](commands/integration-use.md).

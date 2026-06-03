@@ -24,6 +24,34 @@ constitution.
 
 ## Quickstart
 
+Scaffold a project, then distill your idea with the authoring skills — you don't
+fill the canonical documents by hand: each skill reads your brief (e.g.
+`idea.md`) and asks only for what's missing.
+
+```bash
+bookwright init my-novel --integration claude   # scaffolding + Agent Skills
+cd my-novel
+```
+
+Open the project in your agent and run the skills in order:
+
+```
+/bookwright-constitution read idea.md and distill the constitution
+/bookwright-bible        ← characters, settings, timeline
+/bookwright-outline      ← arcs and act/chapter structure
+/bookwright-scenes       ← break chapters into scenes
+/bookwright-draft        ← draft the prose of one scene
+```
+
+Then build and validate from the CLI:
+
+```bash
+bookwright graph build                            # → bible/graph.ttl
+bookwright validate                               # exit 0 when there are no errors
+```
+
+To work on the toolkit itself, sync the project environment:
+
 ```bash
 uv sync
 uv run bookwright --help

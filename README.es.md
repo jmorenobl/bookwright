@@ -73,7 +73,22 @@ uv run bookwright --help
 ```bash
 bookwright init mi-novela --integration claude   # scaffolding + Agent Skills
 cd mi-novela
-# edita bible/constitution.md, bible/characters/<slug>.md, bible/timeline.md
+```
+
+Abre el proyecto en tu agente y destila tu idea con las skills (no editas los
+documentos a mano; las skills leen tu brief y te preguntan lo que falte):
+
+```
+/bookwright-constitution lee idea.md y destila la constitución
+/bookwright-bible        ← personajes, settings, cronología
+/bookwright-outline      ← arcos y estructura
+/bookwright-scenes       ← desglose en escenas
+/bookwright-draft        ← redacta la prosa de una escena
+```
+
+Y construye/valida desde el CLI:
+
+```bash
 bookwright graph build                            # → bible/graph.ttl
 bookwright graph query "SELECT ?c WHERE { ?c a golem:G1_Character }" --json
 bookwright validate                               # exit 0 si no hay errores

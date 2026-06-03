@@ -16,6 +16,7 @@ strict: true
 nav:
   - Inicio: index.md
   - Primeros pasos: getting-started.md
+  - El flujo de autoría: authoring.md
   - Arquitectura: architecture.md
   - Comandos:
       - bookwright init: commands/init.md
