@@ -15,13 +15,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from bookwright.golem.namespaces import (
-    FOLLOWS,
-    PRECEDES,
-    TEMPORALLY_INCLUDED_IN,
-    TEMPORALLY_INCLUDES,
-    TEMPORALLY_OVERLAPS,
-)
+from bookwright.golem.namespaces import TEMPORAL_RELATIONS
 from bookwright.indexers import Indexer
 from bookwright.validation.base import Severity, ValidationContext, Violation
 from bookwright.validation.queries import (
@@ -33,13 +27,9 @@ from bookwright.validation.queries import (
 
 _MIN_CYCLE = 2  # an SCC of ≥2 events is a follows/precedes cycle (rule a).
 
-_PRED: dict[str, str] = {
-    "follows": str(FOLLOWS),
-    "precedes": str(PRECEDES),
-    "overlaps": str(TEMPORALLY_OVERLAPS),
-    "includes": str(TEMPORALLY_INCLUDES),
-    "included-in": str(TEMPORALLY_INCLUDED_IN),
-}
+# Canonical relation name → its predicate string, derived from the single source
+# of truth so this validator and the loader can never disagree on the key spelling.
+_PRED: dict[str, str] = {rel.name: str(rel.predicate) for rel in TEMPORAL_RELATIONS}
 
 
 def _label(uri: str) -> str:
@@ -142,7 +132,7 @@ class Temporal:
     ) -> list[Violation]:
         out: list[Violation] = []
         containments = [("includes", a, b) for a, b in relations["includes"]]
-        containments += [("included-in", a, b) for a, b in relations["included-in"]]
+        containments += [("included_in", a, b) for a, b in relations["included_in"]]
         for key, a, b in sorted(containments):
             if (a, b) in before or (b, a) in before:
                 out.append(
@@ -221,7 +211,7 @@ class Temporal:
                     f"'{_label(a)}' (begins {ia.begin}) and '{_label(b)}' (ends {ib.end}) "
                     "are asserted to overlap, but their year ranges are disjoint",
                 )
-        for key in ("includes", "included-in"):
+        for key in ("includes", "included_in"):
             for a, b in sorted(relations[key]):
                 container, contained = (a, b) if key == "includes" else (b, a)
                 ic, ict = interval(container), interval(contained)

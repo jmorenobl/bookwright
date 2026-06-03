@@ -10,6 +10,7 @@ test (SC-003).
 from __future__ import annotations
 
 from importlib import resources
+from typing import NamedTuple
 
 from rdflib import Graph, Namespace
 from rdflib.namespace import RDF, RDFS, XSD
@@ -45,9 +46,11 @@ __all__ = [
     "TEMPORALLY_INCLUDES",
     "TEMPORALLY_OVERLAPS",
     "TEMPORAL_LOCATION",
+    "TEMPORAL_RELATIONS",
     "TR",
     "USED_SPECIFIC_OBJECT",
     "XSD",
+    "TemporalRelation",
     "bind_prefixes",
     "frozen_terms",
     "load_frozen_ontology",
@@ -171,6 +174,31 @@ TEMPORALLY_INCLUDES = TR["temporally-includes"]
 """Event whose extent contains another's (containment)."""
 TEMPORALLY_INCLUDED_IN = TR["temporally-included-in"]
 """Event whose extent is contained within another's (inverse containment)."""
+
+
+class TemporalRelation(NamedTuple):
+    """One qualitative event-to-event temporal relation (research D11).
+
+    ``name`` is the single canonical key used across every layer — the bible
+    frontmatter key, the :class:`NarrativeEvent` field, the SPARQL projection key,
+    and the validator's predicate map — so the layers never drift apart or fork on
+    spelling. ``predicate`` is the frozen ``TR:*`` IRI the relation serializes to.
+    """
+
+    name: str
+    predicate: URIRef
+
+
+TEMPORAL_RELATIONS: tuple[TemporalRelation, ...] = (
+    TemporalRelation("follows", FOLLOWS),
+    TemporalRelation("precedes", PRECEDES),
+    TemporalRelation("overlaps", TEMPORALLY_OVERLAPS),
+    TemporalRelation("includes", TEMPORALLY_INCLUDES),
+    TemporalRelation("included_in", TEMPORALLY_INCLUDED_IN),
+)
+"""The five qualitative temporal relations, in canonical order — the single source
+of truth every consumer derives its own view from (cross_refs, bible keys, queries,
+the ``temporal`` validator)."""
 
 # --- Frozen ontology --------------------------------------------------------
 

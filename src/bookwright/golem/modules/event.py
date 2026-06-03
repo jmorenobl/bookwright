@@ -13,20 +13,13 @@ from bookwright.golem.modules.feature import Dimension
 from bookwright.golem.namespaces import (
     CLASS_IRI,
     DURATION,
-    FOLLOWS,
     GENERICALLY_DEPENDENT_ON,
     HAS_DIMENSION,
     HAS_TYPE,
     PARTICIPANT,
-    PRECEDES,
     TEMPORAL_LOCATION,
-    TEMPORALLY_INCLUDED_IN,
-    TEMPORALLY_INCLUDES,
-    TEMPORALLY_OVERLAPS,
+    TEMPORAL_RELATIONS,
 )
-
-# boundary kind → the begin/end year field it draws from (interval emission order).
-_BOUNDARIES: tuple[str, ...] = ("begin", "end")
 
 
 class NarrativeEvent(SluggedEntity):
@@ -46,11 +39,7 @@ class NarrativeEvent(SluggedEntity):
     path_segment: ClassVar[str] = "event"
     cross_refs: ClassVar[tuple[CrossRef, ...]] = (
         CrossRef("participants", PARTICIPANT, multi=True),
-        CrossRef("follows", FOLLOWS, multi=True),
-        CrossRef("precedes", PRECEDES, multi=True),
-        CrossRef("overlaps", TEMPORALLY_OVERLAPS, multi=True),
-        CrossRef("includes", TEMPORALLY_INCLUDES, multi=True),
-        CrossRef("included_in", TEMPORALLY_INCLUDED_IN, multi=True),
+        *(CrossRef(rel.name, rel.predicate, multi=True) for rel in TEMPORAL_RELATIONS),
     )
 
     participants: tuple[GolemEntity | URIRef, ...] = ()
@@ -75,8 +64,7 @@ class NarrativeEvent(SluggedEntity):
         time_interval = CLASS_IRI["TimeInterval"]
         yield (self.uri, DURATION, span_uri)
         yield (span_uri, RDF.type, time_interval)
-        for kind in _BOUNDARIES:
-            year = self.begin if kind == "begin" else self.end
+        for kind, year in (("begin", self.begin), ("end", self.end)):
             if year is None:
                 continue
             boundary_uri = URIRef(f"{span_uri}/{kind}")

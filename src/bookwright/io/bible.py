@@ -26,6 +26,7 @@ from bookwright.golem import (
     SocialRelationship,
 )
 from bookwright.golem.base import GolemEntity
+from bookwright.golem.namespaces import TEMPORAL_RELATIONS
 from bookwright.golem.slug import make_slug
 
 from .errors import InvalidFrontmatterError, SlugCollisionError
@@ -37,7 +38,8 @@ SETTING_KEYS = frozenset({"name"})
 ITEM_KEYS = frozenset({"name", "participants"})
 # The five qualitative temporal relations an event may declare (each a list of
 # event names resolved against the timeline's own event index — research D11).
-RELATION_KEYS: tuple[str, ...] = ("follows", "precedes", "overlaps", "includes", "included_in")
+# Derived from the single source of truth so the keys never drift from the model.
+RELATION_KEYS: tuple[str, ...] = tuple(rel.name for rel in TEMPORAL_RELATIONS)
 # Events additionally accept an interval (``begin`` / ``end`` years, or the
 # ``date`` single-year shorthand) plus the relation keys.
 EVENT_ITEM_KEYS = frozenset({"name", "participants", "begin", "end", "date", *RELATION_KEYS})

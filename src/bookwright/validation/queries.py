@@ -18,10 +18,12 @@ from bookwright.golem.namespaces import (
     CRM,
     CSM,
     GOLEM,
+    TEMPORAL_RELATIONS,
     TR,
     USED_SPECIFIC_OBJECT,
 )
 from bookwright.indexers import Indexer
+from bookwright.validation.base import split_source
 
 __all__ = ["EventInterval", "load_intervals", "load_relations", "resolve_source"]
 
@@ -37,15 +39,6 @@ _PREFIXES = "\n".join(
         ("xsd", str(XSD)),
     )
 )
-
-# Short relation key → its frozen ``TR:*`` predicate localname (research D11).
-RELATION_LOCALNAMES: dict[str, str] = {
-    "follows": "follows",
-    "precedes": "precedes",
-    "overlaps": "temporally-overlaps",
-    "includes": "temporally-includes",
-    "included-in": "temporally-included-in",
-}
 
 
 @dataclass(frozen=True)
@@ -111,24 +104,25 @@ def load_intervals(indexer: Indexer) -> dict[str, EventInterval]:
 
 
 def load_relations(indexer: Indexer) -> dict[str, set[tuple[str, str]]]:
-    """The five ``TR:*`` edge sets, keyed by short relation name (D11).
+    """The five ``TR:*`` edge sets, keyed by canonical relation name (D11).
 
-    Each set holds ``(subject, object)`` event-URI pairs. Only edges between two
-    narrative events are kept, so a stray edge never leaks into the reasoning.
+    Keys are :data:`TEMPORAL_RELATIONS` names (``follows`` … ``included_in``). Each
+    set holds ``(subject, object)`` event-URI pairs. Only edges between two narrative
+    events are kept, so a stray edge never leaks into the reasoning.
     """
     relations: dict[str, set[tuple[str, str]]] = {}
-    for key, localname in RELATION_LOCALNAMES.items():
+    for relation in TEMPORAL_RELATIONS:
         rows = _q(
             indexer,
             f"""
             SELECT ?a ?b WHERE {{
               ?a a golem:G5_Narrative_Event .
               ?b a golem:G5_Narrative_Event .
-              ?a tr:{localname} ?b .
+              ?a <{relation.predicate}> ?b .
             }}
             """,
         )
-        relations[key] = {(row["a"], row["b"]) for row in rows}
+        relations[relation.name] = {(row["a"], row["b"]) for row in rows}
     return relations
 
 
@@ -152,5 +146,5 @@ def resolve_source(indexer: Indexer, uri: str) -> str | None:
     sources = sorted({row["source"] for row in rows})
     if not sources:
         return None
-    located = [s for s in sources if ":" in s and s.rpartition(":")[2].isdigit()]
+    located = [s for s in sources if split_source(s)[1] is not None]
     return located[0] if located else sources[0]

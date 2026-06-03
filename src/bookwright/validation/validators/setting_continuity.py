@@ -26,6 +26,12 @@ _LEXICON: tuple[tuple[str, ...], ...] = (
     ("desert", "forest"),
     ("desierto", "bosque"),
 )
+# Word-boundary matcher per lexicon term, compiled once at import (not per line).
+_TERM_PATTERNS: dict[str, re.Pattern[str]] = {
+    term: re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+    for group in _LEXICON
+    for term in group
+}
 
 
 class SettingContinuity:
@@ -51,10 +57,10 @@ class SettingContinuity:
             if not name_re.search(text):
                 continue
             for lineno, line in enumerate(text.splitlines(), start=1):
-                for term in _all_terms():
+                for term, pattern in _TERM_PATTERNS.items():
                     if term in occurrences:
                         continue
-                    if re.search(rf"\b{re.escape(term)}\b", line, re.IGNORECASE):
+                    if pattern.search(line):
                         occurrences[term] = (relpath, lineno)
 
         out: list[Violation] = []
@@ -80,10 +86,6 @@ class SettingContinuity:
                 )
             )
         return out
-
-
-def _all_terms() -> tuple[str, ...]:
-    return tuple(term for group in _LEXICON for term in group)
 
 
 def _first_cross_file_pair(

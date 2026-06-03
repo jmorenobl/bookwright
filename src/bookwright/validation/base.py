@@ -25,6 +25,7 @@ __all__ = [
     "Validator",
     "ValidatorError",
     "Violation",
+    "split_source",
 ]
 
 
@@ -44,6 +45,23 @@ _RANK: dict[Severity, int] = {Severity.error: 2, Severity.warning: 1, Severity.i
 """Ordinal for the ``--severity`` threshold, the gate, and the total-order sort."""
 
 
+def split_source(source: str | None) -> tuple[str | None, int | None]:
+    """Split a ``relpath[:line]`` provenance string into ``(path, line)``.
+
+    The ``:line`` suffix is recognized only when a non-empty path precedes a
+    digit-only tail; otherwise the whole string is the path and the line is ``None``.
+    ``source=None`` yields ``(None, None)``. This is the single place the ``source``
+    grammar is parsed — every consumer (``Violation`` accessors, the report scope
+    filter, provenance resolution) routes through it so the parsing never forks.
+    """
+    if source is None:
+        return None, None
+    head, sep, tail = source.rpartition(":")
+    if head and sep and tail.isdigit():
+        return head, int(tail)
+    return source, None
+
+
 @dataclass(frozen=True)
 class Violation:
     """One finding produced by a validator (FR-002/003).
@@ -61,17 +79,11 @@ class Violation:
 
     def source_file(self) -> str | None:
         """The path part of ``source`` (drops any ``:line`` suffix), or ``None``."""
-        if self.source is None:
-            return None
-        head, _, tail = self.source.rpartition(":")
-        return head if (head and tail.isdigit()) else self.source
+        return split_source(self.source)[0]
 
     def source_line(self) -> int | None:
         """The 1-based line from ``source`` when present, else ``None``."""
-        if self.source is None:
-            return None
-        _, sep, tail = self.source.rpartition(":")
-        return int(tail) if (sep and tail.isdigit()) else None
+        return split_source(self.source)[1]
 
     def to_json(self) -> dict[str, Any]:
         """Serialize to the contract shape (FR-002, SC-004); ``triples`` as lists."""

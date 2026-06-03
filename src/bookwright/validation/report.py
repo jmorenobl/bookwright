@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from bookwright.validation.base import Severity, ValidatorError, Violation
+from bookwright.validation.base import Severity, ValidatorError, Violation, split_source
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -31,7 +31,7 @@ class ScopeFilter:
         """Whether ``source`` falls within the scope. ``None`` never matches (FR-009)."""
         if source is None:
             return False
-        path = source.rpartition(":")[0] if _has_line(source) else source
+        path = split_source(source)[0] or source
         if self.is_dir:
             return path == self.rel or path.startswith(f"{self.rel}/")
         return path == self.rel
@@ -104,8 +104,3 @@ class ValidationReport:
             console.print("validator errors:", markup=False)
             for error in self.errors:
                 console.print(f"  {error.phase}: {error.validator}: {error.message}", markup=False)
-
-
-def _has_line(source: str) -> bool:
-    head, sep, tail = source.rpartition(":")
-    return bool(head and sep and tail.isdigit())
