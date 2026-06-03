@@ -1,0 +1,42 @@
+# Bookwright project manifest — fixture `tiny-novel`.
+#
+# A finished minimal novel: 3 characters, 2 settings, 5 timeline events, and one
+# draft chapter. Shipped source-only — `bible/graph.ttl` is rebuilt in a tmp copy
+# by the tests (D2), never committed.
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.1"
+manifest_version = "1"
+uri_base = "https://example.org/tiny-novel/"
+indexer = "rdflib"
+
+[book]
+title = "El faro de sal"
+type = "novel"
+language = "es"
+authors = ["Equipo Bookwright"]
+status = "drafting"
+
+[vocabularies]
+active = []
+
+[validators]
+# All built-in validators active — none disabled (revised D3). The fixture stays
+# clean because it has no temporal contradictions and every character is mentioned.
+enabled = []
+disabled = []
+custom = []
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"

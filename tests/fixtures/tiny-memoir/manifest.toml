@@ -1,0 +1,42 @@
+# Bookwright project manifest — fixture `tiny-memoir`.
+#
+# A finished minimal memoir: a single protagonist (the author), a first-person
+# voice declaration, and autobiographical chapters that name the author. ALL
+# built-in validators stay active (revised D3): the author is mentioned in the
+# manuscript (no orphan error) and the first-person declaration keeps
+# `focalization` silent, so the memoir validates clean (zero error-severity).
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.1"
+manifest_version = "1"
+uri_base = "https://example.org/tiny-memoir/"
+indexer = "rdflib"
+
+[book]
+title = "La casa de la calle Almendro"
+type = "memoir"
+language = "es"
+authors = ["Marta Olivares"]
+status = "drafting"
+
+[vocabularies]
+active = []
+
+[validators]
+enabled = []
+disabled = []
+custom = []
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"

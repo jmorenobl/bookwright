@@ -1,25 +1,35 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.1.0 → 1.2.0
-Bump rationale: MINOR — addition to the runtime dependency list per Principle II
-/ Technical Constraints. Iteration 006-graph-indexer parses bible Markdown YAML
-frontmatter; no declared runtime dependency parses YAML, so `pyyaml` is added to
-the minimum set. A hand-rolled YAML parser was rejected (fragile / unsafe with
-author-authored prose — fails the spirit of Principles I and VIII). PyYAML is
-already resolved transitively in `uv.lock`; this promotes it to a declared
-direct dependency.
+Version change: 1.2.0 → 1.3.0
+Bump rationale: MINOR — materially expanded guidance in Principle VIII (Test
+Discipline). The principle enumerated an end-to-end author workflow
+(`init → constitution → bible → outline → scenes → draft`) as if every leg were
+an executable CLI command. The authoring legs (`constitution`, `bible`,
+`outline`, `scenes`, `draft`) ship as Agent Skills — LLM-driven `SKILL.md`
+prompts (Principles VI, X), not CLI commands — so they cannot be driven by an
+automated end-to-end CLI test. This amendment clarifies that their E2E
+verification is satisfied by agentskills.io materialization compliance
+(Principle VII), while the executable surface is exercised through the real
+CLI. The coverage bar (≥ 80%) and CI gates are unchanged; no workflow step is
+exempted. Surfaced by /speckit-analyze on iteration 011-release-prep
+(finding C1): the prior wording forced an inline reinterpretation in plan.md,
+which this amendment moves into the binding document.
 
-Principles: unchanged since 1.1.0 (I–X; no renames, no additions, no removals).
+Principles: VIII reworded (clarification + expanded guidance); I–VII, IX, X
+unchanged (no renames, no additions, no removals).
 
 Propagation:
-- ✅ Technical Constraints → runtime dependency list: `pyyaml` added (alphabetical).
-- ✅ bookwright-design.md § 14.1 — `pyyaml` added to the dependencies snippet.
-- ⛔ Implementation follow-ups (NOT part of this amendment; tracked as iteration
-  006 tasks): add `pyyaml>=6.0` to `pyproject.toml [project].dependencies` +
-  refresh `uv.lock`; add `"yaml"` to `RUNTIME_MODULES` in
-  `src/bookwright/commands/check.py`.
-- ✅ .specify/templates/*.md — no change required (dependency addition only).
+- ✅ Principle VIII text updated in place.
+- ✅ .specify/templates/*.md — no change required (no template restates the VIII
+  workflow; the plan-template Constitution Check is generic).
+- ✅ bookwright-design.md — no change required: line 62 maps the conceptual
+  Spec-Kit↔Bookwright flow (not the E2E test mandate) and § 15 ("Tests E2E de
+  cada command sobre fixtures") already matches the clarified split; no axiom in
+  § 16 is reopened (Principle X), so no design change accompanies this.
+- ✅ specs/011-release-prep/plan.md — the "Note on Principle VIII" now cites this
+  clarified principle instead of reinterpreting it; the gate reference is bumped
+  to v1.3.0.
 - ✅ .claude/skills/speckit-*/ — no change required.
 
 History:
@@ -27,7 +37,9 @@ History:
   Constraints, Scope & Release Discipline, Governance).
 - 1.1.0 (2026-05-28): added `packaging` to the runtime dependency list
   (FR-012, iteration 002-manifest-model; PEP 440 ordering of `cli_version_min`).
-- 1.2.0 (2026-06-01): added `pyyaml` (this amendment).
+- 1.2.0 (2026-06-01): added `pyyaml` (runtime dependency list).
+- 1.3.0 (2026-06-03): clarified Principle VIII E2E verification for Agent-Skill
+  authoring legs (iteration 011-release-prep, finding C1).
 -->
 
 # Bookwright Constitution
@@ -137,8 +149,17 @@ coverage across `src/bookwright/`. The test pyramid is enforced: unit tests
 for `core/`, `golem/`, `integrations/`, and `validation/`; integration tests
 for command flows (`init`, `graph build`, `validate`); end-to-end tests for
 the full author workflow (`init → constitution → bible → outline → scenes →
-draft`) against the `tiny-novel/` fixture. CI MUST run pytest, ruff, and
-mypy strict on every push and pull request; a red bar blocks merge.
+draft`) against the `tiny-novel/` fixture. Because the authoring legs of that
+workflow (`constitution`, `bible`, `outline`, `scenes`, `draft`) ship as Agent
+Skills — LLM-driven `SKILL.md` prompts (Principles VI, X), not executable CLI
+commands — their end-to-end verification is satisfied by **agentskills.io
+materialization compliance** (every authoring skill is generated and passes the
+shipped `lint_skill_md` gate, Principle VII), while the executable surface
+(`init → graph build → graph query → validate`) is exercised end-to-end through
+the real CLI. This split is the only sound verification mode given the
+skill/CLI boundary; it neither lowers the coverage bar nor exempts any workflow
+step. CI MUST run pytest, ruff, and mypy strict on every push and pull request;
+a red bar blocks merge.
 
 Rationale: a documented domain model and a graph validator only earn trust
 when their assertions are themselves asserted.
@@ -237,4 +258,4 @@ either the code is fixed or the constitution is amended through the
 procedure above. The CI pipeline (Principle VIII) is the automated half of
 this gate; human review covers the rest.
 
-**Version**: 1.2.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-06-01
+**Version**: 1.3.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-06-03

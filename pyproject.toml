@@ -42,10 +42,12 @@ build-backend = "hatchling.build"
 include = ["src/bookwright"]
 
 [tool.hatch.build.targets.wheel]
+# `packages` maps src/bookwright/** → bookwright/** and bundles the full tree,
+# including the `resources/` data files (templates, commands, vocabularies,
+# schemas) that `importlib.resources` reads at runtime. No separate
+# force-include is needed — adding one duplicates `resources/` at the same
+# archive path and breaks `uv build`.
 packages = ["src/bookwright"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"src/bookwright/resources" = "bookwright/resources"
 
 [tool.hatch.version]
 path = "src/bookwright/__init__.py"
@@ -58,6 +60,13 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.5",
     "types-pyyaml>=6.0.12.20260518",
+]
+# Docs toolchain (D6): MkDocs is never imported by `src/` at runtime and never
+# ships in the wheel, so it is a dev/docs tool — a dedicated group keeps the
+# runtime dependency contract (Principle II) untouched, no amendment required.
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
 ]
 
 [tool.ruff]
@@ -83,8 +92,24 @@ files = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --cov=bookwright --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+# Markers: `manual` is a packaged-install / subprocess smoke that is slow and
+# network-dependent — deselected by default so the default run stays hermetic
+# and the coverage gate measures only in-process code (R2/R3, D7).
+markers = [
+    "manual: packaged-install / subprocess smoke; opt-in via `-m manual` (not run by default).",
+]
+# The coverage gate threshold is single-sourced in [tool.coverage.report]
+# (`fail_under = 80`, `precision = 2`); pytest-cov honors it, so we deliberately
+# do NOT pass `--cov-fail-under` here — one threshold, no drift (CI-1, FR-019).
+addopts = "-ra -m 'not manual' --cov=bookwright --cov-report=term-missing --cov-report=xml"
 
 [tool.coverage.run]
 source = ["src/bookwright"]
 branch = true
+
+[tool.coverage.report]
+# Fail closed with no round-up: a precise 79.99% must not pass an "≥ 80%" gate.
+# `precision = 2` makes coverage compare/report to two decimals so the threshold
+# is never satisfied by rounding (Amendment B; FR-019, SC-005).
+precision = 2
+fail_under = 80

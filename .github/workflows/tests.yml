@@ -33,6 +33,15 @@ jobs:
         run: uv run mypy
       - name: Tests
         run: uv run pytest
+      - name: Docs build (strict)
+        if: matrix.python-version == '3.12'
+        run: uv run --group docs mkdocs build --strict
+      - name: Build distribution (wheel + sdist)
+        if: matrix.python-version == '3.12'
+        run: uv build
+      - name: Assert wheel bundles packaged resources
+        if: matrix.python-version == '3.12'
+        run: python -m zipfile -l dist/bookwright_cli-*.whl | grep -q 'bookwright/resources/'
       - name: Upload coverage
         if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4

@@ -4,6 +4,53 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.1.0] — 2026-06-03
+
+First public release. Bookwright is a spec-driven authoring toolkit that turns a
+small set of canonical plain-text documents into a validatable narrative graph.
+This entry consolidates iterations 1–11.
+
+### Added
+
+- **CLI** (`typer` + `rich`, Python 3.11+): `bookwright init` (project
+  scaffolding with conflict matrix, rollback ledger, and optional git init),
+  `bookwright check`, `bookwright version`, `bookwright validate`,
+  `bookwright graph build`, `bookwright graph query` (SPARQL over the GOLEM
+  graph), and `bookwright integration use` (switch a project's active agent
+  integration). Every agent-facing command accepts `--json` and emits a single
+  JSON document on stdout (Principle IX).
+- **GOLEM domain model** (`rdflib`): characters, settings, narrative events with
+  temporal intervals and the five qualitative temporal relations, social
+  relationships, and CIDOC-CRM provenance for every derived assertion, serialized
+  to Turtle.
+- **Graph indexer**: maps the project bible to GOLEM entities and answers SPARQL
+  queries with the `golem:` prefix bound.
+- **Bible / outline / constitution templates**: the Spanish narrative skeleton
+  stamped by `init`, plus re-instanceable molds for the authoring commands.
+- **10 authoring commands** materialized as agentskills.io-compliant Agent Skills
+  (`bookwright-constitution`, `-bible`, `-outline`, `-synopsis`, `-scenes`,
+  `-draft`, `-clarify`, `-analyze`, `-checklist`, `-continuity`).
+- **Integrations**: `claude` (`.claude/skills/`) and `generic` (`.agents/skills/`)
+  via a plugin registry — no monolithic dispatcher (Principle V).
+- **Validation system**: four built-in validators — `character_presence`,
+  `focalization`, `setting_continuity`, `temporal` — with an error-only CI gate.
+- **Release layer (this iteration)**: three fully-valid fixture projects
+  (`tiny-novel`, `tiny-essay`, `tiny-memoir`) under `tests/fixtures/`; an
+  in-process E2E suite (`tests/e2e/`) covering the full workflow, skills
+  materialization, the integration swap, and docs↔CLI drift; a Spanish MkDocs
+  (`material`) documentation site that builds `--strict`; and finalized release
+  metadata.
+
+### Changed
+
+- The integration swap is performed by the dedicated `bookwright integration use`
+  command. The original plan (re-init with `init --here --force`) was incompatible
+  with `init`'s ratified guard that refuses to re-initialize an existing project
+  (`.bookwright/` present), so the swap is its own intention-revealing command;
+  `init` is unchanged.
+- The coverage gate threshold is single-sourced in `[tool.coverage.report]`
+  (`fail_under = 80`, `precision = 2`) so it fails closed with no round-up.
+
 ## [Unreleased]
 
 ### Added — Iteration 7: Bible / Outline / Constitution templates

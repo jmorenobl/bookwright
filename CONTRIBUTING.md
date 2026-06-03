@@ -85,6 +85,62 @@ uv run pre-commit install
 After this, every `git commit` is gated locally. Skipping this step still
 leaves the CI pipeline as the safety net.
 
+## Extending Bookwright
+
+All three extension points follow the plugin architecture (Constitution
+Principle V): you add a small, self-contained module and register it — no
+edits to a central dispatcher.
+
+### Create a new integration
+
+An integration materializes the source commands as Agent Skills in the
+directory a given agent expects.
+
+1. Create `src/bookwright/integrations/<key>/__init__.py` with a subclass of
+   `SkillsIntegration` that overrides `key`, `config`, and
+   `default_skills_dir`. Override `resolve_skills_dir()` only when the resolved
+   directory depends on `--integration-options`, and set the `supports_*` flags
+   for capabilities the agent has.
+2. Register it by adding a single `_register(<Your>Integration)` line in
+   `integrations/__init__.py` (`_register_builtins`). Do **not** edit `base.py`,
+   `claude/`, or `generic/` — `tests/integrations/test_plugin_contract.py`
+   enforces this mechanically.
+
+`setup()` is implemented once in the base class: it materializes one `SKILL.md`
+per source command and runs the agentskills.io linter (Principle VII). Switching
+a live project to your integration is then `bookwright integration use <key>`.
+
+### Create a custom validator
+
+A validator inspects the project and the built graph and returns findings.
+
+1. Add a module under the project's `.bookwright/validators/` directory exposing
+   a class with `name: str`, `severity_default: Severity`, and
+   `validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]`.
+2. The `validate` method MUST be deterministic and MUST NOT write to disk or
+   mutate the graph. It reads `project` (constitution text, character/setting
+   rosters, manuscript files) and `indexer` (the already-built graph).
+3. Declare its `name` under `[validators] custom` in `manifest.toml`.
+
+Only `error`-severity findings gate CI; emit `warning` for heuristic checks so a
+false positive can never fail a build.
+
+### Create a vocabulary
+
+Narrative vocabularies (e.g. Propp functions, Greimas actants) ship as Turtle
+graphs whose classes and predicates extend the GOLEM model.
+
+1. Place the `.ttl` file under the project's `.bookwright/vocabularies/`.
+2. Activate it by name in `manifest.toml`:
+
+   ```toml
+   [vocabularies]
+   active = ["propp", "greimas"]
+   ```
+
+The vocabulary is loaded alongside the project graph, so its terms become
+available to `bookwright graph query`.
+
 ## Detailed onboarding
 
 The canonical walkthrough — including a worked example of the pre-commit
