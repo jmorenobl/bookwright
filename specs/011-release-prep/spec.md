@@ -34,7 +34,7 @@ A maintainer needs three small but internally coherent Bookwright projects, one 
 1. **Given** the `tiny-novel` fixture, **When** its graph is built and queried, **Then** the index contains exactly 3 characters, 2 settings, and 5 events, the bible and outline are fully populated, and one draft chapter is present.
 2. **Given** the `tiny-essay` fixture (3 chapters, no fictional characters, with a bibliography), **When** it is built and validated, **Then** the build succeeds and validation reports no false-positive narrative violations for a non-fiction project.
 3. **Given** the `tiny-memoir` fixture (single protagonist = author, autobiographical scenes), **When** it is built and queried, **Then** the single protagonist and the autobiographical scenes are present in the index.
-4. **Given** any of the three fixtures, **When** `bookwright validate` runs against it in its shipped (clean) state, **Then** it reports a valid project with no continuity violations.
+4. **Given** any of the three fixtures, **When** `bookwright validate` runs against it in its shipped (clean) state, **Then** it exits 0 (zero `error`-severity violations) — heuristic `warning`-severity findings are permitted and non-gating, matching the validator contract (`ValidationReport.failed` keys on `error` only).
 
 ---
 
@@ -49,7 +49,7 @@ A maintainer (and CI) needs automated tests that walk a brand-new user's path fr
 **Acceptance Scenarios**:
 
 1. **Given** an empty working directory, **When** the full-workflow test runs `bookwright init`, edits the manifest and constitution, then runs `bookwright graph build`, `bookwright graph query`, and `bookwright validate` in sequence, **Then** each step produces its expected result and the final state is a valid project.
-2. **Given** a project that has materialized its skills, **When** the materialization test inspects each generated `SKILL.md`, **Then** every file satisfies the agentskills.io standard (valid YAML frontmatter; `name` ≤ 64 chars and matching its parent directory; `description` ≤ 1024 chars).
+2. **Given** a project that has materialized its skills, **When** the materialization test runs the shipped linter (`integrations.lint.lint_skill_md`) over each generated `SKILL.md`, **Then** none raises — i.e. every file satisfies the agentskills.io standard (valid YAML frontmatter; `name` matching its parent directory and `< SKILL_NAME_MAX_LENGTH`; `description < SKILL_DESCRIPTION_MAX_LENGTH`).
 3. **Given** a project initialized with `--integration claude`, **When** the manifest is switched to `generic` and the project is re-initialized with `--here --force`, **Then** the skills are correctly materialized under `.agents/skills/`. The previous `.claude/skills/` directory is left untouched (re-init only overwrites collisions under the new target); the test asserts the new location is correct and does not assert removal of the old one.
 
 ---
@@ -91,10 +91,10 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 
 ### Edge Cases
 
-- **Non-fiction false positives**: the essay and memoir fixtures must not trip narrative-continuity validators designed for fiction (e.g. character-presence checks on a project with no fictional characters). Validation against a clean fixture must report zero violations.
+- **Non-fiction false positives**: the essay and memoir fixtures run the full built-in validator set, yet must report no `error`-severity violations — the fiction validators are inert off-genre (`character_presence` emits only `warning`s without a roster; `focalization` is silent without a third-person voice declaration), so no validator need be disabled. Validation against a clean fixture must exit 0.
 - **Integration swap residue**: switching a project from `claude` to `generic` produces skills in the new location (`.agents/skills/`); stale skills in the previous location (`.claude/skills/`) are **left untouched** (no cleanup is performed). The swap test asserts the new location is correct and does not assert removal of the old one.
 - **Docs drift**: if a documented command name, flag, or quickstart step no longer matches the shipped CLI, the docs build or an E2E/quickstart check should surface the mismatch rather than silently shipping stale docs.
-- **Coverage just under threshold**: if the new E2E tests pull coverage measurement around the 80% line, the gate must fail closed (block release) rather than round up.
+- **Coverage just under threshold**: if the new E2E tests pull coverage measurement around the 80% line, the gate must fail closed (block release) rather than round up — enforced by `[tool.coverage.report] precision = 2` + `fail_under = 80`, so e.g. 79.99% reports as 79.99 and fails.
 - **Existing draft artifacts**: README, CHANGELOG, and CONTRIBUTING already exist in partial form — this iteration finalizes/updates them rather than assuming a blank slate, and must not regress content already present.
 
 ## Requirements *(mandatory)*
@@ -106,13 +106,13 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 - **FR-001**: The project MUST provide a `tiny-novel` fixture that is a valid Bookwright project containing exactly 3 characters, 2 settings, 5 events, and 1 draft chapter, with the bible and outline fully populated, internally coherent enough to be a believable minimal novel.
 - **FR-002**: The project MUST provide a `tiny-essay` fixture that is a valid Bookwright project with 3 chapters, no fictional characters, and a bibliography.
 - **FR-003**: The project MUST provide a `tiny-memoir` fixture that is a valid Bookwright project with a single protagonist (the author) and autobiographical scenes.
-- **FR-004**: Each fixture MUST be initializable, graph-buildable, queryable, and validatable by the shipped CLI, and MUST report as a valid project (no continuity violations) in its clean shipped state.
+- **FR-004**: Each fixture MUST be initializable, graph-buildable, queryable, and validatable by the shipped CLI, and MUST pass `bookwright validate` with **exit code 0** (zero `error`-severity violations) in its clean shipped state. Heuristic `warning`-severity findings are permitted and non-gating, consistent with the validator contract (`ValidationReport.failed` keys on `error` only).
 - **FR-005**: Fixtures MUST live under `tests/fixtures/<name>/` so they are usable as input by the automated test suite.
 
 #### End-to-end tests
 
 - **FR-006**: An E2E test MUST exercise the full workflow — `bookwright init`, editing the manifest and constitution, `bookwright graph build`, `bookwright graph query`, `bookwright validate` — and assert the expected outcome at each step.
-- **FR-007**: An E2E test MUST verify that every generated `SKILL.md` conforms to the agentskills.io standard (valid YAML frontmatter; `name` ≤ 64 chars matching its parent directory; `description` ≤ 1024 chars).
+- **FR-007**: An E2E test MUST verify that every generated `SKILL.md` conforms to the agentskills.io standard by invoking the shipped linter `bookwright.integrations.lint.lint_skill_md` on each skill directory and asserting it does not raise (valid YAML frontmatter; `name` == parent directory and `< SKILL_NAME_MAX_LENGTH`; `description < SKILL_DESCRIPTION_MAX_LENGTH`). Re-implementing the bounds in the test is forbidden — the test MUST exercise the same gate the toolkit enforces at materialization (Principle VII).
 - **FR-008**: An E2E test MUST verify the integration swap: after `bookwright init --integration claude`, changing the manifest to `generic` and re-initializing with `--here --force` materializes skills correctly under `.agents/skills/`. The test MUST assert only the new location; it MUST NOT require removal of the previous `.claude/skills/` directory (no cleanup behavior is added in this iteration).
 - **FR-009**: The E2E tests MUST run as part of the standard test suite and contribute to the coverage measurement.
 
@@ -130,7 +130,7 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 - **FR-016**: `CHANGELOG.md` MUST contain a `v0.1.0` entry enumerating every feature included in this release.
 - **FR-017**: `CONTRIBUTING.md` MUST explain how to contribute and specifically how to create: a new integration, a custom validator, and a vocabulary.
 - **FR-018**: The repository MUST carry an Apache-2.0 `LICENSE` referenced from project metadata.
-- **FR-019**: The full test suite MUST pass with reported coverage above 80%.
+- **FR-019**: The full test suite MUST pass with reported coverage **at least 80%** (Constitution VIII minimum), measured without rounding up: a run that would round to 80% but is below it MUST fail the gate (`[tool.coverage.report] precision = 2`, `fail_under = 80`).
 - **FR-020**: Lint (`ruff check`), format check (`ruff format --check`), strict type check (`mypy --strict`), and pre-commit MUST all pass.
 - **FR-021**: CI MUST run the test, lint, type, and docs-build gates and report green on the release branch.
 - **FR-022**: A distribution artifact (wheel + sdist) MUST be buildable and installable into an isolated environment, after which the quickstart succeeds without touching the source tree.
@@ -146,11 +146,11 @@ A maintainer can cut a v0.1.0 release with confidence: the changelog records exa
 
 ### Measurable Outcomes
 
-- **SC-001**: All three fixtures pass `bookwright validate` cleanly (zero violations) in their shipped state, and the `tiny-novel` graph query returns exactly the expected 3 characters / 2 settings / 5 events.
+- **SC-001**: All three fixtures pass `bookwright validate` with exit 0 (zero `error`-severity violations; heuristic warnings allowed) in their shipped state, and the `tiny-novel` graph query returns exactly the expected 3 characters / 2 settings / 5 events.
 - **SC-002**: The E2E suite (full workflow, skills materialization, integration swap) passes on a clean checkout with a 100% pass rate.
 - **SC-003**: A person who has never read the source completes the entire init → edit → build → query → validate workflow using only the README quickstart and an installed distribution, in 5 minutes or less.
 - **SC-004**: The documentation site builds with zero warnings and exposes all seven required page areas (index, getting-started, architecture, commands, validation, extending, FAQ), with one page/section per shipped command.
-- **SC-005**: Reported automated-test coverage is strictly greater than 80%.
+- **SC-005**: Reported automated-test coverage is **at least 80%** (Constitution VIII), enforced fail-closed with no round-up (`[tool.coverage.report] precision = 2`, `fail_under = 80`).
 - **SC-006**: Every quality gate — tests, `ruff check`, `ruff format --check`, `mypy --strict`, pre-commit, and CI — reports green on the release branch.
 - **SC-007**: A wheel built locally installs into a clean isolated environment and the `bookwright` CLI runs the quickstart end-to-end without access to the source tree.
 - **SC-008**: `CHANGELOG.md` (v0.1.0 entry), `CONTRIBUTING.md` (contribute + new integration + custom validator + vocabulary), and the Apache-2.0 `LICENSE` are all present and accurate.
