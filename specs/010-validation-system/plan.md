@@ -140,7 +140,7 @@ src/bookwright/
 │       ├── setting_continuity.py  # contradiction-lexicon descriptors per setting across files
 │       └── focalization.py        # constitution-declared person/focus vs manuscript prose
 ├── commands/
-│   └── validate.py            # Typer command; wires context+engine → runner → report → exit code
+│   └── validate.py            # Typer command; wires context+indexer → runner → report → exit code
 └── (indexer-gap closure — research D1/D11/D12; small edits to existing iter-5/6 modules)
     golem/modules/event.py      # NarrativeEvent gains begin/end years + the 5 relation refs;
     │                           #   custom to_triples emits the typed-boundary interval (reuses Dimension)
