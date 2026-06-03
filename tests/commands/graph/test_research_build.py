@@ -40,7 +40,7 @@ def _e13_count(runner: CliRunner) -> int:
     return int(rows[0]["n"])
 
 
-# --- Foundational regression (T008) -----------------------------------------
+# --- Foundational regression: research-free builds emit no research triples --
 
 
 def test_research_free_build_adds_no_research_triples(

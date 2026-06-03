@@ -270,3 +270,160 @@ def test_anchor_no_span_leaves_begin_end_none(tmp_path: Path) -> None:
 def test_malformed_yaml_aborts(tmp_path: Path) -> None:
     with pytest.raises(ResearchError):
         _run(tmp_path, sources="---\nsources: [unbalanced\n---\n")
+
+
+# --- Strict structural fault model (D7/FR-016) — negative guards ------------
+#
+# The headline contract is that research is *stricter* than the bible mapper:
+# any malformed structure aborts the build naming the offending file. The
+# value-level rules are exercised above; the cases below pin the structural
+# type-guards and the D5 ``date``↔``begin``/``end`` exclusivity rule, so a
+# regression that loosened one of them can no longer pass CI silently. Each
+# asserts the structured ``ResearchError`` contract (``relpath`` — and ``value``
+# where the guard carries the offending token), not just a message substring,
+# because ``relpath``/``value`` are what ``to_json()`` ships to an agent.
+
+SOURCES_RELPATH = "bible/research/sources.md"
+TOPIC_RELPATH = "bible/research/detective-licencia.md"
+
+
+def test_sources_not_a_list_aborts(tmp_path: Path) -> None:
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources="---\nsources: not-a-list\n---\n")
+    assert exc.value.relpath == SOURCES_RELPATH
+
+
+def test_source_item_not_a_mapping_aborts(tmp_path: Path) -> None:
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources="---\nsources:\n  - just-a-string\n---\n")
+    assert exc.value.relpath == SOURCES_RELPATH
+
+
+def test_invalid_source_reports_first_pydantic_error(tmp_path: Path) -> None:
+    # All facets present and vocab valid, but an empty ``reliability_justification``
+    # trips the model's field validator → ValidationError → named ResearchError
+    # whose message threads through ``_first_error`` (locates the offending field).
+    bad = SOURCES_OK.replace(
+        'reliability_justification: "Fuente oficial primaria."',
+        'reliability_justification: ""',
+    )
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad)
+    assert exc.value.relpath == SOURCES_RELPATH
+    assert "reliability_justification" in str(exc.value)
+
+
+def test_topic_without_findings_or_anchors_is_inert(tmp_path: Path) -> None:
+    result = _run(tmp_path, topic="---\nnote: just prose, no entities\n---\n")
+    assert result.findings == ()
+    assert result.anchors == ()
+    assert result.files_processed == 1
+
+
+def test_findings_not_a_list_aborts(tmp_path: Path) -> None:
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, topic="---\nfindings: not-a-list\n---\n")
+    assert exc.value.relpath == TOPIC_RELPATH
+
+
+def test_finding_item_not_a_mapping_aborts(tmp_path: Path) -> None:
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, topic="---\nfindings:\n  - just-a-string\n---\n")
+    assert exc.value.relpath == TOPIC_RELPATH
+
+
+def test_finding_missing_id_aborts(tmp_path: Path) -> None:
+    topic = '---\nfindings:\n  - claim: "x"\n    sources: ["Registro TIP"]\n---\n'
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+    assert "id" in str(exc.value)
+
+
+def test_finding_sources_not_a_list_aborts(tmp_path: Path) -> None:
+    topic = '---\nfindings:\n  - id: f1\n    claim: "x"\n    sources: "Registro TIP"\n---\n'
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+
+
+def test_anchors_not_a_list_aborts(tmp_path: Path) -> None:
+    topic = textwrap.dedent(
+        """\
+        ---
+        findings:
+          - id: f1
+            claim: "x"
+            sources: ["Registro TIP"]
+        anchors: not-a-list
+        ---
+        """
+    )
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+
+
+def test_anchor_item_not_a_mapping_aborts(tmp_path: Path) -> None:
+    topic = textwrap.dedent(
+        """\
+        ---
+        findings:
+          - id: f1
+            claim: "x"
+            sources: ["Registro TIP"]
+        anchors:
+          - just-a-string
+        ---
+        """
+    )
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+
+
+def test_anchor_missing_constrains_aborts(tmp_path: Path) -> None:
+    topic = TOPIC_ANCHOR.replace('    constrains: "Manuel de Aparici"\n', "")
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+    assert "constrains" in str(exc.value)
+
+
+def test_anchor_date_mutually_exclusive_with_begin_aborts(tmp_path: Path) -> None:
+    topic = TOPIC_ANCHOR.replace(
+        "    begin: 1995\n    end: 2026", "    begin: 1995\n    date: 1943"
+    )
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+    assert "mutually exclusive" in str(exc.value)
+
+
+def test_anchor_non_integer_year_aborts(tmp_path: Path) -> None:
+    topic = TOPIC_ANCHOR.replace("    begin: 1995", '    begin: "mil novecientos"')
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+    assert exc.value.value == "mil novecientos"
+
+
+def test_anchor_boolean_year_aborts(tmp_path: Path) -> None:
+    # ``bool`` is an ``int`` subclass in Python — the explicit bool guard stops a
+    # YAML ``true`` from being silently accepted as the year ``1`` (D5).
+    topic = TOPIC_ANCHOR.replace("    begin: 1995", "    begin: true")
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=SOURCES_OK, topic=topic)
+    assert exc.value.relpath == TOPIC_RELPATH
+    assert exc.value.value == "True"
+
+
+def test_unreadable_research_file_aborts(tmp_path: Path) -> None:
+    # A directory shaped like a topic file is matched by ``glob('*.md')`` but cannot
+    # be read — the OSError surfaces as a file-naming ResearchError, never a crash.
+    research = tmp_path / "bible" / "research"
+    research.mkdir(parents=True)
+    (research / "broken.md").mkdir()
+    with pytest.raises(ResearchError) as exc:
+        map_research(tmp_path, research, URI_BASE, "es", {}, timeline_uri(URI_BASE))
+    assert exc.value.relpath == "bible/research/broken.md"

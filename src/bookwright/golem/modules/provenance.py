@@ -133,7 +133,7 @@ class Finding(GolemEntity):
     entity is still valid, emitting just ``rdf:type`` + ``bw:open true``.
 
     ``bw:assertedBy`` is emitted only alongside a ``claim`` — an open question with
-    no claim asserts nothing, so it carries no asserter (research D9, T016).
+    no claim asserts nothing, so it carries no asserter (research D9).
     """
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["AttributeAssignment"]

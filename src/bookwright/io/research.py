@@ -397,7 +397,7 @@ def _load(acc: _Accumulator, path: Path, relpath: str) -> dict[str, Any]:
 def _first_error(exc: ValidationError) -> str:
     """A compact, value-naming summary of the first pydantic validation error."""
     errors = exc.errors()
-    if not errors:
+    if not errors:  # pragma: no cover — a pydantic ValidationError always carries ≥1 error
         return str(exc)
     first = errors[0]
     location = ".".join(str(part) for part in first.get("loc", ()))
