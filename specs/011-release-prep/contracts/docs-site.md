@@ -66,7 +66,7 @@ nav:
 
 | ID | Gate | Maps to |
 |----|------|---------|
-| CI-1 | `pytest` with coverage **≥ 80%**, fail-closed with **no round-up** (`--cov-fail-under=80` + `[tool.coverage.report] precision = 2`). | FR-019, SC-005, edge case |
+| CI-1 | `pytest` with coverage **≥ 80%**, fail-closed with **no round-up**. Threshold single-sourced in `[tool.coverage.report]` (`fail_under = 80`, `precision = 2`); CI runs plain `pytest` and does **not** pass `--cov-fail-under` (avoids a second, drift-prone threshold). | FR-019, SC-005, edge case |
 | CI-2 | `ruff check` + `ruff format --check`. | FR-020, SC-006 |
 | CI-3 | `mypy --strict`. | FR-020, SC-006 |
 | CI-4 | `pre-commit` passes locally/CI. | FR-020, SC-006 |

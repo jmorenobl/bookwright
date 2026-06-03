@@ -69,7 +69,7 @@ agentskills.io (Principle VII).
 
 ## Constitution Check
 
-*GATE: evaluated against `.specify/memory/constitution.md` v1.2.0. Must pass
+*GATE: evaluated against `.specify/memory/constitution.md` v1.3.0. Must pass
 before Phase 0 and re-checked after Phase 1.*
 
 | Principle | Status | Notes |
@@ -85,16 +85,17 @@ before Phase 0 and re-checked after Phase 1.*
 | IX. JSON-over-stdout | ✅ | E2E assertions parse stdout as a single JSON doc; prose on stderr (VR-9). |
 | X. Design axioms | ✅ | Architecture page **summarizes + links** the design doc; reopens nothing in § 16. |
 
-**Note on Principle VIII (authoring-flow E2E)**: VIII names the flow
-`init → constitution → bible → outline → scenes → draft` against `tiny-novel/`.
-The authoring legs (`constitution/bible/outline/scenes/draft`) are Agent
-**Skills** — LLM-driven `SKILL.md` prompts, not executable CLI commands — so
-they cannot be asserted by `CliRunner`. This iteration verifies them via
-**materialization compliance** (C2, `test_skills_materialization.py`): every
-authoring skill is generated and passes the shipped agentskills.io linter,
-while the executable surface (`init/build/query/validate`) is exercised
-end-to-end by C1. No authoring step is left unverified; the verification mode
-differs by artifact type (executable command vs. skill prompt).
+**Note on Principle VIII (authoring-flow E2E)**: Constitution v1.3.0 clarifies
+VIII for exactly this case. The authoring legs of the named workflow
+(`constitution/bible/outline/scenes/draft`) are Agent **Skills** — LLM-driven
+`SKILL.md` prompts, not executable CLI commands — so per the clarified
+principle their E2E verification is satisfied by **materialization compliance**
+(C2, `test_skills_materialization.py`): every authoring skill is generated and
+passes the shipped agentskills.io linter (`lint_skill_md`, Principle VII),
+while the executable surface (`init → graph build → graph query → validate`) is
+exercised end-to-end by C1. No authoring step is left unverified; the
+verification mode differs by artifact type (executable command vs. skill
+prompt), and the ≥ 80% coverage bar is unchanged.
 
 **Scope & Release Discipline**: deliverables map 1:1 to design § 15.4 (M3)
 and the iteration-12 prompt. No deferred capability (presets v0.2, Grafeo
