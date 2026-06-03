@@ -33,6 +33,7 @@ from rdflib.term import URIRef
 
 from bookwright.golem import Anchor, Finding, Source
 from bookwright.golem.base import GolemEntity
+from bookwright.golem.errors import EmptySlugError
 from bookwright.golem.namespaces import RELIABILITY_IRI, SOURCE_TYPE_IRI
 from bookwright.golem.slug import make_slug
 
@@ -167,6 +168,12 @@ def _map_sources(acc: _Accumulator, path: Path) -> None:
             raise ResearchError(relpath, f"each `sources` item must be a mapping in {relpath}")
         source = _build_source(acc, raw, relpath)
         slug = make_slug(source.name)
+        if slug in acc.source_index:
+            raise ResearchError(
+                relpath,
+                f"duplicate source name {source.name!r} (slug {slug!r}) in {relpath}",
+                source.name,
+            )
         acc.source_index[slug] = source.uri
         acc.sources.append(source)
 
@@ -183,6 +190,10 @@ def _build_source(acc: _Accumulator, raw: dict[str, Any], relpath: str) -> Sourc
         source = Source(uri_base=acc.uri_base, **raw)
     except ValidationError as exc:
         raise ResearchError(relpath, f"invalid source in {relpath}: {_first_error(exc)}") from exc
+    except EmptySlugError as exc:
+        raise ResearchError(
+            relpath, f"source `name` is empty or unsluggable in {relpath}", exc.name
+        ) from exc
     return _apply_translation_rule(acc, source, relpath)
 
 
@@ -251,6 +262,10 @@ def _map_findings(
         if not isinstance(raw, dict):
             raise ResearchError(relpath, f"each finding must be a mapping in {relpath}")
         identifier, finding = _build_finding(acc, raw, relpath, open_only=open_only)
+        if identifier in finding_ids:
+            raise ResearchError(
+                relpath, f"duplicate finding id {identifier!r} in {relpath}", identifier
+            )
         finding_ids[identifier] = finding.uri
         acc.findings.append(finding)
     return finding_ids
@@ -290,7 +305,11 @@ def _resolve_sources(acc: _Accumulator, raw_sources: Any, relpath: str) -> tuple
         raise ResearchError(relpath, f"`sources` must be a list of source names in {relpath}")
     resolved: list[URIRef] = []
     for name in raw_sources:
-        uri = acc.source_index.get(make_slug(str(name)))
+        try:
+            slug = make_slug(str(name))
+        except EmptySlugError:
+            slug = None
+        uri = acc.source_index.get(slug) if slug is not None else None
         if uri is None:
             raise ResearchError(relpath, f"unknown source {name!r} in {relpath}", str(name))
         resolved.append(uri)
@@ -344,7 +363,11 @@ def _resolve_narrative(acc: _Accumulator, raw: Any, field_name: str, relpath: st
     if raw is None:
         return None
     name = str(raw)
-    uri = acc.bible_index.get(make_slug(name))
+    try:
+        slug = make_slug(name)
+    except EmptySlugError:
+        slug = None
+    uri = acc.bible_index.get(slug) if slug is not None else None
     if uri is None:
         acc.warnings.append(ResearchWarning(relpath=relpath, field=field_name, name=name))
         return None
