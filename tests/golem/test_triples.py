@@ -5,7 +5,7 @@ FR-008/015, SC-003.
 
 from __future__ import annotations
 
-from rdflib.namespace import RDF
+from rdflib.namespace import RDF, XSD
 from rdflib.term import Literal, URIRef
 
 from bookwright.golem import (
@@ -116,6 +116,50 @@ def test_optional_reference_omitted_when_none() -> None:
 
     location = NarrativeLocation(uri_base=B, name="El faro")
     assert ns.GENERIC_LOCATION not in {p for _, p, _ in location.to_triples()}
+
+
+def test_narrative_event_interval_and_relation_triples() -> None:
+    """A NarrativeEvent with begin/end + a follows ref emits the typed-boundary
+    interval (gYear via a Dimension) and the frozen ``TR:follows`` edge (D11)."""
+    other = URIRef(f"{B}event/otro")
+    event = NarrativeEvent(uri_base=B, name="Quiebra", begin=1884, end=1884, follows=(other,))
+    triples = set(event.to_triples())
+
+    # The relation edge.
+    assert (event.uri, ns.FOLLOWS, other) in triples
+
+    # The interval carrier + a typed begin boundary carrying a gYear via its Dimension.
+    span = URIRef(f"{event.uri}/time-span")
+    assert (event.uri, ns.DURATION, span) in triples
+    assert (span, RDF.type, ns.CLASS_IRI["TimeInterval"]) in triples
+    begin_boundary = URIRef(f"{span}/begin")
+    assert (span, ns.TEMPORAL_LOCATION, begin_boundary) in triples
+    assert (begin_boundary, ns.HAS_TYPE, URIRef(f"{B}type/begin")) in triples
+    dimension = URIRef(f"{begin_boundary}/dimension")
+    assert (begin_boundary, ns.HAS_DIMENSION, dimension) in triples
+    assert (dimension, ns.HAS_VALUE, Literal("1884", datatype=XSD.gYear)) in triples
+
+
+def test_open_interval_emits_only_known_boundary() -> None:
+    """A begin-only (open) interval emits the begin boundary and no end boundary."""
+    event = NarrativeEvent(uri_base=B, name="Apertura", begin=1900)
+    span = URIRef(f"{event.uri}/time-span")
+    triples = set(event.to_triples())
+    assert (span, ns.TEMPORAL_LOCATION, URIRef(f"{span}/begin")) in triples
+    assert (span, ns.TEMPORAL_LOCATION, URIRef(f"{span}/end")) not in triples
+
+
+def test_interval_terms_are_in_frozen_closure() -> None:
+    """Every predicate/class an interval event emits is frozen (D11, SC-003)."""
+    frozen = ns.frozen_terms()
+    other = URIRef(f"{B}event/otro")
+    event = NarrativeEvent(
+        uri_base=B, name="E", begin=1, end=2, follows=(other,), overlaps=(other,)
+    )
+    for _, predicate, obj in event.to_triples():
+        assert predicate == RDF.type or predicate in frozen, f"predicate {predicate} not frozen"
+        if predicate == RDF.type:
+            assert obj in frozen, f"class {obj} not frozen"
 
 
 def test_term_closure_over_frozen_ontology() -> None:

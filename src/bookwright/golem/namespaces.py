@@ -22,8 +22,11 @@ __all__ = [
     "ASSIGNED_ATTRIBUTE_TO",
     "CLASS_IRI",
     "CRM",
+    "CSM",
     "DLP",
+    "DURATION",
     "EDNS",
+    "FOLLOWS",
     "GENERICALLY_DEPENDENT_ON",
     "GENERIC_LOCATION",
     "GOLEM",
@@ -33,10 +36,16 @@ __all__ = [
     "HAS_VALUE",
     "PARTICIPANT",
     "PLAYS",
+    "PRECEDES",
     "PROPER_PART",
     "RDF",
     "RDFS",
     "REFERS_TO",
+    "TEMPORALLY_INCLUDED_IN",
+    "TEMPORALLY_INCLUDES",
+    "TEMPORALLY_OVERLAPS",
+    "TEMPORAL_LOCATION",
+    "TR",
     "USED_SPECIFIC_OBJECT",
     "XSD",
     "bind_prefixes",
@@ -55,12 +64,21 @@ DLP = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/DOLCE-Lite.owl#")
 # narrative role) — a *different* file from the DOLCE-Lite ``DLP`` above, kept
 # bound to its own ``edns`` prefix so the distinction stays visible (FR-018).
 EDNS = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/ExtendedDnS.owl#")
+# The DOLCE TemporalRelations layer: the five qualitative event relations plus
+# ``temporal-location`` (interval → boundary). All five relations are frozen
+# (research D11, verified against ``golem.ttl``).
+TR = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/TemporalRelations.owl#")
+# The DOLCE CommonSenseMapping layer supplying ``duration`` (event → its
+# time-interval, ⊑ ``temporal-location``).
+CSM = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/CommonSenseMapping.owl#")
 
 _PREFIXES: tuple[tuple[str, Namespace], ...] = (
     ("golem", GOLEM),
     ("crm", CRM),
     ("dlp", DLP),
     ("edns", EDNS),
+    ("tr", TR),
+    ("csm", CSM),
     ("rdf", Namespace(str(RDF))),
     ("rdfs", Namespace(str(RDFS))),
     ("xsd", Namespace(str(XSD))),
@@ -99,6 +117,9 @@ CLASS_IRI: dict[str, URIRef] = {
     "CharacterFeature": GOLEM["G17_Character_Feature"],
     "Dimension": CRM["E54_Dimension"],
     "Type": CRM["E55_Type"],
+    # The DOLCE-Lite time-interval carrying an event's begin/end boundaries
+    # (research D11). Closure-safe — emitted by NarrativeEvent's interval triples.
+    "TimeInterval": DLP["time-interval"],
 }
 """Class name → rdf:type IRI. Every value is asserted ∈ frozen_terms() (SC-003)."""
 
@@ -133,6 +154,23 @@ HAS_DIMENSION = CRM["P43_has_dimension"]
 """Biographical feature → its E54_Dimension (carrying the year value)."""
 HAS_VALUE = CRM["P90_has_value"]
 """Dimension → its primitive value (the year as an xsd:gYear literal)."""
+
+# --- Temporal-interval predicates (FR-015, research D11) --------------------
+
+DURATION = CSM["duration"]
+"""Event → its time-interval (⊑ ``temporal-location``); carries the begin/end span."""
+TEMPORAL_LOCATION = TR["temporal-location"]
+"""Interval → one of its begin/end boundary intervals."""
+FOLLOWS = TR["follows"]
+"""Event strictly after another (the canonical strict-order relation)."""
+PRECEDES = TR["precedes"]
+"""Event strictly before another (inverse direction of ``follows``)."""
+TEMPORALLY_OVERLAPS = TR["temporally-overlaps"]
+"""Two events share part of their extent (symmetric)."""
+TEMPORALLY_INCLUDES = TR["temporally-includes"]
+"""Event whose extent contains another's (containment)."""
+TEMPORALLY_INCLUDED_IN = TR["temporally-included-in"]
+"""Event whose extent is contained within another's (inverse containment)."""
 
 # --- Frozen ontology --------------------------------------------------------
 

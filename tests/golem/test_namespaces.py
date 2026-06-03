@@ -59,7 +59,8 @@ def test_attribute_carrier_class_iris_present() -> None:
 def test_class_iri_maps_thirteen_concepts_plus_attribute_carriers() -> None:
     """The 13 narrative concepts (the SC-001 guarantee, also pinned in the
     CONCEPTS registry) plus the 3 character-scoped attribute-carrier classes
-    (G17 / E54 / E55) — 16 class IRIs in all."""
+    (G17 / E54 / E55) and the temporal ``TimeInterval`` (DOLCE-Lite, added by the
+    validation system's interval model, research D11) — 17 class IRIs in all."""
     concepts = {
         "Character",
         "Object",
@@ -75,7 +76,7 @@ def test_class_iri_maps_thirteen_concepts_plus_attribute_carriers() -> None:
         "NarrativeSequence",
         "AttributeAssignment",
     }
-    carriers = {"CharacterFeature", "Dimension", "Type"}
+    carriers = {"CharacterFeature", "Dimension", "Type", "TimeInterval"}
     assert concepts <= set(ns.CLASS_IRI)
     assert carriers <= set(ns.CLASS_IRI)
-    assert len(ns.CLASS_IRI) == len(concepts) + len(carriers) == 16
+    assert len(ns.CLASS_IRI) == len(concepts) + len(carriers) == 17

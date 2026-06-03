@@ -35,14 +35,21 @@ from .report import SkippedFile, UnknownKey, UnresolvedParticipant
 CHARACTER_KEYS = frozenset({"name", "born", "died", "features", "narrative_roles"})
 SETTING_KEYS = frozenset({"name"})
 ITEM_KEYS = frozenset({"name", "participants"})
+# The five qualitative temporal relations an event may declare (each a list of
+# event names resolved against the timeline's own event index — research D11).
+RELATION_KEYS: tuple[str, ...] = ("follows", "precedes", "overlaps", "includes", "included_in")
+# Events additionally accept an interval (``begin`` / ``end`` years, or the
+# ``date`` single-year shorthand) plus the relation keys.
+EVENT_ITEM_KEYS = frozenset({"name", "participants", "begin", "end", "date", *RELATION_KEYS})
 TIMELINE_TOP_KEYS = frozenset({"events"})
 RELATIONSHIPS_TOP_KEYS = frozenset({"relationships"})
 
 # A directory builder maps ``(frontmatter, relpath) → entity``; a collection
-# factory maps ``(name, participants) → entity``. Typed so ``mypy --strict``
-# checks every call site (rather than the previous ``Any`` escape hatch).
+# builder maps an ``_ItemContext`` (name, resolved participants, the raw item, and
+# the collection's own name→URI index) → entity. Typed so ``mypy --strict`` checks
+# every call site (rather than the previous ``Any`` escape hatch).
 _Builder = Callable[[dict[str, Any], str], GolemEntity]
-_Factory = Callable[[str, tuple[URIRef, ...]], GolemEntity]
+_ItemBuilder = Callable[["_ItemContext"], GolemEntity]
 
 
 @dataclass(frozen=True)
@@ -117,7 +124,24 @@ class _CollectionSpec:
     concept: str
     top_keys: frozenset[str]
     container: str
-    factory: _Factory
+    item_keys: frozenset[str]
+    builder: _ItemBuilder
+    # When set, the collection indexes its own items by slug so an item may
+    # reference a sibling by name (events → temporal relations). ``None`` means a
+    # collection whose items never cross-reference each other (relationships).
+    item_uri: Callable[[str], URIRef] | None = None
+
+
+@dataclass(frozen=True)
+class _ItemContext:
+    """Everything a collection builder needs for one item (R3)."""
+
+    ctx: _MapContext
+    item: dict[str, Any]
+    name: str
+    participants: tuple[URIRef, ...]
+    relpath: str
+    item_index: dict[str, URIRef]
 
 
 def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
@@ -162,9 +186,9 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             concept="NarrativeEvent",
             top_keys=TIMELINE_TOP_KEYS,
             container="events",
-            factory=lambda name, participants: NarrativeEvent(
-                uri_base=uri_base, name=name, participants=participants
-            ),
+            item_keys=EVENT_ITEM_KEYS,
+            builder=lambda ic: _build_event(uri_base, ic),
+            item_uri=lambda name: URIRef(f"{uri_base}event/{make_slug(name)}"),
         ),
     )
     _map_collection(
@@ -174,8 +198,9 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             concept="SocialRelationship",
             top_keys=RELATIONSHIPS_TOP_KEYS,
             container="relationships",
-            factory=lambda name, participants: SocialRelationship(
-                uri_base=uri_base, name=name, participants=participants
+            item_keys=ITEM_KEYS,
+            builder=lambda ic: SocialRelationship(
+                uri_base=uri_base, name=ic.name, participants=ic.participants
             ),
         ),
     )
@@ -297,55 +322,127 @@ def _map_collection(ctx: _MapContext, spec: _CollectionSpec) -> None:
             SkippedFile(path=relpath, reason=f"`{spec.container}` must be a list")
         )
         return
+    item_index = _build_item_index(spec, items)
     for item in items:
         if not isinstance(item, dict):
             ctx.result.skipped.append(
                 SkippedFile(path=relpath, reason=f"each `{spec.container}` item must be a mapping")
             )
             continue
-        _map_collection_item(ctx, spec, item, relpath, frontmatter)
+        _map_collection_item(ctx, spec, item, frontmatter, item_index)
+
+
+def _build_item_index(spec: _CollectionSpec, items: list[Any]) -> dict[str, URIRef]:
+    """For a self-indexing collection, map each well-named item's slug → its URI.
+
+    Lets an item reference a sibling by name (events → temporal relations) without
+    depending on declaration order. Empty for collections that don't self-reference.
+    """
+    if spec.item_uri is None:
+        return {}
+    index: dict[str, URIRef] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if isinstance(name, str) and name.strip():
+            try:
+                index[make_slug(name)] = spec.item_uri(name)
+            except EmptySlugError:
+                continue
+    return index
 
 
 def _map_collection_item(
     ctx: _MapContext,
     spec: _CollectionSpec,
     item: dict[str, Any],
-    relpath: str,
     frontmatter: Frontmatter,
+    item_index: dict[str, URIRef],
 ) -> None:
+    relpath = _relpath(spec.path, ctx.project_root)
     name = item.get("name")
     if not isinstance(name, str) or not name.strip():
         ctx.result.skipped.append(
             SkippedFile(path=relpath, reason=f"a `{spec.container}` item is missing `name`")
         )
         return
-    participants = _resolve_participants(ctx, item, name, relpath)
+    participants = _resolve_refs(ctx, item.get("participants"), ctx.slug_index, name, relpath)
+    ictx = _ItemContext(
+        ctx=ctx,
+        item=item,
+        name=name,
+        participants=participants,
+        relpath=relpath,
+        item_index=item_index,
+    )
     try:
-        entity = spec.factory(name, participants)
+        entity = spec.builder(ictx)
         ctx.collisions.record(spec.concept, make_slug(name), relpath)
     except EmptySlugError as exc:
         ctx.result.skipped.append(SkippedFile(path=relpath, reason=exc.message))
         return
+    except InvalidFrontmatterError as exc:
+        ctx.result.skipped.append(SkippedFile(path=relpath, reason=exc.reason))
+        return
     # Record soft warnings only after the item produced an entity (see _map_single_dir).
-    _record_unknown_keys(ctx, item, ITEM_KEYS, relpath)
+    _record_unknown_keys(ctx, item, spec.item_keys, relpath)
     ctx.result.mapped.append(
         MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
     )
 
 
-def _resolve_participants(
+def _build_event(uri_base: str, ic: _ItemContext) -> NarrativeEvent:
+    """Construct a ``NarrativeEvent`` from a timeline item: interval + relations."""
+    begin, end = _resolve_interval(ic)
+    relations = {
+        key: _resolve_refs(ic.ctx, ic.item.get(key), ic.item_index, ic.name, ic.relpath)
+        for key in RELATION_KEYS
+    }
+    return NarrativeEvent(
+        uri_base=uri_base,
+        name=ic.name,
+        participants=ic.participants,
+        begin=begin,
+        end=end,
+        **relations,
+    )
+
+
+def _resolve_interval(ic: _ItemContext) -> tuple[int | None, int | None]:
+    """Coerce ``begin`` / ``end`` / ``date`` to int years, enforcing exclusivity.
+
+    ``date`` is a single-year shorthand (``begin == end``). Supplying ``date``
+    alongside ``begin``/``end`` is a soft warning (``date`` ignored), like an
+    unknown key — never an abort.
+    """
+    begin = _coerce_year(ic.item.get("begin"), "begin")
+    end = _coerce_year(ic.item.get("end"), "end")
+    date = _coerce_year(ic.item.get("date"), "date")
+    if date is not None:
+        if begin is not None or end is not None:
+            # Mutually exclusive: keep begin/end, drop date, flag it softly.
+            ic.ctx.result.unknown_keys.append(UnknownKey(path=ic.relpath, key="date"))
+        else:
+            return date, date
+    return begin, end
+
+
+def _resolve_refs(
     ctx: _MapContext,
-    item: dict[str, Any],
+    raw: Any,
+    index: dict[str, URIRef],
     entity_name: str,
     relpath: str,
 ) -> tuple[URIRef, ...]:
-    raw = item.get("participants")
+    """Resolve a list of names against ``index`` (characters or sibling events).
+
+    A non-list value, or a name absent from the index, is surfaced as an
+    ``UnresolvedParticipant`` soft warning (no abort); the owning entity is built.
+    """
     if raw is None:
         return ()
     if not isinstance(raw, list):
-        # A scalar/mapping where a list was expected can't resolve to characters;
-        # surface it as an unresolved reference (soft warning) instead of dropping
-        # it silently. The owning event/relationship is still built.
         ctx.result.unresolved_participants.append(
             UnresolvedParticipant(path=relpath, entity=entity_name, name=str(raw))
         )
@@ -354,7 +451,7 @@ def _resolve_participants(
     for ref in raw:
         if not isinstance(ref, str):
             continue
-        uri = ctx.slug_index.get(make_slug(ref))
+        uri = index.get(make_slug(ref))
         if uri is None:
             ctx.result.unresolved_participants.append(
                 UnresolvedParticipant(path=relpath, entity=entity_name, name=ref)

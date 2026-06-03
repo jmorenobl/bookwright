@@ -1,0 +1,65 @@
+"""Run the active validators with per-validator isolation (FR-014, D8/D9).
+
+A validator that raises is caught and recorded as a ``ValidatorError(phase="run")``
+without aborting the others (FR-014). Identical findings are deduped and the
+combined set is sorted by an explicit total-order key so the emitted list is
+byte-identical across runs and platforms (SC-003), not merely "stably sorted".
+"""
+
+from __future__ import annotations
+
+from bookwright.indexers import Indexer
+from bookwright.validation.base import (
+    _RANK,
+    ValidationContext,
+    Validator,
+    ValidatorError,
+    Violation,
+)
+
+__all__ = ["RunResult", "run_validators", "sort_key"]
+
+RunResult = tuple[list[Violation], list[ValidatorError], list[str]]
+"""``(violations, errors, ran)`` — deduped/sorted findings, run errors, run names."""
+
+
+def sort_key(violation: Violation) -> tuple[str, int, str, str, tuple[tuple[str, str, str], ...]]:
+    """The explicit total order (D8): validator, severity desc, source, message, triples."""
+    return (
+        violation.validator,
+        -_RANK[violation.severity],
+        violation.source or "",
+        violation.message,
+        violation.triples,
+    )
+
+
+def run_validators(
+    active: list[Validator], project: ValidationContext, indexer: Indexer
+) -> RunResult:
+    """Run every validator in ``active``, isolating failures (FR-014).
+
+    Collects each validator's ``Violation`` list, deduplicates identical findings
+    across the whole run (D8), and returns them sorted by :func:`sort_key`. A
+    validator that raises contributes a ``ValidatorError(phase="run")`` and no
+    findings; the rest still run. ``ran`` lists every invoked validator name, sorted.
+    """
+    seen: set[Violation] = set()
+    violations: list[Violation] = []
+    errors: list[ValidatorError] = []
+    ran: list[str] = []
+
+    for validator in active:
+        ran.append(validator.name)
+        try:
+            found = validator.validate(project, indexer)
+        except Exception as exc:  # per-validator isolation (FR-014) — never abort the run
+            errors.append(ValidatorError(validator.name, f"{type(exc).__name__}: {exc}", "run"))
+            continue
+        for violation in found:
+            if violation not in seen:
+                seen.add(violation)
+                violations.append(violation)
+
+    violations.sort(key=sort_key)
+    return violations, errors, sorted(ran)

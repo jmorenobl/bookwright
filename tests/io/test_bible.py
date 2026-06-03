@@ -185,6 +185,85 @@ def test_skip_on_non_integer_born(tmp_path: Path) -> None:
     assert "born" in result.skipped[0].reason
 
 
+def test_timeline_interval_and_relations_map(tmp_path: Path) -> None:
+    """begin/end years and the five relation keys map onto the NarrativeEvent (D11)."""
+    bible = _bible(tmp_path)
+    _write(
+        bible / "timeline.md",
+        """\
+        ---
+        events:
+          - name: "Fundación"
+            begin: 1885
+            end: 1912
+          - name: "Quiebra"
+            date: 1884
+            follows: ["Fundación"]
+        ---
+        """,
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    events = {e.name: e for e in result.entities if isinstance(e, NarrativeEvent)}
+    funda, quiebra = events["Fundación"], events["Quiebra"]
+    assert (funda.begin, funda.end) == (1885, 1912)
+    assert (quiebra.begin, quiebra.end) == (1884, 1884)  # date shorthand → begin == end
+    assert quiebra.follows == (funda.uri,)  # resolved against the event index
+
+
+def test_timeline_date_with_begin_end_warns_and_ignores_date(tmp_path: Path) -> None:
+    """Supplying `date` alongside `begin`/`end` is a soft warning; `date` is ignored."""
+    bible = _bible(tmp_path)
+    _write(
+        bible / "timeline.md",
+        """\
+        ---
+        events:
+          - name: "Fundación"
+            begin: 1885
+            end: 1912
+            date: 1700
+        ---
+        """,
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    event = next(e for e in result.entities if isinstance(e, NarrativeEvent))
+    assert (event.begin, event.end) == (1885, 1912)  # date ignored
+    assert any(u.key == "date" for u in result.unknown_keys)
+
+
+def test_timeline_unresolved_relation_is_soft_warning(tmp_path: Path) -> None:
+    """A relation naming no sibling event is surfaced as unresolved, never fatal."""
+    bible = _bible(tmp_path)
+    _write(
+        bible / "timeline.md",
+        """\
+        ---
+        events:
+          - name: "Quiebra"
+            follows: ["No Existe"]
+        ---
+        """,
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    event = next(e for e in result.entities if isinstance(e, NarrativeEvent))
+    assert event.follows == ()
+    assert [(u.entity, u.name) for u in result.unresolved_participants] == [
+        ("Quiebra", "No Existe")
+    ]
+
+
+def test_timeline_non_integer_begin_skips_item(tmp_path: Path) -> None:
+    """A non-integer `begin` makes the timeline item unusable (skipped, not fatal)."""
+    bible = _bible(tmp_path)
+    _write(
+        bible / "timeline.md",
+        '---\nevents:\n  - name: "Mal"\n    begin: "ayer"\n---\n',
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert [e for e in result.entities if isinstance(e, NarrativeEvent)] == []
+    assert any("begin" in s.reason for s in result.skipped)
+
+
 def test_slug_collision_is_fatal(tmp_path: Path) -> None:
     bible = _bible(tmp_path)
     _write(bible / "characters" / "a.md", '---\nname: "Aparici"\n---\n')
