@@ -71,8 +71,10 @@ increment.
   the `SOURCE_TYPE_IRI` / `RELIABILITY_IRI` value→E55-individual maps, and the
   reused/new CRM constants `HAS_TIME_SPAN` (`crm:P4_has_time-span`), `E52_TIME_SPAN`
   (`crm:E52_Time-Span`), `BEGIN_OF_BEGIN` (`crm:P82a_begin_of_the_begin`),
-  `END_OF_END` (`crm:P82b_end_of_the_end`). None added to `CLASS_IRI`/closure
-  (research D3). Depends on T002 (same file).
+  `END_OF_END` (`crm:P82b_end_of_the_end`), and a `timeline_uri(uri_base) -> URIRef`
+  helper returning `URIRef(f"{uri_base}timeline")` — the untyped well-known IRI that is
+  the `constrains: timeline` target (research D10; no new class). None of these are added
+  to `CLASS_IRI`/closure (research D3). Depends on T002 (same file).
 - [ ] T004 [P] Author the controlled vocabulary
   [src/bookwright/resources/vocabularies/sources.ttl](src/bookwright/resources/vocabularies/sources.ttl):
   six source-type individuals (`bw:source-type/primaria|secundaria|oficial|academica|periodistica|testimonial`)
@@ -82,15 +84,20 @@ increment.
   table in `contracts/provenance-graph.md`); and a top provenance note that these
   terms are Bookwright's own, outside the frozen `golem.ttl`/`CLASS_IRI` closure
   (data-model §2; research D4). File must parse as well-formed Turtle.
-- [ ] T005 [P] Add `ResearchError(BookwrightError)` to
-  [src/bookwright/io/errors.py](src/bookwright/io/errors.py): carries `relpath`,
-  the offending value/key, a human message, and a `.to_json()` envelope; renders at
-  exit code 2 (contract `research-io.md`; research D7). Mirror the existing
-  `BookwrightError` envelope shape already used by the bible reader.
+- [ ] T005 [P] Add `ResearchError(IOError_)` to
+  [src/bookwright/io/errors.py](src/bookwright/io/errors.py): subclass the existing
+  `io.errors.IOError_` base — the same base the bible reader's errors use (there is
+  no `BookwrightError` type). Give it a `code` (e.g. `"invalid_research"`), `relpath`,
+  the offending value/key, a human `message`, and a `.to_json()` returning the
+  `{status, code, message, details}` shape its siblings emit (`MissingDirectoryError` /
+  `SlugCollisionError`); `build.py` renders it at exit code 2 (contract
+  `research-io.md`; research D7).
 - [ ] T006 Create the reader skeleton
   [src/bookwright/io/research.py](src/bookwright/io/research.py): the frozen
   `ResearchResult` dataclass (`sources`/`findings`/`anchors` tuples,
-  `files_processed`, `entities` property = sources+findings+anchors) and the
+  `files_processed`, a `warnings` tuple of frozen `ResearchWarning`
+  (`relpath`/`field`/`name`) for soft unresolved targets — D12, and `entities`
+  property = sources+findings+anchors) and the
   `map_research(project_root, research_dir, uri_base, book_language, bible_index,
   timeline_uri) -> ResearchResult` signature. Implement only the **absent/empty
   `research_dir`** path now → empty tuples, `files_processed == 0`, never raises
@@ -98,16 +105,23 @@ increment.
   ordering scaffolded. Reuse `io/frontmatter.py` / `io/bible.py` machinery.
   Depends on T005.
 - [ ] T007 Wire the research pass into
-  [src/bookwright/commands/graph/build.py](src/bookwright/commands/graph/build.py)`._build()`:
-  after the bible pass, derive `research_dir = bible_dir / "research"`, build the
-  `bible_index` (slug→URI) and `timeline_uri`, call `map_research(... ,
-  manifest.book.language, bible_index, timeline_uri)`, then
+  [src/bookwright/commands/graph/build.py](src/bookwright/commands/graph/build.py)`._build()`.
+  (a) First extend [src/bookwright/io/bible.py](src/bookwright/io/bible.py): add an
+  `entity_index: dict[str, URIRef]` field to `MapResult`, populated with
+  `make_slug(name) → URI` for **every character, setting and event** (the kinds an
+  anchor/finding may target, FR-009), leaving the participant-only `slug_index`
+  untouched so existing resolution is unchanged (research D11).
+  (b) After the bible pass, derive `research_dir = bible_dir / "research"`, take the
+  bible `entity_index` and the well-known `timeline_uri(uri_base)` (= `{uri_base}timeline`,
+  research D10), call `map_research(..., manifest.book.language, entity_index, timeline_uri)`, then
   `for entity in result.entities: for t in entity.to_triples(): engine.add_triple(*t)`
   before `engine.save(...)`; do **not** route research entities through
-  `build_provenance`. Catch `ResearchError` in the command body → existing error
-  envelope, exit 2. Extend `BuildReport`
+  `build_provenance`. Add `ResearchError` to the build command's existing
+  `except (ProjectNotFoundError, MissingDirectoryError, UnknownIndexerError)` tuple so
+  it renders through the existing error envelope at `EXIT_CONFIG` (exit 2). Extend `BuildReport`
   ([src/bookwright/io/report.py](src/bookwright/io/report.py) or build module) with
-  **optional** `sources`/`findings`/`anchors` counters; leave existing fields
+  **optional** `sources`/`findings`/`anchors` counters and a `ResearchWarning` list
+  (surfaced human + `--json`, **exit code unchanged** — D12); leave existing fields
   unchanged so current build/`--json` tests pass (research D8). Depends on T006.
 - [ ] T008 Foundational regression test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
@@ -151,9 +165,9 @@ aborts the build naming the value.
   equal (FR-016; SC-004/006; research D6).
 - [ ] T011 [US1] Integration test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
-  `graph build` over the fixture writes the Source node; `graph query` returns its
-  facets; a fixture variant with a bad `type` aborts with exit 2 and writes no
-  graph (US1 acceptance 1–3; SC-001).
+  `graph build` over the `with_research=True` `tiny_novel` scaffold writes the Source
+  node; `graph query` returns its facets; a fixture variant with a bad `type` aborts
+  with exit 2 and writes no graph (US1 acceptance 1–3; SC-001).
 
 ### Implementation for User Story 1
 
@@ -171,10 +185,15 @@ aborts the build naming the value.
   later by findings), enforce the translation rule against `book_language`, and
   raise `ResearchError` (naming file + value) on vocab violation, missing facet,
   or translation-rule violation (research D6/D7). Depends on T012.
-- [ ] T014 [US1] Create the fixture research directory + source registry
-  [tests/fixtures/tiny-novel/bible/research/sources.md](tests/fixtures/tiny-novel/bible/research/sources.md):
-  one `oficial` / `alta` Spanish source (book `language = "es"`, so no
-  translation), per `contracts/research-format.md` / quickstart §0.
+- [ ] T014 [US1] Add the research fixture to the graph-test scaffolder
+  [tests/commands/graph/conftest.py](tests/commands/graph/conftest.py): a
+  `RESEARCH_SOURCES_MD` constant plus a `with_research: bool = False` parameter on
+  `scaffold_project` that, when set, writes `bible/research/sources.md` — one
+  `oficial` / `alta` Spanish source (book `language = "es"`, so no translation), per
+  `contracts/research-format.md` / quickstart §0. `with_research` defaults **off** so
+  the existing research-free `tiny_novel` (and the 10-E13 count in
+  `test_provenance.py`) is byte-stable and unchanged. Do **not** touch the committed
+  `tests/fixtures/tiny-novel/` (a different project the graph tests do not read).
 - [ ] T015 [US1] Verify US1 end to end: `graph build` emits the Source triples and
   the `BuildReport` source counter; run the per-story gate
   (`uv run pytest tests/golem/test_provenance_entities.py tests/io/test_research.py
@@ -210,7 +229,9 @@ distinguishable from the bible's inferred assertions.
   [tests/io/test_research.py](tests/io/test_research.py): topic-file `findings:`
   and `_index.md` `open_questions:` parse; a non-open finding missing `claim` or
   `sources` → `ResearchError`; an open finding is accepted; `sources` resolve via
-  the source index and `bears_on` via `bible_index` (FR-008; research D7).
+  the source index and `bears_on` via `bible_index`; a `bears_on` name absent from
+  `bible_index` yields a `ResearchWarning` and no `P140`, the build not aborting
+  (FR-008; research D7/D12).
 - [ ] T018 [US2] Integration test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
   the built graph contains the finding `E13` with claim/asserter/`P140`/source(s),
@@ -228,12 +249,13 @@ distinguishable from the bible's inferred assertions.
 - [ ] T020 [US2] Implement `findings:` + `_index.md` `open_questions:` parsing in
   [src/bookwright/io/research.py](src/bookwright/io/research.py): build `Finding`
   entities, resolve `sources` via the source index and `bears_on` via
-  `bible_index`, enforce the non-open invariant (claim + ≥ 1 source) else
-  `ResearchError` (FR-007/008; research D7). Depends on T019, T013.
-- [ ] T021 [US2] Extend the fixture: add
-  [tests/fixtures/tiny-novel/bible/research/detective-licencia.md](tests/fixtures/tiny-novel/bible/research/detective-licencia.md)
-  (a finding citing the source and bearing on `Manuel de Aparici`) and
-  [tests/fixtures/tiny-novel/bible/research/_index.md](tests/fixtures/tiny-novel/bible/research/_index.md)
+  `bible_index` (an unresolved `bears_on` name → omit `P140` and append a
+  `ResearchWarning`, not an error — D12), enforce the non-open invariant
+  (claim + ≥ 1 source) else `ResearchError` (FR-007/008; research D7). Depends on T019, T013.
+- [ ] T021 [US2] Extend the research fixture in
+  [tests/commands/graph/conftest.py](tests/commands/graph/conftest.py): under the
+  `with_research` branch, write `bible/research/detective-licencia.md` (a finding
+  citing the source and bearing on `Manuel de Aparici`) and `bible/research/_index.md`
   (one open question), per `contracts/research-format.md`.
 - [ ] T022 [US2] Verify US2 end to end and run the per-story gate (pytest for the
   three test modules + `ruff` + `mypy --strict`).
@@ -269,7 +291,9 @@ with `constrains: timeline` links the timeline URI.
   [tests/io/test_research.py](tests/io/test_research.py): `anchors:` parse;
   `promotes` resolves to the in-file finding id (unknown id → `ResearchError`);
   `constrains` resolves via `bible_index` or to `timeline_uri` for the literal
-  `timeline`; `begin`/`end`/`date` map correctly (FR-009/010; research D7).
+  `timeline`; a `constrains` target absent from `bible_index` yields a
+  `ResearchWarning` and **no** `bw:constrains` triple, the build not aborting (D12);
+  `begin`/`end`/`date` map correctly (FR-009/010; research D7).
 - [ ] T025 [US3] Integration test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
   the worked SPARQL query (provenance-graph.md / quickstart §3) returns the anchor
@@ -288,12 +312,15 @@ with `constrains: timeline` links the timeline URI.
 - [ ] T027 [US3] Implement `anchors:` parsing in
   [src/bookwright/io/research.py](src/bookwright/io/research.py): resolve
   `promotes`→finding URI (unknown id → `ResearchError`), `constrains`→`bible_index`
-  / `timeline_uri`, and `begin`/`end`/`date`→time-span (FR-009/010; research D7).
+  (narrative entity) or the well-known `timeline_uri` for the literal `timeline`
+  (research D10) — a `constrains` name absent from the index → omit `bw:constrains`
+  and append a `ResearchWarning`, not an error (D12) — and
+  `begin`/`end`/`date`→time-span (FR-009/010; research D7).
   Depends on T026, T020.
-- [ ] T028 [US3] Extend
-  [tests/fixtures/tiny-novel/bible/research/detective-licencia.md](tests/fixtures/tiny-novel/bible/research/detective-licencia.md)
-  with an anchor (promotes the finding, constrains `Manuel de Aparici`, carries a
-  `begin`/`end` time-span), per `contracts/research-format.md`.
+- [ ] T028 [US3] Extend the `detective-licencia.md` research fixture in
+  [tests/commands/graph/conftest.py](tests/commands/graph/conftest.py) with an anchor
+  (promotes the finding, constrains `Manuel de Aparici`, carries a `begin`/`end`
+  time-span), per `contracts/research-format.md`.
 - [ ] T029 [US3] Verify US3 end to end and run the per-story gate (pytest + `ruff`
   + `mypy --strict`).
 

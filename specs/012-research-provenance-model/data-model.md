@@ -65,7 +65,7 @@ design § 4.5).
 |---|---|---|---|
 | `uri_base` | `str` | ✓ | — |
 | `promotes` | `URIRef` | ✓ | `bw:promotes` → the Finding URI |
-| `constrains` | `URIRef` | ✓ | `bw:constrains` → narrative entity URI (or the timeline URI) |
+| `constrains` | `URIRef` | ✓ | `bw:constrains` → narrative entity URI (or the untyped `{uri_base}timeline` IRI, D10) |
 | `begin` | `int \| None` | – | time-span sub-node `crm:P82a_begin_of_the_begin` (`xsd:gYear`) |
 | `end` | `int \| None` | – | time-span sub-node `crm:P82b_end_of_the_end` (`xsd:gYear`) |
 
@@ -79,7 +79,8 @@ design § 4.5).
   sets `begin == end`.
 - **`constrains` kinds** (FR-009): the reader resolves the named target to a
   `G1_Character` / `G12_Setting` / `G5_Narrative_Event` URI via the bible
-  `slug → URI` index, or to the project **timeline** URI for `constrains: timeline`.
+  `entity_index` (D11), or to the well-known **untyped** timeline IRI
+  `{uri_base}timeline` for `constrains: timeline` (research D10 — no new GOLEM class).
   This iteration emits the link as declared; *verifying* the target exists and is
   an allowed kind is the `factual_anchor` validator's job (iter 15) — see edge cases.
 
@@ -119,7 +120,7 @@ entities in v0 (findings/anchors are themselves the provenance reification).
 ```yaml
 ---
 sources:
-  - name: Registro TIP — Ministerio del Interior
+  - name: Registro TIP                 # slug → …/source/registro-tip
     reference: https://www.interior.gob.es/...
     author: Ministerio del Interior (España)
     original_language: es
@@ -141,8 +142,8 @@ findings:
   - id: tip-required
     claim: Un detective privado en España necesita la licencia TIP.
     asserted_by: agent
-    bears_on: Manuel de Aparici        # resolved against the bible slug index
-    sources: [Registro TIP — Ministerio del Interior]
+    bears_on: Manuel de Aparici        # resolved against the bible entity_index (D11)
+    sources: [Registro TIP]            # references the Source by name
   - id: open-q-archivo
     open: true                         # an unresolved question — no claim/source needed
 anchors:
@@ -175,8 +176,9 @@ Topic map and global open-questions prose…
    `anchors` → `Anchor`s, resolving:
    - `findings[].sources` → source URIs via the source index.
    - `findings[].bears_on` / `anchors[].constrains` → narrative-entity URIs via the
-     **bible** `slug → URI` index (passed in from the bible pass), or the timeline
-     URI for the literal `timeline`.
+     **bible** `entity_index` (`make_slug(name) → URI` covering characters, settings
+     and events; passed in from the bible pass — research D11), or the well-known
+     `{uri_base}timeline` IRI for the literal `timeline` (D10).
    - `anchors[].promotes` → the in-file finding `id` → that Finding's URI.
 4. **Translation rule** (D6): set `Source.translation` only when
    `original_language != book_language`; require it (else `ResearchError`) when they
@@ -186,6 +188,11 @@ Topic map and global open-questions prose…
    `claim` or `sources`; `anchors[].promotes` referencing an unknown finding id;
    translation-rule violation. Each error names the offending file and value
    (FR-016).
+6. **Soft miss** (D12, build continues, exit code unchanged): a `bears_on` /
+   `constrains` target name absent from the bible `entity_index` (and not the literal
+   `timeline`) → the link triple is **omitted** and recorded as a `ResearchWarning`
+   (`relpath` + field + name) surfaced in the build report. Existence/kind enforcement
+   is `factual_anchor`'s job (iter-15).
 
 ---
 
@@ -200,6 +207,7 @@ class ResearchResult:
     findings: tuple[Finding, ...]
     anchors: tuple[Anchor, ...]
     files_processed: int
+    warnings: tuple[ResearchWarning, ...]   # D12 — unresolved bears_on/constrains targets (soft)
 
     @property
     def entities(self) -> tuple[GolemEntity, ...]: ...   # sources + findings + anchors

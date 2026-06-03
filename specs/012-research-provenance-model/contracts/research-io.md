@@ -11,7 +11,7 @@ def map_research(
     research_dir: Path,          # bible_dir / "research"
     uri_base: str,
     book_language: str,          # manifest.book.language — drives the translation rule
-    bible_index: Mapping[str, URIRef],  # slug → URI from the bible pass (bears_on / constrains)
+    bible_index: Mapping[str, URIRef],  # map_bible's entity_index: name-slug → URI for characters/settings/events (D11; bears_on / constrains)
     timeline_uri: URIRef,        # target for `constrains: timeline`
 ) -> ResearchResult: ...
 ```
@@ -30,18 +30,27 @@ class ResearchResult:
     findings: tuple[Finding, ...]
     anchors: tuple[Anchor, ...]
     files_processed: int
+    warnings: tuple[ResearchWarning, ...]   # D12 — soft, unresolved bears_on/constrains targets
 
     @property
     def entities(self) -> tuple[GolemEntity, ...]:
         return (*self.sources, *self.findings, *self.anchors)
+
+
+@dataclass(frozen=True)
+class ResearchWarning:
+    relpath: str        # the research file
+    field: str          # "bears_on" | "constrains"
+    name: str           # the target name that did not resolve in the bible entity_index
 ```
 
 ## Errors
 
 ```python
-class ResearchError(BookwrightError):       # io/errors.py
+class ResearchError(IOError_):              # io/errors.py — same base as the bible reader's errors
     """A research file is structurally invalid; the build aborts, no graph written."""
-    # carries: relpath, offending value/key, human message; .to_json() envelope
+    # carries: code, relpath, offending value/key, human message
+    # .to_json() → {status, code, message, details}  (the sibling envelope shape)
 ```
 
 Raised (hard, build-aborting — D7) for:
@@ -57,10 +66,11 @@ Raised (hard, build-aborting — D7) for:
 Resolution misses that are **not** hard errors are still surfaced, consistent with
 the spec's edge cases:
 
-- `bears_on` / `constrains` naming an entity absent from `bible_index`: the link is
-  emitted as declared against a composed URI (the entity may be defined elsewhere);
-  *existence/kind verification is the iter-15 `factual_anchor` validator's job*, not
-  this reader's (spec edge cases).
+- `bears_on` / `constrains` naming an entity **absent** from `bible_index` (and not the
+  literal `timeline`): the link triple is **not emitted**; the miss is recorded as a
+  `ResearchWarning` and surfaced in the build report (D12). The build still succeeds
+  (exit code unchanged); *existence/kind verification is the iter-15 `factual_anchor`
+  validator's job*, not this reader's (spec edge cases).
 
 ## Build integration
 
@@ -73,7 +83,10 @@ for entity in research.entities:
 ```
 
 before `engine.save(...)`. Research entities are **not** run through
-`build_provenance` (they are already E13 reifications). `ResearchError` is caught
-in the command body and rendered via the existing error envelope with exit code 2;
-the `BuildReport` gains optional `sources` / `findings` / `anchors` counts for the
-human and `--json` summaries (existing fields unchanged).
+`build_provenance` (they are already E13 reifications). `ResearchError` is added to the
+build command's existing `except (ProjectNotFoundError, MissingDirectoryError,
+UnknownIndexerError)` tuple and rendered via the existing error envelope at
+`EXIT_CONFIG` (exit code 2);
+the `BuildReport` gains optional `sources` / `findings` / `anchors` counts plus the
+`ResearchWarning` list for the human and `--json` summaries, without changing the exit
+code (D12); existing fields are unchanged.

@@ -192,7 +192,7 @@ context into the frozen domain model.
   front-matter `findings:` and `anchors:` lists → `Finding` / `Anchor` entities.
   Findings reference sources by source name/slug; anchors reference a finding by
   its in-file `id` and a `constrains:` target (a narrative entity name resolved
-  against the bible's `slug → URI` index, or the literal `timeline`).
+  against the bible's `entity_index` (D11), or the literal `timeline`).
 - `bible/research/_index.md` — topic map + global open questions; an optional
   `open_questions:` list emits open `Finding`s. Treated leniently — never required.
 
@@ -253,9 +253,93 @@ assertions on two independent axes, either of which suffices:
 A discriminating query (`?f a crm:E13_Attribute_Assignment ; bw:claim ?c`) returns
 findings and no inferred assertions. The existing `tests/commands/graph/test_provenance.py`
 count (10 E13s in `tiny-novel`, which has no research) is unaffected because the
-research fixture lives in a *separate* build.
+research fixture lives behind the off-by-default `with_research` scaffold flag — the
+`tiny_novel` fixture `test_provenance.py` uses is `with_research=False`.
 
 **Rationale**: satisfies FR-018/SC-007 with zero ambiguity and no schema churn.
+
+---
+
+## D10 — The `timeline` constraint target (`constrains: timeline`)
+
+**Decision**: Define a well-known, conventional IRI `{uri_base}timeline` as the
+target an Anchor points at when its front-matter says `constrains: timeline`
+(FR-009, spec US3 §4). It is emitted **only** as the object of `bw:constrains`
+(`<anchor> bw:constrains <{uri_base}timeline>`); it carries **no `rdf:type`** and is
+produced by a tiny helper `timeline_uri(uri_base) -> URIRef` in
+`golem/namespaces.py`. `graph build` passes `timeline_uri(uri_base)` into
+`map_research`; the reader maps the literal `timeline` to it.
+
+**Rationale**: GOLEM models the timeline as a *collection* of `NarrativeEvent`s
+(`{uri_base}event/{slug}`), with **no single node** representing "the timeline"
+(confirmed in `io/bible.py`: `timeline.md` yields only `event/{slug}` nodes).
+FR-009 nonetheless lists "or the timeline" as a constraint target — era-level
+anchors that bound the whole story and feed the iter-15 anachronism check. A plain
+addressable IRI is the smallest durable surface that satisfies it **without
+introducing a new GOLEM/ontology class** (Constitution X): like `Source` (D2), the
+resource is *referenced*, not *typed*. A later iteration may add a typing triple for
+it without breaking the URI.
+
+**Alternatives rejected**: (a) link to every event node — wrong semantics (an era
+anchor is not a claim about each event). (b) mint a `bw:Timeline` `rdf:type` class —
+violates FR-001 / Constitution X. (c) drop the timeline target from v0 — breaks
+FR-009 and US3 acceptance §4.
+
+---
+
+## D11 — Resolving narrative targets: a comprehensive bible entity index
+
+**Decision**: `map_bible` (`io/bible.py`) exposes a new `entity_index` on
+`MapResult` — `make_slug(name) → URI` for **every character, setting and event** —
+and `graph build` passes it to `map_research` as the `bible_index` used to resolve
+`findings[].bears_on` and `anchors[].constrains`. This is **separate** from the
+existing participant-only `slug_index` (characters), which is left exactly as-is, so
+event/relationship participant resolution is unchanged (no regression).
+
+**Rationale**: FR-009 lets an Anchor (and a Finding's `bears_on`) target a
+`G1_Character`, a `G12_Setting` or a `G5_Narrative_Event`, but today only characters
+are indexed (`io/bible.py`: settings `index=False`; events live in a transient
+per-file `item_index`) and `MapResult` exposes no index at all. From a bare target
+name the reader cannot otherwise know the URI segment (`character/` vs `setting/` vs
+`event/`). A single comprehensive name→URI index is the smallest durable surface
+that makes every allowed target kind resolvable, and it doubles as the lookup later
+iterations (validators, verify) will need.
+
+**Alternatives rejected**: (a) flip settings/events into the participant `slug_index`
+— silently changes participant-resolution semantics (a setting could resolve as an
+event participant), masking real errors. (b) reconstruct the index in `build.py` by
+re-slugging `result.entities` — duplicates `map_bible`'s own knowledge and drifts.
+(c) require the author to spell the kind in front-matter — leaks graph structure into
+the research plain text.
+
+**Absent-target behaviour** is decided in **D12** (soft-skip + surfaced build warning).
+
+---
+
+## D12 — Unresolved narrative target: soft-skip with a surfaced warning
+
+**Decision** (D.2): when `bears_on` / `constrains` names an entity **absent** from the
+bible `entity_index` (D11) — and it is not the literal `timeline` (D10) — the reader
+does **not** emit the `crm:P140_assigned_attribute_to` / `bw:constrains` triple. It
+records the miss (`relpath`, field, name) as a `ResearchWarning` on `ResearchResult`;
+`graph build` surfaces it in `BuildReport` (human stderr + `--json`). The build
+**still succeeds** — exit code unchanged, *not* a `ResearchError`, *not* exit 4: a
+missing target is never silently dropped, but enforcing that a target exists and is an
+allowed kind stays the `factual_anchor` validator's job (iter-15).
+
+**Rationale**: from a bare name with no kind the reader cannot compose a correct URI
+segment (`character/` vs `setting/` vs `event/`), so "emit as declared" is not
+actionable. Skipping the unresolvable triple keeps `§ 4.5` untouched and avoids
+phantom `entity/{slug}` nodes that iter-15 would have to reconcile, while the surfaced
+warning keeps the author informed now. This mirrors the bible reader's soft-skip
+tradition without escalating exit status (existence checking is explicitly deferred to
+iter-15 per the spec edge cases).
+
+**Alternatives rejected**: (a) compose a neutral `{uri_base}entity/{slug}` and emit the
+link — extends the load-bearing `§ 4.5` URI convention and creates dual URIs
+(`entity/x` ↔ `character/x`) iter-15 must merge. (b) hard `ResearchError` — contradicts
+the spec edge case (target existence is iter-15's concern, not a build-time rejection).
+(c) silent drop — loses author feedback.
 
 ---
 

@@ -106,6 +106,7 @@ src/bookwright/
 │   └── modules/
 │       └── provenance.py             # NEW — Source, Finding, Anchor (frozen Pydantic GolemEntity subclasses)
 ├── io/
+│   ├── bible.py                      # + entity_index on MapResult (name-slug → URI: characters+settings+events) for target resolution
 │   ├── research.py                   # NEW — map_research(): bible/research/ → provenance entities
 │   └── errors.py                     # + ResearchError (hard build-abort for invalid research front-matter)
 ├── commands/graph/
@@ -119,10 +120,9 @@ tests/
 │   └── test_provenance_entities.py   # NEW — Source/Finding/Anchor triples, URIs, open finding, time-span
 ├── io/
 │   └── test_research.py              # NEW — map_research parsing, vocabulary rejection, translation rule, empty dir
-├── commands/graph/
-│   └── test_research_build.py        # NEW — graph build + graph query over a bible/research/ fixture (US1–US3)
-└── fixtures/
-    └── tiny-novel/bible/research/    # NEW — _index.md, sources.md, <topic>.md fixture content
+└── commands/graph/
+    ├── conftest.py                   # + with_research scaffolder (off by default): _index.md, sources.md, <topic>.md
+    └── test_research_build.py        # NEW — graph build + graph query over the with_research tiny_novel (US1–US3)
 ```
 
 **Structure Decision**: single Python package, src-layout (Constitution III). The

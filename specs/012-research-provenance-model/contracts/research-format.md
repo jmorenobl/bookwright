@@ -75,12 +75,14 @@ the file is a human-readable topic map (ignored by the parser).
 
 ## Resolution & error summary
 
-- Names in `bears_on` / `constrains` resolve against the **bible** slug index
-  (the same index built for character/event participants). `timeline` resolves to
-  the project timeline URI.
+- Names in `bears_on` / `constrains` resolve against the **bible** `entity_index`
+  (`make_slug(name)` → URI for characters, settings and events — research D11).
+  `timeline` resolves to the well-known untyped `{uri_base}timeline` IRI (research D10).
 - `sources` / `promotes` resolve against the in-project source registry and the
   in-file finding ids, respectively.
-- **Soft (build continues)**: none — research parsing has no soft warnings in v0.
+- **Soft (build continues, exit unchanged)**: a `bears_on` / `constrains` target name
+  absent from the bible `entity_index` (not `timeline`) — the link is skipped and
+  reported as a build warning (D12); existence/kind checks are iter-15's.
 - **Hard (build aborts, no graph written, exit 2)**: invalid vocabulary value;
   missing required Source facet; non-open finding without `claim`/`sources`;
   `promotes` → unknown finding id; translation-rule violation; malformed YAML.

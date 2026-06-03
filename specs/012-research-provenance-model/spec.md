@@ -162,10 +162,11 @@ emits its time-span.
 - **Slug collision between sources**: two sources whose canonical names slug
   identically are disambiguated by the indexer following the established URI
   convention (§ 4.5); the provenance model does not silently collapse them.
-- **Anchor pointing at a missing or wrong-typed narrative entity**: the link is
-  emitted as declared; *verifying* that the target exists and is one of the
-  allowed kinds is the `factual_anchor` validator's job (iteration 15), not this
-  iteration's.
+- **Anchor pointing at a missing or wrong-typed narrative entity**: when the target
+  name is absent from the bible, the constraint link is **reported as a build warning
+  and skipped** (not emitted) and the build still succeeds; *verifying* that an
+  existing target is one of the allowed kinds is the `factual_anchor` validator's job
+  (iteration 15), not this iteration's.
 - **Anchor whose source reliability is below the project threshold**: recorded
   faithfully; enforcing a minimum reliability for promotion is a later concern
   (validator, iteration 15), not a build-time rejection here.

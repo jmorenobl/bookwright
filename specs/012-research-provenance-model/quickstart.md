@@ -10,11 +10,14 @@ iterations 1–6 are on `main` (`bookwright init`, the GOLEM model, `graph build
 uv sync
 ```
 
-The fixture `tests/fixtures/tiny-novel/` gains a `bible/research/` directory (the
-narrative bible already has a character `Manuel de Aparici` → `…/character/manuel-de-aparici`).
+The walk-through is exercised by `test_research_build.py` over the graph-test
+`tiny_novel` scaffold (`tests/commands/graph/conftest.py`,
+`scaffold_project(with_research=True)`), whose narrative bible already has the
+character `Manuel de Aparici` (→ `…/character/manuel-de-aparici`). With
+`with_research=True` the scaffold gains a `bible/research/` directory:
 
 ```
-tests/fixtures/tiny-novel/bible/research/
+bible/research/
 ├── _index.md
 ├── sources.md
 └── detective-licencia.md
@@ -29,7 +32,7 @@ promotes the finding, constrains the character, and carries a time-span. (See
 ## 1. US1 — Sources become typed nodes with full provenance
 
 ```bash
-cd tests/fixtures/tiny-novel
+# from a project scaffolded like the with_research=True tiny_novel (see conftest.py)
 uv run bookwright graph build --json
 ```
 
@@ -95,7 +98,7 @@ row. An anchor with `constrains: timeline` links to the timeline URI (US3 §4).
 ## 4. Regression — projects that don't research pay nothing
 
 ```bash
-# A copy of tiny-novel with no bible/research/ directory:
+# The default tiny_novel (with_research=False) — no bible/research/ directory:
 uv run bookwright graph build --json   # succeeds; zero research triples (SC-005)
 uv run pytest tests/commands/graph/test_provenance.py   # bible E13 count still 10
 ```

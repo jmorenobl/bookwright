@@ -82,7 +82,8 @@ Open finding (FR-008):
 
 An anchor with no `begin`/`end` emits **no** `crm:P4_has_time-span` and no
 time-span node (FR-010). An anchor constraining the timeline emits
-`bw:constrains <…/timeline-uri>` (FR-009 / US3 §4).
+`bw:constrains <{uri_base}timeline>` — the well-known, **untyped** timeline IRI
+(no new GOLEM class; research D10) — for `constrains: timeline` (FR-009 / US3 §4).
 
 ## Distinguishing E13 uses (FR-018 / SC-007)
 
