@@ -21,13 +21,12 @@ import datetime
 from collections.abc import Iterable
 from typing import ClassVar, Literal
 
-import uuid_utils
-from pydantic import PrivateAttr, field_validator
+from pydantic import field_validator
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Literal as RdfLiteral
 from rdflib.term import URIRef
 
-from bookwright.golem.base import GolemEntity, SluggedEntity, Triple
+from bookwright.golem.base import MintedEntity, SluggedEntity, Triple
 from bookwright.golem.modules.feature import gyear_literal
 from bookwright.golem.namespaces import (
     ASSIGNED_ATTRIBUTE_TO,
@@ -121,11 +120,12 @@ class Source(SluggedEntity):
             yield (self.uri, BW_TRANSLATION, _string(self.translation))
 
 
-class Finding(GolemEntity):
+class Finding(MintedEntity):
     """A research finding, reified on ``crm:E13_Attribute_Assignment`` (FR-006).
 
-    Its identity token is a time-ordered ``uuid_utils.uuid7()`` minted once
-    (segment ``finding``). A **closed** finding records a ``claim``, who asserts
+    Its identity token is the time-ordered uuid7 minted once by
+    :class:`~bookwright.golem.base.MintedEntity` (segment ``finding``). A **closed**
+    finding records a ``claim``, who asserts
     it (``asserted_by``, default ``"author"``), the narrative entity it
     ``bears_on`` (reusing the Inference module's ``crm:P140_assigned_attribute_to``)
     and one or more supporting ``sources``. An **open** finding (FR-008) is an
@@ -145,15 +145,6 @@ class Finding(GolemEntity):
     sources: tuple[URIRef, ...] = ()
     open: bool = False
 
-    _token: str = PrivateAttr()
-
-    def model_post_init(self, __context: object) -> None:
-        self._token = str(uuid_utils.uuid7())
-        super().model_post_init(__context)
-
-    def _build_token(self) -> str:
-        return self._token
-
     def to_triples(self) -> Iterable[Triple]:
         yield (self.uri, RDF.type, self.golem_class)
         if self.claim is not None:
@@ -167,10 +158,11 @@ class Finding(GolemEntity):
             yield (self.uri, BW_OPEN, RdfLiteral(True))
 
 
-class Anchor(GolemEntity):
+class Anchor(MintedEntity):
     """A binding constraint promoting a :class:`Finding`, reified on E13 (FR-009).
 
-    Its identity token is a ``uuid_utils.uuid7()`` (segment ``anchor``). It
+    Its identity token is the uuid7 minted by
+    :class:`~bookwright.golem.base.MintedEntity` (segment ``anchor``). It
     ``promotes`` the finding it derives from and ``constrains`` a narrative entity
     (or the well-known untyped timeline IRI, research D10). When the named target
     does not resolve in the bible, the reader builds the anchor with
@@ -189,15 +181,6 @@ class Anchor(GolemEntity):
     constrains: URIRef | None = None
     begin: int | None = None
     end: int | None = None
-
-    _token: str = PrivateAttr()
-
-    def model_post_init(self, __context: object) -> None:
-        self._token = str(uuid_utils.uuid7())
-        super().model_post_init(__context)
-
-    def _build_token(self) -> str:
-        return self._token
 
     def to_triples(self) -> Iterable[Triple]:
         yield (self.uri, RDF.type, self.golem_class)

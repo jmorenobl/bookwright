@@ -180,7 +180,7 @@ def _build_source(acc: _Accumulator, raw: dict[str, Any], relpath: str) -> Sourc
             )
     _reject_unknown_vocab(raw, relpath)
     try:
-        source = Source(uri_base=acc.uri_base, **{k: raw[k] for k in raw})
+        source = Source(uri_base=acc.uri_base, **raw)
     except ValidationError as exc:
         raise ResearchError(relpath, f"invalid source in {relpath}: {_first_error(exc)}") from exc
     return _apply_translation_rule(acc, source, relpath)

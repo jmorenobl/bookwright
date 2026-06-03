@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import ClassVar, NamedTuple
 
+import uuid_utils
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Literal, URIRef
@@ -178,3 +179,22 @@ class SluggedEntity(GolemEntity):
     def slug(self) -> str:
         """The slugged token of :attr:`name` (FR-005)."""
         return self._slug
+
+
+class MintedEntity(GolemEntity):
+    """A nameless concept whose identity token is a freshly minted, time-ordered uuid7.
+
+    Used by the ``crm:E13_Attribute_Assignment`` reifications — the inference
+    ``AttributeAssignment`` and the research ``Finding`` / ``Anchor`` — which have
+    no natural name to slug. The token is generated once in ``model_post_init`` and
+    frozen, so entities created in sequence sort in creation order (FR-013, D3).
+    """
+
+    _token: str = PrivateAttr()
+
+    def model_post_init(self, __context: object) -> None:
+        self._token = str(uuid_utils.uuid7())
+        super().model_post_init(__context)
+
+    def _build_token(self) -> str:
+        return self._token
