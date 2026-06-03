@@ -41,7 +41,7 @@ Single Python package, src-layout (Constitution III): production code under
 
 **Purpose**: Establish a clean, green starting point before touching anything.
 
-- [ ] T001 Sync and record a clean baseline: run `uv sync` then the full gate
+- [X] T001 Sync and record a clean baseline: run `uv sync` then the full gate
   (`uv run pytest`, `uv run ruff check`, `uv run ruff format --check`,
   `uv run mypy --strict src tests`) on branch `012-research-provenance-model`;
   confirm all green so every later regression is attributable to this iteration.
@@ -58,12 +58,12 @@ increment.
 
 **⚠️ CRITICAL**: No user-story work begins until this phase is complete.
 
-- [ ] T002 Add the Bookwright namespace and prefix binding in
+- [X] T002 Add the Bookwright namespace and prefix binding in
   [src/bookwright/golem/namespaces.py](src/bookwright/golem/namespaces.py):
   `BW = Namespace("https://bookwright.dev/vocab/bw#")` and append `("bw", BW)` to
   `_PREFIXES` so `bind_prefixes` binds it deterministically. Do **not** add `BW`
   to `CLASS_IRI` or any frozen-closure list (Constitution X; research D3).
-- [ ] T003 In the same [src/bookwright/golem/namespaces.py](src/bookwright/golem/namespaces.py)
+- [X] T003 In the same [src/bookwright/golem/namespaces.py](src/bookwright/golem/namespaces.py)
   add the `bw:` property `URIRef` constants (`BW_REFERENCE`, `BW_AUTHOR`,
   `BW_ORIGINAL_LANGUAGE`, `BW_RELIABILITY`, `BW_RELIABILITY_JUSTIFICATION`,
   `BW_ACCESS_DATE`, `BW_ORIGINAL_QUOTE`, `BW_TRANSLATION`, `BW_CLAIM`,
@@ -75,7 +75,7 @@ increment.
   helper returning `URIRef(f"{uri_base}timeline")` — the untyped well-known IRI that is
   the `constrains: timeline` target (research D10; no new class). None of these are added
   to `CLASS_IRI`/closure (research D3). Depends on T002 (same file).
-- [ ] T004 [P] Author the controlled vocabulary
+- [X] T004 [P] Author the controlled vocabulary
   [src/bookwright/resources/vocabularies/sources.ttl](src/bookwright/resources/vocabularies/sources.ttl):
   six source-type individuals (`bw:source-type/primaria|secundaria|oficial|academica|periodistica|testimonial`)
   and three reliability individuals (`bw:reliability/alta|media|baja`), each
@@ -84,7 +84,7 @@ increment.
   table in `contracts/provenance-graph.md`); and a top provenance note that these
   terms are Bookwright's own, outside the frozen `golem.ttl`/`CLASS_IRI` closure
   (data-model §2; research D4). File must parse as well-formed Turtle.
-- [ ] T005 [P] Add `ResearchError(IOError_)` to
+- [X] T005 [P] Add `ResearchError(IOError_)` to
   [src/bookwright/io/errors.py](src/bookwright/io/errors.py): subclass the existing
   `io.errors.IOError_` base — the same base the bible reader's errors use (there is
   no `BookwrightError` type). Give it a `code` (e.g. `"invalid_research"`), `relpath`,
@@ -92,7 +92,7 @@ increment.
   `{status, code, message, details}` shape its siblings emit (`MissingDirectoryError` /
   `SlugCollisionError`); `build.py` renders it at exit code 2 (contract
   `research-io.md`; research D7).
-- [ ] T006 Create the reader skeleton
+- [X] T006 Create the reader skeleton
   [src/bookwright/io/research.py](src/bookwright/io/research.py): the frozen
   `ResearchResult` dataclass (`sources`/`findings`/`anchors` tuples,
   `files_processed`, a `warnings` tuple of frozen `ResearchWarning`
@@ -104,7 +104,7 @@ increment.
   (FR-015 / SC-005), with deterministic sorted globbing and `sources.md`-first
   ordering scaffolded. Reuse `io/frontmatter.py` / `io/bible.py` machinery.
   Depends on T005.
-- [ ] T007 Wire the research pass into
+- [X] T007 Wire the research pass into
   [src/bookwright/commands/graph/build.py](src/bookwright/commands/graph/build.py)`._build()`.
   (a) First extend [src/bookwright/io/bible.py](src/bookwright/io/bible.py): add an
   `entity_index: dict[str, URIRef]` field to `MapResult`, populated with
@@ -123,7 +123,7 @@ increment.
   **optional** `sources`/`findings`/`anchors` counters and a `ResearchWarning` list
   (surfaced human + `--json`, **exit code unchanged** — D12); leave existing fields
   unchanged so current build/`--json` tests pass (research D8). Depends on T006.
-- [ ] T008 Foundational regression test in
+- [X] T008 Foundational regression test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
   building a project with **no** `bible/research/` (and one with an empty
   `research/`) succeeds, adds zero research triples, leaves the existing bible E13
@@ -149,7 +149,7 @@ aborts the build naming the value.
 
 ### Tests for User Story 1 (write first — must FAIL before implementation) ⚠️
 
-- [ ] T009 [P] [US1] Unit tests for `Source` in
+- [X] T009 [P] [US1] Unit tests for `Source` in
   [tests/golem/test_provenance_entities.py](tests/golem/test_provenance_entities.py):
   `to_triples()` emits all provenance facets, emits **no** `rdf:type`,
   types via `crm:P2_has_type → SOURCE_TYPE_IRI[type]` and `bw:reliability →
@@ -157,13 +157,13 @@ aborts the build naming the value.
   emitted only when `translation` is set; out-of-vocabulary `type`/`reliability`
   and empty `reliability_justification` are rejected by the model
   (FR-002/003/004/016; SC-003).
-- [ ] T010 [P] [US1] Reader tests for `sources.md` in
+- [X] T010 [P] [US1] Reader tests for `sources.md` in
   [tests/io/test_research.py](tests/io/test_research.py): valid source parses;
   out-of-vocab `type`/`reliability` → `ResearchError` naming the value; missing
   required facet → `ResearchError`; translation rule — required (else error) when
   `original_language != book_language`, dropped (not emitted, not an error) when
   equal (FR-016; SC-004/006; research D6).
-- [ ] T011 [US1] Integration test in
+- [X] T011 [US1] Integration test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
   `graph build` over the `with_research=True` `tiny_novel` scaffold writes the Source
   node; `graph query` returns its facets; a fixture variant with a bad `type` aborts
@@ -171,7 +171,7 @@ aborts the build naming the value.
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Create the `Source` entity in
+- [X] T012 [US1] Create the `Source` entity in
   [src/bookwright/golem/modules/provenance.py](src/bookwright/golem/modules/provenance.py):
   frozen Pydantic `SluggedEntity` subclass (`frozen=True`, `extra="forbid"`,
   `strict=True`), fields per data-model §1.1, `type: Literal[…6…]`,
@@ -179,13 +179,13 @@ aborts the build naming the value.
   `path_segment="source"`, `golem_class` ClassVar as documented unemitted
   placeholder; override `to_triples()` to emit the facets and **no** `rdf:type`
   (research D2). Keep the file ≤ 500 lines.
-- [ ] T013 [US1] Implement `sources.md` parsing in
+- [X] T013 [US1] Implement `sources.md` parsing in
   [src/bookwright/io/research.py](src/bookwright/io/research.py): front-matter
   `sources:` list → `Source` entities, build the name/slug→`Source` index (needed
   later by findings), enforce the translation rule against `book_language`, and
   raise `ResearchError` (naming file + value) on vocab violation, missing facet,
   or translation-rule violation (research D6/D7). Depends on T012.
-- [ ] T014 [US1] Add the research fixture to the graph-test scaffolder
+- [X] T014 [US1] Add the research fixture to the graph-test scaffolder
   [tests/commands/graph/conftest.py](tests/commands/graph/conftest.py): a
   `RESEARCH_SOURCES_MD` constant plus a `with_research: bool = False` parameter on
   `scaffold_project` that, when set, writes `bible/research/sources.md` — one
@@ -194,7 +194,7 @@ aborts the build naming the value.
   the existing research-free `tiny_novel` (and the 10-E13 count in
   `test_provenance.py`) is byte-stable and unchanged. Do **not** touch the committed
   `tests/fixtures/tiny-novel/` (a different project the graph tests do not read).
-- [ ] T015 [US1] Verify US1 end to end: `graph build` emits the Source triples and
+- [X] T015 [US1] Verify US1 end to end: `graph build` emits the Source triples and
   the `BuildReport` source counter; run the per-story gate
   (`uv run pytest tests/golem/test_provenance_entities.py tests/io/test_research.py
   tests/commands/graph/test_research_build.py`, then `ruff`/`mypy --strict`).
@@ -218,21 +218,21 @@ distinguishable from the bible's inferred assertions.
 
 ### Tests for User Story 2 (write first — must FAIL before implementation) ⚠️
 
-- [ ] T016 [P] [US2] Unit tests for `Finding` in
+- [X] T016 [P] [US2] Unit tests for `Finding` in
   [tests/golem/test_provenance_entities.py](tests/golem/test_provenance_entities.py):
   emits `rdf:type crm:E13_Attribute_Assignment`, `bw:claim`, `bw:assertedBy`
   (default `"author"`), `crm:P140_assigned_attribute_to` for `bears_on`, one
   `bw:supportedBy` per source, `bw:open` **only** when `True`; an open finding with
   empty claim/sources/target is valid and emits just `rdf:type` + `bw:open true`
   (FR-006/007/008; segment `finding`).
-- [ ] T017 [P] [US2] Reader tests in
+- [X] T017 [P] [US2] Reader tests in
   [tests/io/test_research.py](tests/io/test_research.py): topic-file `findings:`
   and `_index.md` `open_questions:` parse; a non-open finding missing `claim` or
   `sources` → `ResearchError`; an open finding is accepted; `sources` resolve via
   the source index and `bears_on` via `bible_index`; a `bears_on` name absent from
   `bible_index` yields a `ResearchWarning` and no `P140`, the build not aborting
   (FR-008; research D7/D12).
-- [ ] T018 [US2] Integration test in
+- [X] T018 [US2] Integration test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
   the built graph contains the finding `E13` with claim/asserter/`P140`/source(s),
   the open question as `bw:open true`, and findings are distinguishable from bible
@@ -240,24 +240,24 @@ distinguishable from the bible's inferred assertions.
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Create the `Finding` entity in
+- [X] T019 [US2] Create the `Finding` entity in
   [src/bookwright/golem/modules/provenance.py](src/bookwright/golem/modules/provenance.py):
   frozen `GolemEntity` subclass, `uuid_utils.uuid7()` token minted once in
   `model_post_init`, `path_segment="finding"`,
   `golem_class = CLASS_IRI["AttributeAssignment"]`, fields per data-model §1.2,
   open-state emission invariant (research D2). File stays ≤ 500 lines.
-- [ ] T020 [US2] Implement `findings:` + `_index.md` `open_questions:` parsing in
+- [X] T020 [US2] Implement `findings:` + `_index.md` `open_questions:` parsing in
   [src/bookwright/io/research.py](src/bookwright/io/research.py): build `Finding`
   entities, resolve `sources` via the source index and `bears_on` via
   `bible_index` (an unresolved `bears_on` name → omit `P140` and append a
   `ResearchWarning`, not an error — D12), enforce the non-open invariant
   (claim + ≥ 1 source) else `ResearchError` (FR-007/008; research D7). Depends on T019, T013.
-- [ ] T021 [US2] Extend the research fixture in
+- [X] T021 [US2] Extend the research fixture in
   [tests/commands/graph/conftest.py](tests/commands/graph/conftest.py): under the
   `with_research` branch, write `bible/research/detective-licencia.md` (a finding
   citing the source and bearing on `Manuel de Aparici`) and `bible/research/_index.md`
   (one open question), per `contracts/research-format.md`.
-- [ ] T022 [US2] Verify US2 end to end and run the per-story gate (pytest for the
+- [X] T022 [US2] Verify US2 end to end and run the per-story gate (pytest for the
   three test modules + `ruff` + `mypy --strict`).
 
 **Checkpoint**: Findings participate in the same graph and queries as characters,
@@ -280,21 +280,21 @@ with `constrains: timeline` links the timeline URI.
 
 ### Tests for User Story 3 (write first — must FAIL before implementation) ⚠️
 
-- [ ] T023 [P] [US3] Unit tests for `Anchor` in
+- [X] T023 [P] [US3] Unit tests for `Anchor` in
   [tests/golem/test_provenance_entities.py](tests/golem/test_provenance_entities.py):
   emits `rdf:type crm:E13_Attribute_Assignment`, `bw:promotes`, `bw:constrains`;
   with `begin`/`end` emits `crm:P4_has_time-span` + the `{anchor}/time-span`
   sub-node (`E52_Time-Span`, `P82a`/`P82b` `xsd:gYear`); with neither emits **no**
   time-span; a single `date` shorthand sets `begin == end`; URI segment `anchor`
   (FR-009/010; research D5).
-- [ ] T024 [P] [US3] Reader tests in
+- [X] T024 [P] [US3] Reader tests in
   [tests/io/test_research.py](tests/io/test_research.py): `anchors:` parse;
   `promotes` resolves to the in-file finding id (unknown id → `ResearchError`);
   `constrains` resolves via `bible_index` or to `timeline_uri` for the literal
   `timeline`; a `constrains` target absent from `bible_index` yields a
   `ResearchWarning` and **no** `bw:constrains` triple, the build not aborting (D12);
   `begin`/`end`/`date` map correctly (FR-009/010; research D7).
-- [ ] T025 [US3] Integration test in
+- [X] T025 [US3] Integration test in
   [tests/commands/graph/test_research_build.py](tests/commands/graph/test_research_build.py):
   the worked SPARQL query (provenance-graph.md / quickstart §3) returns the anchor
   with its promoted claim and source (SC-002); the time-span query returns
@@ -303,13 +303,13 @@ with `constrains: timeline` links the timeline URI.
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Create the `Anchor` entity in
+- [X] T026 [US3] Create the `Anchor` entity in
   [src/bookwright/golem/modules/provenance.py](src/bookwright/golem/modules/provenance.py):
   frozen `GolemEntity` subclass, `uuid7` token, `path_segment="anchor"`,
   `golem_class = CLASS_IRI["AttributeAssignment"]`, fields `promotes`/`constrains`/
   `begin`/`end` per data-model §1.3, time-span emission per research D5. Keep file
   ≤ 500 lines.
-- [ ] T027 [US3] Implement `anchors:` parsing in
+- [X] T027 [US3] Implement `anchors:` parsing in
   [src/bookwright/io/research.py](src/bookwright/io/research.py): resolve
   `promotes`→finding URI (unknown id → `ResearchError`), `constrains`→`bible_index`
   (narrative entity) or the well-known `timeline_uri` for the literal `timeline`
@@ -317,11 +317,11 @@ with `constrains: timeline` links the timeline URI.
   and append a `ResearchWarning`, not an error (D12) — and
   `begin`/`end`/`date`→time-span (FR-009/010; research D7).
   Depends on T026, T020.
-- [ ] T028 [US3] Extend the `detective-licencia.md` research fixture in
+- [X] T028 [US3] Extend the `detective-licencia.md` research fixture in
   [tests/commands/graph/conftest.py](tests/commands/graph/conftest.py) with an anchor
   (promotes the finding, constrains `Manuel de Aparici`, carries a `begin`/`end`
   time-span), per `contracts/research-format.md`.
-- [ ] T029 [US3] Verify US3 end to end and run the per-story gate (pytest + `ruff`
+- [X] T029 [US3] Verify US3 end to end and run the per-story gate (pytest + `ruff`
   + `mypy --strict`).
 
 **Checkpoint**: recorded research is now an enforceable constraint surface; all
@@ -333,26 +333,26 @@ three stories are independently functional.
 
 **Purpose**: Lock in the zero-tech-debt, highest-standards bar before merge.
 
-- [ ] T030 [P] Confirm the frozen-ontology closure is intact:
+- [X] T030 [P] Confirm the frozen-ontology closure is intact:
   [tests/golem/test_namespaces.py](tests/golem/test_namespaces.py) still asserts
   `len(CLASS_IRI) == 17` and the `bw:`/CRM additions are outside every frozen
   closure list; add explicit assertions if any are missing (Constitution X;
   research closure check).
-- [ ] T031 [P] Verify the research-free `tiny-novel` Turtle output is byte-stable
+- [X] T031 [P] Verify the research-free `tiny-novel` Turtle output is byte-stable
   (no stray `@prefix bw:`) and that the pre-existing `E13` count in
   [tests/commands/graph/test_provenance.py](tests/commands/graph/test_provenance.py)
   is unchanged (research D9).
-- [ ] T032 Verify ≥ 85 % line coverage on the new code
+- [X] T032 Verify ≥ 85 % line coverage on the new code
   (`provenance.py`, `io/research.py`, the `build.py` research pass) via
   `uv run pytest --cov=bookwright --cov-report=term-missing`; add focused tests for
   any uncovered branch (spec SC; Constitution VIII).
-- [ ] T033 Confirm every touched/new source file is ≤ 500 lines (Constitution IV) —
+- [X] T033 Confirm every touched/new source file is ≤ 500 lines (Constitution IV) —
   in particular `golem/modules/provenance.py` and `io/research.py`; split if
   exceeded.
-- [ ] T034 Run the quickstart end to end on the fixture (quickstart.md §1–§4:
+- [X] T034 Run the quickstart end to end on the fixture (quickstart.md §1–§4:
   US1 facets, US2 finding + open question, US3 payoff + time-span queries, and the
   research-free regression).
-- [ ] T035 Full gate: `uv run pytest && uv run ruff check && uv run ruff format
+- [X] T035 Full gate: `uv run pytest && uv run ruff check && uv run ruff format
   --check && uv run mypy --strict src tests` — all green before merge.
 
 ---

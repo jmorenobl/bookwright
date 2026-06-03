@@ -47,6 +47,20 @@ class UnresolvedParticipant(BaseModel):
     name: str
 
 
+class ResearchTargetWarning(BaseModel):
+    """A research ``bears_on``/``constrains`` target that did not resolve (D12).
+
+    The link triple was omitted and the build still succeeds (exit code unchanged) —
+    existence/kind enforcement is the iteration-15 ``factual_anchor`` validator's job.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    path: str
+    field: str
+    name: str
+
+
 class BuildReport(BaseModel):
     """The full outcome of a ``graph build`` (data-model § 5)."""
 
@@ -59,10 +73,20 @@ class BuildReport(BaseModel):
     skipped: tuple[SkippedFile, ...] = ()
     unknown_keys: tuple[UnknownKey, ...] = ()
     unresolved_participants: tuple[UnresolvedParticipant, ...] = ()
+    # Optional research metrics (iteration 012). Absent/zero on a research-free build
+    # so existing build/`--json` output is byte-stable (research D8). Research warnings
+    # never change the exit code (D12).
+    sources: int = 0
+    findings: int = 0
+    anchors: int = 0
+    research_warnings: tuple[ResearchTargetWarning, ...] = ()
 
     @property
     def exit_code(self) -> int:
-        """Exit 4 when any file was skipped, else exit 0 (R7)."""
+        """Exit 4 when any file was skipped, else exit 0 (R7).
+
+        Research warnings (D12) are deliberately **not** part of the exit code.
+        """
         return EXIT_SKIPPED if self.skipped else EXIT_OK
 
     def to_json(self) -> dict[str, Any]:
@@ -75,5 +99,9 @@ class BuildReport(BaseModel):
             "skipped": [s.model_dump() for s in self.skipped],
             "unknown_keys": [u.model_dump() for u in self.unknown_keys],
             "unresolved_participants": [u.model_dump() for u in self.unresolved_participants],
+            "sources": self.sources,
+            "findings": self.findings,
+            "anchors": self.anchors,
+            "research_warnings": [w.model_dump() for w in self.research_warnings],
             "graph_path": self.graph_path,
         }

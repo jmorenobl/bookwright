@@ -1,0 +1,82 @@
+@prefix bw:   <https://bookwright.dev/vocab/bw#> .
+@prefix crm:  <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# Bookwright's own research/provenance vocabulary (iteration 012). These terms are
+# Bookwright's, NOT part of the frozen GOLEM ontology (`golem.ttl`): they are
+# intentionally outside the `CLASS_IRI` 17-class closure (Constitution X). The
+# emitted `bible/graph.ttl` reuses only `crm:E13_Attribute_Assignment` and
+# `crm:E55_Type` for typing; no new GOLEM/ontology class is introduced (FR-001).
+# This file is the human-readable declaration the emitted triples conform to;
+# enforcement lives in the `Source` Pydantic `Literal`s (research D4).
+
+# --- Source-type controlled vocabulary (six E55_Type individuals, FR-003) ----
+
+<https://bookwright.dev/vocab/bw#source-type/primaria>
+    a crm:E55_Type ; rdfs:label "primaria"@es .
+<https://bookwright.dev/vocab/bw#source-type/secundaria>
+    a crm:E55_Type ; rdfs:label "secundaria"@es .
+<https://bookwright.dev/vocab/bw#source-type/oficial>
+    a crm:E55_Type ; rdfs:label "oficial"@es .
+<https://bookwright.dev/vocab/bw#source-type/academica>
+    a crm:E55_Type ; rdfs:label "académica"@es .
+<https://bookwright.dev/vocab/bw#source-type/periodistica>
+    a crm:E55_Type ; rdfs:label "periodística"@es .
+<https://bookwright.dev/vocab/bw#source-type/testimonial>
+    a crm:E55_Type ; rdfs:label "testimonial"@es .
+
+# --- Reliability controlled vocabulary (three E55_Type individuals, FR-004) --
+
+<https://bookwright.dev/vocab/bw#reliability/alta>
+    a crm:E55_Type ; rdfs:label "alta"@es .
+<https://bookwright.dev/vocab/bw#reliability/media>
+    a crm:E55_Type ; rdfs:label "media"@es .
+<https://bookwright.dev/vocab/bw#reliability/baja>
+    a crm:E55_Type ; rdfs:label "baja"@es .
+
+# --- bw: property declarations (contracts/provenance-graph.md) ----------------
+
+bw:reference a rdf:Property ;
+    rdfs:label "reference"@en ;
+    rdfs:comment "Bibliographic reference or URL of a source."@en .
+bw:author a rdf:Property ;
+    rdfs:label "author"@en ;
+    rdfs:comment "Author or issuing body of a source."@en .
+bw:originalLanguage a rdf:Property ;
+    rdfs:label "originalLanguage"@en ;
+    rdfs:comment "ISO 639-1 code of a source's original language."@en .
+bw:reliability a rdf:Property ;
+    rdfs:label "reliability"@en ;
+    rdfs:comment "A source's reliability E55_Type individual (alta/media/baja)."@en .
+bw:reliabilityJustification a rdf:Property ;
+    rdfs:label "reliabilityJustification"@en ;
+    rdfs:comment "Prose justifying a source's reliability rating."@en .
+bw:accessDate a rdf:Property ;
+    rdfs:label "accessDate"@en ;
+    rdfs:comment "The date a source was consulted (xsd:date)."@en .
+bw:originalQuote a rdf:Property ;
+    rdfs:label "originalQuote"@en ;
+    rdfs:comment "Verbatim quote in the source's original language."@en .
+bw:translation a rdf:Property ;
+    rdfs:label "translation"@en ;
+    rdfs:comment "Translation of the quote; present iff source language differs from the book's."@en .
+bw:claim a rdf:Property ;
+    rdfs:label "claim"@en ;
+    rdfs:comment "The real-world assertion a finding records."@en .
+bw:assertedBy a rdf:Property ;
+    rdfs:label "assertedBy"@en ;
+    rdfs:comment "Who asserts a finding's claim (agent or author)."@en .
+bw:supportedBy a rdf:Property ;
+    rdfs:label "supportedBy"@en ;
+    rdfs:comment "A source supporting a finding (one per source)."@en .
+bw:open a rdf:Property ;
+    rdfs:label "open"@en ;
+    rdfs:comment "True when a finding is an unresolved open question (xsd:boolean)."@en .
+bw:promotes a rdf:Property ;
+    rdfs:label "promotes"@en ;
+    rdfs:comment "The finding an anchor promotes into a binding constraint."@en .
+bw:constrains a rdf:Property ;
+    rdfs:label "constrains"@en ;
+    rdfs:comment "The narrative entity (or timeline) an anchor constrains."@en .

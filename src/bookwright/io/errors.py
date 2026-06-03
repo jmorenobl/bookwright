@@ -83,6 +83,35 @@ class InvalidFrontmatterError(IOError_):
         }
 
 
+class ResearchError(IOError_):
+    """A ``bible/research/`` file is structurally invalid — fatal, no graph (D7).
+
+    Unlike the bible mapper, which soft-skips an unusable file, research is
+    validated strictly: an out-of-vocabulary ``type``/``reliability``, a missing
+    required Source facet, a non-open finding lacking ``claim``/``sources``, an
+    ``anchors[].promotes`` naming an unknown finding, a translation-rule violation,
+    or malformed YAML aborts the build naming the offending file and value
+    (FR-016). ``value`` carries the offending key or value (``None`` when the fault
+    is structural rather than value-level).
+    """
+
+    code = "invalid_research"
+
+    def __init__(self, relpath: str, message: str, value: str | None = None) -> None:
+        self.relpath = relpath
+        self.value = value
+        self.message = message
+        super().__init__(message)
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "status": "error",
+            "code": self.code,
+            "message": self.message,
+            "details": {"relpath": self.relpath, "value": self.value},
+        }
+
+
 class SlugCollisionError(IOError_):
     """Two entities of one concept share an identifier (FR-014) — fatal, no graph."""
 

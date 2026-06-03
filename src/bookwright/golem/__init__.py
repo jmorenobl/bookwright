@@ -22,6 +22,7 @@ from bookwright.golem.modules.narrative import (
     NarrativeSequence,
     NarrativeUnit,
 )
+from bookwright.golem.modules.provenance import Anchor, Finding, Source
 from bookwright.golem.modules.relationship import RelationshipRole, SocialRelationship
 from bookwright.golem.modules.setting import NarrativeLocation, Setting
 from bookwright.golem.serialize import to_turtle
@@ -45,12 +46,14 @@ CONCEPTS: dict[str, type] = {
 
 __all__ = [
     "CONCEPTS",
+    "Anchor",
     "AttributeAssignment",
     "Character",
     "CharacterFeature",
     "DerivedAssertion",
     "Dimension",
     "EmptySlugError",
+    "Finding",
     "GolemError",
     "NarrativeEvent",
     "NarrativeFunction",
@@ -63,5 +66,6 @@ __all__ = [
     "RelationshipRole",
     "Setting",
     "SocialRelationship",
+    "Source",
     "to_turtle",
 ]

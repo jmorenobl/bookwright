@@ -77,6 +77,59 @@ RELATIONSHIPS_MD = textwrap.dedent(
     """
 )
 
+# --- Research fixtures (iteration 012, off by default) -----------------------
+# One `oficial`/`alta` Spanish source — book language is "es", so no translation
+# (SC-004). See contracts/research-format.md and quickstart §0.
+RESEARCH_SOURCES_MD = textwrap.dedent(
+    """\
+    ---
+    sources:
+      - name: "Registro TIP"
+        reference: "https://www.interior.gob.es/tip"
+        author: "Ministerio del Interior (España)"
+        original_language: es
+        type: oficial
+        reliability: alta
+        reliability_justification: "Fuente oficial primaria del organismo regulador."
+        access_date: 2026-05-30
+        original_quote: "El detective privado requiere la TIP expedida por el Ministerio."
+    ---
+    Notas sobre el registro de detectives.
+    """
+)
+
+# One finding citing the source and bearing on the character, plus an anchor that
+# promotes it, constrains the character, and carries a time-span.
+RESEARCH_TOPIC_MD = textwrap.dedent(
+    """\
+    ---
+    findings:
+      - id: tip-required
+        claim: "Un detective privado en España necesita la licencia TIP."
+        asserted_by: agent
+        bears_on: "Manuel de Aparici"
+        sources: ["Registro TIP"]
+    anchors:
+      - promotes: tip-required
+        constrains: "Manuel de Aparici"
+        begin: 1995
+        end: 2026
+    ---
+    Prosa legible sobre el tema de la licencia.
+    """
+)
+
+# A single global open question (no claim/source — a truly open finding).
+RESEARCH_INDEX_MD = textwrap.dedent(
+    """\
+    ---
+    open_questions:
+      - id: q-archivo-tip
+    ---
+    Mapa de temas y preguntas abiertas globales.
+    """
+)
+
 
 def write_manifest(root: Path, *, indexer: str | None = None) -> None:
     """Write a valid ``manifest.toml`` at ``root`` (optionally pinning an engine)."""
@@ -91,9 +144,16 @@ def scaffold_project(
     *,
     with_bible: bool = True,
     with_manuscript: bool = True,
+    with_research: bool = False,
     indexer: str | None = None,
 ) -> Path:
-    """Create a tiny-novel project tree under ``root`` and return ``root``."""
+    """Create a tiny-novel project tree under ``root`` and return ``root``.
+
+    ``with_research`` (off by default, so the research-free ``tiny_novel`` and the
+    10-E13 count in ``test_provenance.py`` stay byte-stable) adds a
+    ``bible/research/`` directory with one source, one topic file (finding +
+    anchor) and an ``_index.md`` open question — per ``contracts/research-format.md``.
+    """
     root.mkdir(parents=True, exist_ok=True)
     write_manifest(root, indexer=indexer)
     if with_manuscript:
@@ -108,6 +168,12 @@ def scaffold_project(
         (settings / "ayelo.md").write_text(SETTING_MD, encoding="utf-8")
         (root / "bible" / "timeline.md").write_text(TIMELINE_MD, encoding="utf-8")
         (root / "bible" / "relationships.md").write_text(RELATIONSHIPS_MD, encoding="utf-8")
+    if with_research:
+        research = root / "bible" / "research"
+        research.mkdir(parents=True, exist_ok=True)
+        (research / "sources.md").write_text(RESEARCH_SOURCES_MD, encoding="utf-8")
+        (research / "detective-licencia.md").write_text(RESEARCH_TOPIC_MD, encoding="utf-8")
+        (research / "_index.md").write_text(RESEARCH_INDEX_MD, encoding="utf-8")
     return root
 
 

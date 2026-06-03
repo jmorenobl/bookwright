@@ -21,18 +21,37 @@ from bookwright.resources.schemas import SCHEMA_DIR
 __all__ = [
     "ASSIGNED",
     "ASSIGNED_ATTRIBUTE_TO",
+    "BEGIN_OF_BEGIN",
+    "BW",
+    "BW_ACCESS_DATE",
+    "BW_ASSERTED_BY",
+    "BW_AUTHOR",
+    "BW_CLAIM",
+    "BW_CONSTRAINS",
+    "BW_OPEN",
+    "BW_ORIGINAL_LANGUAGE",
+    "BW_ORIGINAL_QUOTE",
+    "BW_PROMOTES",
+    "BW_REFERENCE",
+    "BW_RELIABILITY",
+    "BW_RELIABILITY_JUSTIFICATION",
+    "BW_SUPPORTED_BY",
+    "BW_TRANSLATION",
     "CLASS_IRI",
     "CRM",
     "CSM",
     "DLP",
     "DURATION",
+    "E52_TIME_SPAN",
     "EDNS",
+    "END_OF_END",
     "FOLLOWS",
     "GENERICALLY_DEPENDENT_ON",
     "GENERIC_LOCATION",
     "GOLEM",
     "HAS_DIMENSION",
     "HAS_FEATURE",
+    "HAS_TIME_SPAN",
     "HAS_TYPE",
     "HAS_VALUE",
     "PARTICIPANT",
@@ -42,6 +61,8 @@ __all__ = [
     "RDF",
     "RDFS",
     "REFERS_TO",
+    "RELIABILITY_IRI",
+    "SOURCE_TYPE_IRI",
     "TEMPORALLY_INCLUDED_IN",
     "TEMPORALLY_INCLUDES",
     "TEMPORALLY_OVERLAPS",
@@ -54,6 +75,7 @@ __all__ = [
     "bind_prefixes",
     "frozen_terms",
     "load_frozen_ontology",
+    "timeline_uri",
 ]
 
 # --- Namespaces -------------------------------------------------------------
@@ -74,6 +96,12 @@ TR = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/TemporalRelations.
 # The DOLCE CommonSenseMapping layer supplying ``duration`` (event → its
 # time-interval, ⊑ ``temporal-location``).
 CSM = Namespace("http://www.ontologydesignpatterns.org/ont/dlp/CommonSenseMapping.owl#")
+# Bookwright's own vocabulary — the research/provenance terms (``bw:reference``,
+# ``bw:claim``, ``bw:constrains``, the source-type / reliability E55 individuals).
+# Declared in ``resources/vocabularies/sources.ttl``, **never** in the frozen
+# ``golem.ttl``; intentionally outside the ``CLASS_IRI`` closure (Constitution X;
+# research D3).
+BW = Namespace("https://bookwright.dev/vocab/bw#")
 
 _PREFIXES: tuple[tuple[str, Namespace], ...] = (
     ("golem", GOLEM),
@@ -82,6 +110,7 @@ _PREFIXES: tuple[tuple[str, Namespace], ...] = (
     ("edns", EDNS),
     ("tr", TR),
     ("csm", CSM),
+    ("bw", BW),
     ("rdf", Namespace(str(RDF))),
     ("rdfs", Namespace(str(RDFS))),
     ("xsd", Namespace(str(XSD))),
@@ -174,6 +203,84 @@ TEMPORALLY_INCLUDES = TR["temporally-includes"]
 """Event whose extent contains another's (containment)."""
 TEMPORALLY_INCLUDED_IN = TR["temporally-included-in"]
 """Event whose extent is contained within another's (inverse containment)."""
+
+# --- Research / provenance predicates (iteration 012, research D3) -----------
+# Bookwright's own ``bw:`` terms. Declared in ``sources.ttl``, referenced from
+# ``golem/modules/provenance.py``; NONE are added to ``CLASS_IRI`` or the
+# closure-checked lists in ``test_namespaces.py`` — they sit outside the frozen
+# GOLEM ontology by design (Constitution X).
+
+BW_REFERENCE = BW["reference"]
+"""Source → its bibliographic reference or URL (``xsd:string``)."""
+BW_AUTHOR = BW["author"]
+"""Source → its author (``xsd:string``)."""
+BW_ORIGINAL_LANGUAGE = BW["originalLanguage"]
+"""Source → the ISO 639-1 code of its original language (``xsd:string``)."""
+BW_RELIABILITY = BW["reliability"]
+"""Source → its reliability E55_Type individual (``alta``/``media``/``baja``)."""
+BW_RELIABILITY_JUSTIFICATION = BW["reliabilityJustification"]
+"""Source → the prose justifying its reliability rating (``xsd:string``)."""
+BW_ACCESS_DATE = BW["accessDate"]
+"""Source → the date it was consulted (``xsd:date``)."""
+BW_ORIGINAL_QUOTE = BW["originalQuote"]
+"""Source → the verbatim quote in its original language (``xsd:string``)."""
+BW_TRANSLATION = BW["translation"]
+"""Source → the quote's translation; emitted iff source language ≠ book language."""
+BW_CLAIM = BW["claim"]
+"""Finding → the real-world assertion it records (``xsd:string``)."""
+BW_ASSERTED_BY = BW["assertedBy"]
+"""Finding → who asserts the claim — agent or author (``xsd:string``)."""
+BW_SUPPORTED_BY = BW["supportedBy"]
+"""Finding → one supporting Source (one triple per source)."""
+BW_OPEN = BW["open"]
+"""Finding → ``true`` when it is an unresolved open question (``xsd:boolean``)."""
+BW_PROMOTES = BW["promotes"]
+"""Anchor → the Finding it promotes into a binding constraint."""
+BW_CONSTRAINS = BW["constrains"]
+"""Anchor → the narrative entity (or the timeline) the constraint bears on."""
+
+SOURCE_TYPE_IRI: dict[str, URIRef] = {
+    "primaria": BW["source-type/primaria"],
+    "secundaria": BW["source-type/secundaria"],
+    "oficial": BW["source-type/oficial"],
+    "académica": BW["source-type/academica"],
+    "periodística": BW["source-type/periodistica"],
+    "testimonial": BW["source-type/testimonial"],
+}
+"""Front-matter ``type`` value → its ``a crm:E55_Type`` individual (ASCII-slugged
+IRI). The accented Spanish key is the author-facing value; the IRI is slugged
+(research D4). Declared in ``sources.ttl``; enforced by the ``Source`` ``Literal``."""
+
+RELIABILITY_IRI: dict[str, URIRef] = {
+    "alta": BW["reliability/alta"],
+    "media": BW["reliability/media"],
+    "baja": BW["reliability/baja"],
+}
+"""Front-matter ``reliability`` value → its ``a crm:E55_Type`` individual IRI."""
+
+# --- Reused CIDOC-CRM time-span terms (anchor time-span, research D5) --------
+# Already-bound ``crm:`` predicates/classes referenced directly; never added to
+# ``CLASS_IRI`` (the frozen closure is GOLEM's, not the whole of CIDOC-CRM).
+
+HAS_TIME_SPAN = CRM["P4_has_time-span"]
+"""Anchor → its ``E52_Time-Span`` sub-node (optional, research D5)."""
+E52_TIME_SPAN = CRM["E52_Time-Span"]
+"""``rdf:type`` of an anchor's time-span sub-node."""
+BEGIN_OF_BEGIN = CRM["P82a_begin_of_the_begin"]
+"""Time-span → its begin year (``xsd:gYear``)."""
+END_OF_END = CRM["P82b_end_of_the_end"]
+"""Time-span → its end year (``xsd:gYear``)."""
+
+
+def timeline_uri(uri_base: str) -> URIRef:
+    """The well-known, **untyped** timeline IRI an anchor constrains (research D10).
+
+    GOLEM has no single node for "the timeline" (it is a collection of events), yet
+    FR-009 lets an anchor constrain it. This returns the conventional ``{uri_base}
+    timeline`` IRI — referenced as the object of ``bw:constrains`` only, never typed
+    — so era-level anchors resolve without introducing a new GOLEM class.
+    """
+    return URIRef(f"{uri_base}timeline")
 
 
 class TemporalRelation(NamedTuple):

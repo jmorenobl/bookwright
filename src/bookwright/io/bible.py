@@ -72,6 +72,9 @@ class MapResult:
     skipped: list[SkippedFile] = field(default_factory=list)
     unknown_keys: list[UnknownKey] = field(default_factory=list)
     unresolved_participants: list[UnresolvedParticipant] = field(default_factory=list)
+    # ``make_slug(name) → URI`` for every character, setting and event — the research
+    # ``bears_on``/``constrains`` targets (D11), distinct from participant ``slug_index``.
+    entity_index: dict[str, URIRef] = field(default_factory=dict)
 
     @property
     def entities(self) -> list[GolemEntity]:
@@ -116,6 +119,9 @@ class _DirSpec:
     builder: _Builder
     allowed_keys: frozenset[str]
     index: bool  # whether built entities feed the participant-resolution index
+    # Whether built entities feed the research ``entity_index`` (D11) — separate from
+    # ``index`` so a setting joins it without changing participant resolution.
+    into_entity_index: bool = False
 
 
 @dataclass(frozen=True)
@@ -132,6 +138,8 @@ class _CollectionSpec:
     # reference a sibling by name (events → temporal relations). ``None`` means a
     # collection whose items never cross-reference each other (relationships).
     item_uri: Callable[[str], URIRef] | None = None
+    # Whether built items feed the research ``entity_index`` (events yes; rel. no — D11).
+    into_entity_index: bool = False
 
 
 @dataclass(frozen=True)
@@ -169,6 +177,7 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             builder=lambda meta, rp: _build_character(uri_base, meta),
             allowed_keys=CHARACTER_KEYS,
             index=True,
+            into_entity_index=True,
         ),
     )
     _map_single_dir(
@@ -179,6 +188,7 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             builder=lambda meta, rp: Setting(uri_base=uri_base, name=_require_name(meta)),
             allowed_keys=SETTING_KEYS,
             index=False,
+            into_entity_index=True,
         ),
     )
     _map_collection(
@@ -191,6 +201,7 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             item_keys=EVENT_ITEM_KEYS,
             builder=lambda ic: _build_event(uri_base, ic),
             item_uri=lambda name: URIRef(f"{uri_base}event/{make_slug(name)}"),
+            into_entity_index=True,
         ),
     )
     _map_collection(
@@ -304,6 +315,8 @@ def _map_single_dir(ctx: _MapContext, spec: _DirSpec) -> None:
         _record_unknown_keys(ctx, frontmatter.metadata, spec.allowed_keys, relpath)
         if spec.index:
             ctx.slug_index[_slug_of(entity)] = entity.uri
+        if spec.into_entity_index:
+            ctx.result.entity_index[_slug_of(entity)] = entity.uri
         ctx.result.mapped.append(
             MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
         )
@@ -389,6 +402,8 @@ def _map_collection_item(
         return
     # Record soft warnings only after the item produced an entity (see _map_single_dir).
     _record_unknown_keys(ctx, item, spec.item_keys, relpath)
+    if spec.into_entity_index:
+        ctx.result.entity_index[make_slug(name)] = entity.uri
     ctx.result.mapped.append(
         MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
     )
