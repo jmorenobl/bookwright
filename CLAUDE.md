@@ -5,10 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Repository state: v0.1.0 shipped, M4 in progress
 
 The v0 toolkit is **fully implemented and released** (`v0.1.0`, 2026-06-03):
-iterations 1–11 are on `main` with a real `src/bookwright/` package, ~200
+iterations 1–14 are on `main` with a real `src/bookwright/` package, ~200
 Python files, the full test suite, docs, and CI gates green. Work has moved
-on to **M4 / v0.2** — the research & provenance model — on branch
-`012-research-provenance-model`.
+on to **M4 / v0.2** — the research & provenance system — currently on branch
+`015-bookwright-verify` (the post-draft fidelity check).
 
 The canonical references:
 
@@ -86,8 +86,8 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 
 ## Iterations (shipped + planned)
 
-`specs/` holds one directory per iteration. 001–011 are merged (v0.1.0);
-012 is the active branch.
+`specs/` holds one directory per iteration. 001–011 are merged (v0.1.0) and
+012–014 are merged (M4 in progress); 015 is the active branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -102,11 +102,15 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 | 009 | Materialize commands as Agent Skills | M2 | ✅ merged |
 | 010 | Validation system | M3 | ✅ merged |
 | 011 | Release prep (fixtures, E2E, docs, v0.1.0) | M3 | ✅ merged |
-| 012 | Research provenance model (Source/Finding/Anchor) | M4 | 🔨 active |
+| 012 | Research provenance model (Source/Finding/Anchor) | M4 | ✅ merged |
+| 013 | `bookwright-research` skill + `[research]` manifest block | M4 | ✅ merged |
+| 014 | `factual_anchor` validator | M4 | ✅ merged |
+| 015 | `bookwright-verify` LLM check | M4 | 🔨 active |
 
-Planned next in M4/v0.2 (per the 012 plan): iter 14 `bookwright-research`
-skill + `[research]` manifest block, iter 15 `factual_anchor` validator,
-iter 16 `bookwright-verify` LLM check. v0.3 adds decoupled vector search.
+M4/v0.2 is nearly complete: the provenance model (012), the `bookwright-research`
+skill + `[research]` manifest block (013), and the `factual_anchor` validator
+(014) are merged; the `bookwright-verify` LLM check (015) is the active branch.
+v0.3 adds decoupled vector search (ChromaDB over rdflib).
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
@@ -139,7 +143,7 @@ from per-command modules. The layers, in dependency order:
   front-matter + Markdown body **with line tracking** (`key_lines`) so the
   indexer can build `file:line` provenance. `bible.py` maps `bible/*.md` into
   GOLEM entities; `project.py`, `manuscript.py`, `fs.py`, `report.py` round
-  it out. (Iteration 012 adds `research.py`, an analogue of `bible.py`.)
+  it out, plus `research.py` (iteration 012), an analogue of `bible.py`.
 - **`integrations/`** — materializes the 10 source commands as **Agent
   Skills**. `SkillsIntegration` is the plugin base; `INTEGRATION_REGISTRY`
   (populated on import via `_register_builtins`) holds `claude` and `generic`.
@@ -193,9 +197,10 @@ source of truth (Constitution I).
 A PR that adds plumbing whose only justification is "future X" MUST be
 rejected (Constitution "Scope & Release Discipline").
 
-- v0.2 / M4 (design § 20) — research & verification: the **provenance model**
-  is iteration 012; the `bookwright-research`/`bookwright-verify` skills and
-  `factual_anchor` validator are **later** iterations — don't pull them in.
+- v0.2 / M4 (design § 20) — research & verification: the provenance model (012),
+  the `bookwright-research` skill (013) and the `factual_anchor` validator (014)
+  are merged, and `bookwright-verify` (015) is in flight — this milestone is
+  essentially done. Don't pull v0.3+ work below into it.
 - v0.3 — vector search (ChromaDB over rdflib, decoupled from Grafeo).
 - v1.0 — export to EPUB / PDF / print via pandoc.
 
