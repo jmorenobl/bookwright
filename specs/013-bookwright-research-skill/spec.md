@@ -181,7 +181,7 @@ questions are collected.
   integrations, **reusing the existing skill-materialization pipeline** (iteration
   9); no parallel pipeline is introduced.
 - **FR-003**: The generated `SKILL.md` MUST satisfy agentskills.io limits — `name`
-  ≤ 64 chars matching its parent directory, `description` ≤ 1024 chars, valid YAML
+  < 64 chars matching its parent directory, `description` < 1024 chars, valid YAML
   front-matter — i.e. pass the existing `lint_skill_md` gate.
 - **FR-004**: The skill MUST be triggerable from both Spanish and English author
   prompts.

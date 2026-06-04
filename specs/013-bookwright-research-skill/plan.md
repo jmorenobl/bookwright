@@ -64,7 +64,7 @@ inventory/mold guards re-balanced for the 11th command + 3 molds.
 sub-second on fixture-scale projects; no perf-sensitive path is added.
 
 **Constraints**: Every source file ≤ 500 lines (Principle IV); `SKILL.md`
-satisfies agentskills.io (`name` ≤ 64 and == parent dir, `description` ≤ 1024,
+satisfies agentskills.io (`name` < 64 and == parent dir, `description` < 1024,
 valid YAML — Principle VII); JSON-over-stdout preserved where touched
 (Principle IX); ontology stays frozen — no new GOLEM class (Constitution X);
 research vocabulary already lives in `sources.ttl` (iteration 13).
@@ -86,7 +86,7 @@ entry. No new CLI verb.
 | IV. Modular command surface | No new CLI verb; `manifest.py` is already 535 lines, so `ResearchBlock` goes in a new `core/_research_block.py` (≤500) imported by `manifest.py` | ✅ PASS |
 | V. Plugin-based integrations | Reuses `SkillsIntegration`/`INTEGRATION_REGISTRY`; only `claude`+`generic` (FR-002) | ✅ PASS |
 | VI. Agent Skills only | One `SKILL.md` per integration via the iter-9 materializer; nothing under `commands/` | ✅ PASS |
-| VII. agentskills.io compliance | Generated skill passes `lint_skill_md`; description ≤ 1024 (SC-001) | ✅ PASS |
+| VII. agentskills.io compliance | Generated skill passes `lint_skill_md`; description < 1024 (SC-001) | ✅ PASS |
 | VIII. Test discipline | Unit (block load/validate, format-conformance), integration (`init` scaffold + materialize + `graph build`), materialization-compliance E2E for the new authoring skill; ≥ 80 % (target > 85 %) | ✅ PASS |
 | IX. JSON-over-stdout | `init` / `graph build --json` contracts unchanged; the skill's final step calls `graph build --json` | ✅ PASS |
 | X. Design axioms | rdflib, GOLEM, plain text, Agent-Skills-only all honoured; **ontology frozen** — no new class, research vocab already in `sources.ttl` | ✅ PASS |
