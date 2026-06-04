@@ -62,7 +62,7 @@ not done if it breaks one:
 
 **Purpose**: pin the known-good baseline the FR-011 refactor must preserve.
 
-- [ ] T001 Establish the green baseline: run `uv run pytest tests/validation/`,
+- [X] T001 Establish the green baseline: run `uv run pytest tests/validation/`,
   `uv run ruff check`, `uv run ruff format --check`, and `uv run mypy --strict`, and
   confirm all pass — in particular `tests/validation/test_temporal.py` (including
   `test_open_interval_is_handled`, the disjoint-range oracle). Record that this is the
@@ -78,7 +78,7 @@ discoverable inert-correct validator skeleton, and the research-aware test build
 
 **⚠️ CRITICAL**: No user-story rule can be implemented until this phase is complete.
 
-- [ ] T002 [P] Add a research-aware graph builder to
+- [X] T002 [P] Add a research-aware graph builder to
   [tests/validation/conftest.py](../../tests/validation/conftest.py): a helper (e.g.
   `research_graph(...)`) that builds an `RdflibIndexer` by adding `bw:`/`crm:` triples
   directly (hand-built graph — defense-in-depth per spec edge cases), parametrized to
@@ -87,12 +87,12 @@ discoverable inert-correct validator skeleton, and the research-aware test build
   `bw:reliability`, an optional/absent `bw:constrains` target, and an optional
   `HAS_TIME_SPAN`→`E52_Time-Span` with `BEGIN_OF_BEGIN`/`END_OF_END`. Reuse the
   namespace constants from `golem.namespaces`; do not hardcode IRI strings.
-- [ ] T003 Promote the gYear parser in
+- [X] T003 Promote the gYear parser in
   [src/bookwright/validation/queries.py](../../src/bookwright/validation/queries.py):
   rename `_parse_year` → `parse_gyear`, add it to `__all__`, and widen its docstring
   from "for the `temporal` validator" to "for the `temporal` and `factual_anchor`
   validators". Pure rename — behaviour unchanged; both internal call sites updated.
-- [ ] T004 Create
+- [X] T004 Create
   [src/bookwright/validation/anchor_queries.py](../../src/bookwright/validation/anchor_queries.py)
   with the frozen `AnchorRecord` dataclass `(uri, promotes, constrains: str|None,
   span: EventInterval)` and `load_anchors(indexer) -> list[AnchorRecord]`: one record
@@ -100,7 +100,7 @@ discoverable inert-correct validator skeleton, and the research-aware test build
   read from `HAS_TIME_SPAN`→`E52_Time-Span` (`P82a`/`P82b`) into the reused
   `EventInterval` via `parse_gyear`, `(None, None)` when no span. Returned in sorted
   URI order. SPARQL only here — no reasoning. (depends T003)
-- [ ] T005 Create
+- [X] T005 Create
   [src/bookwright/validation/validators/factual_anchor.py](../../src/bookwright/validation/validators/factual_anchor.py)
   with the `FactualAnchor` class: `name = "factual_anchor"`, `severity_default =
   Severity.warning` (FR-002), and `validate(project, indexer)` that (a) reads
@@ -127,7 +127,7 @@ unsourced / provenance-incomplete / under-reliable / missing-entity; run the
 validator and confirm exactly the three malformed anchors warn (with the right
 facet/reason) and the well-formed one is silent. No anachronism logic needed.
 
-- [ ] T006 [P] [US1] Create
+- [X] T006 [P] [US1] Create
   [tests/validation/test_factual_anchor.py](../../tests/validation/test_factual_anchor.py)
   with the US1 cases (write first; they MUST fail before T008–T011): unsourced anchor
   → 1 warning; source missing N facets → N distinct warnings each naming its facet,
@@ -141,7 +141,7 @@ facet/reason) and the well-formed one is silent. No anachronism logic needed.
   the T007 mandatory-facet predicate set equals the predicate set emitted by a
   fully-populated `provenance.Source.to_triples()` (translation included) — so the facet
   membership cannot silently diverge from the `Source` model.
-- [ ] T007 [P] [US1] Extend
+- [X] T007 [P] [US1] Extend
   [src/bookwright/validation/anchor_queries.py](../../src/bookwright/validation/anchor_queries.py)
   with the source/presence projections: reach `anchor —bw:promotes→ finding
   —bw:supportedBy→ source`, returning per-anchor the supporting source URIs, each
@@ -153,26 +153,26 @@ facet/reason) and the well-formed one is silent. No anachronism logic needed.
   *membership* is `provenance.Source.to_triples()`, pinned by the T006 drift-guard test
   — do **not** source it from `io/research._SOURCE_FACETS` (field-names, not predicates:
   includes `name`, omits `translation`). SPARQL only. (depends T004)
-- [ ] T008 [US1] Implement rule **R1 unsourced** (FR-006) in `factual_anchor.py`: when
+- [X] T008 [US1] Implement rule **R1 unsourced** (FR-006) in `factual_anchor.py`: when
   the promoted finding **exists in the graph** and has no `bw:supportedBy` source, emit
   one `warning` naming the anchor, `triples=((anchor, bw:promotes, finding),)`
   (data-model V1). **Suppress** R1 when the promoted finding is absent from the graph —
   that case is reported once by R4 (T011), never double-labelled as unsourced
   (clarification 2026-06-04). (depends T007)
-- [ ] T009 [US1] Implement rule **R2 provenance-incomplete** (FR-007) in
+- [X] T009 [US1] Implement rule **R2 provenance-incomplete** (FR-007) in
   `factual_anchor.py`: for each supporting source, emit **one warning per missing
   mandatory facet**, each naming the source and facet; `translation` is mandatory only
   when the source's `bw:originalLanguage` ≠ `manifest.book.language` (D5, edge case).
   Uses the T007 facet tuple — does not re-list facets. The missing facet is named in
   `message`; `triples=((finding, bw:supportedBy, source),)` — the existing edge that
   locates the source, **never** a fabricated triple with an empty object (V2). (depends T008)
-- [ ] T010 [US1] Implement rule **R3 under-reliable** (FR-008) in `factual_anchor.py`:
+- [X] T010 [US1] Implement rule **R3 under-reliable** (FR-008) in `factual_anchor.py`:
   derive `_RELIABILITY_RANK` by inverting `RELIABILITY_IRI` (`baja<media<alta`),
   compute the **max** rank over **rated** supporting sources, and warn once when it is
   strictly below `rank(manifest.research.min_reliability_for_anchor)` **or** when no
   supporting source is rated (D6). An unrated source contributes nothing here and is
   not double-labelled (clarification). (depends T009)
-- [ ] T011 [US1] Implement rule **R4 missing-entity** (FR-009) in `factual_anchor.py`:
+- [X] T011 [US1] Implement rule **R4 missing-entity** (FR-009) in `factual_anchor.py`:
   warn when the promoted finding URI is absent from the graph, and warn when the
   anchor has no `bw:constrains` triple (dropped link) **or** names a target absent
   from the graph; the `timeline_uri(...)` target counts as present (D4). `triples`
@@ -196,7 +196,7 @@ time-spanned anchor constraining a non-temporal target (a character) → no erro
 (FR-012). Plus unit tests for `intervals_disjoint` and `load_timeline_bounds`, and
 confirmation that `test_temporal.py` is still green after the rewire.
 
-- [ ] T012 [P] [US2] Create
+- [X] T012 [P] [US2] Create
   [tests/validation/test_queries.py](../../tests/validation/test_queries.py)
   unit-testing `intervals_disjoint` (disjoint in each direction → True;
   overlapping/touching → False; any open bound → False, never forces disjointness) and
@@ -207,11 +207,11 @@ confirmation that `test_temporal.py` is still green after the rewire.
   consistent → none; non-temporal target → none, FR-012; **event target that carries no
   year (absent from `load_intervals`) → none**, FR-012; open-ended span compares only
   the present bound; timeline target via overall bounds). Write first; MUST fail.
-- [ ] T013 [US2] Add `intervals_disjoint(a: EventInterval, b: EventInterval) -> bool`
+- [X] T013 [US2] Add `intervals_disjoint(a: EventInterval, b: EventInterval) -> bool`
   to [src/bookwright/validation/queries.py](../../src/bookwright/validation/queries.py)
   (exact predicate in research D1; open bounds never force disjointness) and add it to
   `__all__`. This is the single source of truth for interval contradiction (FR-011).
-- [ ] T014 [US2] Rewire the overlap-disjoint branch of `Temporal._numeric`
+- [X] T014 [US2] Rewire the overlap-disjoint branch of `Temporal._numeric`
   ([src/bookwright/validation/validators/temporal.py](../../src/bookwright/validation/validators/temporal.py#L196-L213))
   so the **disjointness decision** is made by `intervals_disjoint` (the FR-011 single
   source of truth for the *decision*). The two directional `<` comparisons stay **only**
@@ -219,12 +219,12 @@ confirmation that `test_temporal.py` is still green after the rewire.
   second contradiction check (D1). **Preserve both messages byte-for-byte**; do not
   collapse them into one. Re-run `tests/validation/test_temporal.py` and confirm it
   stays green — the behaviour-preservation proof for FR-011. (depends T013)
-- [ ] T015 [US2] Add `load_timeline_bounds(indexer) -> EventInterval` to
+- [X] T015 [US2] Add `load_timeline_bounds(indexer) -> EventInterval` to
   [src/bookwright/validation/queries.py](../../src/bookwright/validation/queries.py) —
   a thin reduction over `load_intervals` returning `(min begin, max end)` across every
   `G5_Narrative_Event`, both bounds `None` when none carries years (D3) — and add it to
   `__all__`. No new interval reasoning.
-- [ ] T016 [US2] Implement rule **R5 anachronism** (FR-010/FR-012) in
+- [X] T016 [US2] Implement rule **R5 anachronism** (FR-010/FR-012) in
   `factual_anchor.py`: only when the anchor carries a span, resolve `bw:constrains` —
   a `G5_Narrative_Event` → its `load_intervals` interval (an event **absent** from the
   `load_intervals` map because it carries no year → no comparable interval, emit nothing,
@@ -250,7 +250,7 @@ violations; under `[validators].disabled=["factual_anchor"]` it does not appear 
 `ran[]`; under an `[validators].enabled` allow-list including it, it runs; with
 `[research].enabled=false` on a project that *has* anchors it emits zero violations.
 
-- [ ] T017 [P] [US3] Add the discovery/selection/inert tests to
+- [X] T017 [P] [US3] Add the discovery/selection/inert tests to
   [tests/validation/test_factual_anchor.py](../../tests/validation/test_factual_anchor.py):
   `factual_anchor` is auto-discovered (present in `discover_validators`/`ran[]`),
   honored by `[validators].disabled` and an `[validators].enabled` allow-list
@@ -262,7 +262,7 @@ violations; under `[validators].disabled=["factual_anchor"]` it does not appear 
   `ScopeFilter` reports **zero** `factual_anchor` violations while the unscoped report
   carries them all — assert both directions via `report.reported(scope=…)` so the
   location-less contract is pinned (`ScopeFilter.matches(None) is False`).
-- [ ] T018 [US3] Confirm `factual_anchor.py` reads
+- [X] T018 [US3] Confirm `factual_anchor.py` reads
   `project.manifest.research.enabled` and `min_reliability_for_anchor` straight from
   the `[research]` model and relies on that model's documented defaults
   ([src/bookwright/core/_research_block.py](../../src/bookwright/core/_research_block.py))
@@ -275,20 +275,20 @@ violations; under `[validators].disabled=["factual_anchor"]` it does not appear 
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T019 [P] Run the full gate sweep: `uv run ruff check`, `uv run ruff format
+- [X] T019 [P] Run the full gate sweep: `uv run ruff check`, `uv run ruff format
   --check`, `uv run mypy --strict`, and `uv run pytest` — confirm green and coverage
   ≥ 80 % (single-sourced `fail_under`, SC-006). Do **not** add any `--cov-fail-under`.
-- [ ] T020 [P] Verify Principle IV: confirm `queries.py`, `anchor_queries.py`,
+- [X] T020 [P] Verify Principle IV: confirm `queries.py`, `anchor_queries.py`,
   `validators/factual_anchor.py`, and `validators/temporal.py` each stay ≤ 500 lines,
   and that `factual_anchor.py` contains no rdflib import (SPARQL lives only in
   `anchor_queries.py`/`queries.py`, mirroring `temporal`).
-- [ ] T021 Walk the [quickstart.md](quickstart.md) end to end on a real research
+- [X] T021 Walk the [quickstart.md](quickstart.md) end to end on a real research
   project: build the graph, introduce one defect of each kind, run `bookwright
   validate` / `--json` / `--severity error` / `--scope <research-file>`, and confirm
   each expected warning/error, the inert/disabled behaviours, and that the `--scope`
   run reports **zero** `factual_anchor` violations (location-less, SC-005) all appear
   as documented.
-- [ ] T022 [P] If `docs/` (or the README) enumerates the built-in validators, add
+- [X] T022 [P] If `docs/` (or the README) enumerates the built-in validators, add
   `factual_anchor` to that list in **Spanish** (language convention); otherwise note
   no docs change is required. No skill is emitted (FR-017, N/A to Principles VI/VII).
 

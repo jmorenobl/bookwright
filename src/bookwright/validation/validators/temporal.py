@@ -20,6 +20,7 @@ from bookwright.indexers import Indexer
 from bookwright.validation.base import Severity, ValidationContext, Violation
 from bookwright.validation.queries import (
     EventInterval,
+    intervals_disjoint,
     load_intervals,
     load_relations,
     resolve_source,
@@ -195,6 +196,11 @@ class Temporal:
                 )
         for a, b in _unordered_pairs(relations["overlaps"]):
             ia, ib = interval(a), interval(b)
+            # The disjointness DECISION is the shared single source of truth (FR-011);
+            # the two directional comparisons below only choose which message to emit
+            # (formatting), never re-decide the contradiction.
+            if not intervals_disjoint(ia, ib):
+                continue
             if ia.end is not None and ib.begin is not None and ia.end < ib.begin:
                 emit(
                     a,
@@ -203,7 +209,7 @@ class Temporal:
                     f"'{_label(a)}' (ends {ia.end}) and '{_label(b)}' (begins {ib.begin}) "
                     "are asserted to overlap, but their year ranges are disjoint",
                 )
-            elif ib.end is not None and ia.begin is not None and ib.end < ia.begin:
+            else:
                 emit(
                     a,
                     "overlaps",

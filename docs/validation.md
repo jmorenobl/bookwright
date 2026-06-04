@@ -13,9 +13,12 @@ informativos y nunca bloquean.
 | `focalization` | `warning` | Rupturas de la voz narrativa declarada en la constitución (primera persona fuera de diálogo bajo tercera persona; *head-hopping* en tercera limitada). |
 | `setting_continuity` | `warning` | Un mismo setting descrito con términos contradictorios (p. ej. «costera» e «interior») en archivos distintos. |
 | `temporal` | `error` | Contradicciones en la línea de tiempo: ciclos `follows`/`precedes`, solapamientos imposibles, contención incompatible con un orden estricto, o intervalos numéricos que contradicen una relación declarada. |
+| `factual_anchor` | `warning` (defectos estructurales) / `error` (anacronismo) | Integridad de los anclajes de investigación: un anclaje sin fuente, una fuente a la que le falta una faceta de procedencia obligatoria, una fiabilidad de respaldo por debajo de `[research] min_reliability_for_anchor`, o un hallazgo/entidad ausente del grafo (`warning`); y un choque cronológico entre el lapso temporal del anclaje y el intervalo del evento (o la línea de tiempo) que restringe (`error`). Es inerte cuando `[research].enabled = false` o no hay anclajes. |
 
-Solo `character_presence` (huérfanos) y `temporal` producen `error` y, por
-tanto, bloquean. `focalization` y `setting_continuity` son siempre `warning`.
+Solo `character_presence` (huérfanos), `temporal` y el anacronismo de
+`factual_anchor` producen `error` y, por tanto, bloquean. `focalization`,
+`setting_continuity` y los defectos estructurales de `factual_anchor` son
+siempre `warning`.
 
 ## Activar y desactivar validadores
 

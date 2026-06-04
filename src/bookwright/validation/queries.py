@@ -25,7 +25,15 @@ from bookwright.golem.namespaces import (
 from bookwright.indexers import Indexer
 from bookwright.validation.base import split_source
 
-__all__ = ["EventInterval", "load_intervals", "load_relations", "resolve_source"]
+__all__ = [
+    "EventInterval",
+    "intervals_disjoint",
+    "load_intervals",
+    "load_relations",
+    "load_timeline_bounds",
+    "parse_gyear",
+    "resolve_source",
+]
 
 _PREFIXES = "\n".join(
     f"PREFIX {prefix}: <{uri}>"
@@ -54,8 +62,14 @@ def _q(indexer: Indexer, body: str) -> list[dict[str, str]]:
     return list(indexer.query(f"{_PREFIXES}\n{body}"))
 
 
-def _parse_year(raw: str) -> int | None:
-    """Coerce an ``xsd:gYear`` lexical (``"1885"``, ``"0800"``, ``"-0044"``) to int."""
+def parse_gyear(raw: str) -> int | None:
+    """Coerce an ``xsd:gYear`` lexical (``"1885"``, ``"0800"``, ``"-0044"``) to int.
+
+    The single ``gYear`` parser for the ``temporal`` and ``factual_anchor``
+    validators: ``temporal`` reads event boundary years through it (via
+    :func:`load_intervals`) and ``factual_anchor`` reads anchor time-span years
+    through it (via ``anchor_queries.load_anchors``), so both coerce identically.
+    """
     text = raw.strip()
     negative = text.startswith("-")
     digits = text[1:] if negative else text
@@ -63,6 +77,20 @@ def _parse_year(raw: str) -> int | None:
         return None
     value = int(digits)
     return -value if negative else value
+
+
+def intervals_disjoint(a: EventInterval, b: EventInterval) -> bool:
+    """True when two closed year ranges provably do not overlap (FR-011, research D1).
+
+    The **single source of truth** for "two intervals contradict": both the
+    ``temporal`` validator (overlap-disjoint rule) and ``factual_anchor`` (the
+    anachronism rule) decide disjointness here and nowhere else. An open bound
+    (``None``) is unbounded on that side, so it can never force disjointness — an
+    open-ended interval cannot be *proven* disjoint from anything.
+    """
+    return (a.end is not None and b.begin is not None and a.end < b.begin) or (
+        b.end is not None and a.begin is not None and b.end < a.begin
+    )
 
 
 def load_intervals(indexer: Indexer) -> dict[str, EventInterval]:
@@ -90,7 +118,7 @@ def load_intervals(indexer: Indexer) -> dict[str, EventInterval]:
         """,
     )
     for row in rows:
-        event, btype, year = row["event"], row["btype"], _parse_year(row["year"])
+        event, btype, year = row["event"], row["btype"], parse_gyear(row["year"])
         if event not in intervals or year is None:
             continue
         if btype.endswith("/begin"):
@@ -101,6 +129,24 @@ def load_intervals(indexer: Indexer) -> dict[str, EventInterval]:
         event: EventInterval(uri=event, begin=bounds[0], end=bounds[1])
         for event, bounds in intervals.items()
     }
+
+
+def load_timeline_bounds(indexer: Indexer) -> EventInterval:
+    """The timeline's overall ``(min begin, max end)`` across every event (D3).
+
+    A thin reduction over :func:`load_intervals` — it adds **no** new interval
+    reasoning — used by ``factual_anchor`` when an anchor constrains the timeline as
+    a whole. Both bounds are ``None`` when no event carries a year. The ``uri`` is a
+    sentinel label (the timeline has no single typed node, research D10).
+    """
+    intervals = load_intervals(indexer).values()
+    begins = [iv.begin for iv in intervals if iv.begin is not None]
+    ends = [iv.end for iv in intervals if iv.end is not None]
+    return EventInterval(
+        uri="timeline",
+        begin=min(begins) if begins else None,
+        end=max(ends) if ends else None,
+    )
 
 
 def load_relations(indexer: Indexer) -> dict[str, set[tuple[str, str]]]:

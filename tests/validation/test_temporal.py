@@ -101,6 +101,55 @@ def test_rule_d_numeric_contradiction(project_root: Path) -> None:
     assert finding.source == "bible/timeline.md"
 
 
+def test_rule_d_overlap_but_years_are_disjoint(project_root: Path) -> None:
+    # Declared overlap, yet the year ranges are provably disjoint (FR-011). This pins
+    # the "ends X / begins Y" message branch byte-for-byte after the intervals_disjoint
+    # rewire; its sibling direction is covered by the other overlap fixtures.
+    write_project(
+        project_root,
+        timeline="""\
+        ---
+        events:
+          - name: "alfa"
+            begin: 1900
+            end: 1910
+            overlaps: ["beta"]
+          - name: "beta"
+            begin: 1920
+            end: 1930
+        ---
+        """,
+    )
+    finding = _only_error(_run(project_root))
+    assert "(ends 1910)" in finding.message
+    assert "(begins 1920)" in finding.message
+    assert "disjoint" in finding.message
+
+
+def test_rule_d_overlap_disjoint_reverse_direction(project_root: Path) -> None:
+    # The canonical-first event sits AFTER the second → the "begins X / ends Y"
+    # message branch (the other side of the same shared disjointness decision).
+    write_project(
+        project_root,
+        timeline="""\
+        ---
+        events:
+          - name: "alfa"
+            begin: 1920
+            end: 1930
+            overlaps: ["beta"]
+          - name: "beta"
+            begin: 1900
+            end: 1910
+        ---
+        """,
+    )
+    finding = _only_error(_run(project_root))
+    assert "(begins 1920)" in finding.message
+    assert "(ends 1910)" in finding.message
+    assert "disjoint" in finding.message
+
+
 def test_clean_timeline_has_no_findings(project_root: Path) -> None:
     write_project(
         project_root,

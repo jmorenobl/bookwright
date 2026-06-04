@@ -11,7 +11,13 @@ from bookwright.core.manifest import ValidatorsBlock
 from bookwright.validation.base import UnknownValidatorError
 from bookwright.validation.registry import discover_validators, resolve_active
 
-_BUILTINS = {"character_presence", "focalization", "setting_continuity", "temporal"}
+_BUILTINS = {
+    "character_presence",
+    "factual_anchor",
+    "focalization",
+    "setting_continuity",
+    "temporal",
+}
 
 _GOOD = """
 from bookwright.validation import Severity, Violation
@@ -105,7 +111,7 @@ def test_resolve_active_disabled_subtracts(tmp_path: Path) -> None:
     builtins, customs, _e = discover_validators(tmp_path / "absent")
     active = resolve_active(builtins, customs, ValidatorsBlock(disabled=["temporal"]))
     assert "temporal" not in {v.name for v in active}
-    assert len(active) == 3
+    assert len(active) == len(_BUILTINS) - 1
 
 
 def test_resolve_active_custom_allow_list(tmp_path: Path) -> None:

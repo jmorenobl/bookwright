@@ -166,6 +166,7 @@ def test_json_is_single_document_with_prose_on_stderr(
         "character_presence",
         "setting_continuity",
         "focalization",
+        "factual_anchor",
     }
     assert "{" not in result.stderr  # no JSON leaked to stderr
 
