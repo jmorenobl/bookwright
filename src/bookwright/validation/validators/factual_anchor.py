@@ -43,8 +43,8 @@ from bookwright.validation.queries import (
     EventInterval,
     intervals_disjoint,
     load_intervals,
-    load_timeline_bounds,
     resolve_source,
+    timeline_bounds,
 )
 
 # The reliability scale, lowest → highest. The rating NAMES are the single
@@ -99,9 +99,10 @@ class FactualAnchor:
         # Interval data is only loaded when at least one anchor carries a time-span —
         # a non-temporal research project pays nothing for the anachronism rule.
         spanned = any(a.span.begin is not None or a.span.end is not None for a in anchors)
+        events = load_intervals(indexer) if spanned else {}
         intervals = _IntervalView(
-            events=load_intervals(indexer) if spanned else {},
-            timeline=load_timeline_bounds(indexer) if spanned else None,
+            events=events,
+            timeline=timeline_bounds(events) if spanned else None,
         )
         out: list[Violation] = []
         for anchor in anchors:  # already sorted by URI (deterministic, FR-003)

@@ -1,8 +1,8 @@
 """Unit tests for the shared interval helpers in ``queries`` (T012).
 
 ``intervals_disjoint`` is the single source of truth for "two year ranges provably
-do not overlap" (FR-011); ``load_timeline_bounds`` is the thin reduction over
-``load_intervals`` the anchor anachronism rule uses for a timeline target (D3).
+do not overlap" (FR-011); ``timeline_bounds`` is the pure reduction over a
+``load_intervals`` result the anchor anachronism rule uses for a timeline target (D3).
 """
 
 from __future__ import annotations
@@ -10,7 +10,8 @@ from __future__ import annotations
 from bookwright.validation.queries import (
     EventInterval,
     intervals_disjoint,
-    load_timeline_bounds,
+    load_intervals,
+    timeline_bounds,
 )
 from tests.validation.conftest import add_event, research_graph
 
@@ -48,7 +49,7 @@ def test_load_timeline_bounds_spans_all_events() -> None:
     engine = research_graph()
     add_event(engine, "early", begin=1900, end=1905)
     add_event(engine, "late", begin=1950, end=1960)
-    bounds = load_timeline_bounds(engine)
+    bounds = timeline_bounds(load_intervals(engine))
     assert bounds.begin == 1900
     assert bounds.end == 1960
 
@@ -56,6 +57,6 @@ def test_load_timeline_bounds_spans_all_events() -> None:
 def test_load_timeline_bounds_none_when_no_years() -> None:
     engine = research_graph()
     add_event(engine, "vague", begin=None, end=None)
-    bounds = load_timeline_bounds(engine)
+    bounds = timeline_bounds(load_intervals(engine))
     assert bounds.begin is None
     assert bounds.end is None

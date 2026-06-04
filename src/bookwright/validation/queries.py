@@ -30,9 +30,9 @@ __all__ = [
     "intervals_disjoint",
     "load_intervals",
     "load_relations",
-    "load_timeline_bounds",
     "parse_gyear",
     "resolve_source",
+    "timeline_bounds",
 ]
 
 _PREFIXES = "\n".join(
@@ -131,17 +131,18 @@ def load_intervals(indexer: Indexer) -> dict[str, EventInterval]:
     }
 
 
-def load_timeline_bounds(indexer: Indexer) -> EventInterval:
-    """The timeline's overall ``(min begin, max end)`` across every event (D3).
+def timeline_bounds(intervals: dict[str, EventInterval]) -> EventInterval:
+    """The timeline's overall ``(min begin, max end)`` across the given events (D3).
 
-    A thin reduction over :func:`load_intervals` — it adds **no** new interval
-    reasoning — used by ``factual_anchor`` when an anchor constrains the timeline as
-    a whole. Both bounds are ``None`` when no event carries a year. The ``uri`` is a
-    sentinel label (the timeline has no single typed node, research D10).
+    A **pure** reduction over an already-loaded :func:`load_intervals` result — it
+    adds **no** new interval reasoning — used by ``factual_anchor`` when an anchor
+    constrains the timeline as a whole. Both bounds are ``None`` when no event carries
+    a year. The ``uri`` is a sentinel label (the timeline has no single typed node,
+    research D10). It takes the loaded dict (not the indexer) so the caller reuses one
+    :func:`load_intervals` pass rather than querying the graph a second time.
     """
-    intervals = load_intervals(indexer).values()
-    begins = [iv.begin for iv in intervals if iv.begin is not None]
-    ends = [iv.end for iv in intervals if iv.end is not None]
+    begins = [iv.begin for iv in intervals.values() if iv.begin is not None]
+    ends = [iv.end for iv in intervals.values() if iv.end is not None]
     return EventInterval(
         uri="timeline",
         begin=min(begins) if begins else None,
