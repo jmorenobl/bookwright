@@ -4,6 +4,7 @@ The members re-exported below are the stable iteration-2 contract; anything
 else is implementation detail. See specs/002-manifest-model/contracts/manifest_api.md.
 """
 
+from bookwright.core._research_block import ResearchBlock
 from bookwright.core.errors import (
     ManifestError,
     ManifestNotFoundError,
@@ -30,4 +31,5 @@ __all__ = [
     "ManifestSyntaxError",
     "ManifestValidationError",
     "ManifestWarning",
+    "ResearchBlock",
 ]

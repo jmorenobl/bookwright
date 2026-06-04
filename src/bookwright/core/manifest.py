@@ -34,6 +34,7 @@ from tomlkit.toml_document import TOMLDocument
 
 from bookwright import __version__ as _BOOKWRIGHT_VERSION
 from bookwright.core._build import _build_manifest
+from bookwright.core._research_block import ResearchBlock
 from bookwright.core._translate import _translate_validation_error
 from bookwright.core.errors import (
     ManifestNotFoundError,
@@ -328,6 +329,7 @@ class Manifest(BaseModel):
     validators: ValidatorsBlock = Field(default_factory=ValidatorsBlock)
     integration: IntegrationBlock
     paths: PathsBlock = Field(default_factory=PathsBlock)
+    research: ResearchBlock = Field(default_factory=ResearchBlock)
 
     _document: TOMLDocument | None = PrivateAttr(default=None)
     _warnings: tuple[ManifestWarning, ...] = PrivateAttr(default=())

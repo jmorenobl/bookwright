@@ -22,6 +22,7 @@ _ROSTER: tuple[str, ...] = (
     "bookwright-analyze",
     "bookwright-continuity",
     "bookwright-checklist",
+    "bookwright-research",
 )
 
 

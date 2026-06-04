@@ -38,6 +38,9 @@ _REQUIRED_HEADINGS: dict[str, tuple[str, ...]] = {
     ),
     "chapter.md.tmpl": ("Propósito del capítulo", "Escenas", "Borrador"),
     "scene.md.tmpl": ("Objetivo del POV", "Conflicto", "Cambio de estado"),
+    "_index.md.tmpl": ("Temas", "Preguntas abiertas"),
+    "sources.md.tmpl": ("Registro de fuentes", "Notas"),
+    "tema.md.tmpl": ("Hallazgos", "Anclas", "Preguntas abiertas"),
 }
 
 

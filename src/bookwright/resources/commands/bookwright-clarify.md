@@ -26,8 +26,9 @@ argumento, revisa el proyecto entero.
 
 1. Lee los artefactos disponibles (`bible/`, `outline/`, `manuscript/`), o solo
    el indicado en `{ARGS}` si se dio.
-2. Localiza los `[PENDING: …]` aún abiertos y, además, las decisiones que el
-   material deja ambiguas o contradictorias aunque no estén marcadas.
+2. Localiza los `[PENDING: …]` aún abiertos y las `open_questions:` registradas en
+   `bible/research/_index.md` y, además, las decisiones que el material deja
+   ambiguas o contradictorias aunque no estén marcadas.
 3. Si el proyecto está vacío o falta el prerrequisito a revisar, dilo claramente
    ("nada que aclarar todavía / falta el prerrequisito"), no falles de forma
    opaca.

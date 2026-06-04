@@ -48,8 +48,9 @@ constitución y el brief; trabajas sobre el proyecto inicializado.
    `references/golem-events-timeline.md`) y `bible/relationships.md` (clave
    `relationships:`, ver `references/golem-relationships.md`). Cada *slug* en
    `participants` debe corresponder a una ficha real.
-6. Puebla `bible/themes.md`, `bible/glossary.md`, `bible/research.md` y
-   `bible/subplots.md` con lo que el brief sostenga.
+6. Puebla `bible/themes.md`, `bible/glossary.md`, `bible/research/_index.md` y
+   `bible/subplots.md` con lo que el brief sostenga (la investigación a fondo, con
+   fuentes y anclas, es trabajo de `/bookwright-research`).
 7. Puebla `bible/pov-structure.md` **solo si** la constitución declara múltiples
    POV; si es de POV único, deja una nota breve `POV único — no aplica` y no
    rellenes el calendario.
@@ -74,7 +75,7 @@ creaste, qué quedó `[PENDING: …]` y qué conviene aclarar a continuación.
 
 - `bible/characters/*.md`, `bible/settings/*.md`, `bible/locations/*.md`.
 - `bible/timeline.md`, `bible/relationships.md`, `bible/themes.md`,
-  `bible/glossary.md`, `bible/research.md`, `bible/subplots.md`.
+  `bible/glossary.md`, `bible/research/_index.md`, `bible/subplots.md`.
 - `bible/pov-structure.md` (solo si multi-POV; si no, la nota "POV único").
 
 ## Información faltante

@@ -28,6 +28,7 @@ _ROSTER = {
     "bookwright-analyze",
     "bookwright-continuity",
     "bookwright-checklist",
+    "bookwright-research",
 }
 
 

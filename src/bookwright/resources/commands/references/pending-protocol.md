@@ -2,8 +2,9 @@
 
 Esta es la regla compartida que todos los comandos generativos
 (`bookwright-constitution`, `bookwright-bible`, `bookwright-outline`,
-`bookwright-scenes`, `bookwright-draft`, `bookwright-synopsis`) siguen al
-encontrar información que el brief o los artefactos existentes no proporcionan.
+`bookwright-scenes`, `bookwright-draft`, `bookwright-synopsis`,
+`bookwright-research`) siguen al encontrar información que el brief o los
+artefactos existentes no proporcionan.
 Es la única fuente de verdad de esta decisión: los cuerpos de los comandos
 enlazan aquí en lugar de repetir la regla.
 

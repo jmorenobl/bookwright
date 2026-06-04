@@ -65,3 +65,15 @@ bible = "bible/"
 outline = "outline/"
 graph = "bible/graph.ttl"
 constitution = "bible/constitution.md"
+
+[research]
+# Whether the research system is active. When false, the bookwright-research
+# skill reports the system inert and produces no graph-bound findings.
+enabled = true
+# Source provenances (ISO 639-1 codes) the protocol should deliberately seek for
+# nationally-charged topics, e.g. ["de", "pl", "en", "fr"]. Empty = no declared
+# preference; the original-language rule still applies.
+source_languages = []
+# Minimum source reliability required before a finding may become a binding
+# anchor: one of "alta" | "media" | "baja".
+min_reliability_for_anchor = "media"
