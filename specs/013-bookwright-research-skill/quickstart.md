@@ -121,6 +121,8 @@ surfaces only as a soft `research_warnings` entry.
 ## Done when
 
 All four CI gates pass (`ruff check`, `ruff format --check`, `mypy --strict`,
-`pytest` ≥ 80 %, > 85 % on new code per SC-007), the generated skill passes
-`lint_skill_md` in both integrations, and the SC-009 description-mirror gate is
-green for `bookwright-research`.
+`pytest` at the single-sourced ≥ 80 % gate with `core/_research_block.py` fully
+exercised per SC-007), the generated skill passes `lint_skill_md` in both
+integrations, the SC-009 description-mirror gate is green for
+`bookwright-research`, and the inventory/mold guards are re-balanced for the
+eleventh command and the three new molds.

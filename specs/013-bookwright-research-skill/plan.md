@@ -49,10 +49,12 @@ runtime dependency** (Constitution II; the skill bundles no fetcher — FR-007).
 (YAML front-matter + Markdown), packaged `.tmpl`/`.j2` templates. The graph
 (`bible/graph.ttl`) remains a derived cache (Constitution I).
 
-**Testing**: pytest with ≥ 80 % line coverage (the spec asks > 85 % on new
-code, SC-007); `ruff check`, `ruff format --check`, `mypy --strict`; the
+**Testing**: pytest with the single-sourced ≥ 80 % coverage gate (SC-007;
+`core/_research_block.py` fully exercised by its unit suite — no second
+threshold added); `ruff check`, `ruff format --check`, `mypy --strict`; the
 shipped `lint_skill_md` gate over the generated skill (SC-001); the existing
-SC-009 description equality gate over `descriptions.py`.
+SC-009 description equality gate over `descriptions.py`; and the intentional
+inventory/mold guards re-balanced for the 11th command + 3 molds.
 
 **Target Platform**: Cross-platform CLI (developer + CI, macOS/Linux/Windows).
 
@@ -146,22 +148,35 @@ src/bookwright/
     └── descriptions.py             # EDIT — add bookwright-research description (SC-009 mirror)
 
 tests/
+├── fixtures/
+│   └── research.py                  # NEW single shared fixture: relocated iter-13 constants (byte-identical) + rich SC-004/005/006 builder
 ├── core/
 │   └── test_research_block.py       # load with/without block, defaults, bad reliability/language
 ├── integrations/
 │   └── test_research_skill.py       # materializes + passes lint_skill_md (both integrations)
-├── resources/ (or io/)
-│   └── test_research_format.py      # a fixture topic/sources/_index round-trips through map_research
-└── commands/init/
-    └── test_init_research_scaffold.py  # bible/research/ scaffolded, no stray research.md, [research] in manifest
+├── io/
+│   └── test_research_format.py      # rich shared fixture round-trips through map_research (SC-004/005)
+└── commands/
+    ├── init/test_init_research_scaffold.py  # bible/research/ scaffolded, no stray research.md, [research] in manifest
+    └── graph/test_research_build.py # EXTEND (iter-13 suite) — rich-fixture graph build: SC-003/004/005/006
+
+# Intentional change-detector guards updated for the 11th command + 3 molds (declared, not bypassed):
+#   tests/resources/helpers.py            — EXPECTED_COMMANDS, GENERATIVE_COMMANDS
+#   tests/integrations/test_descriptions.py — _ROSTER
+#   tests/integrations/test_materialize.py  — _ROSTER
+#   tests/resources/test_mold_structure.py  — _REQUIRED_HEADINGS
 ```
 
 **Structure Decision**: Single project, src-layout. The feature is almost
 entirely **packaged-resource + one Pydantic block**: no new CLI module, no new
-indexer, no new integration. The only Python touched is `core/manifest.py`
-(the block) and `integrations/descriptions.py` (the SC-009 mirror entry). All
-new behavior is data (Markdown/TOML/templates) consumed by machinery that
-already exists on `main`.
+indexer, no new integration. The new **production** Python is the extracted
+`core/_research_block.py` plus a one-import-one-field wiring in
+`core/manifest.py`, the `core/__init__.py` re-export, and the
+`integrations/descriptions.py` mirror entry. Test-side, behavior is proven from
+**one shared fixture** (`tests/fixtures/research.py`) reused by the io- and
+graph-level tests, and the intentional inventory/mold guards are re-balanced for
+the new command and molds. All new behavior is data (Markdown/TOML/templates)
+consumed by machinery that already exists on `main`.
 
 ## Complexity Tracking
 

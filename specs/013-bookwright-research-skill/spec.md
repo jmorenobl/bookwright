@@ -284,8 +284,11 @@ questions are collected.
   account.
 - **SC-006**: A finding whose best source is below `min_reliability_for_anchor` is
   never emitted as an anchor — 0 such promotions in the produced file.
-- **SC-007**: New code introduced by this iteration is covered by tests at
-  > 85 % line coverage (project gate; Constitution VIII).
+- **SC-007**: The full `pytest` suite passes the single-sourced project coverage
+  gate (≥ 80 %, `fail_under = 80`; Constitution VIII), and the one new Python
+  module (`core/_research_block.py`) is fully exercised by its unit suite (the
+  Markdown command, templates, and TOML it adds are data, not line-coverage
+  -measured).
 
 ## Assumptions
 

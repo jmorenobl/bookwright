@@ -10,9 +10,11 @@ description: "Task list — bookwright-research Skill + bible/research/"
 contracts/ ✅ (`research-block.md`, `research-file-format.md`,
 `research-skill.md`), quickstart.md ✅
 
-**Tests**: INCLUDED. Constitution VIII mandates ≥ 80 % coverage and the spec
-asks > 85 % on new code (SC-007); the plan's structure enumerates four test
-modules. Test tasks are therefore required, not optional, for this iteration.
+**Tests**: INCLUDED. Constitution VIII mandates the single-sourced ≥ 80 %
+coverage gate and the new `core/_research_block.py` is fully exercised by its
+unit suite (SC-007). New tests reuse a **single shared** research fixture
+(`tests/fixtures/research.py`) and **extend** iteration-13's graph-build suite
+rather than fork parallel copies. Test tasks are required, not optional.
 
 **Organization**: Tasks are grouped by user story (US1 P1, US2 P2, US3 P3) so
 each story is independently implementable and testable.
@@ -41,13 +43,17 @@ format has a reader to parse it.
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: One cross-cutting test fixture consumed by both the US1
-format-conformance test and the Polish E2E graph-build test.
+**Purpose**: One **single shared** research fixture — the source of truth for
+both the US1 format-conformance test and the Polish graph-build test — built by
+extending iteration-13's already-shipped fixture rather than forking a parallel
+copy (DRY; no duplicate fixture trees).
 
-**⚠️ CRITICAL**: The shared fixture must exist before the conformance and E2E
-tests that read it.
+**⚠️ CRITICAL**: The shared fixture must exist before the conformance and
+graph-build tests that read it. Reuse, don't reinvent: iteration-13's
+`scaffold_project(with_research=True)` already wires a research dir into a real
+bible — extend that, keep it green.
 
-- [ ] T002 Create a conformant research-content fixture under `tests/fixtures/research/` — `sources.md` (≥1 foreign-language source carrying `translation`, plus a conflicting-account pair), `<topic>.md` (≥1 finding with full provenance, ≥1 anchor `constrains`-ing a real bible entity, ≥1 open finding), and `_index.md` (`open_questions:`), matching [contracts/research-file-format.md](contracts/research-file-format.md) exactly so `map_research()` raises zero `ResearchError` (conformance target SC-003/SC-004/SC-005).
+- [ ] T002 Establish the **single shared** research fixture module `tests/fixtures/research.py` (the existing `tests/fixtures/` package is the home for shared fixtures): (a) relocate the iteration-13 `RESEARCH_SOURCES_MD` / `RESEARCH_TOPIC_MD` / `RESEARCH_INDEX_MD` constants out of `tests/commands/graph/conftest.py` **byte-identical** and re-import them there, so `scaffold_project(with_research=True)` and `tests/commands/graph/test_research_build.py` stay byte-stable (run that module and confirm green — a zero-regression relocation, not a rewrite); (b) add a richer `write_research_fixture(research_dir: Path)` builder whose content additionally satisfies SC-004 (≥1 foreign-language source carrying `translation`, since `original_language != book.language`), SC-005 (a conflicting-account pair → two findings, each with its own source), and SC-006 (a `baja`-reliability finding left **un-anchored** alongside a promoted ≥`media` finding), plus ≥1 open finding — every file conformant to [contracts/research-file-format.md](contracts/research-file-format.md) so `map_research()` raises zero `ResearchError`, and the promoted finding's anchor `constrains` an entity that exists in the tiny-novel bible (e.g. the `aparici` character) so SC-003's link resolves to a real triple, not a soft `ResearchWarning`; (c) add a `research="rich"` variant to `scaffold_project` (default stays the relocated minimal content; the rich variant fills `bible/research/` via `write_research_fixture`) so T026 can build a project from it. No parallel fixture tree under `tests/fixtures/research/` — one source of truth consumed by T003 and T026.
 
 **Checkpoint**: Dependency confirmed and shared fixture in place — user stories can begin.
 
@@ -71,16 +77,17 @@ is green.
 
 > Write these FIRST and confirm they FAIL before implementation.
 
-- [ ] T003 [P] [US1] Format-conformance test in `tests/io/test_research_format.py`: load the T002 fixture through `map_research()` and assert zero `ResearchError`; assert the conflicting pair yields **two** distinct findings each with its own source (SC-005), and every finding's source carries `original_quote` (and `translation` for the foreign source) (SC-004) — contract IDs in [contracts/research-file-format.md](contracts/research-file-format.md).
+- [ ] T003 [P] [US1] Format-conformance test in `tests/io/test_research_format.py`: write the shared `write_research_fixture()` (T002) content into a tmp `bible/research/`, load it through `map_research()` and assert zero `ResearchError`; assert the conflicting pair yields **two** distinct findings each with its own source (SC-005), and every finding's source carries `original_quote` (and `translation` for the foreign source) (SC-004) — contract IDs in [contracts/research-file-format.md](contracts/research-file-format.md). Imports the shared fixture; defines no fixture content of its own.
 - [ ] T004 [P] [US1] Materialization-compliance test in `tests/integrations/test_research_skill.py`: materialize `bookwright-research` for **both** `claude` and `generic`, assert `SKILL.md` `name == "bookwright-research"` (== parent dir), `description` ≤ 1024 chars, body has no residual `{SCRIPT}`/other token, `references/research-format.md` is copied, and `lint_skill_md` passes (SK-1..SK-5, SC-001) — [contracts/research-skill.md](contracts/research-skill.md).
 - [ ] T005 [P] [US1] SC-009 description-mirror assertion in `tests/integrations/test_research_skill.py` (or extend the existing mirror test): `SKILL_DESCRIPTIONS["bookwright-research"]` is byte-identical to the source command's front-matter `description` (SK-6, research.md R2).
 
 ### Implementation for User Story 1
 
 - [ ] T006 [P] [US1] Create the reference doc `src/bookwright/resources/commands/references/research-format.md` — author-facing rendering of [contracts/research-file-format.md](contracts/research-file-format.md): vocab tables (`type`, `reliability`), required source facets, the translation rule, finding/anchor shapes, soft-vs-fatal notes (cited by the skill; satisfies SK-4 `dangling_reference`).
-- [ ] T007 [US1] Create the source command `src/bookwright/resources/commands/bookwright-research.md` — front-matter `name: bookwright-research`; bilingual ES+EN `description` ≤ 1024 with a negative boundary (NOT verify, NOT bible) per [contracts/research-skill.md](contracts/research-skill.md) "description"; `## Procedimiento` encoding the seven steps in order (FR-005); output/persistence/merge/`enabled=false`/re-run-safety instructions citing `references/research-format.md`; final step `bookwright graph build --json` (FR-006, FR-007, FR-016, FR-017, FR-018). Body uses only `{ARGS}` (SK-5).
+- [ ] T007 [US1] Create the source command `src/bookwright/resources/commands/bookwright-research.md` as a **first-class generative command** — it is classified generative in T008a, so `tests/resources/test_command_body.py` enforces the same body contract as the other ten (no reduced/special-cased command). Front-matter `name: bookwright-research`; bilingual ES+EN `description` ≤ 1024 with a negative boundary (NOT verify, NOT bible) per [contracts/research-skill.md](contracts/research-skill.md) "description". Spanish body carrying **all eight required sections** (`## Rol`, `## Input`, `## Procedimiento`, `## Output`, `## Archivos a leer`, `## Archivos a escribir`, `## Información faltante`, `## Qué NO hacer`); `## Procedimiento` encodes the seven steps in order (FR-005); the **`actualización en sitio`** update-in-place rule plus `[PENDING:`/`pending-protocol.md` guidance required of every generative command (the iteration-8 command-body contract that `tests/resources/test_command_body.py` enforces; here it carries this iteration's FR-017 re-run safety); output/persistence/`enabled=false`/re-run-safety instructions citing `references/research-format.md` (FR-006, FR-016, FR-017); final step `bookwright graph build --json` (FR-018); no fetching/network (FR-007). Body uses only `{ARGS}` (SK-5).
 - [ ] T008 [US1] Add `SKILL_DESCRIPTIONS["bookwright-research"]` to `src/bookwright/integrations/descriptions.py`, byte-identical to T007's front-matter `description` (R2; makes T005 pass).
-- [ ] T009 [US1] Run `uv run pytest tests/io/test_research_format.py tests/integrations/test_research_skill.py` and the `lint_skill_md` path; confirm T003–T005 now pass and the skill materializes for both integrations.
+- [ ] T008a [US1] Register `bookwright-research` in **every command-inventory guard** — these are intentional change-detector tripwires, so the eleventh command must be declared in each, never routed around: `EXPECTED_COMMANDS` **and** `GENERATIVE_COMMANDS` in `tests/resources/helpers.py` (research writes files + merges in place → generative, which is what makes `test_command_body.py` enforce T007's marker/sections), `_ROSTER` in `tests/integrations/test_descriptions.py`, and `_ROSTER` in `tests/integrations/test_materialize.py`; bump the "the 10 commands" docstrings/comments to 11 in `tests/resources/helpers.py` and `tests/resources/test_command_frontmatter.py`. Keep `GENERATIVE_COMMANDS ∪ REPORT_ONLY_COMMANDS` covering the full `EXPECTED_COMMANDS` inventory. (The glob-derived rosters in `test_setup_materialize.py` / `test_e2e_materialize.py` auto-include the new command and now exercise its materialization end-to-end — they must stay green, which is free coverage, not extra work.)
+- [ ] T009 [US1] Run `uv run pytest tests/io/test_research_format.py tests/integrations/ tests/resources/` and the `lint_skill_md` path; confirm T003–T005 pass, the inventory guards (T008a) and the body/frontmatter/materialize suites are green for the eleven commands, and the skill materializes for both integrations.
 
 **Checkpoint**: The research skill ships, materializes, lints, and the emitted format parses — MVP is independently demoable.
 
@@ -144,6 +151,7 @@ preferred over the packaged one; `/bookwright-bible` writes
 - [ ] T021 [P] [US3] Create `src/bookwright/resources/templates/bible/research/_index.md.tmpl` — layer-resolvable per-index skeleton, mirroring `templates/bible/character.md.tmpl` style (FR-008).
 - [ ] T022 [P] [US3] Create `src/bookwright/resources/templates/bible/research/sources.md.tmpl` — layer-resolvable sources-registry skeleton (FR-008).
 - [ ] T023 [P] [US3] Create `src/bookwright/resources/templates/bible/research/tema.md.tmpl` — per-`<topic>` skeleton (findings + anchors front-matter + heading), the format the skill points authors at (FR-008; data-model.md §2b).
+- [ ] T023a [US3] Register the three new molds in the mold guard `_REQUIRED_HEADINGS` in `tests/resources/test_mold_structure.py` — add `_index.md.tmpl`, `sources.md.tmpl`, `tema.md.tmpl` with their **actual** required headings so `test_every_mold_has_required_headings_listed` (`on_disk == set(_REQUIRED_HEADINGS)`) stays green and `test_mold_parses_and_has_headings` verifies each declared heading is literally present in T021–T023's molds. Intentional change-detector guard — declare the new molds, don't bypass it.
 - [ ] T024 [US3] Edit `src/bookwright/resources/commands/bookwright-bible.md` (body only — leave `description` untouched to keep SC-009 green): step 6 + the "Archivos a escribir" list create `bible/research/_index.md` instead of `bible/research.md` (FR-009, R8).
 - [ ] T025 [US3] Edit `src/bookwright/resources/commands/bookwright-clarify.md` (body only): the open-questions sweep names `bible/research/_index.md` (`open_questions:`) as its target (FR-010, R8). If either T024/T025 description changes, update `descriptions.py` in lockstep.
 
@@ -155,8 +163,8 @@ preferred over the packaged one; `/bookwright-bible` writes
 
 **Purpose**: End-to-end proof, the SPARQL anchor check, and the four CI gates.
 
-- [ ] T026 [US1] E2E graph-build test in `tests/e2e/` (or `tests/io/`): copy the T002 fixture into a project's `bible/research/`, run `graph build`, assert non-zero sources/findings/anchors and zero `ResearchError`, then a SPARQL query retrieves ≥1 anchor `constrains`-ing a named entity (SC-003) and a `baja`-only finding is **not** an anchor under `min_reliability_for_anchor = "media"` (SC-006).
-- [ ] T027 Run `uv run pytest` (full suite, ≥ 80 % gate) and confirm new-code line coverage > 85 % (SC-007); add targeted tests if any new module is under-covered.
+- [ ] T026 [US1] Extend the iteration-13 graph-build suite `tests/commands/graph/test_research_build.py` (do **not** spin up a parallel `tests/e2e/`) with a build over the **rich** shared fixture — `scaffold_project(..., research="rich")` (T002): assert the conflicting pair maps to **two** findings (SC-005) and the foreign source's `translation` survives (SC-004); a SPARQL query retrieves the promoted finding's anchor `constrains`-ing a named bible entity (SC-003); and the `baja`-only finding yields **no** anchor — confirming `map_research` reflects the authored promotion faithfully and never auto-promotes. Note in the test that SC-006's *judgment* (don't promote a sub-floor finding) is enforced by the skill protocol body (T007) and the iteration-15 reliability-floor validator, **not** by this reader (which builds whatever anchors the file declares). Reuse the module's `_query` / `_e13_count` helpers.
+- [ ] T027 Run `uv run pytest` (full suite) and pass the **single-sourced** coverage gate (`[tool.coverage.report] fail_under = 80`; do not add a second threshold). The only new production Python module is `core/_research_block.py` — confirm it is **fully exercised** by its unit suite (T010/T015); add targeted unit tests if any branch is uncovered. The Markdown command, the templates, and the TOML block are data, not line-coverage-measured (SC-007 reworded — meet the enforceable project gate; there is no separate per-diff > 85 % gate).
 - [ ] T028 [P] Run `uv run ruff check && uv run ruff format --check && uv run mypy --strict`; fix any findings in the new/edited files.
 - [ ] T029 Execute [quickstart.md](quickstart.md) steps 1–6 manually against a throwaway `init`ed project to confirm the documented behavior matches reality (scaffold, block+comments round-trip, skill materialization, format parse, bible/clarify wiring).
 
@@ -180,16 +188,16 @@ preferred over the packaged one; `/bookwright-bible` writes
 ### Within Each User Story
 
 - Tests (T003–T005, T010, T017) are written FIRST and must FAIL before implementation.
-- US1: reference doc (T006) before/with the command (T007); command before its mirror entry (T008).
+- US1: reference doc (T006) before/with the command (T007); command before its mirror entry (T008); the inventory-guard registration (T008a) after T007+T008, since it declares the now-existing command.
 - US2: `_research_block.py` (T011) before the `manifest.py`/`__init__.py` wiring (T012–T013) before the template (T014) and round-trip test (T015).
-- US3: delete legacy (T018) and create starters/templates (T019–T023) before the bible/clarify body edits (T024–T025).
+- US3: delete legacy (T018) and create starters/templates (T019–T023) before the bible/clarify body edits (T024–T025); the mold-guard registration (T023a) after T021–T023, since it declares their headings.
 
 ### Parallel Opportunities
 
 - **Setup/Foundational**: T001 then T002 (sequential — T002 needs the reader confirmed).
-- **US1**: T003/T004/T005 (tests, different concerns) in parallel; T006 parallel with the test-writing.
+- **US1**: T003/T004/T005 (tests, different concerns) in parallel; T006 parallel with the test-writing; T008a sequential after T007+T008.
 - **US2**: T010 alone (single test file); implementation T011 is the gate for T012–T015.
-- **US3**: T017 (test) parallel with nothing it blocks; T018–T023 are all different files → fully parallel; T024/T025 are different files → parallel.
+- **US3**: T017 (test) parallel with nothing it blocks; T018–T023 are all different files → fully parallel; T023a sequential after T021–T023; T024/T025 are different files → parallel.
 - **Cross-story**: once Foundational is done, US1 / US2 / US3 can be staffed in parallel (only the T017↔T014 note applies).
 - **Polish**: T028 parallel with T027 review.
 
