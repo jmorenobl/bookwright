@@ -99,8 +99,14 @@ query never hits a stale or missing `bible/graph.ttl` (Constitution I — the gr
 a derived cache, always rebuildable). Writing the CLI call inline matches the
 `bookwright-continuity` precedent that `test_command_body.test_graph_build_is_inline`
 pins; **this plan extends that test to also assert the inline build for
-`bookwright-verify`**, since verify is now a second graph-consuming command and the
-guard should cover it.
+`bookwright-verify`** (the test already parametrizes `bookwright-constitution` and
+`bookwright-continuity`, so verify becomes the **third** entry). Note the precedent is
+narrower than it looks: `bookwright-continuity` runs `graph build --json` and consumes
+that JSON directly — it does **not** run a separate `bookwright graph query`. So
+`bookwright-verify` is the **first** command source whose body authors an explicit
+`graph query <SPARQL>` step. The build-first/read-only/report-only shape is the
+continuity precedent; the `graph query` step is new, which is exactly why D5 pins the
+correct selection rule rather than leaning on a non-existent class match.
 
 **Alternatives considered**: reading `bible/research/*.md` by hand — rejected:
 FR-005 fixes the read surface to the graph (SPARQL over the `bw:`/CIDOC triples), and
@@ -108,22 +114,59 @@ re-parsing the research files would duplicate the indexer and miss promotion/anc
 resolution. Querying without building — rejected by the clarification (stale/missing
 graph risk).
 
-## D5 — The SPARQL the body cites targets `bw:Anchor` / `bw:Source`
+## D5 — The SPARQL the body cites: anchors via `bw:promotes`, not a `bw:Anchor` class
 
-**Decision**: The body names the read as a `graph query` over `bw:Anchor` and the
-`bw:Source` records behind each anchor (provenance), so each reported contradiction
-can cite its source. It does **not** prescribe the exact query text as load-bearing
-(the agent composes/uses it), but it points at the right classes and the
-finding→anchor→source chain iteration 012 emits.
+**Decision**: The body instructs a `graph query` that selects **anchors** as the
+`crm:E13_Attribute_Assignment` nodes carrying a `bw:promotes` edge, and traverses
+`anchor —bw:promotes→ finding —bw:supportedBy→ source` to read each finding's
+`bw:claim` and each source's provenance facets, so every reported contradiction can
+cite its source. There is **no** `bw:Anchor`/`bw:Source` `rdf:type` to match on.
+
+**Why the obvious form is wrong (verified against the model)**: In
+`golem/modules/provenance.py`, `Source.to_triples()` emits **no** `rdf:type` at all —
+a source is typed only via `crm:P2_has_type → crm:E55_Type` (research D2 of iteration
+012). `Anchor` *and* `Finding` both reify on `crm:E13_Attribute_Assignment` (the same
+`CLASS_IRI["AttributeAssignment"]`), so a class match cannot tell them apart. The one
+predicate unique to an anchor is `bw:promotes` (a finding never carries it). Querying
+`?a a bw:Anchor` / `?s a bw:Source` returns **zero rows** — confirmed empirically by
+building the chain through the real classes and the `RdflibIndexer` and running both
+forms — which would make the skill silently report "nothing to verify", defeating
+SC-002/SC-003. The `bw:` namespace (`https://bookwright.dev/vocab/bw#`) holds
+*predicates and controlled-vocabulary individuals*, not these classes.
+
+**Verified reference query** (prefixes `bw:`/`crm:`/`golem:` are bound by
+`graph query` via `bind_prefixes`; this exact query returned the full chain in a
+real built graph):
+
+```sparql
+PREFIX bw:  <https://bookwright.dev/vocab/bw#>
+PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
+SELECT ?anchor ?claim ?target ?source ?reference ?author ?reliability ?originalQuote ?translation WHERE {
+  ?anchor bw:promotes ?finding .
+  OPTIONAL { ?anchor bw:constrains ?target . }      # the narrative entity it binds (may be absent)
+  ?finding bw:claim ?claim .                          # the researched fact
+  OPTIONAL {
+    ?finding bw:supportedBy ?source .                # provenance behind the anchor
+    OPTIONAL { ?source bw:reference     ?reference . }
+    OPTIONAL { ?source bw:author        ?author . }
+    OPTIONAL { ?source bw:reliability   ?reliability . }    # an E55 individual (bw:reliability/alta…)
+    OPTIONAL { ?source bw:originalQuote ?originalQuote . }
+    OPTIONAL { ?source bw:translation   ?translation . }    # emitted iff source language ≠ book language
+  }
+}
+```
 
 **Rationale**: FR-007 requires every finding to cite (b) the violated anchor and
-(c) the source behind it; the anchor→source provenance link is the iteration-012
-model. The skill consumes that chain from the graph rather than redefining it (Key
-Entities note: Anchor/Source are iteration-012 entities, not redefined here).
+(c) the source behind it; the anchor→finding→source provenance link is the
+iteration-012 model. The skill consumes that chain from the graph rather than
+redefining it (Key Entities note: Anchor/Source are iteration-012 entities, not
+redefined here).
 
-**Alternatives considered**: pinning an exact SPARQL string in the body — acceptable
-but brittle across graph-shape evolution; the contract names the classes and the
-chain and leaves the projection to the agent + the existing `graph query` surface.
+**Alternatives considered**: pinning the exact SPARQL string verbatim in the body as
+load-bearing — the body may include it as a worked example, but the *contract* is the
+selection rule (`bw:promotes` discriminates anchors; sources are reached via
+`bw:supportedBy`), which is stable even if the agent adjusts the projection. Matching
+a `bw:Anchor`/`bw:Source` class — rejected: no such class exists (see above).
 
 ## D6 — Report shape: chapter/scene grouping, four-part findings, severity rubric
 

@@ -13,7 +13,7 @@
 ### Session 2026-06-04
 
 - Q: What severity scale should the verification report use for flagged contradictions? → A: `error` / `warning` / `info` — the same three-level scale (`error > warning > info`) as the validation system's `Severity` enum (`validation/base.py`), which the deterministic `factual_anchor` validator uses, so both halves of the § 20.6 two-layer design share one severity vocabulary.
-- Q: How should the skill load anchors+sources from the graph (FR-005 says SPARQL, but `graph query` only works after a build)? → A: Build then query — the skill first runs `bookwright graph build` to refresh the derived cache, then `bookwright graph query <SPARQL>` targeting `bw:Anchor`/`bw:Source`. This honours FR-005's SPARQL surface, never reads a stale/missing graph, and mirrors `bookwright-continuity` (which also builds first).
+- Q: How should the skill load anchors+sources from the graph (FR-005 says SPARQL, but `graph query` only works after a build)? → A: Build then query — the skill first runs `bookwright graph build` to refresh the derived cache, then `bookwright graph query <SPARQL>` that selects the **anchors** (the `crm:E13_Attribute_Assignment` nodes uniquely carrying a `bw:promotes` edge) and follows each anchor to its promoted **finding** (`bw:claim`) and the finding's supporting **sources** (`bw:supportedBy` → `bw:reference`/`bw:author`/`bw:reliability`/`bw:originalQuote`/`bw:translation`). There is **no** `bw:Anchor`/`bw:Source` `rdf:type` to match on — a `Source` is typed only via `crm:P2_has_type → crm:E55_Type`, and anchors and findings share the `crm:E13_Attribute_Assignment` class, so `bw:promotes` is the discriminator. This honours FR-005's SPARQL surface, never reads a stale/missing graph, and mirrors `bookwright-continuity` (which also builds first).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -192,10 +192,17 @@ bible) and from `factual_anchor` (semantic judgement, not structural integrity).
   manuscript against my research").
 - **FR-005**: The `SKILL.md` MUST instruct the agent to first run `bookwright graph
   build` (refresh the derived cache) and then load the project's anchors (and the
-  sources behind them) via `bookwright graph query <SPARQL>` targeting `bw:Anchor`/
-  `bw:Source` — the derived graph is the read surface, and building first guarantees
-  the query never hits a stale or missing `bible/graph.ttl`. This mirrors
-  `bookwright-continuity`, which also builds the graph before consuming it.
+  sources behind them) via `bookwright graph query <SPARQL>`. The query MUST select
+  anchors as the `crm:E13_Attribute_Assignment` nodes that carry a `bw:promotes`
+  edge (the predicate is unique to anchors; findings never carry it, even though both
+  reify on `crm:E13_Attribute_Assignment`) and traverse `anchor —bw:promotes→ finding
+  —bw:supportedBy→ source`, reading the finding's `bw:claim` and the source's
+  `bw:reference`/`bw:author`/`bw:reliability`/`bw:originalQuote`/`bw:translation`
+  facets. It MUST NOT match a non-existent `bw:Anchor`/`bw:Source` `rdf:type` (sources
+  are typed only via `crm:P2_has_type → crm:E55_Type`). The derived graph is the read
+  surface, and building first guarantees the query never hits a stale or missing
+  `bible/graph.ttl`. This mirrors `bookwright-continuity`, which also builds the graph
+  before consuming it.
 - **FR-006**: The `SKILL.md` MUST instruct the agent to read the manuscript
   (`manuscript/`) and identify passages that **contradict** an anchor, across the
   contradiction kinds named by the design § 20.6: anachronisms, procedural errors
@@ -289,6 +296,12 @@ bible) and from `factual_anchor` (semantic judgement, not structural integrity).
   (≥ 80 %, `fail_under = 80`; Constitution VIII); the Markdown command the iteration
   adds is data (materialized and lint-checked by the existing pipeline), not
   line-coverage-measured, and any wiring it touches is exercised by tests.
+- **SC-009**: The `description` in the `bookwright-verify.md` frontmatter is
+  **byte-identical** to `SKILL_DESCRIPTIONS["bookwright-verify"]` in
+  `integrations/descriptions.py` — verifiable by the equality gate
+  `test_descriptions.test_v0_equality_gate_mirrors_source_frontmatter`, so the
+  materialized skill's trigger surface and the authoritative description table never
+  drift.
 
 ## Assumptions
 

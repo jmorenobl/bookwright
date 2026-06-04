@@ -65,14 +65,23 @@ branch, and internalise the structural template — so the source is authored ag
 real vocabulary, not assumptions.
 
 - [ ] T001 Confirm the branch is `015-bookwright-verify` and that the prerequisite
-  iterations are present on `main`/this branch: the `bw:Anchor` / `bw:Source`
-  vocabulary the body's SPARQL targets (search `src/bookwright/resources/vocabularies/sources.ttl`
-  and `src/bookwright/golem/modules/` for the research entities), the `factual_anchor`
-  validator the skill is the complement to (`src/bookwright/validation/validators/`),
-  and the `Severity` enum whose `error`/`warning`/`info` vocabulary the report reuses
-  (`src/bookwright/validation/base.py`). Record any gap as a blocker — do **not**
-  author the SPARQL/severity references against vocabulary that is not on the branch
-  (research D5/D6, spec Dependencies).
+  iterations are present on `main`/this branch, reading the **actual graph shape** the
+  SPARQL must target (research **D5** — there is **no** `bw:Anchor`/`bw:Source`
+  `rdf:type`): in `src/bookwright/golem/modules/provenance.py` confirm an **Anchor** is
+  a `crm:E13_Attribute_Assignment` discriminated by `bw:promotes` (findings share the
+  class but never carry it), a **Finding** carries `bw:claim` + `bw:supportedBy`, and a
+  **Source** emits no `rdf:type` (typed via `crm:P2_has_type → crm:E55_Type`) with
+  `bw:reference`/`bw:author`/`bw:reliability`/`bw:originalQuote`/`bw:translation`
+  facets (predicates declared in `src/bookwright/resources/vocabularies/sources.ttl`
+  and `src/bookwright/golem/namespaces.py`). Confirm the `factual_anchor` validator the
+  skill is the complement to (`src/bookwright/validation/validators/`) and the
+  `Severity` enum whose `error`/`warning`/`info` vocabulary the report reuses
+  (`src/bookwright/validation/base.py`). Validate the read surface empirically — build a
+  minimal Anchor→Finding→Source chain through the real classes + `RdflibIndexer` and run
+  research D5's reference query, confirming it returns rows while `?a a bw:Anchor`
+  returns none. Record any gap as a blocker — do **not** author the SPARQL/severity
+  references against vocabulary that is not on the branch (research D5/D6, spec
+  Dependencies).
 - [ ] T002 Study the structural template `src/bookwright/resources/commands/bookwright-continuity.md`
   (the analogous read-only post-draft report, plan "Structure Decision"): note its
   YAML frontmatter shape, the eight ES section headings, the explicit "solo lectura"
@@ -133,9 +142,12 @@ that passage as a contradiction — while a consistent manuscript yields none
   manuscript read against the anchors (data-model E1 §1–§2, FR-018).
 - [ ] T006 [US1] Author the **Procedimiento** section: (i) run `bookwright graph build
   --json` **inline** (exact string — gate at `tests/resources/test_command_body.py:87`)
-  to refresh the derived cache, then `bookwright graph query <SPARQL>` over `bw:Anchor`
-  and the `bw:Source` behind each, traversing the finding→anchor→source chain (FR-005,
-  research D4/D5); (ii) read `manuscript/`; (iii) hunt passages that **contradict** an
+  to refresh the derived cache, then `bookwright graph query <SPARQL>` that selects
+  anchors as the `crm:E13_Attribute_Assignment` nodes carrying `bw:promotes` and
+  traverses the **anchor → finding → source** chain (`bw:promotes` then `bw:supportedBy`,
+  reading `bw:claim` + the source provenance facets) — **not** a non-existent
+  `bw:Anchor`/`bw:Source` class; embed research D5's verified reference query as the
+  worked example (FR-005, research D4/D5); (ii) read `manuscript/`; (iii) hunt passages that **contradict** an
   anchor across the three § 20.6 kinds — **anachronisms, procedural errors (illegal or
   impossible in the setting), cultural/linguistic inaccuracies** (FR-006); (iv) branch
   on the two absent prerequisites (→ §7); (v) emit the report shape (→ §4). Reuse the
@@ -159,9 +171,10 @@ that passage as a contradiction — while a consistent manuscript yields none
   `tests/resources/helpers.py` so `test_command_body.test_report_only_states_no_writes`
   asserts the "no escribe nada" guard for verify (research D2, data-model E4).
 - [ ] T011 [P] [US1] Extend the `test_graph_build_is_inline` parametrize in
-  `tests/resources/test_command_body.py` to include `"bookwright-verify"` (verify is now
-  the second graph-consuming command; the inline-build guard must cover it — research
-  D4, plan Scale/Scope, contract C3).
+  `tests/resources/test_command_body.py` to include `"bookwright-verify"` (the test
+  already covers `bookwright-constitution` and `bookwright-continuity`, so verify is the
+  **third** entry; the inline-build guard must cover it — research D4, plan Scale/Scope,
+  contract C3).
 - [ ] T012 [US1] Run the US1 gates and confirm green:
   `uv run pytest tests/resources/test_command_body.py -q` (sections, report-only,
   inline-build) and `uv run ruff check && uv run ruff format --check && uv run mypy --strict`.
@@ -185,8 +198,10 @@ the four required parts plus a `file:line` for any passage whose location is kno
 - [ ] T013 [US2] Author the **Output** section in
   `src/bookwright/resources/commands/bookwright-verify.md` (data-model E2, FR-007/FR-008):
   human-readable prose (no JSON envelope, FR-009), grouped by **chapter/scene**; each
-  finding = (a) quoted manuscript passage, (b) violated `bw:Anchor`, (c) the `bw:Source`
-  behind it cited as the graph records it (incl. original-language refs), (d) a
+  finding = (a) quoted manuscript passage, (b) the violated anchor (its `bw:claim`),
+  (c) the source behind it (reached via `bw:supportedBy`; `bw:reference`/`bw:author`/
+  `bw:reliability`/`bw:originalQuote`) cited as the graph records it (incl.
+  original-language refs), (d) a
   **severity** from `error`/`warning`/`info` (`error > warning > info`); plus a
   `file:line` where the location is known, else chapter/scene **without a fabricated
   line number**. State the severity rubric (hard anachronism / illegal-impossible

@@ -33,7 +33,11 @@ data-driven test sweeps plus the roster gates. This is the acceptance reference 
 - Contains the inline `bookwright graph build` call (it builds then queries, FR-005)
   — `test_command_body.test_graph_build_is_inline` (parametrize extended to include
   `bookwright-verify`).
-- Instructs `bookwright graph query <SPARQL>` over `bw:Anchor`/`bw:Source` (FR-005).
+- Instructs `bookwright graph query <SPARQL>` that selects anchors as the
+  `crm:E13_Attribute_Assignment` nodes carrying `bw:promotes` and traverses
+  `anchor —bw:promotes→ finding (bw:claim) —bw:supportedBy→ source` for provenance —
+  **not** a non-existent `bw:Anchor`/`bw:Source` `rdf:type`; sources are typed only via
+  `crm:P2_has_type → crm:E55_Type` (FR-005, research D5 has the verified query).
 - Names the three contradiction kinds: anachronisms, procedural errors,
   cultural/linguistic inaccuracies (FR-006).
 - Specifies the report shape: grouped by chapter/scene; each finding = quoted

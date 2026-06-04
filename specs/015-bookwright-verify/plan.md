@@ -171,7 +171,9 @@ and the `SKILL_DESCRIPTIONS` table are byte-identical for the SC-009 equality ga
 - [data-model.md](data-model.md) — the command source as a structured document
   (the eight sections and what each must contain), the report shape (chapter/scene
   grouping; the four required parts per finding; the severity rubric), and the
-  graph read surface (the `bw:Anchor`/`bw:Source` SPARQL projection the body cites).
+  graph read surface — the anchors-via-`bw:promotes` selection and the
+  `anchor → finding → source` traversal the body cites; there is no `bw:Anchor`/
+  `bw:Source` class (research D5 has the verified query)).
 - [contracts/bookwright-verify-skill.md](contracts/bookwright-verify-skill.md) —
   the skill's behavioural contract: the frontmatter invariants
   (`name`==dir, caps, forbidden keys), the materialization guarantee in both
