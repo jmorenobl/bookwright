@@ -14,6 +14,7 @@
 
 - Q: When one source is missing several mandatory provenance facets, report per-facet or per-source? → A: One **warning per missing facet** (matches FR-007's singular wording; each gap independently fixable and testable; no extra noise on well-formed sources).
 - Q: When a source backing an anchor is missing the reliability rating entirely, how do the provenance-completeness (FR-007) and threshold (FR-008) checks interact? → A: Report it **once** as a missing `reliability` facet (FR-007); the unrated source contributes no rating to FR-008's best-reliability computation. If no supporting source carries any rating, best-of-none fails FR-008's threshold and the anchor is also flagged as below-minimum — but a single source is never double-labelled as both "incomplete" and "under-reliable" for the same missing rating.
+- Q: When the finding an anchor promotes is **absent** from the graph, do the unsourced (FR-006) and missing-entity (FR-009) checks both fire? → A: **No** — report it **once** as a missing-entity warning (FR-009); the unsourced check (FR-006) is suppressed, because a non-existent finding cannot be assessed for sourcing. Same no-double-label discipline as FR-007 ↔ FR-008.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -139,6 +140,11 @@ check emits zero violations.
 
 - **Anchor promoting an open finding**: an open finding carries no claim or source,
   so the anchor that promotes it is reported as unsourced (US1 scenario 1).
+- **Anchor promoting a finding absent from the graph**: distinct from the open
+  finding above — here the finding URI resolves to **nothing**. It is reported once as
+  a missing-entity warning (FR-009 / R4); the unsourced check (FR-006 / R1) is
+  **suppressed** for that anchor, so a missing finding is never double-labelled as both
+  "missing finding" and "unsourced".
 - **Multiple supporting sources of mixed reliability**: the anchor is judged by its
   **best** (highest) supporting reliability — `alta` > `media` > `baja` — mirroring
   "minimum reliability to promote a finding"; a single high-reliability source
@@ -184,7 +190,11 @@ check emits zero violations.
   `--json`, `--scope`, and `--severity` behaviors unchanged; the validator only
   produces `Violation`s and relies on the runner/report for filtering and output.
 - **FR-006**: For each anchor, when the finding it promotes is backed by no source,
-  the validator MUST emit a **warning** that the anchor has no source.
+  the validator MUST emit a **warning** that the anchor has no source. When the
+  promoted finding is itself **absent** from the graph (FR-009), this unsourced check
+  MUST be **suppressed** — a non-existent finding cannot be assessed for sourcing, so
+  it is reported once under FR-009 and never additionally as unsourced (the same
+  no-double-label discipline as FR-007 ↔ FR-008).
 - **FR-007**: For each source backing an anchor, when that source is missing any
   mandatory provenance facet — reference, author, original language, source type,
   reliability, reliability justification, access date, original-language quote, and
@@ -270,9 +280,12 @@ check emits zero violations.
   anchors exist.
 - **SC-005**: The validator participates in `bookwright validate` indistinguishably
   from the existing validators: it honors `--json` (its violations appear in the JSON
-  document), `--scope` (filtering by path narrows its violations), and `--severity`
-  (e.g. `--severity error` keeps the anachronism error and drops the structural
-  warnings), and obeys `[validators].enabled` / `disabled`.
+  document), `--scope` (its violations are location-less — `source = None`, exactly as
+  the `temporal` validator already is for some findings — so a `--scope <path>` run
+  reports **zero** `factual_anchor` violations while an unscoped run reports them all;
+  scoping is a display filter and never hides a defect from the unfiltered gate), and
+  `--severity` (e.g. `--severity error` keeps the anachronism error and drops the
+  structural warnings), and obeys `[validators].enabled` / `disabled`.
 - **SC-006**: The project's single-sourced coverage gate stays green (≥ 80 %,
   `fail_under = 80`; Constitution VIII), and the new validator module is exercised by
   a unit suite covering each violation kind (unsourced, under-reliable,

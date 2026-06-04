@@ -46,7 +46,7 @@ For every anchor (iterated in sorted URI order), reached via
 
 | Rule | FR | Severity | Fires when | Emits |
 |---|---|---|---|---|
-| **R1 unsourced** | FR-006 | warning | the promoted finding has no `bw:supportedBy` source (incl. an open finding) | one warning per anchor |
+| **R1 unsourced** | FR-006 | warning | the promoted finding **exists** but has no `bw:supportedBy` source (incl. an open finding); **suppressed** when the finding is absent from the graph (reported once by R4, no double-label) | one warning per anchor |
 | **R2 provenance-incomplete** | FR-007 | warning | a supporting source lacks a mandatory facet | **one warning per missing facet** (clarification) |
 | **R3 under-reliable** | FR-008 | warning | best supporting reliability `< min_reliability_for_anchor`, **or** no supporting source is rated | one warning per anchor; an **unrated** source is *not* additionally flagged here (no double-label) |
 | **R4 missing entity** | FR-009 | warning | the promoted finding, or the constrained entity (incl. a dropped `bw:constrains` link), is absent from the graph | one warning per missing reference |

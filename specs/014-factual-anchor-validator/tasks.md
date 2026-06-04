@@ -47,6 +47,14 @@ not done if it breaks one:
   X; FR-005, FR-017). Every touched/new file stays ≤ 500 lines (Principle IV).
 - **Pure & deterministic** (FR-003): no disk write, no network, no LLM, no graph
   mutation; iterate anchors and sources in sorted-URI order so output is byte-stable.
+- **Violation locations come from `resolve_source`, never hardcoded** (D7, FR-013).
+  Every emitted `Violation` sets `source=resolve_source(indexer, anchor_uri)` — today
+  that returns `None` for anchors (iteration 12 emits no anchor locator), but writing
+  it this way means locations light up automatically if anchor provenance is added
+  later. Do **not** hardcode `source=None`. Consequence (SC-005): because anchor
+  violations are location-less, a `--scope <path>` run reports **zero** `factual_anchor`
+  violations — that is the correct, tested behaviour (like `temporal`'s location-less
+  findings), not a regression.
 
 ---
 
@@ -127,8 +135,9 @@ facet/reason) and the well-formed one is silent. No anachronism logic needed.
   reliability support judged by the **best** source; an **unrated** source flagged
   once by R2 and **never** double-labelled under R3 (clarification); no rated source
   → under-reliable; dropped-`constrains` and dangling-URI both → missing-entity;
-  promoted finding absent → missing-entity; and a fully well-formed anchor → **zero**
-  violations (SC-001). Uses the T002 builder. **Plus a drift-guard test** (D5): assert
+  promoted finding absent → missing-entity **only** (R1 suppressed — assert a single
+  warning, not also unsourced; clarification 2026-06-04); and a fully well-formed
+  anchor → **zero** violations (SC-001). Uses the T002 builder. **Plus a drift-guard test** (D5): assert
   the T007 mandatory-facet predicate set equals the predicate set emitted by a
   fully-populated `provenance.Source.to_triples()` (translation included) — so the facet
   membership cannot silently diverge from the `Source` model.
@@ -145,8 +154,11 @@ facet/reason) and the well-formed one is silent. No anachronism logic needed.
   — do **not** source it from `io/research._SOURCE_FACETS` (field-names, not predicates:
   includes `name`, omits `translation`). SPARQL only. (depends T004)
 - [ ] T008 [US1] Implement rule **R1 unsourced** (FR-006) in `factual_anchor.py`: when
-  the promoted finding has no `bw:supportedBy` source, emit one `warning` naming the
-  anchor, `triples=((anchor, bw:promotes, finding),)` (data-model V1). (depends T007)
+  the promoted finding **exists in the graph** and has no `bw:supportedBy` source, emit
+  one `warning` naming the anchor, `triples=((anchor, bw:promotes, finding),)`
+  (data-model V1). **Suppress** R1 when the promoted finding is absent from the graph —
+  that case is reported once by R4 (T011), never double-labelled as unsourced
+  (clarification 2026-06-04). (depends T007)
 - [ ] T009 [US1] Implement rule **R2 provenance-incomplete** (FR-007) in
   `factual_anchor.py`: for each supporting source, emit **one warning per missing
   mandatory facet**, each naming the source and facet; `translation` is mandatory only
@@ -245,7 +257,11 @@ violations; under `[validators].disabled=["factual_anchor"]` it does not appear 
   (reuse the T002 builder + the `[validators]` block knobs in
   `conftest.write_project`), inert (zero violations) when `[research].enabled=false`
   even with anchors present, and zero violations on a graph with no anchors (SC-004,
-  US3 scenarios 1–4).
+  US3 scenarios 1–4). **Plus the `--scope` assertion (SC-005):** because anchor
+  violations are location-less (`source=None`, D7), a report filtered by any
+  `ScopeFilter` reports **zero** `factual_anchor` violations while the unscoped report
+  carries them all — assert both directions via `report.reported(scope=…)` so the
+  location-less contract is pinned (`ScopeFilter.matches(None) is False`).
 - [ ] T018 [US3] Confirm `factual_anchor.py` reads
   `project.manifest.research.enabled` and `min_reliability_for_anchor` straight from
   the `[research]` model and relies on that model's documented defaults
@@ -268,8 +284,10 @@ violations; under `[validators].disabled=["factual_anchor"]` it does not appear 
   `anchor_queries.py`/`queries.py`, mirroring `temporal`).
 - [ ] T021 Walk the [quickstart.md](quickstart.md) end to end on a real research
   project: build the graph, introduce one defect of each kind, run `bookwright
-  validate` / `--json` / `--severity error`, and confirm each expected
-  warning/error and the inert/disabled behaviours appear as documented.
+  validate` / `--json` / `--severity error` / `--scope <research-file>`, and confirm
+  each expected warning/error, the inert/disabled behaviours, and that the `--scope`
+  run reports **zero** `factual_anchor` violations (location-less, SC-005) all appear
+  as documented.
 - [ ] T022 [P] If `docs/` (or the README) enumerates the built-in validators, add
   `factual_anchor` to that list in **Spanish** (language convention); otherwise note
   no docs change is required. No skill is emitted (FR-017, N/A to Principles VI/VII).

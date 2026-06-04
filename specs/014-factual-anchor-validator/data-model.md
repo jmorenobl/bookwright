@@ -77,7 +77,7 @@ rated supporting source at all (best treated as below every threshold).
 
 | # | Kind | Severity | Trigger | `message` (shape) | `triples` |
 |---|---|---|---|---|---|
-| V1 | unsourced anchor | `warning` | FR-006 — promoted finding has no `bw:supportedBy` | `anchor '<a>' promotes a finding with no supporting source` | `(anchor, bw:promotes, finding)` |
+| V1 | unsourced anchor | `warning` | FR-006 — promoted finding **exists** but has no `bw:supportedBy` (**suppressed** when the finding is absent — reported once as V4 instead, no double-label) | `anchor '<a>' promotes a finding with no supporting source` | `(anchor, bw:promotes, finding)` |
 | V2 | provenance-incomplete | `warning` | FR-007 — a supporting source lacks facet *f* (one per facet) | `source '<s>' backing anchor '<a>' is missing its <facet>` | `(finding, bw:supportedBy, source)` — the existing edge that locates the source; the missing facet is named in `message`, never fabricated as a triple |
 | V3 | under-reliable | `warning` | FR-008 — best supporting reliability < threshold (incl. none rated) | `anchor '<a>' is backed only by sources below the minimum reliability '<min>'` | `(anchor, bw:promotes, finding)` |
 | V4 | missing entity | `warning` | FR-009 — promoted finding or constrained entity absent (incl. dropped link) | `anchor '<a>' constrains a narrative entity that is not present in the graph` / `… promotes a finding not present in the graph` | `(anchor, bw:constrains, target)` when a target exists, else `(anchor, bw:promotes, finding)` |

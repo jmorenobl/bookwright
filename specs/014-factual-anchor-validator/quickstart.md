@@ -68,6 +68,17 @@ uv run bookwright validate --severity error
 Only the **anachronism error** survives; the structural **warnings** are suppressed
 by the existing severity gate (US2 scenario 4 / SC-005).
 
+## 6. Scope filter interaction
+
+```bash
+uv run bookwright validate --scope bible/research
+```
+
+`factual_anchor` violations are **location-less** (`source = None`, exactly as the
+`temporal` validator already is for some findings), so a `--scope <path>` run reports
+**zero** `factual_anchor` violations — scoping is a display filter and the unfiltered
+gate still sees every defect (SC-005). Run without `--scope` to see them all.
+
 ## What "done" looks like
 
 - `factual_anchor` is discovered with no wiring, honors `[validators]` and
