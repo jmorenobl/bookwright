@@ -15,6 +15,7 @@
 - Q: When one source is missing several mandatory provenance facets, report per-facet or per-source? → A: One **warning per missing facet** (matches FR-007's singular wording; each gap independently fixable and testable; no extra noise on well-formed sources).
 - Q: When a source backing an anchor is missing the reliability rating entirely, how do the provenance-completeness (FR-007) and threshold (FR-008) checks interact? → A: Report it **once** as a missing `reliability` facet (FR-007); the unrated source contributes no rating to FR-008's best-reliability computation. If no supporting source carries any rating, best-of-none fails FR-008's threshold and the anchor is also flagged as below-minimum — but a single source is never double-labelled as both "incomplete" and "under-reliable" for the same missing rating.
 - Q: When the finding an anchor promotes is **absent** from the graph, do the unsourced (FR-006) and missing-entity (FR-009) checks both fire? → A: **No** — report it **once** as a missing-entity warning (FR-009); the unsourced check (FR-006) is suppressed, because a non-existent finding cannot be assessed for sourcing. Same no-double-label discipline as FR-007 ↔ FR-008.
+- Q: When the promoted finding **exists** but has **zero** supporting sources, do the unsourced (FR-006) and under-reliable (FR-008) checks both fire? → A: **No** — report it **once** as unsourced (FR-006); FR-008 is suppressed because "the best reliability among its supporting sources" is undefined with no sources. The "no supporting source is rated" branch of FR-008 applies only when ≥ 1 source exists but none carries a rating. Same no-double-label discipline as FR-007 ↔ FR-008 and FR-006 ↔ FR-009.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -208,7 +209,11 @@ check emits zero violations.
   the best-reliability computation (its missing rating is reported only as a
   provenance-incomplete facet under FR-007, never additionally as "under-reliable").
   When **no** supporting source carries any rating, the best reliability is treated
-  as below any threshold and the anchor is flagged.
+  as below any threshold and the anchor is flagged. This rule applies only to anchors
+  with **at least one** supporting source: an anchor with **no** supporting source is
+  reported once as unsourced (FR-006) and is **not** additionally flagged as
+  under-reliable — the "no source carries a rating" branch presupposes ≥ 1 source.
+  Same no-double-label discipline as FR-007 ↔ FR-008 and FR-006 ↔ FR-009.
 - **FR-009**: For each anchor, the finding it promotes and the narrative entity it
   constrains MUST exist in the graph; an anchor whose constrained narrative entity
   does not resolve to an entity present in the graph (including one whose constraint

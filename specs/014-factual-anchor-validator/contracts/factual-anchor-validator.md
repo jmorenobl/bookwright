@@ -48,7 +48,7 @@ For every anchor (iterated in sorted URI order), reached via
 |---|---|---|---|---|
 | **R1 unsourced** | FR-006 | warning | the promoted finding **exists** but has no `bw:supportedBy` source (incl. an open finding); **suppressed** when the finding is absent from the graph (reported once by R4, no double-label) | one warning per anchor |
 | **R2 provenance-incomplete** | FR-007 | warning | a supporting source lacks a mandatory facet | **one warning per missing facet** (clarification) |
-| **R3 under-reliable** | FR-008 | warning | best supporting reliability `< min_reliability_for_anchor`, **or** no supporting source is rated | one warning per anchor; an **unrated** source is *not* additionally flagged here (no double-label) |
+| **R3 under-reliable** | FR-008 | warning | ≥ 1 supporting source exists **and** (best supporting reliability `< min_reliability_for_anchor` **or** none of them is rated). **Not** evaluated for a zero-source anchor — that is R1's *unsourced* warning (no double-label) | one warning per anchor; an **unrated** source is *not* additionally flagged here (no double-label) |
 | **R4 missing entity** | FR-009 | warning | the promoted finding, or the constrained entity (incl. a dropped `bw:constrains` link), is absent from the graph | one warning per missing reference |
 | **R5 anachronism** | FR-010 | **error** | the anchor carries a time-span and `intervals_disjoint(span, target_interval)` is true for an **event** or the **timeline** target | one error per clash |
 
@@ -70,7 +70,10 @@ locates the source; the absent facet is named in `message`, never fabricated as 
 
 `baja < media < alta` (from `RELIABILITY_IRI`). Threshold default `"media"`. An
 unrated supporting source contributes nothing to the best-of computation (its
-missing rating is reported once by R2 only).
+missing rating is reported once by R2 only). The message distinguishes the two
+triggers: a rating present but too low → "backed only by sources below the minimum
+reliability '<min>'"; sources present but **none** rated → "backed by sources but
+none carries a reliability rating (minimum required: '<min>')".
 
 ### R5 — the shared contradiction predicate (FR-011)
 

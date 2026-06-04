@@ -13,13 +13,13 @@ from pathlib import Path
 
 from bookwright.core.manifest import Manifest
 from bookwright.golem.modules.provenance import Source
-from bookwright.golem.namespaces import timeline_uri
+from bookwright.golem.namespaces import RELIABILITY_IRI, timeline_uri
 from bookwright.indexers import RdflibIndexer
 from bookwright.validation.anchor_queries import FACETS
 from bookwright.validation.base import Severity, ValidationContext, Violation
 from bookwright.validation.registry import discover_validators, resolve_active
 from bookwright.validation.report import ScopeFilter, ValidationReport
-from bookwright.validation.validators.factual_anchor import FactualAnchor
+from bookwright.validation.validators.factual_anchor import _RELIABILITY_RANK, FactualAnchor
 from tests.validation.conftest import (
     CORE_FACETS,
     URI_BASE,
@@ -163,7 +163,8 @@ def test_unrated_source_flagged_once_by_r2_not_double_labelled(project_root: Pat
     assert not any("minimum reliability" in m for m in messages)
 
 
-def test_no_rated_source_is_under_reliable(project_root: Path) -> None:
+def test_rated_below_threshold_is_under_reliable(project_root: Path) -> None:
+    # A source that IS rated, just below the threshold (baja < media).
     engine = research_graph()
     target = _well_formed(engine)
     add_anchor(
@@ -173,8 +174,27 @@ def test_no_rated_source_is_under_reliable(project_root: Path) -> None:
     findings = _run(_ctx(project_root), engine)
     assert len(findings) == 1
     assert findings[0].severity == Severity.warning
-    assert "minimum reliability" in findings[0].message
+    assert "below the minimum reliability" in findings[0].message
     assert "media" in findings[0].message
+
+
+def test_all_unrated_sources_flag_anchor_under_reliable(project_root: Path) -> None:
+    # Sources present but none carries a rating → R2 flags each source's missing
+    # reliability facet (clarification 2), AND R3 flags the anchor once — different
+    # subjects, not a double-label of the same thing. The R3 message says the
+    # support is unrated, never the inexact "below the minimum reliability".
+    incomplete = tuple(f for f in CORE_FACETS if f != "reliability")
+    engine = research_graph()
+    target = _well_formed(engine)
+    add_anchor(
+        engine,
+        AnchorSpec(constrains=target, sources=(SourceSpec(facets=incomplete, reliability=None),)),
+    )
+    findings = _run(_ctx(project_root), engine)
+    messages = [f.message for f in findings]
+    assert sum("is missing its reliability" in m for m in messages) == 1  # R2 on the source
+    assert sum("none carries a reliability rating" in m for m in messages) == 1  # R3 on the anchor
+    assert not any("below the minimum reliability" in m for m in messages)
 
 
 # --- R4 missing entity ------------------------------------------------------
@@ -243,6 +263,14 @@ def test_facet_predicates_match_source_model() -> None:
     source_predicates = {str(p) for _, p, _ in fully_populated.to_triples()}
     facet_predicates = {str(f.predicate) for f in FACETS}
     assert facet_predicates == source_predicates
+
+
+def test_reliability_scale_matches_vocabulary() -> None:
+    # The rank's membership is single-sourced from the ontology vocabulary; if a
+    # rating is added/renamed in RELIABILITY_IRI this fails and forces the scale to
+    # follow (parity with the facet drift guard above, and -O-safe unlike the inline
+    # module assert, which python -O strips).
+    assert set(_RELIABILITY_RANK) == set(RELIABILITY_IRI)
 
 
 # --- R5 anachronism (US2) ---------------------------------------------------

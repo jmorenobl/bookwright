@@ -202,10 +202,16 @@ class FactualAnchor:
         # No rated source at all → below every threshold; else compare the best.
         if rated and max(rated) >= _RELIABILITY_RANK[minimum]:
             return []
-        message = (
-            f"anchor '{_label(anchor.uri)}' is backed only by sources below the "
-            f"minimum reliability '{minimum}'"
-        )
+        if rated:  # a rating is present, it is just too low
+            message = (
+                f"anchor '{_label(anchor.uri)}' is backed only by sources below the "
+                f"minimum reliability '{minimum}'"
+            )
+        else:  # sources exist but none carries a rating at all — not "below", unrated
+            message = (
+                f"anchor '{_label(anchor.uri)}' is backed by sources but none carries a "
+                f"reliability rating (minimum required: '{minimum}')"
+            )
         triple = (anchor.uri, str(BW_PROMOTES), anchor.promotes)
         return [self._violation(anchor, indexer, message, triple)]
 
