@@ -27,8 +27,10 @@ nav:
       - bookwright graph query: commands/graph-query.md
       - bookwright integration use: commands/integration-use.md
   - Validación: validation.md
+  - Investigación: research.md
   - Extender: extending.md
   - FAQ: faq.md
+  - Cambios: changelog.md
 
 markdown_extensions:
   - admonition

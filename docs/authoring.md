@@ -71,6 +71,23 @@ las desglosan; el draft redacta.
 |-------|----------|
 | `/bookwright-draft` | Redacta la prosa de **una** escena (por su `scene_id`) en el capítulo correcto, respetando voz y focalización. El único comando que produce prosa de manuscrito. |
 
+### Investigación y verificación
+
+Las dos skills de **investigación con procedencia** (M4 / v0.2). Pueblan y vigilan
+`bible/research/`; el sistema entero es opcional y se enciende con `[research]` en el
+manifiesto. Disparan tanto con prompts en español como en inglés.
+
+| Skill | Qué hace |
+|-------|----------|
+| `/bookwright-research` | Investiga un tema del mundo real y lo documenta como **hallazgos con procedencia completa** (fuentes, citas en lengua original, fiabilidad) en `bible/research/`, marcando qué hallazgos son **anclas** que restringen la ficción. Pre-draft. |
+| `/bookwright-verify` | Verifica el manuscrito **ya redactado** contra las anclas de investigación: señala anacronismos, errores de procedimiento e inexactitudes culturales o lingüísticas. Solo lectura, **post-draft**. |
+
+Las anclas que `/bookwright-research` deja en el grafo las audita además el validador
+determinista [`factual_anchor`](validation.md), que comprueba su integridad
+estructural y cronológica en CI. La capa de juicio del LLM (`/bookwright-verify`) y la
+capa determinista (`factual_anchor`) son **complementarias**: la primera lee prosa, la
+segunda solo el grafo. Todo el modelo se explica en [Investigación](research.md).
+
 ### Revisión y mantenimiento
 
 | Skill | Qué hace |

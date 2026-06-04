@@ -1,0 +1,58 @@
+# Bookwright project manifest — fixture `tiny-historical`.
+#
+# A finished minimal *historical* novel set in 1851: 2 characters, 2 settings, a
+# dated timeline event, a fully-attributed `bible/research/` corpus, and one draft
+# chapter. It deliberately plants exactly three defects (see expected-findings.md):
+# an under-reliable research anchor (factual_anchor R3 warning), a time-span
+# anachronism (factual_anchor R5 error), and a prose anachronism (the manual
+# `bookwright-verify` step). Shipped source-only — `bible/graph.ttl` is rebuilt in a
+# tmp copy by the tests, never committed.
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.1"
+manifest_version = "1"
+uri_base = "https://example.org/tiny-historical/"
+indexer = "rdflib"
+
+[book]
+title = "El telar de Arnela"
+type = "novel"
+language = "es"
+authors = ["Equipo Bookwright"]
+status = "drafting"
+
+[research]
+enabled = true
+# The foreign source languages used in bible/research/sources.md (ISO 639-1). Each
+# source in one of these languages carries a `translation` (multilingual provenance).
+source_languages = ["fr", "de"]
+# A finding promoted to an anchor must rest on a source at least this reliable.
+# Defect #1 (an anchor backed only by a `baja` source) trips factual_anchor's R3
+# against this floor; every clean anchor rests on `media`/`alta` support.
+min_reliability_for_anchor = "media"
+
+[validators]
+# All built-in validators active — none disabled, so factual_anchor (auto-discovered)
+# audits the research anchors. The non-research validators stay clean: every character
+# is named in the manuscript and the timeline holds a single dated event.
+enabled = []
+disabled = []
+custom = []
+
+# NOTE: no `[vocabularies] active` block. The existing iteration-12/13/14 research
+# fixtures build and validate without one (sources.ttl predicates are emitted
+# unconditionally), so the minimal config is used (D8).
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"
