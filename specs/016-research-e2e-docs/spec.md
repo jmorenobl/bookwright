@@ -21,6 +21,14 @@ inertness guarantee for projects that don't research, and a documentation set
 that teaches the system. This iteration is consolidation and validation — it
 adds no new product mechanism.
 
+## Clarifications
+
+### Session 2026-06-05
+
+- Q: Should the new-M4-code ≥85% coverage target be an enforced CI gate or report-only? → A: Report-only — keep the single enforced gate at 80% global (preserving the "one source, no drift" convention); ≥85% on M4 code is a verified-at-review quality target, with no second per-package `fail_under`.
+- Q: How should the manual `bookwright-verify` step be materialized — documented procedure or a committed golden LLM report? → A: Documented procedure only; the docs state the *deterministic* expected findings (which anchor / which anachronism), and the test asserts preconditions. No committed LLM transcript (it would rot and can't be CI-verified).
+- Q: How should the disabled-`[research]` inertness case be exercised — reuse+toggle or a dedicated fixture? → A: Reuse existing research-free fixtures (e.g. `tiny-novel`) for the no-directory case, and flip `[research].enabled = false` on a `tmp_path` copy for the disabled case. No new permanent fixture.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A worked historical example with real provenance (Priority: P1)
@@ -239,13 +247,19 @@ entry, with no build warnings — verifiable by building the docs and reading th
 - **FR-012**: The verify (LLM) layer MUST be exercised as a documented **manual**
   verification step against the fixture; the automated test MUST confirm the
   deterministic preconditions that step relies on (the anchors are queryable and
-  the `bookwright-verify` skill is materialized in the project).
-- **FR-013**: An automated test MUST prove inertness: a project with **no**
-  `bible/research/` builds, queries, and validates with zero research entities
-  and no research-related findings, behaving identically to a v0.1 project.
-- **FR-014**: An automated test MUST prove that a project whose `[research]`
-  block is **disabled** (or absent) yields no `factual_anchor` findings and
-  unchanged overall validation behavior.
+  the `bookwright-verify` skill is materialized in the project). The
+  documentation MUST state the **deterministic expected findings** of that step
+  (which anchor and which manuscript anachronism the report should flag); it MUST
+  NOT commit a verbatim LLM report (which would rot and cannot be CI-verified).
+- **FR-013**: An automated test MUST prove inertness for the **no-directory**
+  case by reusing an existing research-free fixture (e.g. `tiny-novel`): it
+  builds, queries, and validates with zero research entities and no
+  research-related findings, behaving identically to a v0.1 project. No new
+  permanent fixture is authored for this case.
+- **FR-014**: An automated test MUST prove the **disabled-block** case by
+  flipping `[research].enabled = false` on a `tmp_path` copy of the historical
+  fixture (rather than committing a dedicated disabled fixture) and asserting it
+  yields no `factual_anchor` findings and unchanged overall validation behavior.
 
 **Documentation**
 
@@ -263,7 +277,10 @@ entry, with no build warnings — verifiable by building the docs and reading th
 **Quality gates**
 
 - **FR-019**: The full test suite MUST keep overall coverage above the v0.1
-  threshold (≥ 80 %), and the new M4 code MUST be covered above 85 %.
+  threshold (≥ 80 %), which remains the **single enforced** gate (one source, no
+  drift). The new M4 code being covered above 85 % is a **verified-at-review**
+  quality target — measured and reported, but NOT a second enforced per-package
+  `fail_under` in CI.
 - **FR-020**: Lint, format, type-check (strict), pre-commit, and CI MUST all pass.
 - **FR-021**: The documentation site MUST build with no warnings.
 - **FR-022**: The fixture and tests MUST NOT introduce vector search or any other
