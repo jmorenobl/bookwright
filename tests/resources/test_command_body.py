@@ -4,7 +4,7 @@ Body non-empty + Spanish, the eight required sections detectable by ES
 heading-keyword, the generative marker/update-in-place rule, the report-only
 "no escribe nada" statement, and the inline ``graph build`` for the two commands
 that need the project graph. Data-driven by ``helpers`` classification so it
-covers all 11 files (US1 + US2) uniformly.
+covers all 12 files (US1 + US2) uniformly.
 """
 
 from __future__ import annotations
@@ -79,9 +79,11 @@ def test_report_only_states_no_writes(path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize("name", ["bookwright-constitution", "bookwright-continuity"])
+@pytest.mark.parametrize(
+    "name", ["bookwright-constitution", "bookwright-continuity", "bookwright-verify"]
+)
 def test_graph_build_is_inline(name: str) -> None:
-    # FR-017: the two graph-consuming commands write the CLI call inline.
+    # FR-017: the graph-consuming commands write the CLI call inline.
     path = next(p for p in command_files() if p.stem == name)
     body = command_body(path)
     assert "bookwright graph build --json" in body, f"{name}: missing inline graph build"

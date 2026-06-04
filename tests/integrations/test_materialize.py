@@ -29,6 +29,7 @@ _ROSTER = {
     "bookwright-continuity",
     "bookwright-checklist",
     "bookwright-research",
+    "bookwright-verify",
 }
 
 

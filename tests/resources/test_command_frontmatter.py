@@ -1,4 +1,4 @@
-"""FR-001..FR-006 / FR-031 — the 11 command sources' frontmatter contract.
+"""FR-001..FR-006 / FR-031 — the 12 command sources' frontmatter contract.
 
 Asserts the inventory (exactly the 11 expected names), that each frontmatter
 parses through the shipped ``parse_frontmatter``, the ``name``/``description``

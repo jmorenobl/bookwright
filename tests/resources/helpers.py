@@ -24,12 +24,12 @@ _PKG_ROOT = Path(_pkg_init).resolve().parent
 PROJECT_DIR = _PKG_ROOT / "resources" / "project"
 #: Re-instanceable molds + the verify-only manifest template.
 TEMPLATES_DIR = _PKG_ROOT / "resources" / "templates"
-#: Command sources (the 11 ``*.md``) + their tier-3 references subtree.
+#: Command sources (the 12 ``*.md``) + their tier-3 references subtree.
 COMMANDS_DIR = _PKG_ROOT / "resources" / "commands"
 REFERENCES_DIR = COMMANDS_DIR / "references"
 
-#: The 11 command source basenames: the 10 fixed by FR-001 (design § 10.4 order)
-#: plus iteration-14's ``bookwright-research``.
+#: The 12 command source basenames: the 10 fixed by FR-001 (design § 10.4 order),
+#: iteration-14's ``bookwright-research`` and iteration-15's ``bookwright-verify``.
 EXPECTED_COMMANDS: tuple[str, ...] = (
     "bookwright-constitution",
     "bookwright-bible",
@@ -42,6 +42,7 @@ EXPECTED_COMMANDS: tuple[str, ...] = (
     "bookwright-continuity",
     "bookwright-checklist",
     "bookwright-research",
+    "bookwright-verify",
 )
 
 #: Command classification — single executable source of truth (spec "Command
@@ -62,6 +63,8 @@ REPORT_ONLY_COMMANDS: tuple[str, ...] = (
     "bookwright-analyze",
     "bookwright-continuity",
     "bookwright-checklist",
+    # iteration 15 — verifies the manuscript against research anchors; writes nothing.
+    "bookwright-verify",
 )
 
 #: Scaffolding markers that must never survive into an authored or stamped file.
@@ -132,7 +135,7 @@ def looks_spanish(text: str) -> bool:
 
 
 def command_files() -> list[Path]:
-    """The 11 command source ``*.md`` directly under ``commands/`` (excludes references/)."""
+    """The 12 command source ``*.md`` directly under ``commands/`` (excludes references/)."""
     if not COMMANDS_DIR.is_dir():
         return []
     return sorted(p for p in COMMANDS_DIR.glob("*.md") if p.is_file())

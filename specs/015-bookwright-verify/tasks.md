@@ -64,7 +64,7 @@ Consequences that shape the task graph and the "zero technical debt" bar:
 branch, and internalise the structural template — so the source is authored against
 real vocabulary, not assumptions.
 
-- [ ] T001 Confirm the branch is `015-bookwright-verify` and that the prerequisite
+- [X] T001 Confirm the branch is `015-bookwright-verify` and that the prerequisite
   iterations are present on `main`/this branch, reading the **actual graph shape** the
   SPARQL must target (research **D5** — there is **no** `bw:Anchor`/`bw:Source`
   `rdf:type`): in `src/bookwright/golem/modules/provenance.py` confirm an **Anchor** is
@@ -82,7 +82,7 @@ real vocabulary, not assumptions.
   returns none. Record any gap as a blocker — do **not** author the SPARQL/severity
   references against vocabulary that is not on the branch (research D5/D6, spec
   Dependencies).
-- [ ] T002 Study the structural template `src/bookwright/resources/commands/bookwright-continuity.md`
+- [X] T002 Study the structural template `src/bookwright/resources/commands/bookwright-continuity.md`
   (the analogous read-only post-draft report, plan "Structure Decision"): note its
   YAML frontmatter shape, the eight ES section headings, the explicit "solo lectura"
   statement, the inline `bookwright graph build --json` call, and the
@@ -100,13 +100,13 @@ fill and the rosters point at.
 **⚠️ CRITICAL**: No user-story body content or roster edit is meaningful until the file
 exists and the canonical description is fixed.
 
-- [ ] T003 Finalise the **authoritative bilingual ES/EN `description`** string from
+- [X] T003 Finalise the **authoritative bilingual ES/EN `description`** string from
   research D3 (verbatim ES + EN triggers, the word `post-draft`, "solo lectura", and
   the explicit repulsion of `bookwright-continuity` and the `factual_anchor` validator),
   verifying it is `< 1024` chars (FR-003). Record it as the single source of truth to be
   pasted byte-identically into both the frontmatter (T004) and `SKILL_DESCRIPTIONS`
   (T015) — this is what the SC-009 equality gate checks (research D3, contract C2/C5).
-- [ ] T004 Create `src/bookwright/resources/commands/bookwright-verify.md` with valid
+- [X] T004 Create `src/bookwright/resources/commands/bookwright-verify.md` with valid
   YAML frontmatter (`name: bookwright-verify` equal to the filename stem; `description:`
   = the T003 string verbatim; **no** `license`, `scripts`, or `handoffs` keys) and the
   eight Spanish section-heading skeleton in order: **Rol, Input, Procedimiento, Output,
@@ -135,12 +135,12 @@ that passage as a contradiction — while a consistent manuscript yields none
 
 > All body tasks below edit the same file (`bookwright-verify.md`) → sequential, no `[P]`.
 
-- [ ] T005 [US1] Author the **Rol** and **Input** sections in
+- [X] T005 [US1] Author the **Rol** and **Input** sections in
   `src/bookwright/resources/commands/bookwright-verify.md`: agent is a verifier of
   factual fidelity comparing the drafted manuscript against the research anchors,
   touching nothing; `{ARGS}` = optional focus (a chapter or topic), base = the
   manuscript read against the anchors (data-model E1 §1–§2, FR-018).
-- [ ] T006 [US1] Author the **Procedimiento** section: (i) run `bookwright graph build
+- [X] T006 [US1] Author the **Procedimiento** section: (i) run `bookwright graph build
   --json` **inline** (exact string — gate at `tests/resources/test_command_body.py:87`)
   to refresh the derived cache, then `bookwright graph query <SPARQL>` that selects
   anchors as the `crm:E13_Attribute_Assignment` nodes carrying `bw:promotes` and
@@ -152,30 +152,30 @@ that passage as a contradiction — while a consistent manuscript yields none
   impossible in the setting), cultural/linguistic inaccuracies** (FR-006); (iv) branch
   on the two absent prerequisites (→ §7); (v) emit the report shape (→ §4). Reuse the
   `bw:` vocabulary only — add no class/predicate (Constitution X, contract C8).
-- [ ] T007 [US1] Author the **Archivos a leer** and **Archivos a escribir** sections:
+- [X] T007 [US1] Author the **Archivos a leer** and **Archivos a escribir** sections:
   reads `manuscript/`, the graph (anchors + sources via `graph query`), and the
   `[research]` block of `manifest.toml` (to detect `enabled = false`); writes
   **Ninguno** with the explicit "solo lectura / no escribe nada" statement (FR-010,
   data-model E1 §5–§6; satisfies `test_report_only_states_no_writes`).
-- [ ] T008 [US1] Author the **Información faltante** section with both
+- [X] T008 [US1] Author the **Información faltante** section with both
   absent-prerequisite branches and **no** `[PENDING:]` marker (read-only): no
   manuscript → report the absent prerequisite, point to `bookwright-draft`; no anchors /
   `[research].enabled = false` → "nothing to verify", zero contradictions (FR-015,
   FR-016, research D7, contract C3).
-- [ ] T009 [US1] Author the **Qué NO hacer** section: no editing/correcting any file
+- [X] T009 [US1] Author the **Qué NO hacer** section: no editing/correcting any file
   (FR-010); no re-auditing anchor *structural integrity* — defer to the `factual_anchor`
   validator (FR-012); no fetching/scraping/new deps (FR-014); no inventing
   contradictions to fill the report (US1 scenario 2, SC-003); no checking against the
   **bible** — that is `bookwright-continuity` (FR-013). (data-model E1 §8, contract C3/C8)
-- [ ] T010 [P] [US1] Add `"bookwright-verify"` to `REPORT_ONLY_COMMANDS` in
+- [X] T010 [P] [US1] Add `"bookwright-verify"` to `REPORT_ONLY_COMMANDS` in
   `tests/resources/helpers.py` so `test_command_body.test_report_only_states_no_writes`
   asserts the "no escribe nada" guard for verify (research D2, data-model E4).
-- [ ] T011 [P] [US1] Extend the `test_graph_build_is_inline` parametrize in
+- [X] T011 [P] [US1] Extend the `test_graph_build_is_inline` parametrize in
   `tests/resources/test_command_body.py` to include `"bookwright-verify"` (the test
   already covers `bookwright-constitution` and `bookwright-continuity`, so verify is the
   **third** entry; the inline-build guard must cover it — research D4, plan Scale/Scope,
   contract C3).
-- [ ] T012 [US1] Run the US1 gates and confirm green:
+- [X] T012 [US1] Run the US1 gates and confirm green:
   `uv run pytest tests/resources/test_command_body.py -q` (sections, report-only,
   inline-build) and `uv run ruff check && uv run ruff format --check && uv run mypy --strict`.
 
@@ -195,7 +195,7 @@ different scenes; confirm the report groups them by chapter/scene and each entry
 the four required parts plus a `file:line` for any passage whose location is known
 (spec US2 Independent Test, SC-004).
 
-- [ ] T013 [US2] Author the **Output** section in
+- [X] T013 [US2] Author the **Output** section in
   `src/bookwright/resources/commands/bookwright-verify.md` (data-model E2, FR-007/FR-008):
   human-readable prose (no JSON envelope, FR-009), grouped by **chapter/scene**; each
   finding = (a) quoted manuscript passage, (b) the violated anchor (its `bw:claim`),
@@ -208,7 +208,7 @@ the four required parts plus a `file:line` for any passage whose location is kno
   procedure → `error`; soft cultural/stylistic nuance → `warning`/`info`; arguable →
   lower severity, not suppressed/overstated) and that a passage breaking N anchors lists
   all N. A clean manuscript yields **zero** findings, nothing fabricated.
-- [ ] T014 [US2] Review the authored **Output** section against data-model E2 (the
+- [X] T014 [US2] Review the authored **Output** section against data-model E2 (the
   four-part-finding + location table and severity rubric) and re-run
   `uv run pytest tests/resources/test_command_body.py -q` to confirm the body still
   satisfies the eight-section/language sweep with the Output content present.
@@ -232,27 +232,27 @@ passing `lint_skill_md`; confirm the description triggers on ES and EN prompts
 > Roster edits are in distinct files → `[P]`. `descriptions.py` is the production source;
 > the three test rosters are expectations.
 
-- [ ] T015 [P] [US3] Add `"bookwright-verify": "<T003 description verbatim>"` to
+- [X] T015 [P] [US3] Add `"bookwright-verify": "<T003 description verbatim>"` to
   `SKILL_DESCRIPTIONS` in `src/bookwright/integrations/descriptions.py` — **byte-identical**
   to the source frontmatter (SC-009; gate
   `test_descriptions.test_v0_equality_gate_mirrors_source_frontmatter`), `< 1024` chars
   (`test_every_description_under_cap`). (research D2/D3, data-model E4, contract C5)
-- [ ] T016 [P] [US3] Add `"bookwright-verify"` to `EXPECTED_COMMANDS` in
+- [X] T016 [P] [US3] Add `"bookwright-verify"` to `EXPECTED_COMMANDS` in
   `tests/resources/helpers.py` so the inventory is exactly the 12 expected names
   (`test_command_frontmatter.test_exactly_the_expected_commands_exist`; research D2,
   contract C1). *(Same file as T010, different tuple — keep both additions.)*
-- [ ] T017 [P] [US3] Add `"bookwright-verify"` to `_ROSTER` in
+- [X] T017 [P] [US3] Add `"bookwright-verify"` to `_ROSTER` in
   `tests/integrations/test_descriptions.py` (gates `test_all_roster_keys_present`,
   `test_get_description_returns_table_value_when_keyed`,
   `test_v0_equality_gate_mirrors_source_frontmatter`; research D2, contract C5).
-- [ ] T018 [P] [US3] Add `"bookwright-verify"` to `_ROSTER` in
+- [X] T018 [P] [US3] Add `"bookwright-verify"` to `_ROSTER` in
   `tests/integrations/test_materialize.py` (gate
   `test_iter_command_sources_is_exactly_the_roster`; research D2, contract C4).
-- [ ] T019 [US3] Run the inventory/description/materialization gates and confirm green:
+- [X] T019 [US3] Run the inventory/description/materialization gates and confirm green:
   `uv run pytest tests/resources/test_command_frontmatter.py tests/resources/test_command_activation.py tests/integrations/test_descriptions.py tests/integrations/test_materialize.py tests/integrations/test_setup_materialize.py -q`.
   Confirm the auto-derived rosters (`test_setup_materialize`, `test_e2e_materialize`)
   picked up the new command **without edits** (research D2 / plan "No-edit" note).
-- [ ] T020 [US3] Materialize via `bookwright init` in both integrations and inspect the
+- [X] T020 [US3] Materialize via `bookwright init` in both integrations and inspect the
   output (quickstart §4, contract C4, SC-001): `uv run bookwright init demo-novel
   --integration claude` and `uv run bookwright init demo-generic --integration generic`;
   confirm `demo-novel/.claude/skills/bookwright-verify/SKILL.md` and
@@ -270,14 +270,14 @@ report-only, and materialized in both integrations.
 **Purpose**: Whole-suite green, cross-artifact consistency, scope discipline, and the
 behavioural acceptance the unit sweeps cannot cover.
 
-- [ ] T021 Run the full suite and all four CI gates green:
+- [X] T021 Run the full suite and all four CI gates green:
   `uv run pytest` (≥ 80 % single-sourced coverage gate, SC-008) and
   `uv run ruff check && uv run ruff format --check && uv run mypy --strict`.
-- [ ] T022 Run `/speckit-analyze` and confirm no cross-artifact inconsistency; verify
+- [X] T022 Run `/speckit-analyze` and confirm no cross-artifact inconsistency; verify
   **scope discipline** held — no `bookwright verify` CLI verb / verifier module / JSON
   envelope, no GOLEM class or predicate, no new integration, and **no** `docs/` edit or
   `tiny-historical/` fixture (those are iteration 17 — research D8, contract C8).
-- [ ] T023 Behavioural acceptance per quickstart §5 (manual/agent run): against a
+- [X] T023 Behavioural acceptance per quickstart §5 (manual/agent run): against a
   graph with a violating anchor → report names the anchor, quotes the passage, cites the
   source, assigns a severity (SC-002); against a consistent manuscript → zero
   contradictions (SC-003); no-manuscript and no-anchors/`enabled=false` → absent
