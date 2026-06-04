@@ -178,11 +178,12 @@ anchors and the skill being present. The test confirms the manual step *can* run
 `tests/e2e/test_docs_commands_match.py` introspects the live Typer app and asserts the
 `docs/commands/` set **equals the CLI leaf-command set**. `bookwright-research` /
 `bookwright-verify` are **Agent Skills, not CLI verbs**, so a page for them under
-`docs/commands/` would make that test fail (an "extra command"). FR-016 says "command
-reference", which here means the *authoring/skills* reference (where the other generative
-skills already live, in `docs/authoring.md`) plus the research page — not the CLI command
-directory. The site is `strict: true`, so every new page must be in `nav` with no broken
-links (this is the FR-021 zero-warnings gate).
+`docs/commands/` would make that test fail (an "extra command"). FR-016 therefore targets the
+**authoring / skills reference** (where the other generative skills already live, in
+`docs/authoring.md`) plus the research page — explicitly **not** the CLI command directory.
+(FR-016 was tightened to say this directly, so the placement is no longer a plan-side
+reinterpretation.) The site is `strict: true`, so every new page must be in `nav` with no
+broken links (this is the FR-021 zero-warnings gate).
 
 **Changelog**: no `CHANGELOG.md` exists anywhere today; the docs site is the home for it.
 Create `docs/changelog.md` (Spanish prose) rather than a root file, to keep it in the

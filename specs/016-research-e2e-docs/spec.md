@@ -169,8 +169,8 @@ entry, with no build warnings — verifiable by building the docs and reading th
    **Then** it explains the purpose of research, the Source/Finding/Anchor model,
    the research skill protocol, the two-layer verification, and multilingualism
    and provenance, and it is reachable from the site navigation.
-2. **Given** the command reference, **When** a reader looks for the new authoring
-   surface, **Then** `bookwright-research` and `bookwright-verify` are documented
+2. **Given** the authoring / skills reference, **When** a reader looks for the new
+   authoring surface, **Then** `bookwright-research` and `bookwright-verify` are documented
    there, and the validation reference documents `factual_anchor`.
 3. **Given** the changelog, **When** a reader looks for the latest release,
    **Then** there is a v0.2.0 entry describing the research and verification
@@ -270,8 +270,10 @@ entry, with no build warnings — verifiable by building the docs and reading th
   research is in Bookwright, the Source/Finding/Anchor model, the research skill
   protocol, how verification works (the two layers), and multilingualism and
   provenance.
-- **FR-016**: The command reference MUST document `bookwright-research` and
-  `bookwright-verify`; the validation reference MUST document `factual_anchor`.
+- **FR-016**: The **authoring / skills reference** (i.e. `docs/authoring.md` plus the
+  research page — **not** the CLI `docs/commands/` directory, which is gated to the live CLI
+  leaf-command set and would reject a non-CLI skill page) MUST document `bookwright-research`
+  and `bookwright-verify`; the validation reference MUST document `factual_anchor`.
 - **FR-017**: The research page MUST be reachable from the documentation site
   navigation.
 - **FR-018**: The changelog MUST gain a v0.2.0 entry describing the research and
@@ -325,7 +327,8 @@ entry, with no build warnings — verifiable by building the docs and reading th
 - **SC-004**: A reader can reach the research page from the site navigation and it
   covers all five required topics; `bookwright-research`, `bookwright-verify`, and
   `factual_anchor` each appear in the reference; the changelog has a v0.2.0 entry.
-- **SC-005**: Overall test coverage stays ≥ 80 % and new M4 code is ≥ 85 %.
+- **SC-005**: Overall test coverage stays ≥ 80 % (the single enforced CI gate) and new M4 code
+  is ≥ 85 % (report-only, verified at review — **not** a second CI gate; see FR-019).
 - **SC-006**: Lint, format, strict type-check, pre-commit, and CI are green, and
   the documentation site builds with zero warnings.
 - **SC-007**: No vector-search or other v0.3+ capability is introduced by this

@@ -41,7 +41,9 @@ home. Mirrors `tests/fixtures/tiny-novel/` exactly.
   `[book]` (`type="novel"`, `language="es"`), `[research]` (`enabled=true`,
   `source_languages=[…foreign ISO-639-1…]`, `min_reliability_for_anchor="media"`),
   `[validators]` all-built-in (`enabled=[]`/`disabled=[]`/`custom=[]`), `[integration] key="claude"`,
-  `[paths]`. Omit `[vocabularies] active` unless a build/validate actually needs it (D8).
+  `[paths]`. Try the **minimal** config first: omit `[vocabularies] active` unless a real
+  `graph build`/`validate` fails without it; if `sources` proves required, add it **and record
+  why in a manifest comment** so the decision isn't re-litigated later (D8).
 
 ---
 
@@ -86,7 +88,12 @@ triples; a reader opening `bible/research/` finds the topic, the Source registry
   carrying a year** (`date` or `begin`/`end`). This dated event is the *target* defect #2's
   anachronistic anchor will contradict (FR-004/FR-006; data-model.md E1).
 - [ ] T007 [P] [US1] Author `tests/fixtures/tiny-historical/bible/characters/<slug>.md` (≥1
-  character; one is the entity the anachronistic anchor `constrains`) (FR-005).
+  character; one is the entity a **clean** anchor `constrains`, exercising FR-005's
+  character-link variety). **Do NOT make this character the target of the anachronistic anchor
+  (defect #2)**: `factual_anchor` R5 only yields a comparable interval for an **event/timeline**
+  target — `_target_interval` returns `None` for a character, so an anchor constraining a
+  character can never trip R5. Defect #2's anchor must constrain the **dated timeline event**
+  from T006 (owned by T011), not this character (FR-005).
 - [ ] T008 [P] [US1] Author `tests/fixtures/tiny-historical/bible/settings/<slug>.md` (≥1 setting)
   consistent with the historical period.
 - [ ] T009 [P] [US1] Author the outline skeleton
@@ -134,7 +141,13 @@ planted defect in the fixture turns it red.
 
 - [ ] T015 [US2] Create `tests/e2e/test_research_workflow.py` scaffold: an oracle-loader helper that
   reads `tiny-historical/expected-findings.md` front-matter **once** (single source of truth, no
-  hard-coded counts), plus the `copy_fixture(tmp_path)` + `monkeypatch.chdir` + `CliRunner` harness.
+  hard-coded counts), plus the `copy_fixture("tiny-historical", tmp_path)` + `monkeypatch.chdir` +
+  `CliRunner` harness (real signature `copy_fixture(name, dest_parent)`, `tests/conftest.py`).
+  Keep the module single-file (it is expected to land ~250–300 lines, well under the 500-line
+  Constitution-IV ceiling — do **not** pre-split into helper modules: that is speculative
+  structure). **Contingency only if it later exceeds 500 lines**: first lift the oracle-loader +
+  harness into module-level `pytest` fixtures; only if still over, move Group C inertness
+  (T019/T020) into a sibling `tests/e2e/test_research_inertness.py`.
 - [ ] T016 [US2] **Group A** (deterministic flow) in `tests/e2e/test_research_workflow.py`:
   (a) `graph build --json` exit 0 and the derived graph holds Sources/Findings/Anchors (`bw:`
   triples; an anchor `E13` with `bw:promotes`; a `bw:supportedBy` source) — FR-008/009;
