@@ -26,7 +26,7 @@ adds no new product mechanism.
 ### Session 2026-06-05
 
 - Q: Should the new-M4-code ≥85% coverage target be an enforced CI gate or report-only? → A: Report-only — keep the single enforced gate at 80% global (preserving the "one source, no drift" convention); ≥85% on M4 code is a verified-at-review quality target, with no second per-package `fail_under`.
-- Q: How should the manual `bookwright-verify` step be materialized — documented procedure or a committed golden LLM report? → A: Documented procedure only; the docs state the *deterministic* expected findings (which anchor / which anachronism), and the test asserts preconditions. No committed LLM transcript (it would rot and can't be CI-verified).
+- Q: How should the manual `bookwright-verify` step be materialized — documented procedure or a committed golden LLM report? → A: Documented procedure only; the docs state the *deterministic* expected findings (which anchor / which anachronism), and that oracle is co-located with the fixture (a file in the `tiny-historical` dir) so it sits next to the data and is presence-checkable. The test asserts preconditions. No committed LLM transcript (it would rot and can't be CI-verified).
 - Q: How should the disabled-`[research]` inertness case be exercised — reuse+toggle or a dedicated fixture? → A: Reuse existing research-free fixtures (e.g. `tiny-novel`) for the no-directory case, and flip `[research].enabled = false` on a `tmp_path` copy for the disabled case. No new permanent fixture.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -249,8 +249,11 @@ entry, with no build warnings — verifiable by building the docs and reading th
   deterministic preconditions that step relies on (the anchors are queryable and
   the `bookwright-verify` skill is materialized in the project). The
   documentation MUST state the **deterministic expected findings** of that step
-  (which anchor and which manuscript anachronism the report should flag); it MUST
-  NOT commit a verbatim LLM report (which would rot and cannot be CI-verified).
+  (which anchor and which manuscript anachronism the report should flag), and
+  that expected-findings oracle MUST be co-located with the fixture (a file
+  inside the `tiny-historical` fixture directory) so it sits next to the data it
+  describes and its presence is checkable; it MUST NOT commit a verbatim LLM
+  report (which would rot and cannot be CI-verified).
 - **FR-013**: An automated test MUST prove inertness for the **no-directory**
   case by reusing an existing research-free fixture (e.g. `tiny-novel`): it
   builds, queries, and validates with zero research entities and no
