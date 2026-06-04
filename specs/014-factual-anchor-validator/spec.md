@@ -8,6 +8,13 @@
 
 **Input**: User description: "Necesidad: las anclas de investigación solo sirven si están bien formadas y no chocan con la cronología. Necesitamos un validator de código (determinista, complementario a los chequeos LLM) que audite la integridad de las anclas sobre el grafo. […] Referencia: ver bookwright-design.md § 20.6 y § 13 (Sistema de Validación)."
 
+## Clarifications
+
+### Session 2026-06-04
+
+- Q: When one source is missing several mandatory provenance facets, report per-facet or per-source? → A: One **warning per missing facet** (matches FR-007's singular wording; each gap independently fixable and testable; no extra noise on well-formed sources).
+- Q: When a source backing an anchor is missing the reliability rating entirely, how do the provenance-completeness (FR-007) and threshold (FR-008) checks interact? → A: Report it **once** as a missing `reliability` facet (FR-007); the unrated source contributes no rating to FR-008's best-reliability computation. If no supporting source carries any rating, best-of-none fails FR-008's threshold and the anchor is also flagged as below-minimum — but a single source is never double-labelled as both "incomplete" and "under-reliable" for the same missing rating.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Audit the structural integrity of research anchors (Priority: P1)
@@ -182,10 +189,16 @@ check emits zero violations.
   mandatory provenance facet — reference, author, original language, source type,
   reliability, reliability justification, access date, original-language quote, and
   a translation when the source's language differs from the book's — the validator
-  MUST emit a **warning** identifying the missing facet.
+  MUST emit **one warning per missing facet**, each naming the specific facet. A
+  source missing several facets therefore yields several distinct warnings.
 - **FR-008**: For each anchor, when the **best** (highest) reliability among its
   supporting sources is below `[research].min_reliability_for_anchor`, the validator
-  MUST emit a **warning**. Reliability is ordered `alta` > `media` > `baja`.
+  MUST emit a **warning**. Reliability is ordered `alta` > `media` > `baja`. A
+  supporting source that carries **no** reliability rating contributes no value to
+  the best-reliability computation (its missing rating is reported only as a
+  provenance-incomplete facet under FR-007, never additionally as "under-reliable").
+  When **no** supporting source carries any rating, the best reliability is treated
+  as below any threshold and the anchor is flagged.
 - **FR-009**: For each anchor, the finding it promotes and the narrative entity it
   constrains MUST exist in the graph; an anchor whose constrained narrative entity
   does not resolve to an entity present in the graph (including one whose constraint
