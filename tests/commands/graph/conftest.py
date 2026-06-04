@@ -10,7 +10,7 @@ from __future__ import annotations
 import textwrap
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypedDict, Unpack
 
 import pytest
 
@@ -94,6 +94,19 @@ def write_manifest(root: Path, *, indexer: str | None = None) -> None:
     )
 
 
+class _ScaffoldKwargs(TypedDict, total=False):
+    """The keyword-only surface of :func:`scaffold_project`.
+
+    Mirrors that signature so :func:`project_factory` can splat ``**kwargs``
+    into it under mypy ``--strict`` without a ``type: ignore`` escape hatch.
+    """
+
+    with_bible: bool
+    with_manuscript: bool
+    research: Literal["none", "minimal", "rich"]
+    indexer: str | None
+
+
 def scaffold_project(
     root: Path,
     *,
@@ -152,8 +165,8 @@ def tiny_novel(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def project_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Callable[..., Path]:
     """Return a factory that scaffolds a (variant) project and chdirs into it."""
 
-    def _make(**kwargs: object) -> Path:
-        root = scaffold_project(tmp_path / "my-novel", **kwargs)  # type: ignore[arg-type]
+    def _make(**kwargs: Unpack[_ScaffoldKwargs]) -> Path:
+        root = scaffold_project(tmp_path / "my-novel", **kwargs)
         monkeypatch.chdir(root)
         return root
 
