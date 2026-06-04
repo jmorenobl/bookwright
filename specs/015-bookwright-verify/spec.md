@@ -8,6 +8,13 @@
 
 **Input**: User description: "Necesidad: tras escribir el borrador, el autor necesita saber si el texto contradice lo que investigó: anacronismos, errores de procedimiento (el detective hace algo ilegal o imposible en España), inexactitudes culturales o lingüísticas. Eso exige juicio, no solo código: lo resuelve un agente leyendo el manuscrito contra las anclas. […] Referencia: ver bookwright-design.md § 20.6 y el command bookwright-continuity como patrón análogo."
 
+## Clarifications
+
+### Session 2026-06-04
+
+- Q: What severity scale should the verification report use for flagged contradictions? → A: `error` / `warning` / `info` — the same three-level scale (`error > warning > info`) as the validation system's `Severity` enum (`validation/base.py`), which the deterministic `factual_anchor` validator uses, so both halves of the § 20.6 two-layer design share one severity vocabulary.
+- Q: How should the skill load anchors+sources from the graph (FR-005 says SPARQL, but `graph query` only works after a build)? → A: Build then query — the skill first runs `bookwright graph build` to refresh the derived cache, then `bookwright graph query <SPARQL>` targeting `bw:Anchor`/`bw:Source`. This honours FR-005's SPARQL surface, never reads a stale/missing graph, and mirrors `bookwright-continuity` (which also builds first).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Verify the manuscript against research anchors (Priority: P1)
@@ -183,10 +190,12 @@ bible) and from `factual_anchor` (semantic judgement, not structural integrity).
 - **FR-004**: The skill MUST be triggerable from both Spanish and English author
   prompts (e.g. "verifica si mi manuscrito contradice lo investigado" / "check my
   manuscript against my research").
-- **FR-005**: The `SKILL.md` MUST instruct the agent to load the project's anchors
-  (and the sources behind them) from the graph via `bookwright graph query` — the
-  derived graph is the read surface, consistent with how `bookwright-continuity`
-  consumes the graph.
+- **FR-005**: The `SKILL.md` MUST instruct the agent to first run `bookwright graph
+  build` (refresh the derived cache) and then load the project's anchors (and the
+  sources behind them) via `bookwright graph query <SPARQL>` targeting `bw:Anchor`/
+  `bw:Source` — the derived graph is the read surface, and building first guarantees
+  the query never hits a stale or missing `bible/graph.ttl`. This mirrors
+  `bookwright-continuity`, which also builds the graph before consuming it.
 - **FR-006**: The `SKILL.md` MUST instruct the agent to read the manuscript
   (`manuscript/`) and identify passages that **contradict** an anchor, across the
   contradiction kinds named by the design § 20.6: anachronisms, procedural errors
@@ -195,7 +204,12 @@ bible) and from `factual_anchor` (semantic judgement, not structural integrity).
 - **FR-007**: The produced report MUST be **structured by chapter/scene**, and each
   flagged contradiction MUST carry: (a) a quotation of the offending manuscript
   passage, (b) the **anchor** it violates, (c) the **source** behind that anchor (its
-  provenance), and (d) a **severity**.
+  provenance), and (d) a **severity** drawn from the three-level scale
+  `error` / `warning` / `info` (`error > warning > info`) — the same vocabulary as the
+  validation system's `Severity` enum and the deterministic `factual_anchor` validator,
+  so the two § 20.6 layers report gravity consistently. Definite, factual contradictions
+  (a hard anachronism, an illegal/impossible procedure) are rated `error`; soft cultural
+  or stylistic nuances are rated `warning` or `info`.
 - **FR-008**: Where the manuscript location of a flagged passage is available, the
   report MUST reference the manuscript **file and line**; when no precise location is
   available it MUST still identify the chapter/scene without fabricating a line number.
@@ -279,16 +293,20 @@ bible) and from `factual_anchor` (semantic judgement, not structural integrity).
 ## Assumptions
 
 - **Read surface is the derived graph plus the manuscript.** The skill instructs the
-  agent to load anchors and their sources via `bookwright graph query` (SPARQL over the
-  `bw:`/CIDOC triples iteration 012 emits) and to read `manuscript/` directly, exactly
-  as `bookwright-continuity` consumes the graph and reads the manuscript. It does not
-  re-parse `bible/research/` by hand, re-fetch sources, or call any external service.
-- **Severity is the agent's judgement on a small, human-meaningful scale.** Definite,
+  agent to first run `bookwright graph build` (the graph is always a derived cache —
+  Constitution I) and then load anchors and their sources via `bookwright graph query
+  <SPARQL>` (SPARQL over the `bw:`/CIDOC triples iteration 012 emits) and to read
+  `manuscript/` directly, exactly as `bookwright-continuity` builds then consumes the
+  graph and reads the manuscript. It does not re-parse `bible/research/` by hand,
+  re-fetch sources, or call any external service.
+- **Severity is the agent's judgement on the shared three-level scale.** Definite,
   factual contradictions (a hard anachronism, an illegal/impossible procedure) are
-  rated more severe than soft cultural or stylistic nuances. The exact label set is the
-  skill author's choice (e.g. high/medium/low or error/warning/note); the requirement
-  is that gravity is conveyed so the author can triage (FR-007, US2 scenario 4). The
-  precise scale can be settled in `/speckit-clarify`.
+  rated more severe than soft cultural or stylistic nuances. Per the 2026-06-04
+  clarification, the label set is fixed to `error` / `warning` / `info`
+  (`error > warning > info`) — the same vocabulary as the validation system's
+  `Severity` enum and the deterministic `factual_anchor` validator — so both § 20.6
+  layers convey gravity consistently and the author can triage across them (FR-007,
+  US2 scenario 4).
 - **Report is emitted, not persisted.** Like `bookwright-continuity`, this command is
   read-only and writes nothing to the project; the report is the agent's response
   (FR-009, FR-010). If a future iteration wants a persisted report artifact, that is
