@@ -8,6 +8,24 @@
 
 **Input**: User description: "Necesidad: investigar es parte del proceso de escritura. El autor necesita un command que, dado un tema (p. ej. «detectives privados en España» o «logística de la Wehrmacht en 1943»), guíe al agente para investigar con rigor y deje los hallazgos estructurados, con procedencia, anclados al grafo."
 
+## Clarifications
+
+### Session 2026-06-04
+
+- Q: Default value of `[research].source_languages` in a freshly `init`-ed
+  manifest? → A: Empty list `[]` — no declared provenance preference baked into
+  the generic scaffold; the protocol's original-language rule still applies, and
+  the author adds languages per topic.
+- Q: Should `bookwright init` write an explicit `[research]` block into the
+  generated `manifest.toml` or rely on model defaults? → A: Write the block with
+  the documented defaults and explanatory comments (discoverable, self-documenting,
+  consistent with the other scaffolded blocks); the loader still applies the same
+  defaults when the block is absent.
+- Q: After writing the research files, should the skill instruct the agent to run
+  `bookwright graph build`? → A: Yes — the skill's final step instructs
+  `bookwright graph build --json` so findings and anchors land in `bible/graph.ttl`
+  immediately, consistent with the other content-producing commands.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Guided rigorous research into structured, provenanced findings (Priority: P1)
@@ -23,7 +41,8 @@ quotation), keep conflicting versions side by side rather than collapsing them,
 mark which findings are binding anchors and which narrative entity they constrain,
 and leave unresolved questions open. The result is written to
 `bible/research/<topic>.md` (with `_index.md` and `sources.md` updated) in the
-exact plain-text shape the research reader can parse and feed to the graph.
+exact plain-text shape the research reader can parse, and the skill finishes by
+reindexing the graph so the findings and anchors are immediately queryable.
 
 **Why this priority**: This is the heart of the feature — the whole iteration
 exists to give the author a research command that produces graph-ready, provenance
@@ -53,6 +72,10 @@ research-to-graph loop on its own.
 4. **Given** sub-questions the agent could not resolve, **When** it finishes,
    **Then** those questions are left explicitly open in the topic file and surface
    in `_index.md`.
+5. **Given** the research files have been written, **When** the skill reaches its
+   final step, **Then** it instructs the agent to run `bookwright graph build
+   --json`, after which the new findings and anchors are present in
+   `bible/graph.ttl` and retrievable by a SPARQL query.
 
 ---
 
@@ -187,8 +210,9 @@ questions are collected.
 - **FR-010**: `/bookwright-clarify` MUST continue to collect open research
   questions.
 - **FR-011**: The manifest model (iteration 2) MUST be extended with an optional
-  `[research]` block exposing `enabled`, `source_languages`, and
-  `min_reliability_for_anchor`, each with a sensible default.
+  `[research]` block exposing `enabled` (default `true`), `source_languages`
+  (default `[]`, the empty list), and `min_reliability_for_anchor` (default
+  `"media"`).
 - **FR-012**: A manifest with no `[research]` block MUST load successfully with the
   documented defaults applied; with `enabled = false` the research system MUST be
   inert.
@@ -198,6 +222,12 @@ questions are collected.
 - **FR-014**: `bookwright init` MUST scaffold (a) a valid `bookwright-research`
   skill in both integrations and (b) a `bible/research/` directory containing
   `_index.md` and `sources.md` rendered from the templates.
+- **FR-014a**: `bookwright init` MUST write an explicit `[research]` block — with
+  the documented defaults (`enabled = true`, `source_languages = []`,
+  `min_reliability_for_anchor = "media"`) and explanatory comments — into the
+  generated `manifest.toml`, while the loader MUST still apply those same defaults
+  when the block is absent (FR-012). The written comments MUST survive the
+  `tomlkit` round-trip.
 - **FR-015**: The protocol MUST honour `min_reliability_for_anchor`: a finding
   whose best supporting source is below the configured threshold MUST NOT be
   promoted to an anchor (it stays a finding, possibly open).
@@ -206,6 +236,11 @@ questions are collected.
 - **FR-017**: Re-invoking the skill on an existing topic MUST update the topic
   file, `_index.md`, and `sources.md` without discarding previously recorded
   findings or their provenance.
+- **FR-018**: The skill's final step MUST instruct the agent to run `bookwright
+  graph build --json` after writing the research files, so the new findings and
+  anchors are reflected in `bible/graph.ttl`. This mirrors the persistence step of
+  the other content-producing commands; the skill itself still adds no fetch logic
+  or network dependency (FR-007).
 
 ### Key Entities *(include if feature involves data)*
 
@@ -234,7 +269,9 @@ questions are collected.
   integrations — 100 % of generated skills valid.
 - **SC-002**: A project manifest with a `[research]` block loads with zero errors,
   and a manifest without one loads with defaults applied — both verifiable without
-  inspecting implementation.
+  inspecting implementation. A freshly `init`-ed `manifest.toml` contains a
+  `[research]` block carrying the documented defaults, and its explanatory comments
+  survive a load-and-save round-trip.
 - **SC-003**: Running the skill manually in an agent against a sample topic
   produces a `bible/research/<topic>.md` that `bookwright graph build` parses
   without error and from which a SPARQL query retrieves at least one anchor
@@ -259,11 +296,14 @@ questions are collected.
   reader parses.
 - The reliability scale is **`alta` / `media` / `baja`** (high / medium / low) per
   design § 20.3, used by `min_reliability_for_anchor`.
-- `[research]` defaults: `enabled = true`, `min_reliability_for_anchor = "media"`,
-  and `source_languages = []` (no declared provenance preference — the protocol's
+- `[research]` defaults (resolved in Clarifications, Session 2026-06-04):
+  `enabled = true`, `min_reliability_for_anchor = "media"`, and
+  `source_languages = []` (no declared provenance preference — the protocol's
   original-language rule still applies). The design § 20.9 example
   `["de","pl","en","fr"]` is illustrative of a specific book, not a generic
-  scaffold default. *(To be confirmed in `/speckit-clarify`.)*
+  scaffold default. `bookwright init` writes the block explicitly with these
+  defaults and comments (FR-014a); the loader also applies them when the block is
+  absent (FR-012).
 - The search engine / fetching is supplied by the agent's own tools, not by
   Bookwright; no network or runtime dependency is added (Constitution II).
 - Skill materialization reuses the iteration-9 `SkillsIntegration` pipeline; only
