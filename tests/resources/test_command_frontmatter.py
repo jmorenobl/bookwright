@@ -1,6 +1,6 @@
 """FR-001..FR-006 / FR-031 — the 12 command sources' frontmatter contract.
 
-Asserts the inventory (exactly the 11 expected names), that each frontmatter
+Asserts the inventory (exactly the 12 expected names), that each frontmatter
 parses through the shipped ``parse_frontmatter``, the ``name``/``description``
 rules, the forbidden keys (``scripts``/``handoffs``), and the out-of-scope guard
 (``commands/`` ships only ``.md`` — no ``SKILL.md``, no helper ``.py``).
