@@ -148,10 +148,10 @@ def test_query_retrieves_anchors_with_claims_and_spans(cli: CliRunner, historica
     assert rows
     assert all(row["claim"].strip() and row["source"] for row in rows)
 
-    spans = {row["anchor"]: (row.get("begin"), row.get("end")) for row in _query(cli, SPAN_QUERY)}
-    # The dated anchor is queryable with concrete begin/end boundaries.
-    assert (1851, 1851) in {(_year(b), _year(e)) for b, e in spans.values()}
-    assert (1920, 1925) in {(_year(b), _year(e)) for b, e in spans.values()}
+    spans = {(_year(row.get("begin")), _year(row.get("end"))) for row in _query(cli, SPAN_QUERY)}
+    # The dated anchors are queryable with concrete begin/end boundaries.
+    assert (1851, 1851) in spans
+    assert (1920, 1925) in spans
 
 
 def test_validate_reports_exactly_the_planted_findings(
