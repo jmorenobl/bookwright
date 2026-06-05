@@ -12,11 +12,16 @@
 
 ### Session 2026-06-05
 
-No clarifications were required. The need fully specifies the forbidden tag
-patterns, the conversion rules, the comment-only constraint, and the gate;
-the only open choices (gate implementation mechanism, exact scan command) are
-implementation details deferred to `/speckit-plan`. Reasonable defaults are
-recorded under **Assumptions**.
+- Q: Where should the no-regression gate (FR-010) live — pytest-only, pytest +
+  pre-commit, or a ruff custom rule? → A: A single `pytest` test in the suite
+  (no pre-commit hook, no ruff rule). It rides `uv run pytest` and CI per
+  Principle VIII, is the minimal deliverable, and fully satisfies FR-010 /
+  SC-004; pre-commit wiring is left as a trivial future add, out of scope here.
+
+The need otherwise fully specifies the forbidden tag patterns, the conversion
+rules, and the comment-only constraint; remaining choices (exact scan command,
+failure-message format) are low-impact implementation details for
+`/speckit-plan`. Reasonable defaults are recorded under **Assumptions**.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -26,7 +31,8 @@ A maintainer searches the codebase for the forbidden planning tags and finds
 none. `T0xx` (a `T` followed by exactly three digits) and the user-story tags
 `US-x` / `USx` / `+USx` no longer appear anywhere under `src/` or `tests/`,
 excluding binaries and `__pycache__`. The historical debt — roughly 57
-occurrences across ~46 text files inherited from iterations 1–14 — is gone.
+occurrences across ~48 text files (46 `.py` + 2 `.toml` fixtures) inherited
+from iterations 1–14 — is gone.
 
 **Why this priority**: This is the headline outcome. Until the count reaches
 zero, the debt the iteration exists to cancel is not cancelled. It is the
@@ -177,9 +183,11 @@ gate fails with a message identifying the file and pattern.
   assertions.
 - **FR-009**: Observable behaviour and test coverage MUST be unchanged by the
   cleanup (the same tests pass, exercising the same code paths).
-- **FR-010**: A no-regression gate MUST fail whenever a `T0xx` or `US-x`
-  (per FR-001/FR-002 patterns) reappears in `src/` or `tests/`, and MUST be
-  integrated into the test suite so it also runs in CI on every push/PR.
+- **FR-010**: A no-regression gate, realised as a single `pytest` test in the
+  existing suite (no separate pre-commit hook, no ruff rule), MUST fail
+  whenever a `T0xx` or `US-x` (per FR-001/FR-002 patterns) reappears in `src/`
+  or `tests/`; because it rides `uv run pytest`, it also runs in CI on every
+  push/PR (Principle VIII).
 - **FR-011**: The gate MUST NOT report a false positive against permitted
   content: legitimate `FR`/`SC`/`D` refs, `bookwright-design.md §` pointers,
   "iteration N" prose, and the gate's own pattern definitions MUST pass.
@@ -209,7 +217,8 @@ gate fails with a message identifying the file and pattern.
 
 - **SC-001**: A recursive search for the two forbidden tag families over
   `src/` and `tests/` (excluding binaries and `__pycache__`) returns **0**
-  matches — down from the inherited ~57 occurrences across ~46 files.
+  matches — down from the inherited ~57 occurrences across ~48 files (`.py`
+  plus two `.toml` fixtures).
 - **SC-002**: 100% of removed tags that carried real traceability are
   reachable from the same code via a permitted durable reference (no
   navigational information is lost).
@@ -224,13 +233,15 @@ gate fails with a message identifying the file and pattern.
 
 ## Assumptions
 
-- **Gate mechanism**: the no-regression gate is realised as a `pytest` test
-  (so it rides the existing `uv run pytest` suite and CI gate, Principle VIII)
-  rather than a separate pre-commit-only hook; the exact mechanism is finalised
-  in `/speckit-plan`. Either way it must run in the standard suite.
+- **Gate mechanism** (decided in Clarifications): the no-regression gate is a
+  single `pytest` test riding the existing `uv run pytest` suite and CI gate
+  (Principle VIII) — not a separate pre-commit hook and not a ruff custom rule.
+  Pre-commit wiring is a deliberate out-of-scope future add.
 - **Scan surface**: the gate scans text files under `src/` and `tests/`,
-  skipping binaries and `__pycache__`; `specs/`, `docs/`, design docs, and the
-  repo root are out of its scope (their task/story IDs are legitimate).
+  skipping binaries and `__pycache__`; this includes non-`.py` text such as the
+  `.toml` fixtures under `tests/` (two of which carry tags today). `specs/`,
+  `docs/`, design docs, and the repo root are out of its scope (their
+  task/story IDs are legitimate).
 - **Pattern definitions**: `T0xx` means `T` immediately followed by exactly
   three digits; the user-story family covers `US-<n>`, `US<n>`, and `+US<n>`.
   The gate encodes these without flagging permitted `FR`/`SC`/`D`/`§` tokens.
