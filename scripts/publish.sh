@@ -26,10 +26,11 @@ done
 PYPIRC="${HOME}/.pypirc"
 [ -f "$PYPIRC" ] || { echo "error: $PYPIRC not found" >&2; exit 1; }
 
-# Pull username + token for the chosen index out of ~/.pypirc via configparser
-# (robust to indentation / key order). Export them as UV_PUBLISH_* so uv picks
-# them up without echoing the secret on the command line.
-read -r UV_PUBLISH_USERNAME UV_PUBLISH_TOKEN < <(
+# Pull the token for the chosen index out of ~/.pypirc via configparser (robust
+# to indentation / key order) and export it as UV_PUBLISH_TOKEN. uv implies the
+# username "__token__" from a token, so do NOT also pass a username — uv rejects
+# --username together with --token.
+UV_PUBLISH_TOKEN="$(
   REPO="$REPO" python3 - "$PYPIRC" <<'PY'
 import configparser, os, sys
 cfg = configparser.ConfigParser()
@@ -37,17 +38,15 @@ cfg.read(sys.argv[1])
 section = os.environ["REPO"]
 if not cfg.has_section(section):
     sys.exit(f"error: [{section}] section missing in {sys.argv[1]}")
-user = cfg.get(section, "username", fallback="__token__").strip()
 token = cfg.get(section, "password", fallback="").strip()
 if not token.startswith("pypi-"):
     sys.exit(f"error: [{section}] password is not a 'pypi-' token")
-print(user, token)
+print(token)
 PY
-)
-export UV_PUBLISH_USERNAME UV_PUBLISH_TOKEN
+)"
+export UV_PUBLISH_TOKEN
 
 echo ">> target index: ${REPO}${PUBLISH_URL:+ ($PUBLISH_URL)}"
-echo ">> username:      ${UV_PUBLISH_USERNAME}"
 echo ">> token:         ${UV_PUBLISH_TOKEN:0:9}…[hidden]"
 
 if [ "$DO_BUILD" -eq 1 ]; then
