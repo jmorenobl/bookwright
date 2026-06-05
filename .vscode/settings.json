@@ -1,0 +1,24 @@
+{
+  // Use the project's virtualenv interpreter so all tooling matches CI.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // Ruff (charliermarsh.ruff): lint + format. `fromEnvironment` makes the
+  // extension use the .venv-pinned ruff (0.15.14) and the pyproject config,
+  // instead of the version bundled with the extension.
+  "ruff.importStrategy": "fromEnvironment",
+  "ruff.configurationPreference": "filesystemFirst",
+
+  // mypy (ms-python.mypy-type-checker): use the .venv-pinned mypy (2.1.0).
+  // strict / files / python_version all come from [tool.mypy] in pyproject.
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+
+  // Editor: format with Ruff on save, and fix imports/lint autofixes.
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  }
+}
