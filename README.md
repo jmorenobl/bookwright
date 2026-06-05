@@ -8,7 +8,8 @@ outline, scenes) and let an AI agent write from *them*, not from a free-form
 chat. Your book lives in plain text, versioned in git, fully auditable, and
 outlives the toolkit.
 
-> **Status: v0.1.0.** All eleven v0 iterations have landed on `main`.
+> **Status: v0.2.0.** The v0.1.0 toolkit (iterations 1–11) and the M4
+> research & verification milestone (iterations 12–18) are both on `main`.
 
 The canonical README and the full documentation are in Spanish (the language of
 the design corpus). The English-facing surface is the code, the CLI, and the
@@ -41,6 +42,14 @@ Open the project in your agent and run the skills in order:
 /bookwright-outline      ← arcs and act/chapter structure
 /bookwright-scenes       ← break chapters into scenes
 /bookwright-draft        ← draft the prose of one scene
+```
+
+For fact-based work (e.g. historical fiction), the optional research loop
+records sources, findings and anchors, then checks the prose against them:
+
+```
+/bookwright-research <topic>   ← document findings with full provenance
+/bookwright-verify             ← check the drafted prose against the anchors
 ```
 
 Then build and validate from the CLI:

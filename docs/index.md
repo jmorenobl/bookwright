@@ -23,6 +23,9 @@ en git, completamente auditable, y sobrevive al toolkit.
 - **Validación de continuidad.** `bookwright validate` comprueba presencia de
   personajes, focalización, continuidad de settings y coherencia temporal sobre
   el grafo derivado de tu biblia y tu manuscrito.
+- **Investigación con procedencia (opcional, v0.2).** Para obra basada en
+  hechos, documenta fuentes, hallazgos y anclas, deja que restrinjan la ficción
+  y verifica la prosa contra ellas. Ver [Investigación](research.md).
 
 ## El loop del escritor
 
@@ -32,8 +35,10 @@ en git, completamente auditable, y sobrevive al toolkit.
    `/bookwright-bible`, `/bookwright-outline`, `/bookwright-scenes`,
    `/bookwright-draft`, …) para convertir input no estructurado en artefactos
    versionables.
-4. **Construye y consulta el grafo**: `bookwright graph build` y
+4. **Investiga (opcional)**: para obra basada en hechos, `/bookwright-research`
+   documenta hallazgos con procedencia y `/bookwright-verify` contrasta la prosa.
+5. **Construye y consulta el grafo**: `bookwright graph build` y
    `bookwright graph query`.
-5. **Valida la continuidad**: `bookwright validate`.
+6. **Valida la continuidad**: `bookwright validate`.
 
 ¿Listo para empezar? Ve a [Primeros pasos](getting-started.md).

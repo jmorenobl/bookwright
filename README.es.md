@@ -11,14 +11,17 @@ IA escriba a partir de *ellos*, no de un chat libre. Tu libro vive en
 texto plano, versionado en git, completamente auditable, y sobrevive al
 toolkit.
 
-> ### Estado: v0.1.0
+> ### Estado: v0.2.0
 >
-> Las once iteraciones del plan v0 están en `main`: scaffolding del
-> proyecto (`bookwright init`), el modelo de dominio GOLEM, el indexer y
-> los comandos `bookwright graph`, los 10 comandos de autoría
-> materializados como Agent Skills, el sistema de validación de
-> continuidad, y la capa de fixtures + tests E2E + documentación de esta
-> release. La documentación de usuario completa vive en el
+> Dos hitos están en `main`. **v0.1.0** (el toolkit base, iteraciones
+> 1–11): scaffolding del proyecto (`bookwright init`), el modelo de
+> dominio GOLEM, el indexer y los comandos `bookwright graph`, las skills
+> de autoría materializadas como Agent Skills, y el sistema de validación
+> de continuidad. **v0.2.0 / M4** (investigación y verificación,
+> iteraciones 12–18): el modelo de procedencia `Source` / `Finding` /
+> `Anchor`, las skills `/bookwright-research` y `/bookwright-verify`, el
+> validador `factual_anchor` y la envoltura `--json` unificada. La
+> documentación de usuario completa vive en el
 > [sitio de documentación](docs/index.md).
 
 ## El loop del escritor
@@ -86,6 +89,15 @@ documentos a mano; las skills leen tu brief y te preguntan lo que falte):
 /bookwright-draft        ← redacta la prosa de una escena
 ```
 
+Para obra basada en hechos (p. ej. novela histórica), el loop opcional de
+investigación documenta fuentes, hallazgos y anclas, y contrasta la prosa
+contra ellas:
+
+```
+/bookwright-research <tema>   ← documenta hallazgos con procedencia completa
+/bookwright-verify            ← contrasta la prosa redactada con las anclas
+```
+
 Y construye/valida desde el CLI:
 
 ```bash
@@ -109,9 +121,9 @@ El recorrido completo está en
   constitución y grafo narrativo son Markdown, TOML o Turtle (RDF).
   Auditables por humanos, diffables en git, portables.
 - **Agnóstico de agente.** La capa de comandos se materializa como
-  [Agent Skills](https://agentskills.io) portables. v0 entrega dos
-  integraciones (`claude`, `generic`); variantes nativas de Copilot,
-  Gemini y Cursor están en el roadmap.
+  [Agent Skills](https://agentskills.io) portables. Bookwright entrega dos
+  integraciones (`claude`, `generic`); agentes como Codex, Cursor o Copilot
+  consumen la salida `generic` directamente, sin integración nativa dedicada.
 - **Batch, no conversacional.** Tú consolidas el input; el comando lo
   destila. El agente no es un co-escritor frase a frase.
 - **GOLEM por debajo.** El grafo narrativo usa la
@@ -119,11 +131,19 @@ El recorrido completo está en
   publicada (personajes, eventos, settings, relaciones, estructura
   narrativa, procedencia de inferencias) serializada en Turtle.
 
-## Fuera del scope de v0
+## Roadmap y fuera de scope
 
-No las pidas para v0: presets de género (v0.2), búsqueda vectorial
-(v0.3), integraciones adicionales (v0.4), sistema de extensiones (v0.5),
-export a EPUB/PDF (v1.0).
+Hecho: **v0.2 / M4** — investigación y verificación (modelo de procedencia,
+skills `research`/`verify`, validador `factual_anchor`). Planificado:
+**v0.3** — búsqueda vectorial (ChromaDB sobre rdflib, desacoplada); **v1.0** —
+export a EPUB / PDF / impresión vía pandoc.
+
+**Cancelado (decisión del owner), no lo pidas:** presets de género / paquetes
+de plantilla (la resolución es de 2 capas, overrides → core); el motor
+`Grafeo` / `GrafeoIndexer`; integraciones más allá de `claude` y `generic`;
+el sistema de extensiones. Agentes como Codex, Cursor o Copilot ya se soportan
+hoy vía la integración `generic` con `--integration-options="--skills-dir …"`,
+sin integración nativa dedicada.
 
 ## Documentos del proyecto
 
