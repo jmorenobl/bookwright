@@ -4,7 +4,8 @@ Source: review.md (9f7b04b)
 
 No CRITICAL or HIGH findings — nothing blocks merge.
 
-The two MEDIUM findings are recorded for accuracy and are optional to address before merge:
+The two MEDIUM findings were addressed in a follow-up session; R3 was withdrawn as a false positive.
 
-- [ ] R2 — Gate regex `\bT0[0-9]{2}\b` under-enforces FR-001 "T + 3 digits"; T100–T999 slip the gate (tests/meta/test_no_traceability_tags.py:18)
-- [ ] R1 — FR-008 "comment-only" claim contradicted by a necessary pinned-hash edit (tests/integrations/test_plugin_contract.py:44)
+- [X] R2 — Gate regex widened to `\bT[0-9]{3}\b` to match FR-001 "T + 3 digits" (tests/meta/test_no_traceability_tags.py:18)
+- [X] R1 — FR-008 "comment-only" pinned-hash cascade fixed (tests/integrations/test_plugin_contract.py:44)
+- [X] R3 — withdrawn: false positive; `\+US[0-9]+` is load-bearing, not redundant

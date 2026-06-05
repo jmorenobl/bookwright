@@ -12,12 +12,14 @@
 | CRITICAL | 0 |
 | HIGH | 0 |
 | MEDIUM | 2 |
-| LOW | 1 |
-| **Total** | 3 |
+| LOW | 0 (R3 withdrawn — false positive) |
+| **Total** | 2 |
 
 Coverage gate: **PASS** (0 modules below threshold, threshold = 80%; total 96.78%). Suite: 1046 passed, 1 skipped. `ruff check`, `ruff format --check`, `mypy --strict` (on new gate) all green. The no-regression gate was verified to bite (injected `# T013` probe → red, naming `tests/conftest.py:61: T013`, then reverted).
 
-This is a clean, well-executed maintenance iteration. The headline outcome (zero forbidden tags) holds, the gate works, durable refs were preserved. The three findings are an accuracy gap between the "comment-only" claim and one necessary non-comment edit, and a narrowing of the gate's pattern vs. the literal FR wording — none block merge, but R1 and R2 are worth recording before they mislead a future reader.
+This is a clean, well-executed maintenance iteration. The headline outcome (zero forbidden tags) holds, the gate works, durable refs were preserved. The two surviving findings are an accuracy gap between the "comment-only" claim and one necessary non-comment edit (R1), and a narrowing of the gate's pattern vs. the literal FR wording (R2) — neither blocks merge, but both are worth recording before they mislead a future reader.
+
+**Update (post-audit, R1/R2 fixed in a follow-up session; R3 withdrawn):** R2 has been corrected — the regex is now `\bT[0-9]{3}\b|\bUS-?[0-9]+\b|\+US[0-9]+`. R3 was withdrawn as a false positive (see §6).
 
 ## 2. Conventions Compliance Matrix
 
@@ -45,7 +47,7 @@ This is a clean, well-executed maintenance iteration. The headline outcome (zero
 |---|---|---|---|---|---|
 | R1 | A/D | MEDIUM | tests/integrations/test_plugin_contract.py:44 | FR-008 "comment-only" claim is contradicted by a necessary non-comment edit: the pinned sha256 of `integrations/base.py` was updated because the comment edit changed that file's content | Acknowledge the cascade in plan.md/spec.md (or exclude pinned hashes from the comment-only claim); behaviour is preserved so no code action needed |
 | R2 | A | MEDIUM | tests/meta/test_no_traceability_tags.py:18 | Gate regex `\bT0[0-9]{2}\b` under-enforces FR-001 ("T + exactly three digits") — task IDs `T100`–`T999` would regress undetected | Widen to `\bT[0-9]{3}\b` to match FR-001/SC-001, or reconcile FR-001 wording with the `T0xx` Assumption |
-| R3 | B/C | LOW | tests/meta/test_no_traceability_tags.py:18 | Third regex alternative `\+US[0-9]+` is redundant — `\bUS-?[0-9]+\b` already matches `+US12` (the `+` forms a word boundary before `US`) | Drop the third alternative for clarity (KISS); no behavioural change |
+| ~~R3~~ | B/C | ~~LOW~~ WITHDRAWN | tests/meta/test_no_traceability_tags.py:18 | **False positive.** Claimed `\+US[0-9]+` is redundant — it is not: it catches `+US<n>` followed by a word char (e.g. `+US3foo`), which the `\b`-terminated `\bUS-?[0-9]+\b` misses, and preserves the `+` in the reported token | No change — the alternative is load-bearing; verified empirically (see note below) |
 
 ## 4. Remediation Detail
 
@@ -74,3 +76,4 @@ No changed source module dropped below threshold; the cleanup edited only commen
 
 - Full-repo `mypy --strict` over `src` + `tests` was not re-run end-to-end in this audit (it is a CI gate and was claimed green in T023); `mypy --strict` was run on the only new file and passed. `ruff check` and `ruff format --check` were re-run on the full tree and passed.
 - R1's "behaviour-preserving" verdict rests on the test still passing against the new hash, which it does (1046 passed); the audit did not independently re-derive the sha256.
+- **R3 withdrawn — false positive.** The audit claimed `\+US[0-9]+` was redundant with `\bUS-?[0-9]+\b`. An empirical check (10 cases over both patterns) disproved it: for `x+US3y` the full regex matches `+US3` while the second alternative matches **nothing** (its trailing `\b` fails before the word char `y`), and for `+US12`/`(+US42)` the third alternative preserves the leading `+` in the reported token. Removing it would shrink the gate's coverage and degrade its failure messages — a behaviour change, not a simplification. The regex is correct as written.
