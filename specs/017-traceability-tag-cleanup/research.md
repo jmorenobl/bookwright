@@ -94,6 +94,9 @@ text extensions are included (two `.toml` fixtures carry tags today).
 Action key: **S** = strip-token, **L** = relabel, **R** = remove, **P** =
 neutral-prose. "Keep" lists durable refs that MUST survive byte-for-byte.
 
+**Row reconciliation**: 2 (src) + 2 (tests root/fixtures) + 15 + 11 + 4 + 3 + 9
++ 5 + 1 + 15 (the eight tests subdirs) = **67 lines**, matching the sweep above.
+
 ### src/ (2)
 
 | File:line | Forbidden | Action | Keep / result |
@@ -101,7 +104,14 @@ neutral-prose. "Keep" lists durable refs that MUST survive byte-for-byte.
 | `core/_research_block.py:1` | `US2` | S | keep `FR-011..FR-016`; drop `US2, ` |
 | `integrations/base.py:11` | `T013` | R | drop `(T013)`; prose "implemented once here; no v0 subclass overrides it" already carries the why |
 
-### tests/commands (11)
+### tests/ (top-level harness + fixtures) (2)
+
+| File:line | Forbidden | Action | Keep / result |
+|---|---|---|---|
+| `conftest.py:3` | `T004` | S | keep `D1/D2`; drop `T004, ` |
+| `fixtures/test_fixtures.py:1` | `US1` | S | keep `SC-001`; drop `US1, ` |
+
+### tests/commands (15)
 
 | File:line | Forbidden | Action | Keep / result |
 |---|---|---|---|
@@ -121,7 +131,7 @@ neutral-prose. "Keep" lists durable refs that MUST survive byte-for-byte.
 | `test_init_integrations.py:1` | `US3` | L | `"""--integration and --integration-options."""` |
 | `test_init_no_git.py:1` | `US4` | L | `"""--no-git and git-missing warning."""` |
 
-### tests/core (10)
+### tests/core (11)
 
 | File:line | Forbidden | Action | Keep / result |
 |---|---|---|---|
@@ -154,7 +164,7 @@ neutral-prose. "Keep" lists durable refs that MUST survive byte-for-byte.
 | `test_provenance_entities.py:122` | `US2` | L | `# --- Finding ---` |
 | `test_provenance_entities.py:170` | `US3` | L | `# --- Anchor ---` |
 
-### tests/integrations (8)
+### tests/integrations (9)
 
 | File:line | Forbidden | Action | Keep / result |
 |---|---|---|---|
@@ -184,7 +194,7 @@ neutral-prose. "Keep" lists durable refs that MUST survive byte-for-byte.
 |---|---|---|---|
 | `test_command_body.py:7` | `US1`,`US2` | R | keep "covers all 12 files uniformly"; drop `(US1 + US2) ` |
 
-### tests/validation (12)
+### tests/validation (15)
 
 | File:line | Forbidden | Action | Keep / result |
 |---|---|---|---|

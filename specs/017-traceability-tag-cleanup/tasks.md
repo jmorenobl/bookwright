@@ -85,12 +85,12 @@ Apply the action in the `Action` column of research.md per line; freeze every
   `FR-011..FR-016`) and `src/bookwright/integrations/base.py:11` (remove — drop
   `(T013)`, prose already carries the why). These are the only `src/` touches.
 - [ ] T005 [P] [US1] Edit `tests/commands/` hits per research.md
-  `### tests/commands` (8 files / 11 lines): `conftest.py`,
+  `### tests/commands` (9 files / 15 lines): `conftest.py`,
   `graph/test_research_build.py`, `init/test_init_research_scaffold.py`,
   `test_init_default.py`, `test_init_deprecated_flags.py`, `test_init_helpers.py`,
   `test_init_here.py`, `test_init_integrations.py`, `test_init_no_git.py`.
 - [ ] T006 [P] [US1] Edit `tests/core/` hits per research.md `### tests/core`
-  (10 lines): `fixtures/valid_full.toml`, `fixtures/valid_minimal.toml`,
+  (11 lines): `fixtures/valid_full.toml`, `fixtures/valid_minimal.toml`,
   `test_build.py`, `test_future_version.py` (lines 1, 43, 54), `test_load_invalid.py`,
   `test_load_valid.py`, `test_research_block.py`, `test_version_gate.py`,
   `test_write.py`. Preserve all `FR`/`SC`/`RB` refs listed in the Keep column.
@@ -101,7 +101,7 @@ Apply the action in the `Action` column of research.md per line; freeze every
   research.md `### tests/golem` (lines 70, 122, 170): relabel the three section
   markers to `# --- Source ---` / `# --- Finding ---` / `# --- Anchor ---`.
 - [ ] T009 [P] [US1] Edit `tests/integrations/` hits per research.md
-  `### tests/integrations` (8 files): `conftest.py:48` (neutral-prose),
+  `### tests/integrations` (9 files): `conftest.py:48` (neutral-prose),
   `test_materialize_idempotent.py`, `test_metadata.py`, `test_option_parser.py`,
   `test_plugin_contract.py` (lines 1, 41), `test_registry.py`,
   `test_research_skill.py`, `test_skill_capabilities.py`.
@@ -113,12 +113,17 @@ Apply the action in the `Action` column of research.md per line; freeze every
   research.md `### tests/resources`: remove `(US1 + US2) `, keep "covers all 12
   files uniformly".
 - [ ] T012 [P] [US1] Edit `tests/validation/` hits per research.md
-  `### tests/validation` (12 lines / many files): `conftest.py`, `test_base.py`,
+  `### tests/validation` (15 lines / many files): `conftest.py`, `test_base.py`,
   `test_character_presence.py`, `test_command.py` (lines 1, 149, 268 — also drop
   the "User Story 2/3" prose), `test_factual_anchor.py` (lines 1, 276, 349),
   `test_focalization.py`, `test_queries.py`, `test_registry.py`, `test_report.py`,
   `test_setting_continuity.py`, `test_temporal.py`. Keep all `FR`/`SC`/`D`/`R`
   refs in the Keep column.
+- [ ] T012b [P] [US1] Edit the two top-level `tests/` harness hits per
+  research.md `### tests/ (top-level harness + fixtures)`:
+  `tests/conftest.py:3` (strip-token — drop `T004, `, keep `D1/D2`) and
+  `tests/fixtures/test_fixtures.py:1` (strip-token — drop `US1, `, keep
+  `SC-001`). Disjoint from T004–T012's subtrees, so also `[P]`.
 - [ ] T013 [US1] Run the Phase-1 sweep again across `src/` + `tests/`; confirm
   **zero** matches (SC-001). If any survive, return to the owning edit task.
 
@@ -230,12 +235,12 @@ comments/docstrings and that every gate is green.
 
 ### Within User Story 1
 
-- T004–T012 all edit disjoint file subtrees → fully parallel `[P]`.
-- T013 (re-sweep) depends on T004–T012 completing.
+- T004–T012b all edit disjoint file subtrees → fully parallel `[P]`.
+- T013 (re-sweep) depends on T004–T012b completing.
 
 ### Parallel Opportunities
 
-- **T004–T012** (nine disjoint subtrees) can run in parallel — this is the bulk
+- **T004–T012b** (ten disjoint subtrees) can run in parallel — this is the bulk
   of the work and the main parallelism in the iteration.
 - US2 verification (Phase 4) and US3 gate authoring (Phase 5) can proceed in
   parallel once US1 (through T013) is done — they touch different things
@@ -256,7 +261,8 @@ Task: "T009 Edit tests/integrations/ hits per research.md ### tests/integrations
 Task: "T010 Edit tests/io/ hits per research.md ### tests/io"
 Task: "T011 Edit tests/resources/ hit per research.md ### tests/resources"
 Task: "T012 Edit tests/validation/ hits per research.md ### tests/validation"
-# Then T013 re-sweep once all nine return.
+Task: "T012b Edit tests/ top-level harness + fixtures hits per research.md"
+# Then T013 re-sweep once all ten return.
 ```
 
 ---
@@ -267,7 +273,7 @@ Task: "T012 Edit tests/validation/ hits per research.md ### tests/validation"
 
 1. Phase 1: Setup (T001–T002).
 2. Phase 2: Foundational comment-only guard (T003).
-3. Phase 3: US1 edits (T004–T012, parallel) → re-sweep T013.
+3. Phase 3: US1 edits (T004–T012b, parallel) → re-sweep T013.
 4. **STOP and VALIDATE**: the sweep returns zero (SC-001). The debt is cancelled
    — this alone is a shippable increment.
 

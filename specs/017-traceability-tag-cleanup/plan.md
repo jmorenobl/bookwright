@@ -110,11 +110,13 @@ src/bookwright/
 └── integrations/base.py           # 1 comment line edited (remove)
 
 tests/
+├── conftest.py      # shared E2E harness docstring (strip-token)
 ├── meta/
 │   └── test_no_traceability_tags.py   # NEW — the no-regression gate (FR-010)
 ├── commands/        # init/* + graph/* docstring headers + markers
 ├── core/            # manifest test docstrings + 2 .toml fixtures
 ├── e2e/             # research-workflow group markers
+├── fixtures/        # test_fixtures.py docstring (strip-token)
 ├── golem/           # provenance section markers
 ├── integrations/    # materialization test docstrings
 ├── io/              # research reader test markers

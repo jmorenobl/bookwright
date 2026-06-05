@@ -30,9 +30,9 @@ failure-message format) are low-impact implementation details for
 A maintainer searches the codebase for the forbidden planning tags and finds
 none. `T0xx` (a `T` followed by exactly three digits) and the user-story tags
 `US-x` / `USx` / `+USx` no longer appear anywhere under `src/` or `tests/`,
-excluding binaries and `__pycache__`. The historical debt — roughly 57
-occurrences across ~48 text files (46 `.py` + 2 `.toml` fixtures) inherited
-from iterations 1–14 — is gone.
+excluding binaries and `__pycache__`. The historical debt — roughly 73
+occurrences (67 lines) across 48 text files (46 `.py` + 2 `.toml` fixtures)
+inherited from iterations 1–14 — is gone.
 
 **Why this priority**: This is the headline outcome. Until the count reaches
 zero, the debt the iteration exists to cancel is not cancelled. It is the
@@ -217,8 +217,8 @@ gate fails with a message identifying the file and pattern.
 
 - **SC-001**: A recursive search for the two forbidden tag families over
   `src/` and `tests/` (excluding binaries and `__pycache__`) returns **0**
-  matches — down from the inherited ~57 occurrences across ~48 files (`.py`
-  plus two `.toml` fixtures).
+  matches — down from the inherited 73 occurrences (67 lines) across 48 files
+  (`.py` plus two `.toml` fixtures).
 - **SC-002**: 100% of removed tags that carried real traceability are
   reachable from the same code via a permitted durable reference (no
   navigational information is lost).
