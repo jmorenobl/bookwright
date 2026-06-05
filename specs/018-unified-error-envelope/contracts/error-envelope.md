@@ -24,6 +24,7 @@ Bookwright error after this iteration. Produced by exactly one method:
 
 This document is the authoritative registry; per-module contracts
 (`specs/002-manifest-model/contracts/manifest_api.md`,
+`specs/003-integration-architecture/contracts/integrations_api.md`,
 `specs/005-golem-domain-model/contracts/golem_api.md`,
 `specs/010-validation-system/contracts/cli-validate.md`, and the
 data-model § 6 error sections) defer to it for the envelope shape.
@@ -64,6 +65,42 @@ data-model § 6 error sections) defer to it for the envelope shape.
 > `manifest_validation` is the only error that gains a top-level `message` (its
 > existing summary string) — required by the canonical envelope.
 
+### Integrations hierarchy — `to_dict()` deleted, attributes → `details` (FR-005a)
+
+`_IntegrationError` previously owned a separate serializer (`to_dict()` →
+`{code, message, **attrs}`). It is migrated onto `BookwrightError`; the public
+attributes move under `details`. Codes are preserved verbatim.
+
+| `code` | Class | `details` keys | `integration use --json` | `init --json` |
+|---|---|---|---|---|
+| `unknown_integration` | `UnknownIntegrationError` | `value`, `valid` | **shape change** (attrs → `details`) | byte-identical |
+| `unknown_option` | `UnknownOptionError` | `integration`, `value`, `valid` | — | byte-identical |
+| `malformed_option` | `MalformedOptionError` | `rule`, `value` | — | byte-identical |
+| `duplicate_registration` | `DuplicateRegistrationError` | `value`, `existing`, `new` | — | — (registry-time) |
+| `invalid_option_declaration` | `InvalidOptionDeclarationError` | `rule`, `value` | — | byte-identical |
+| `invalid_integration` | `InvalidIntegrationError` | `rule`, `value` | — | — (registry-time) |
+| `skill_lint_failed` | `SkillLintError` | `skill`, `rule`, `detail` | **shape change** (attrs → `details`) | — |
+| `skill_materialization_failed` | `SkillMaterializationError` | `skill`, `rule`, `detail` | **shape change** (attrs → `details`) | — |
+
+### `init` bare error — now owns its body (FR-005b)
+
+| `code` | Class | `details` keys | Note |
+|---|---|---|---|
+| `invalid_project_name` | `commands.init.validate.InvalidProjectNameError` | `value`, `rule` | byte-identical; was a bare `Exception` whose body `init` hand-built |
+
+### Sanctioned command superset — `init` (FR-005c)
+
+`init`'s error envelope is the canonical body **plus** two command-level fields:
+
+```json
+{"status":"error","code":"…","message":"…","details":{…},"rolled_back":false,"bookwright_version":"0.2.0"}
+```
+
+This is the one writer that extends the body. It is sanctioned because `code`,
+`message`, and `details` still come from `BookwrightError` (the body is not
+redefined); `rolled_back`/`bookwright_version` are init's rollback-ledger
+reporting, not part of the shared envelope.
+
 ## Examples (normalized cases)
 
 `ManifestNotFoundError`:
@@ -86,9 +123,11 @@ data-model § 6 error sections) defer to it for the envelope shape.
 
 ## Invariants the contract enforces
 
-- Exactly one `to_json()` exists across the codebase (SC-001).
-- Every serialized exception subclasses `BookwrightError` (SC-002).
-- No legacy flat `{"error": …}` body remains (SC-003).
+- Exactly one envelope serializer exists across the codebase — `to_json()` on
+  `BookwrightError`; no error class defines `to_json()` **or `to_dict()`** (SC-001).
+- Every serialized exception subclasses `BookwrightError` (all eight origins) (SC-002).
+- No legacy flat `{"error": …}` body remains, and no error spreads its fields at
+  the envelope top level (SC-003).
 - `code`/`message`/exit codes unchanged vs `main` (SC-004).
 - A single edit to `BookwrightError.to_json()` changes the envelope for all
   errors at once (SC-006).

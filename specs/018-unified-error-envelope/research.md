@@ -9,8 +9,8 @@ clarification session; this document records the resulting engineering decisions
 `src/bookwright/errors.py` (no subpackage).
 
 **Rationale**: It must be importable by `core`, `golem`, `io`, `indexers`,
-`validation`, and `commands` while importing **none** of them (FR-010). The
-package root is the unique layer below all six. The base needs only stdlib
+`validation`, `integrations`, and `commands` while importing **none** of them
+(FR-010). The package root is the unique layer below all of them. The base needs only stdlib
 (`typing`, `json` is not even required — `to_json()` returns a `dict`), so it has
 zero intra-package dependencies and a cycle is structurally impossible.
 
@@ -129,11 +129,61 @@ exceptions and keep their existing serialization.
 **Rationale**: FR-012. They are `status:"ok"` envelopes or finding payloads, not
 the error envelope; conflating them would expand scope and break their shapes.
 
+## Decision 8 — Integrations is the seventh hierarchy (in scope)
+
+**Decision**: Migrate `integrations/errors.py` onto `BookwrightError`; delete
+`_IntegrationError.to_dict()`; move public attributes under `details`. Codes
+unchanged.
+
+**Rationale**: `to_dict()` is a hand-rolled envelope serializer reaching two
+`--json` boundaries (`commands/integration/use.py:60,63`,
+`commands/init/resolve.py:168,185`) — the exact R3 debt. Excluding it leaves a
+competing definition and renders one error in two shapes (`use` spreads the
+attributes flat at the top level; `init` nests them under `details`). FR-003
+("every exception serialized to a `--json` boundary") is unconditional.
+
+**Normalization map** (code verbatim; public attrs → `details`):
+
+| Class | `code` | `details` keys | `use` boundary | `init` boundary |
+|---|---|---|---|---|
+| `UnknownIntegrationError` | `unknown_integration` | `value, valid` | shape change | byte-identical |
+| `UnknownOptionError` | `unknown_option` | `integration, value, valid` | — | byte-identical |
+| `MalformedOptionError` | `malformed_option` | `rule, value` | — | byte-identical |
+| `DuplicateRegistrationError` | `duplicate_registration` | `value, existing, new` | — | — (registry-time, not serialized) |
+| `InvalidOptionDeclarationError` | `invalid_option_declaration` | `rule, value` | — | byte-identical |
+| `InvalidIntegrationError` | `invalid_integration` | `rule, value` | — | — (registry-time, not serialized) |
+| `SkillLintError` | `skill_lint_failed` | `skill, rule, detail` | shape change | — |
+| `SkillMaterializationError` | `skill_materialization_failed` | `skill, rule, detail` | shape change | — |
+
+`DuplicateRegistrationError` and `InvalidIntegrationError` are registry-time
+programming guards never serialized to a `--json` boundary, but they inherit the
+same base and shed `to_dict()` so the whole hierarchy stays uniform (one
+serializer, on the base).
+
+## Decision 9 — Command envelope supersets are sanctioned, not duplicates
+
+**Decision**: `init`'s `error_envelope` keeps `rolled_back` +
+`bookwright_version` but reads `code`/`message`/`details` from the base.
+`InvalidProjectNameError` joins the base (`code="invalid_project_name"`,
+`details={value, rule}`) so the `init` command stops hand-building its `details`.
+
+**Rationale**: The single-source-of-truth invariant is on the error *body*, not
+the command envelope. A writer that extends the body (init's rollback reporting)
+is legitimate **iff** it does not redefine `status/code/message/details`. This
+keeps SC-003 truthful (universal canonical *body*, with `init`'s superset called
+out explicitly) instead of silently contradicted.
+
 ## Safety net (existing tests, mostly unchanged)
 
 - **Updated** (flat → canonical assertions): `tests/core/test_json_shapes.py`
   (4 manifest error tests), `tests/golem/test_slug.py` (the `EmptySlugError`
   assertion at line 49).
+- **Updated** (integration `to_dict` → `to_json` body): `tests/integrations/test_errors_json.py`
+  (rewrite `{code,message,**attrs}` → `{status,code,message,details:{attrs}}`),
+  and the `to_dict` references in `tests/integrations/test_registry.py`,
+  `test_quickstart.py`, `test_plugin_contract.py`, `test_setup_materialize.py`,
+  `test_option_parser.py`; plus any **top-level attribute** assertion in
+  `tests/commands/integration/test_use.py` (the `code`/`status` assertions stay).
 - **Unchanged, must still pass** (byte-identical canonical output):
   `tests/indexers/test_query_errors.py`, `tests/validation/test_base.py`,
   `tests/validation/test_command.py`, and the `io` error tests. These are the

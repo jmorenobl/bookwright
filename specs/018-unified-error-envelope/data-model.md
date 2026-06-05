@@ -76,7 +76,17 @@ BookwrightError                       (src/bookwright/errors.py — the only to_
 │   ├── GraphLoadError                code="graph_load_failed"         details={path,reason}
 │   └── InvalidQueryError             code="invalid_query"             details={reason}
 ├── UnknownValidatorError             (validation/base.py — code="unknown_validator" details={names})
-└── _UsageError                       (commands/validate.py — per-instance self.code, see below)
+├── _UsageError                       (commands/validate.py — per-instance self.code, see below)
+├── _IntegrationError                 (integrations/errors.py — abstract, no code, no to_json/to_dict)
+│   ├── UnknownIntegrationError       code="unknown_integration"          details={value,valid}
+│   ├── UnknownOptionError            code="unknown_option"               details={integration,value,valid}
+│   ├── MalformedOptionError          code="malformed_option"             details={rule,value}
+│   ├── DuplicateRegistrationError    code="duplicate_registration"       details={value,existing,new}
+│   ├── InvalidOptionDeclarationError code="invalid_option_declaration"   details={rule,value}
+│   ├── InvalidIntegrationError       code="invalid_integration"          details={rule,value}
+│   ├── SkillLintError                code="skill_lint_failed"            details={skill,rule,detail}
+│   └── SkillMaterializationError     code="skill_materialization_failed" details={skill,rule,detail}
+└── InvalidProjectNameError           (commands/init/validate.py — code="invalid_project_name" details={value,rule})
 ```
 
 `_UsageError` is a single class whose `code` is set per instance to one of
@@ -100,13 +110,18 @@ a `except <PackageError>` site, then serialized once via `to_json()` at the
 
 ## Invariants
 
-- **INV-1**: No concrete error class defines `to_json()` — exactly one exists
-  (on `BookwrightError`). (SC-001)
+- **INV-1**: No concrete error class defines `to_json()` **or `to_dict()`** —
+  exactly one envelope serializer exists (on `BookwrightError`). (SC-001)
 - **INV-2**: Every JSON-serialized exception is a `BookwrightError` subclass.
   (SC-002)
 - **INV-3**: `code` strings, `message` strings, and command exit codes are
   identical to `main`. (SC-004)
 - **INV-4**: `src/bookwright/errors.py` imports nothing from
-  `core/golem/io/indexers/validation/commands`. (FR-010)
+  `core/golem/io/indexers/validation/integrations/commands`. (FR-010)
 - **INV-5**: No `except <PackageError>` / `except <ConcreteError>` site is
   edited. (SC-008)
+- **INV-6**: Command boundary writers source the error body (`status/code/
+  message/details`) from `BookwrightError`; the only envelope that extends the
+  body with top-level fields is `init`'s (`rolled_back`, `bookwright_version`),
+  explicitly sanctioned (Decision 9). No writer hand-reads error attributes or
+  calls a deleted `to_dict()`. (FR-005c, SC-003)
