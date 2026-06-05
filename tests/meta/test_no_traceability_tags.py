@@ -13,9 +13,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-# Single source of truth — identical to the sweep in spec/research/plan:
+# Single source of truth for the forbidden patterns (FR-001/FR-002):
 #   ``T`` + exactly 3 digits | ``US`` + optional ``-`` + digits | ``+US`` + digits.
-FORBIDDEN = re.compile(r"\bT0[0-9]{2}\b|\bUS-?[0-9]+\b|\+US[0-9]+")
+# ``\bT[0-9]{3}\b`` matches FR-001 literally (T000-T999), so a future ``tasks.md``
+# reaching ``T100``+ cannot leak a tag past the gate.
+FORBIDDEN = re.compile(r"\bT[0-9]{3}\b|\bUS-?[0-9]+\b|\+US[0-9]+")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCAN_ROOTS = ("src", "tests")

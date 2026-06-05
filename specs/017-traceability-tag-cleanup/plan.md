@@ -59,7 +59,12 @@ renumbered (FR-007, FR-012, SC-005).
 
 **Scale/Scope**: 67 lines / 48 files to edit + 1 new test file. No `src/`
 *logic* change (the only `src/` edits are two comment/docstring lines:
-`core/_research_block.py:1` and `integrations/base.py:11`).
+`core/_research_block.py:1` and `integrations/base.py:11`). One expected,
+behaviour-preserving exception to the comment-only mandate (FR-008): editing the
+comment in `integrations/base.py` changes that file's bytes, so the sha256 it
+is pinned to in `tests/integrations/test_plugin_contract.py` (`_PINNED_FILE_HASHES`)
+must be recomputed — the test still asserts the same integrity invariant against
+the new content.
 
 ## Constitution Check
 
