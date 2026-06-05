@@ -13,6 +13,8 @@
 ### Session 2026-06-05
 
 - Q: `core/errors.py` (Manifest\* errors → `{"error":"manifest_not_found",...}`) and `golem/errors.py` (`EmptySlugError` → `{"error":"golem_empty_slug",...}`) emit a **flat** `{"error": …}` shape, not the `{status, code, message, details}` envelope, and existing tests assert that flat shape. Migrating them to a shared canonical base is incompatible with the originally stated "byte-identical JSON / tests unchanged" constraint. How should the shared base treat these two divergent-shape hierarchies? → A: **Normalize everything to the single canonical envelope.** Maximize quality and minimize technical debt — no stopgaps. The two legacy flat-shape hierarchies are the oldest modules (002, 005), predating the envelope convention; they are the outliers and will be converted to the canonical `{status, code, message, details}` envelope. Every flat field maps losslessly (the former `"error"` value becomes `code`; remaining flat fields become `details`). Error **codes**, **messages**, and **exit codes** are preserved; the JSON **bodies** of the ~5 manifest/golem errors are reorganized into the envelope, and their asserting tests and contract docs are updated accordingly.
+- Q: `_UsageError` (`commands/validate.py`) is a single class that sets a different `code` per instance (`no_project`, `invalid_manifest`, `unknown_validator`, `empty_scope`), which conflicts with declaring `code` at the class level. How should the base reconcile a per-instance code? → A: **Instance `code` overrides the class default.** The base's serialization reads the effective `self.code`; the class-level `code` is a default that most subclasses set as a class attribute, but a subclass MAY set `self.code` in its constructor. `_UsageError` stays one class, migrated onto the base, setting `code` per instance — no splitting into per-code subclasses, no separate serialization.
+- Q: `ManifestError`, `IOError_`, `IndexerError`, and `GolemError` are per-package base exceptions, and `except ManifestError` is a catch target in four command modules. How should they relate to `BookwrightError`? → A: **Preserve them as intermediate classes.** Each package root keeps existing but now inherits `BookwrightError`, yielding a two-level hierarchy (`BookwrightError` → `<PackageError>` → concrete error). The roots stay abstract (no `code`, never serialized), so every existing `except <PackageError>` catch site keeps working unchanged — zero catch-site edits.
 
 ## Why this scope (decision record)
 
@@ -87,7 +89,7 @@ A consumer already relying on the canonical-envelope hierarchies (io, indexers, 
 ### Functional Requirements
 
 - **FR-001**: The system MUST provide a single shared base exception (`BookwrightError`) that defines the canonical error envelope and is the one place the envelope serialization lives.
-- **FR-002**: The base MUST declare `code` at the class level, carry an instance `message`, and support optional `details`, and MUST expose a single serialization method that builds `{"status":"error","code":…,"message":…}` and adds `"details"` only when details are present.
+- **FR-002**: The base MUST define the canonical error envelope: a `code` (a class-level attribute that a subclass MAY override per instance via `self.code`), an instance `message`, and optional `details`, exposed through a single serialization method that reads the effective `self.code`, builds `{"status":"error","code":…,"message":…}`, and adds `"details"` only when details are present.
 - **FR-003**: Every exception in the codebase that is serialized to JSON for a `--json` boundary MUST inherit from `BookwrightError` and MUST NOT reimplement the envelope serialization; each concrete class declares its `code` and populates `message`/`details`.
 - **FR-004**: The following hierarchies MUST be migrated onto the base, preserving their current canonical output **byte-for-byte**: `io/errors.py` (`ProjectNotFoundError`, `MissingDirectoryError`, `InvalidFrontmatterError`, `ResearchError`, `SlugCollisionError`), `indexers/errors.py` (`UnknownIndexerError`, `GraphNotBuiltError`, `GraphLoadError`, `InvalidQueryError`), `validation/base.py` (`UnknownValidatorError`), and the local `_UsageError` in `commands/validate.py`.
 - **FR-005**: The two legacy flat-shape hierarchies MUST be migrated onto the base and **normalized** to the canonical envelope: `core/errors.py` (`ManifestNotFoundError`, `ManifestSyntaxError`, `ManifestValidationError`, `ManifestOverwriteError`) and `golem/errors.py` (`EmptySlugError`).
@@ -100,6 +102,8 @@ A consumer already relying on the canonical-envelope hierarchies (io, indexers, 
 - **FR-012**: Success envelopes (`status:"ok"`, e.g. `io/report.py`, `validation/report.py`) and finding payloads (`Violation`, `ValidatorError`, `ManifestWarning`) MUST remain out of scope and keep their existing serialization unchanged.
 - **FR-013**: Tests that assert the former **flat** manifest/golem shapes MUST be updated to assert the canonical envelope; all other existing error-shape assertions MUST pass without modification.
 - **FR-014**: Contract documentation that describes the former flat shapes (e.g. `data-model § 6`, `specs/002-manifest-model/contracts/`) MUST be updated to reflect the unified envelope; documentation of the already-canonical shapes is unchanged.
+- **FR-015**: The four per-package base exceptions (`ManifestError`, `IOError_`, `IndexerError`, `GolemError`) MUST be preserved as intermediate abstract classes that inherit from `BookwrightError`, producing a two-level hierarchy (`BookwrightError` → `<PackageError>` → concrete error). They remain abstract (no `code`, never serialized), so every existing `except <PackageError>` catch site keeps working unchanged. No catch site may be modified.
+- **FR-016**: `_UsageError` (`commands/validate.py`) MUST remain a single class migrated onto `BookwrightError`, setting its `code` per instance via `self.code` in its constructor (no splitting into per-code subclasses, no separate serialization).
 
 ### Key Entities
 
@@ -118,6 +122,7 @@ A consumer already relying on the canonical-envelope hierarchies (io, indexers, 
 - **SC-005**: The four already-canonical hierarchies produce **byte-identical** JSON to `main`; the **only** edited test assertions are those covering the former flat manifest/golem shapes.
 - **SC-006**: A single edit to the base's serialization method changes the envelope for **all** errors simultaneously (demonstrable by a test exercising one representative error per hierarchy through the base).
 - **SC-007**: All four CI gates (`ruff check`, `ruff format --check`, `mypy --strict`, `pytest` at ≥ 80% coverage) pass, and no import cycle is introduced.
+- **SC-008**: **Zero** exception catch sites (`except <PackageError>` / `except <ConcreteError>`) require modification; the per-package base exceptions remain valid catch targets.
 
 ## Assumptions
 
