@@ -8,8 +8,12 @@ Both milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11) and `v0.2.0` (2026-06-05, the M4 research &
 verification system, iterations 12–18). All of it is on `main` with a real
 `src/bookwright/` package, ~200 Python files, the full test suite, docs, and CI
-gates green. The next planned work is **v0.3** — decoupled vector search
-(ChromaDB over rdflib); no iteration branch exists for it yet.
+gates green. The next planned work is **v0.3 / M5 — context orchestration**
+(design § 21): authored focus (`[focus]` + `bookwright focus`), deterministic
+derived state (`bookwright status` + `next_actions`), and skills that consume it.
+Its iteration plan (019–023) is in `bookwright-implementation-plan.md`; no
+iteration branch exists for it yet. Vector search (ChromaDB over rdflib) moved to
+v0.4.
 
 The canonical references:
 
@@ -116,8 +120,8 @@ model (012), the `bookwright-research` skill + `[research]` manifest block (013)
 the `factual_anchor` validator (014), the `bookwright-verify` LLM check (015),
 and the research E2E fixture/tests/docs (016) all merged, plus two maintenance
 iterations — traceability-tag cleanup (017) and the unified error envelope
-(018). The next planned work is v0.3: decoupled vector search (ChromaDB over
-rdflib).
+(018). The next planned work is v0.3 / M5: context orchestration (design § 21);
+vector search (ChromaDB over rdflib) moved to v0.4.
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
@@ -215,7 +219,10 @@ rejected (Constitution "Scope & Release Discipline").
   the `bookwright-research` skill (013) and the `factual_anchor` validator (014)
   are merged, and `bookwright-verify` (015) is in flight — this milestone is
   essentially done. Don't pull v0.3+ work below into it.
-- v0.3 — vector search (ChromaDB over rdflib, decoupled from Grafeo).
+- v0.3 / M5 — context orchestration (design § 21): `[focus]` block +
+  `bookwright focus`, `bookwright status` (deterministic derived state +
+  `next_actions`), skills consuming it. Iterations 019–023.
+- v0.4 — vector search (ChromaDB over rdflib, decoupled from Grafeo).
 - v1.0 — export to EPUB / PDF / print via pandoc.
 
 **Cancelled — never implement (owner decision):** preset / genre-package

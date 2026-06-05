@@ -47,7 +47,7 @@ El patrón operacional es **idéntico al de Spec Kit**; lo que cambia es el domi
 - **No genera la novela**. Asiste destilación, validación y refinamiento. El borrador final lo escribe el autor.
 - **No publica**. La exportación a EPUB/PDF/print queda fuera de scope de v0. Hay hooks para ello en el diseño pero no se implementa en v0.
 - **No es un preset de Spec Kit**. Comparte patrón y código heredado/inspirado, pero es una herramienta separada con identidad propia. La razón: el dominio diverge demasiado y la audiencia (escritores) no debe conocer Spec Kit.
-- **No usa Grafeo**. El motor de grafo es `rdflib`, de forma permanente. `GrafeoIndexer` queda descartado (ver § 15.5); la búsqueda vectorial de v0.3 se implementará desacoplada, sobre `rdflib` + un vector store (ChromaDB o equivalente).
+- **No usa Grafeo**. El motor de grafo es `rdflib`, de forma permanente. `GrafeoIndexer` queda descartado (ver § 15.5); la búsqueda vectorial de v0.4 se implementará desacoplada, sobre `rdflib` + un vector store (ChromaDB o equivalente).
 - **No genera assets multimedia**. Sin generación de imágenes, audio, ni interactivos.
 
 ---
@@ -242,6 +242,8 @@ Todos los comandos son sub-apps de Typer.
 | `bookwright graph build` | (Re)construye el grafo desde Turtle y la bible. | `bookwright graph build --force` |
 | `bookwright graph query SPARQL` | Ejecuta una query SPARQL sobre el grafo. | `bookwright graph query "SELECT ?c WHERE { ?c a golem:G1_Character }"` |
 | `bookwright validate` | Corre todos los validators. | `bookwright validate --scope manuscript/cap-01.md` |
+| `bookwright status` | Computa el estado derivado del proyecto y las acciones recomendadas (§ 21.4). | `bookwright status --json` |
+| `bookwright focus` | Lee/escribe el foco autoral del proyecto (§ 21.3). | `bookwright focus set --target "arco de Berlín"` |
 | `bookwright check` | Verifica el toolchain (Python, dependencias). | `bookwright check` |
 | `bookwright version` | Imprime versión del CLI y del schema GOLEM. | `bookwright version` |
 
@@ -494,7 +496,7 @@ bookwright/
 - **Comandos por archivo**: Spec Kit los concentra en un módulo de 2000+ líneas; eso envejece mal. Aquí cada comando es un archivo bajo `commands/`, registrado en `cli.py` via Typer sub-apps.
 - **`golem/modules/` espeja la modularización de GOLEM**: lectura cruzada paper ↔ código.
 - **`integrations/` plugin-based desde el día uno**: Spec Kit ha hecho ya el refactor de `AGENT_CONFIG` (diccionario monolítico) a `INTEGRATION_REGISTRY` con una jerarquía de clases base (`IntegrationBase`, `SkillsIntegration`, `MarkdownIntegration`) y un dataclass `IntegrationOption` para declarar opciones por plugin. Bookwright nace con la arquitectura nueva pero solo usa `SkillsIntegration` (el modelo Markdown-puro queda fuera del scope por la deprecación de commands en Claude Code; ver § 11). Cada integración es un subpaquete autocontenido en `src/bookwright/integrations/<key>/` con `__init__.py` exponiendo la clase de la integración y, opcionalmente, `references/` para archivos auxiliares que se materializan en los skills.
-- **Indexer Protocol**: aísla el motor de grafo detrás de una interfaz, de modo que añadir capacidades (p. ej. la búsqueda vectorial de v0.3) o cambiar de motor no obliga a tocar commands ni validators. En la práctica `rdflib` es el único motor; `GrafeoIndexer` queda descartado (§ 15.5).
+- **Indexer Protocol**: aísla el motor de grafo detrás de una interfaz, de modo que añadir capacidades (p. ej. la búsqueda vectorial de v0.4) o cambiar de motor no obliga a tocar commands ni validators. En la práctica `rdflib` es el único motor; `GrafeoIndexer` queda descartado (§ 15.5).
 - **Validator Protocol con registry**: cada chequeo es independiente, autodescubierto. El usuario puede añadir validators custom en `<proyecto>/.bookwright/validators/`.
 - **`resources/` es la clave**: contiene todo lo que el CLI distribuye. Accedido via `importlib.resources.files("bookwright.resources")`. Cero rutas hardcoded. Cero llamadas a la red en `init`.
 - **Templates dentro del wheel** (no GitHub Releases como Spec Kit). v0 tiene una sola integración principal, no se justifica la complejidad de release-based templates. Se migra a release-based si y cuando se justifique.
@@ -1105,13 +1107,14 @@ Implementación con `rdflib`:
 - `query`: usa SPARQLWrapper interno de rdflib.
 - Performance esperado: aceptable para grafos <10k triples (la mayoría de libros).
 
-### 12.3 Búsqueda vectorial (v0.3, sobre rdflib — sin Grafeo)
+### 12.3 Búsqueda vectorial (v0.4, sobre rdflib — sin Grafeo)
 
 `GrafeoIndexer` queda **descartado** (no se implementará; ver § 15.5): `rdflib`
 es el motor de grafo permanente y cubre los grafos de tamaño libro (<10k triples)
 sin problema.
 
-La **búsqueda vectorial sí se mantiene** como capacidad de v0.3, pero
+La **búsqueda vectorial sí se mantiene** como capacidad de v0.4 (desplazada desde
+v0.3, que ahora ocupa la orquestación de contexto de § 21), pero
 **desacoplada de Grafeo**: se implementa como una capa de recuperación semántica
 sobre el corpus (sobre todo `bible/research/` y el manuscrito), usando un vector
 store ligero (ChromaDB o equivalente, embebido y en fichero) en paralelo al grafo
@@ -1197,7 +1200,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Búsqueda vectorial (v0.3), opcional y desacoplada del grafo. Ver § 12.3 y § 20.12.
+# Búsqueda vectorial (v0.4), opcional y desacoplada del grafo. Ver § 12.3 y § 20.12.
 vectors = ["chromadb>=0.5"]
 
 [project.scripts]
@@ -1323,8 +1326,13 @@ dev = [
   Inference), skills `bookwright-research` y `bookwright-verify`, validator
   `factual_anchor`, vocabulario `sources.ttl`, `bible/research/`. El plan
   detallado de iteraciones (13–17) vive en `bookwright-implementation-plan.md`.
-- v0.3: **búsqueda vectorial** (ChromaDB o equivalente) sobre el grafo `rdflib`, para recuperación semántica del corpus de fuentes (`bible/research/`) y el manuscrito. Desacoplada de Grafeo (ver § 12.3 y el análisis de coste en § 20.12). Sinergia con M4: mejora la recuperación, pero M4 no la requiere.
-- v0.4: commands de autoría adicionales: `bookwright-export`, `bookwright-feedback`, `bookwright-polish`, `bookwright-revise`, `bookwright-query`, `bookwright-status`.
+- **M5 — Orquestación de contexto** (§ 21, propuesto como **v0.3.0**): el "hilo
+  conductor". Estado autoral (`[focus]` + `bookwright focus`), estado derivado
+  determinista (`bookwright status` + `next_actions`) y consumo por las skills
+  ("Próximos pasos"). El plan detallado de iteraciones (019–023) vive en
+  `bookwright-implementation-plan.md`.
+- v0.4: **búsqueda vectorial** (ChromaDB o equivalente) sobre el grafo `rdflib`, para recuperación semántica del corpus de fuentes (`bible/research/`) y el manuscrito. Desacoplada de Grafeo (ver § 12.3 y el análisis de coste en § 20.12). Sinergia con M4: mejora la recuperación, pero M4 no la requiere.
+- v0.5: commands de autoría adicionales: `bookwright-export`, `bookwright-feedback`, `bookwright-polish`, `bookwright-revise`, `bookwright-query`. (El antiguo `bookwright-status` de esta lista queda absorbido por el verbo de CLI determinista `bookwright status` de M5, § 21.5.)
 - v1.0: export a EPUB/PDF (`bookwright-export` con pandoc).
 
 > **Funcionalidades descartadas (no se implementarán).** Decisiones del
@@ -1332,7 +1340,7 @@ dev = [
 > - **Sistema de presets / genre-packages**: un resolver de templates por género.
 >   La resolución de templates es de **2 capas** (overrides → core, § 5.4).
 > - **`GrafeoIndexer` / motor Grafeo**: `rdflib` es el motor permanente y basta
->   para grafos de tamaño libro. La búsqueda vectorial de v0.3 **se conserva**,
+>   para grafos de tamaño libro. La búsqueda vectorial de v0.4 **se conserva**,
 >   pero implementada aparte (ChromaDB sobre rdflib), no vía Grafeo.
 > - **Multi-integración** (Copilot, Gemini, Cursor/Codex específicos) y el
 >   comando `bookwright integrate`: el target es Claude Code; `claude` y
@@ -1407,7 +1415,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 
 - El inventario de documentos canónicos: synopsis (corta+larga), themes con motif registry, locations con sensory anchors, glossary, research, subplots, pov-structure.
 - El comando `continuity` (post-draft) como complemento a `analyze` (pre-draft).
-- La idea de incluir RAG / búsqueda vectorial para recuperación semántica (futuro v0.3, desacoplada del motor de grafo; ver § 12.3 y § 20.12).
+- La idea de incluir RAG / búsqueda vectorial para recuperación semántica (futuro v0.4, desacoplada del motor de grafo; ver § 12.3 y § 20.12).
 - El patrón de export con pandoc (futuro v1.0).
 
 **Licencia del preset:** MIT. Permite reutilización de estructura de templates con atribución.
@@ -1443,7 +1451,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 ### 17.4 Otras referencias menores
 
 - **GOLEM upstream** (GOLEM-lab/golem-ontology): la ontología en sí. Apache-2.0. Bookwright congela una versión y la distribuye en `resources/schemas/`.
-- **Grafeo** (grafeo.dev): considerado para v0 como motor de grafo, descartado por madurez. Descartado también de forma permanente: `rdflib` es el motor único (ver § 15.5). La búsqueda vectorial de v0.3 no depende de él.
+- **Grafeo** (grafeo.dev): considerado para v0 como motor de grafo, descartado por madurez. Descartado también de forma permanente: `rdflib` es el motor único (ver § 15.5). La búsqueda vectorial de v0.4 no depende de él.
 
 ---
 
@@ -1491,7 +1499,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 - **DOLCE**: Descriptive Ontology for Linguistic and Cognitive Engineering. www.loa.istc.cnr.it/dolce/overview.html
 - **rdflib**: rdflib.readthedocs.io
 - **Typer**: typer.tiangolo.com
-- **ChromaDB**: trychroma.com (vector store embebido para la búsqueda vectorial de v0.3).
+- **ChromaDB**: trychroma.com (vector store embebido para la búsqueda vectorial, v0.4).
 
 ---
 
@@ -1720,16 +1728,16 @@ Además, `factual_anchor` se suma a la lista de validators activables en
   sistema funciona leyendo Markdown sin búsqueda vectorial; GOLEM sin ontología
   propia (3) —se usa Inference/`E13` y `E55`; solo Agent Skills (7) —research y
   verify son skills, no commands legacy; sin scripts shell (6).
-- **Sinergia con vector search (v0.3), sin dependerla.** La búsqueda vectorial
-  (ChromaDB sobre rdflib, v0.3 — **no** Grafeo) mejoraría la recuperación
+- **Sinergia con vector search (v0.4), sin dependerla.** La búsqueda vectorial
+  (ChromaDB sobre rdflib, v0.4 — **no** Grafeo) mejoraría la recuperación
   semántica sobre un corpus grande de fuentes, pero **no es prerrequisito**: la
   primera versión opera con el agente leyendo los Markdown de `bible/research/`
-  directamente. No se adelanta plomería de v0.3 (respeta la disciplina de scope).
-  El análisis de coste y viabilidad de los vectores está en § 20.12.
+  directamente. No se adelanta plomería de los vectores (respeta la disciplina de
+  scope). El análisis de coste y viabilidad de los vectores está en § 20.12.
 - **Versión: v0.2.0, milestone propio.** Por su peso, este sistema es el hito
-  **M4** (§ 15.5) y se libera como **v0.2.0**. El antiguo plan de un sistema de
-  presets/genre-packages queda descartado (no se implementará), así que vector
-  search ocupa v0.3 sin desplazamientos. El preset externo `fiction-book-writing`
+  **M4** (§ 15.5) y se libera como **v0.2.0**. La búsqueda vectorial es un hito
+  posterior (v0.4 tras la orquestación de contexto de § 21, que toma v0.3). El
+  preset externo `fiction-book-writing`
   (§ 17.2) sigue siendo solo inspiración de templates.
 
 ### 20.11 Resumen de artefactos nuevos
@@ -1745,11 +1753,12 @@ Además, `factual_anchor` se suma a la lista de validators activables en
 | `[research]` | `manifest.toml` | Configuración |
 | segmentos `source`/`finding`/`anchor` | § 4.5 | URIs |
 
-### 20.12 Búsqueda vectorial: viabilidad y coste (v0.3)
+### 20.12 Búsqueda vectorial: viabilidad y coste (v0.4)
 
 > Análisis pedido por el propietario al decidir mantener los vectores tras
 > descartar Grafeo. Conclusión adelantada: **es viable, barato y de bajo riesgo**
-> implementarlo desacoplado, sin Grafeo. No es trabajo de M4 (v0.2); es v0.3.
+> implementarlo desacoplado, sin Grafeo. No es trabajo de M4 (v0.2) ni de M5
+> (v0.3, § 21); es v0.4.
 
 **Qué problema resuelve.** El grafo `rdflib` responde preguntas *estructuradas*
 (¿qué anclas restringen a este personaje? ¿qué eventos hay antes de 1944?). No
@@ -1786,17 +1795,233 @@ vectorial se añade *al lado*, no *dentro* del motor de grafo.
 | Dimensión | Valoración |
 |---|---|
 | **Dependencias** | 1 extra opcional (`chromadb`). No toca el core ni el grafo. |
-| **Embeddings** | Decisión abierta: locales (`sentence-transformers`, sin coste por uso, ~80–400 MB de modelo) o API (coste mínimo por token, sin modelo local). Se elige en v0.3. |
+| **Embeddings** | Decisión abierta: locales (`sentence-transformers`, sin coste por uso, ~80–400 MB de modelo) o API (coste mínimo por token, sin modelo local). Se elige en v0.4. |
 | **Almacenamiento** | Índice en `cache/`, reconstruible, fuera de git. Irrelevante para el tamaño del repo. |
 | **Esfuerzo** | ~1 iteración (chunking + store + comando reindex + integración en 2 skills). Contenido, sin tocar M0–M4. |
 | **Riesgo de scope** | Bajo: aislado tras el Protocol y el extra opcional; si se abandona, se borra sin tocar el grafo ni los commands. |
 | **Determinismo** | Los vectores son *retrieval*, no validación. No afectan a `factual_anchor` ni a los validators deterministas; solo mejoran qué lee el LLM. |
 
-**Recomendación.** Mantener los vectores como **v0.3**, después de M4. M4 los
+**Recomendación.** Mantener los vectores como **v0.4**, después de M4 y M5. M4 los
 **aprovecha si están** pero no los necesita: la primera versión de investigación
 opera con el agente leyendo `bible/research/` directamente, y los vectores se
 enchufan después como mejora de recuperación cuando el corpus lo justifique. Así
 no se adelanta plomería (disciplina de scope) y el valor llega incremental.
+
+## 21. Extensión de diseño: Orquestación de contexto (v0.3)
+
+> **Nota de procedencia.** Como § 20, esta sección se añade *después* del cuerpo
+> original (§§ 1–19) y de la extensión de investigación (§ 20). Se ratifica como
+> **extensión, no revisión**: no reabre ninguna decisión de § 16. Las ediciones
+> aguas arriba son aditivas: dos comandos nuevos en § 5.1, un bloque `[focus]` en
+> § 8, y un hito **M5** en § 15.5 que **toma el hueco v0.3.0** y desplaza la
+> búsqueda vectorial a v0.4 (export sigue en v1.0). Decisión de roadmap visible y
+> reversible: si se prefiere conservar vectores en v0.3, solo se renumera el
+> release; el diseño no cambia.
+
+### 21.1 El problema: falta el hilo conductor
+
+Spec Kit "sabe qué planificar" cuando ejecutas `/speckit-plan` porque tiene una
+**máquina de estados con un puntero al estado actual**: el branch `NNN-name` más
+el directorio `specs/NNN/` responden a *"¿dónde estoy y qué he decidido?"*, y
+cada comando lee los artefactos previos y escribe el siguiente. La intención se
+declara **una vez** (`/speckit-specify`) y queda persistida.
+
+Bookwright no tenía ese hilo. Sus skills (los 10 de § 10.4, más `bookwright-research`
+y `bookwright-verify` de § 20) son herramientas *à la carte*: leen el corpus en
+texto plano, pero **no hay puntero de foco** ("qué trabajo ahora") ni un artefacto
+que cada skill consulte para orientarse al arrancar una sesión nueva. Síntoma
+observado en uso real: `bookwright-research`, sin contexto de sesión, no podía
+inferir qué investigar y **preguntaba el tema en blanco** —algo que en Spec Kit
+no pasa porque el `spec.md` ya está ahí.
+
+Y escribir un libro **no es lineal**: el autor salta entre biblia, redacción,
+investigación, validación y verificación (el flujo de § 3.2 es un ciclo, no una
+tubería). Eso hace el hilo conductor *más* necesario, no menos: como no hay una
+secuencia fija "después de X viene Y", el "qué hacer ahora" hay que **computarlo
+desde el estado**, no cablearlo. Y lo notable es que **ese estado ya existe
+estructuralmente** en el grafo: los Hallazgos abiertos (`bw:open`) y las Anclas
+sin fuente fiable (§ 20.3) **son** la cola de investigación pendiente; nadie la
+consumía.
+
+### 21.2 Tres capas: autoral, derivado, juicio
+
+El sistema separa a propósito tres clases de estado que antes se confundían:
+
+```
+CLI  bookwright status   →  hechos derivados + acción sugerida   [DETERMINISTA, testeable]
+Skill (el LLM lo lee)    →  prioriza, redacta, investiga         [NO determinista, fuera del CLI]
+```
+
+1. **Autoral — el foco/intención.** Pequeño, lo escribe el autor, vive en texto
+   plano canónico (bloque `[focus]` del `manifest.toml`, § 21.3). No se computa.
+2. **Derivado — el "qué falta / qué sigue".** **Computado**, no escrito a mano:
+   una función pura SPARQL sobre `graph.ttl` (§ 21.4), tan determinista como
+   `bookwright validate` —que ya es estado derivado. Encima, una tabla de reglas
+   estática produce las acciones recomendadas (§ 21.5).
+3. **Juicio — la skill (LLM).** Priorizar, redactar con matiz, hacer la
+   investigación. Lo único no determinista, y por eso vive *por encima* de la
+   frontera del CLI.
+
+**Principio rector:** *El estado se computa, nunca se inventa; el juicio vive en
+las skills, no en el CLI. La verdad sigue en texto plano; `status.json` es una
+proyección efímera.*
+
+**Alternativa descartada (decisión clave del hito).** La tentación natural es una
+**lista de tareas escrita a mano** (un JSON de TODOs en `.bookwright/`) que las
+skills cargan y actualizan. Se rechaza por dos razones: (a) sería intención
+autoral en formato opaco fuera del corpus canónico —viola el axioma 4 (texto
+plano fuente de verdad)—; y (b) una lista mantenida a mano **se desincroniza** del
+texto. Además, escribir un libro no se descompone en un DAG de tareas hechas/
+no-hechas como el software: lo durable no son "tareas" sino *estado sin resolver*.
+Por eso la cola de trabajo es **derivada** (una vista del grafo, siempre correcta
+porque se recalcula), y lo único autoral es el puntero de foco: pequeño y en TOML.
+
+### 21.3 Estado autoral: el bloque `[focus]`
+
+Se añade un bloque opcional al `manifest.toml` (§ 8), modelado como los demás
+(un `FocusBlock` Pydantic con `default_factory`, análogo a `ResearchBlock`):
+
+```toml
+[focus]
+target = "arco de Berlín"            # qué se trabaja ahora (texto libre)
+notes = "reconciliar la timeline tras el cap. 5"  # hilos/decisiones pendientes
+updated_at = "2026-06-05"            # ISO 8601, lo fija el CLI al escribir
+```
+
+Tres comandos nuevos (§ 5.1) lo gobiernan: `bookwright focus show` (legible o
+`--json`), `bookwright focus set --target … [--notes …]` (crea/actualiza
+preservando comentarios vía tomlkit, fija `updated_at`) y `bookwright focus clear`.
+El bloque es enteramente opcional: su ausencia no afecta a ningún otro comando.
+Es texto plano, versionable y superviviente a la desaparición del toolkit
+(axioma 4).
+
+Es la **bitácora mínima**: foco actual + notas. Se descarta para v0.3 un
+historial *append-only* / journal versionado: reconstruir el hilo conductor no
+exige historia, solo el estado presente; lo demás sería over-engineering.
+
+### 21.4 Estado derivado: `bookwright status`
+
+`bookwright status` computa el estado del proyecto como una **función pura SPARQL**
+sobre `graph.ttl`. No añade ninguna clase ni propiedad: solo **consulta** el
+esquema congelado (axioma 3, Principio X). Reconstruye el grafo si está obsoleto,
+igual que `bookwright validate` (resolviendo la obsolescencia de la caché como ya
+se hace con `graph.ttl`). Computa estos **hechos**:
+
+- **Foco y fase**: eco del bloque `[focus]` y de `book.status`.
+- **Preguntas de investigación abiertas**: los Hallazgos con `bw:open true`
+  (§ 20.3) —la cola "bottom-up" de investigación.
+- **Anclas sin fuente suficiente** o con target irresoluble: reutiliza la lógica
+  del validator `factual_anchor` (§ 20.6), sin duplicarla.
+- **Hallazgos/anclas por debajo de `research.min_reliability_for_anchor`** (§ 20.9).
+- **Resumen de validación**: conteos por severidad, **reutilizando** el runner
+  `run_validators` (`src/bookwright/validation/runner.py`), que ya devuelve un
+  orden total byte-idéntico (SC-003).
+
+Las consultas usan los predicados reales de `sources.ttl` (§ 20.8). Por ejemplo:
+
+```sparql
+# Cola "bottom-up": preguntas de investigación abiertas
+SELECT ?finding WHERE { ?finding bw:open true }
+
+# Anclas que constriñen una entidad pero carecen de fuente de fiabilidad alta
+SELECT ?anchor ?entity WHERE {
+  ?anchor bw:promotes ?finding ; bw:constrains ?entity .
+  FILTER NOT EXISTS { ?finding bw:supportedBy ?s . ?s bw:reliability rel:alta }
+}
+```
+
+El reporte se cachea en `.bookwright/cache/status.json` (gitignored), regenerado
+en cada ejecución. La caché es un **artefacto derivado, reconstruible, nunca
+fuente de verdad** —igual que `graph.ttl` y que el índice vectorial de v0.4
+(§ 12.3); coherente con el axioma 4.
+
+**Determinismo y testabilidad.** Mismo corpus → mismos hechos byte a byte, sin
+juicio ni red. Es la razón por la que esto vive en el CLI y no en la skill: la
+parte computada es unit-testeable (Principio VIII); el juicio queda fuera del gate.
+
+### 21.5 `next_actions`: la tabla de reglas hecho→acción
+
+Sobre los hechos, una **tabla de reglas estática** mapea cada predicado de estado
+a una acción recomendada: skill a invocar + plantilla de prompt + razón/prioridad.
+
+| Predicado de estado | Acción recomendada | Prompt (plantilla) |
+|---|---|---|
+| Hay N preguntas abiertas / anclas sin resolver | `bookwright-research` | "Investiga estas N preguntas abiertas: …" |
+| Hay anclas/hallazgos de fiabilidad insuficiente | `bookwright-research` | "Refuerza la procedencia de: …" |
+| Hay borrador y anclas sin verificar | `bookwright-verify` | "Verifica el manuscrito contra estas anclas: …" |
+| Hay violaciones de continuidad | revisar la biblia / `bookwright-continuity` | "Resuelve estas inconsistencias: …" |
+| No hay foco definido | `bookwright focus set` | "Define el foco actual del proyecto." |
+
+Se implementa como una **función pura** `state → list[Action]` en su propio
+módulo, con la tabla estática: **unit-testeable sin grafo**. El orden de salida es
+estable (prioridad, luego clave) para que el JSON sea byte-idéntico. El juicio
+—priorizar entre acciones, redactar con matiz, ejecutar la investigación— sigue
+en la skill, no en la tabla.
+
+Esto **absorbe y eleva** la idea vaga de un skill de autoría `bookwright-status`
+que figuraba en el roadmap v0.4 (§ 15.5): aquí no es un skill LLM, sino un **verbo
+de CLI determinista**, que es lo que un "hilo conductor" necesita ser.
+
+### 21.6 El contrato JSON
+
+`bookwright status` respeta el patrón de § 5.3 (Principio IX): un único documento
+JSON de éxito en una línea compacta a stdout, prosa a stderr, errores vía
+`BookwrightError` (§ errores, iteración 018). Forma del sobre:
+
+```json
+{"status":"ok",
+ "focus":{"target":"arco de Berlín","updated_at":"2026-06-05"},
+ "state":{"phase":"drafting","open_findings":3,"anchors_unsourced":1,"violations":{"error":0,"warning":2}},
+ "next_actions":[{"skill":"bookwright-research","prompt":"Investiga estas 3 preguntas abiertas: …","reason":"3 hallazgos abiertos"}]}
+```
+
+### 21.7 El bucle cerrado: las skills consumen el estado
+
+El hilo solo funciona si las skills lo usan. Cada `SKILL.md` de la suite gana dos
+ganchos:
+
+- **Al iniciar**: consulta `bookwright status` para orientarse (foco actual + qué
+  falta). En `claude`, vía inyección de contexto dinámico `!`bookwright status --json``
+  (§ 11.5); en `generic`, como paso explícito a ejecutar (estándar puro).
+- **Al terminar**: una sección **"Próximos pasos"** que muestra las `next_actions`
+  relevantes con sus prompts listos para pegar.
+
+El caso que motivó el hito: **`bookwright-research` en modo bottom-up**. Sin tema
+explícito, consulta `status`, recupera los Hallazgos abiertos y las anclas sin
+resolver, y los ofrece como cola de investigación —en vez de preguntar en blanco.
+Con tema explícito, opera top-down como hasta ahora (§ 20.4). Donde tenga sentido
+tras una transición de fase (p. ej. cerrar la biblia), una skill puede actualizar
+el foco con `bookwright focus set`. Todo es **inerte** si `status` no aporta nada:
+un proyecto sin `[focus]` ni `bible/research/` funciona exactamente igual que hoy.
+
+### 21.8 Encaje con los axiomas (§ 16) y disciplina de scope
+
+- **No reabre ningún axioma.** Texto plano (4): `focus` en TOML, `status.json` es
+  caché; GOLEM sin ontología propia (3) y Principio X: `status` **solo consulta**
+  SPARQL, cero clases nuevas; rdflib (2); solo Agent Skills (7): el bucle se cablea
+  en los `SKILL.md`, no en commands legacy; **sin scripts shell** (6): `status` y
+  `focus` son subcomandos Typer. *Contraste con Spec Kit:* sus scripts bash emiten
+  JSON de punteros/paths; aquí el equivalente es un **verbo de CLI de primera
+  clase**, idiomático Python, que las skills invocan.
+- **No requiere enmienda constitucional**: ni cambio de stack ni principio nuevo;
+  todo encaja en los principios I, VI, VIII, IX y X vigentes.
+- **Fuera de scope (no adelantar plomería).** Historial/journal append-only;
+  cualquier juicio LLM dentro del CLI; clases de ontología; mutar el grafo; y la
+  **búsqueda vectorial (v0.4)**: `status` no la requiere ni la adelanta.
+- **Versión: v0.3.0, hito M5.** Por su peso es milestone propio. La búsqueda
+  vectorial pasa a **v0.4** y el export sigue en **v1.0** (§ 15.5).
+
+### 21.9 Resumen de artefactos nuevos
+
+| Artefacto | Dónde | Tipo |
+|---|---|---|
+| `bookwright status` | `src/bookwright/commands/status.py` | Estado derivado (CLI, determinista) |
+| `bookwright focus` (`show`/`set`/`clear`) | `src/bookwright/commands/focus.py` | Estado autoral (CLI) |
+| `[focus]` + `FocusBlock` | `manifest.toml` + `core/_focus_block.py` | Configuración autoral |
+| Tabla de reglas `next_actions` | `commands/status*` (función pura) | Recomendación (determinista) |
+| Consultas SPARQL de agregación | `validation/` o `status/queries.py` | Derivación de estado |
+| `.bookwright/cache/status.json` | proyecto (gitignored) | Caché derivada |
+| Sección "Próximos pasos" | cada `SKILL.md` | Consumo del estado (LLM) |
 
 ---
 
