@@ -1,0 +1,128 @@
+# Feature Specification: Unified Error Envelope (shared `BookwrightError` base)
+
+**Feature Branch**: `018-unified-error-envelope`
+
+**Created**: 2026-06-05
+
+**Status**: Draft
+
+**Input**: User description: "Bookwright has several independent exception hierarchies (core, golem, io, indexers, validation, and a local error class in commands/validate.py) that each reimplement the same `to_json()` producing the JSON-over-stdout error envelope (Principle IX). The duplication forces replicating any change to the error contract in N places. We need a shared error base that centralizes the envelope shape. Reference: finding R3 of specs/006-graph-indexer/review.md and data-model § 6."
+
+## Clarifications
+
+### Session 2026-06-05
+
+- Q: `core/errors.py` (Manifest\* errors → `{"error":"manifest_not_found",...}`) and `golem/errors.py` (`EmptySlugError` → `{"error":"golem_empty_slug",...}`) emit a **flat** `{"error": …}` shape, not the `{status, code, message, details}` envelope, and existing tests assert that flat shape. Migrating them to a shared canonical base is incompatible with the originally stated "byte-identical JSON / tests unchanged" constraint. How should the shared base treat these two divergent-shape hierarchies? → A: **Normalize everything to the single canonical envelope.** Maximize quality and minimize technical debt — no stopgaps. The two legacy flat-shape hierarchies are the oldest modules (002, 005), predating the envelope convention; they are the outliers and will be converted to the canonical `{status, code, message, details}` envelope. Every flat field maps losslessly (the former `"error"` value becomes `code`; remaining flat fields become `details`). Error **codes**, **messages**, and **exit codes** are preserved; the JSON **bodies** of the ~5 manifest/golem errors are reorganized into the envelope, and their asserting tests and contract docs are updated accordingly.
+
+## Why this scope (decision record)
+
+The defect (review finding R3) is that the JSON-over-stdout error envelope is hand-rolled in six places, so any change to the contract must be replicated N times. The goal is a **single source of truth** for the envelope: the contract should be defined in exactly one place and changeable in exactly one place, ever.
+
+Two partial resolutions were rejected because they leave residual technical debt:
+
+- **"Leave the flat-shape hierarchies out of scope"** would consolidate only the four hierarchies that already emit the canonical envelope, leaving two competing error contracts in the codebase permanently — the real debt R3 names would persist.
+- **"Inherit the base but override `to_json` in the flat-shape classes"** re-introduces per-class `to_json` methods (the very thing being removed) and means the base is *not* the single source of truth — an envelope change would still have to touch the overrides.
+
+Only full normalization to one envelope achieves zero residual debt and a genuine single point of change. The flat shapes map losslessly to the envelope, so normalization is lossless in meaning (codes, messages, and exit codes are all preserved). This follows the project precedent of fixing a defective requirement with the best real design rather than faking preservation: the original "migrate these *and* keep byte-identical JSON" requirement is internally impossible, so the requirement is corrected here to "migrate these to the one envelope, preserving codes/messages/exit codes and updating the now-obsolete shape assertions."
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - One place to change the error envelope (Priority: P1)
+
+A maintainer needs to change the error envelope (for example, add or rename a top-level key, or alter how `details` is attached). Today that means editing `to_json()` in six modules and hoping none was missed. After this change, the envelope shape is defined once on a shared base class, every serializable error inherits it, and no concrete error class reimplements the serialization.
+
+**Why this priority**: This is the entire purpose of the feature (R3). Without the single definition, every other benefit (uniformity, lower change cost) does not exist. It is the MVP: even if nothing else were done, a single envelope definition that all errors inherit delivers the value.
+
+**Independent Test**: Pick one representative error from every former hierarchy (core/manifest, golem, io, indexers, validation, commands/validate), construct each, and confirm its serialized JSON is produced by the shared base's single serialization method — verifiable by the absence of any per-class serialization override and by each error producing a well-formed canonical envelope.
+
+**Acceptance Scenarios**:
+
+1. **Given** the shared error base, **When** a maintainer changes the envelope's serialization in the one base method, **Then** every serializable error across all former hierarchies reflects the change with no other edits.
+2. **Given** any concrete serializable error class, **When** its source is inspected, **Then** it declares its `code` (and populates `message`/`details`) but does **not** reimplement the envelope serialization.
+
+---
+
+### User Story 2 - Uniform error envelope for agent consumers (Priority: P2)
+
+An agent (or any `--json` consumer) parsing Bookwright command output gets the **same** error envelope shape regardless of which subsystem failed. Errors that previously emitted the flat `{"error": …, <flat fields>}` shape (manifest and golem errors) now emit the canonical `{status, code, message, details}` envelope, matching every other command.
+
+**Why this priority**: Uniformity is the observable payoff of the consolidation for downstream consumers and removes a long-standing inconsistency between the oldest modules and the rest of the CLI. It depends on P1 (the shared base) being in place.
+
+**Independent Test**: Trigger an error from a command that previously emitted the flat shape (e.g., a missing/invalid manifest, or an empty-slug condition) under `--json`, and assert the output is a single canonical `{status:"error", code, message, details?}` document whose `code` equals the former flat `"error"` value.
+
+**Acceptance Scenarios**:
+
+1. **Given** a project condition that raises a manifest error, **When** the relevant command runs with `--json`, **Then** stdout is exactly one canonical envelope with `status:"error"`, `code` equal to the former flat error name (e.g. `manifest_not_found`), and the former flat fields carried under `details`.
+2. **Given** a name that slugifies to empty, **When** the failure is serialized, **Then** it emits the canonical envelope with `code:"golem_empty_slug"` and `details:{"name": …}`.
+3. **Given** any serializable error with no extra detail fields, **When** it is serialized, **Then** the `details` key is omitted entirely (not present as `null` or `{}`).
+
+---
+
+### User Story 3 - No regression for already-canonical errors, codes, or exit codes (Priority: P3)
+
+A consumer already relying on the canonical-envelope hierarchies (io, indexers, validation, commands/validate) sees **no change at all**: their JSON is byte-identical. Across every hierarchy, error `code` values, error messages, and command exit codes are unchanged.
+
+**Why this priority**: This is the guardrail that keeps the refactor safe. It bounds the blast radius: the only observable change in the whole feature is the reorganization of the ~5 manifest/golem JSON bodies; everything else is preserved.
+
+**Independent Test**: Run the existing error-shape tests for the four already-canonical hierarchies unchanged and confirm they pass; confirm every error's `code` string and every command's exit code are identical to `main` before the change.
+
+**Acceptance Scenarios**:
+
+1. **Given** an error from io/indexers/validation/commands.validate, **When** it is serialized, **Then** the JSON is byte-identical to the pre-change output (same keys, same `details` shape).
+2. **Given** any command that fails, **When** it exits, **Then** its exit code is identical to the pre-change behavior.
+3. **Given** the existing test suite, **When** it runs, **Then** the only assertions that needed editing are those asserting the former **flat** manifest/golem shapes; all other error-shape assertions pass unchanged.
+
+---
+
+### Edge Cases
+
+- **Empty vs. populated `details`**: the canonical envelope omits `details` when there are no detail fields and includes it only when populated — this behavior must be identical for every error, including the newly normalized ones.
+- **`ManifestValidationError`**: its current flat output is `{"error":"manifest_validation","failures":[…]}` with **no** top-level `message`. Normalization places `failures` under `details` and includes the canonical top-level `message` (the existing summary string). This is the one case where a top-level `message` newly appears; it is an intended part of the canonical envelope and the corresponding test is updated.
+- **Layering / import cycles**: the base module must be importable by every layer (core, golem, io, indexers, validation, commands) without importing any of them back — no new import cycle may be introduced.
+- **Non-serialized exceptions**: internal/base exception classes that never reach a `--json` boundary (e.g. abstract bases like the per-package root exceptions) need a `code` only if they are themselves serialized; the base must not force a meaningless `code` onto purely-structural parents.
+- **Out-of-scope payloads stay put**: success envelopes (`status:"ok"`) and finding payloads (`Violation`, `ValidatorError`, `ManifestWarning`) keep their own serialization and are not routed through the error base.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: The system MUST provide a single shared base exception (`BookwrightError`) that defines the canonical error envelope and is the one place the envelope serialization lives.
+- **FR-002**: The base MUST declare `code` at the class level, carry an instance `message`, and support optional `details`, and MUST expose a single serialization method that builds `{"status":"error","code":…,"message":…}` and adds `"details"` only when details are present.
+- **FR-003**: Every exception in the codebase that is serialized to JSON for a `--json` boundary MUST inherit from `BookwrightError` and MUST NOT reimplement the envelope serialization; each concrete class declares its `code` and populates `message`/`details`.
+- **FR-004**: The following hierarchies MUST be migrated onto the base, preserving their current canonical output **byte-for-byte**: `io/errors.py` (`ProjectNotFoundError`, `MissingDirectoryError`, `InvalidFrontmatterError`, `ResearchError`, `SlugCollisionError`), `indexers/errors.py` (`UnknownIndexerError`, `GraphNotBuiltError`, `GraphLoadError`, `InvalidQueryError`), `validation/base.py` (`UnknownValidatorError`), and the local `_UsageError` in `commands/validate.py`.
+- **FR-005**: The two legacy flat-shape hierarchies MUST be migrated onto the base and **normalized** to the canonical envelope: `core/errors.py` (`ManifestNotFoundError`, `ManifestSyntaxError`, `ManifestValidationError`, `ManifestOverwriteError`) and `golem/errors.py` (`EmptySlugError`).
+- **FR-006**: Normalization MUST be lossless in meaning: each former flat `"error"` value becomes the error's `code` (same string), the human `message` is preserved, and every remaining flat field is carried under `details` (e.g. `path`, `field`/`line`/`column`, `failures`, `name`).
+- **FR-007**: Error `code` values MUST NOT change for any error in any hierarchy (the former flat `"error"` strings are reused verbatim as `code`).
+- **FR-008**: Error human-readable `message` strings MUST NOT change for any error.
+- **FR-009**: Per-command exit codes MUST NOT change for any command or failure mode.
+- **FR-010**: The base module MUST NOT import from `core`, `golem`, `io`, `indexers`, `validation`, or `commands` (dependencies flow only toward the base); no new import cycle may be introduced.
+- **FR-011**: The system MUST NOT introduce any new error type, and MUST NOT alter the JSON-over-stdout contract beyond reorganizing the two legacy flat shapes into the canonical envelope (Principle IX preserved).
+- **FR-012**: Success envelopes (`status:"ok"`, e.g. `io/report.py`, `validation/report.py`) and finding payloads (`Violation`, `ValidatorError`, `ManifestWarning`) MUST remain out of scope and keep their existing serialization unchanged.
+- **FR-013**: Tests that assert the former **flat** manifest/golem shapes MUST be updated to assert the canonical envelope; all other existing error-shape assertions MUST pass without modification.
+- **FR-014**: Contract documentation that describes the former flat shapes (e.g. `data-model § 6`, `specs/002-manifest-model/contracts/`) MUST be updated to reflect the unified envelope; documentation of the already-canonical shapes is unchanged.
+
+### Key Entities
+
+- **`BookwrightError`**: the shared base exception. Attributes: class-level `code` (the stable machine-readable error identifier), instance `message` (human-readable), optional `details` (a mapping of error-specific fields). Behavior: a single serialization producing the canonical envelope. Every serializable error is a subclass.
+- **Canonical error envelope**: the JSON document `{"status":"error","code":<str>,"message":<str>[,"details":<object>]}`, where `details` is present only when non-empty. The single shape emitted by all errors after this change.
+- **Concrete error class**: a subclass of `BookwrightError` declaring its own `code` and populating `message`/`details` in its constructor; carries no serialization logic of its own.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: The error envelope is defined in **exactly one** location; a search for envelope-building serialization methods on concrete error classes returns **zero** results (down from six hand-rolled implementations).
+- **SC-002**: **100%** of JSON-serialized exceptions across all six former hierarchies inherit from `BookwrightError`.
+- **SC-003**: Every error emits the **same** canonical envelope shape; there are **zero** errors emitting the legacy flat `{"error": …}` shape after the change.
+- **SC-004**: **Zero** error `code` values, **zero** error `message` strings, and **zero** command exit codes change relative to `main`.
+- **SC-005**: The four already-canonical hierarchies produce **byte-identical** JSON to `main`; the **only** edited test assertions are those covering the former flat manifest/golem shapes.
+- **SC-006**: A single edit to the base's serialization method changes the envelope for **all** errors simultaneously (demonstrable by a test exercising one representative error per hierarchy through the base).
+- **SC-007**: All four CI gates (`ruff check`, `ruff format --check`, `mypy --strict`, `pytest` at ≥ 80% coverage) pass, and no import cycle is introduced.
+
+## Assumptions
+
+- The "byte-identical / tests-unchanged" phrasing in the original input applies to the **four already-canonical hierarchies**; for the two legacy flat-shape hierarchies the clarified intent (max quality, zero debt) is to normalize them to the one envelope, accepting the reorganization of those specific JSON bodies and the corresponding test/doc updates. (Per Clarifications, Session 2026-06-05.)
+- The former flat `"error"` field value is semantically the same concept as the canonical `code`, so reusing it as `code` preserves the machine-readable identifier consumers key on.
+- No external/published consumer depends on the legacy flat manifest/golem JSON bodies beyond the in-repo tests and contract docs; this is a pre-1.0 toolkit (v0.2 in progress) where unifying the error contract is appropriate.
+- The base belongs at a layer low enough that all of `core`, `golem`, `io`, `indexers`, `validation`, and `commands` can import it without a cycle; the exact module location is an implementation/plan decision and is not fixed by this spec.
+- Purely-structural parent exceptions (the per-package root classes that are never serialized) may remain abstract under the new base without declaring a `code`, as long as no `--json` path serializes them directly.
