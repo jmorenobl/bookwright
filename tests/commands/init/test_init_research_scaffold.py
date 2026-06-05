@@ -1,4 +1,4 @@
-"""``bible/research/`` scaffolding + bible/clarify wiring (US3, FR-008/009/014a).
+"""``bible/research/`` scaffolding + bible/clarify wiring (FR-008/009/014a).
 
 After ``bookwright init`` the project ships a ``bible/research/`` **directory**
 (``_index.md`` + ``sources.md``, no stray ``bible/research.md``), the starters
@@ -31,7 +31,7 @@ def _init_project(runner: CliRunner, root: Path) -> Path:
 def test_research_dir_scaffolded_without_legacy_file(
     runner: CliRunner, scaffold_in_tmp: Path
 ) -> None:
-    # US3-1 — the directory ships two real files; the legacy single file is gone.
+    # the directory ships two real files; the legacy single file is gone.
     proj = _init_project(runner, scaffold_in_tmp)
     assert (proj / "bible" / "research" / "_index.md").is_file()
     assert (proj / "bible" / "research" / "sources.md").is_file()
@@ -59,7 +59,7 @@ def test_scaffolded_starters_parse_through_map_research(
 def test_generated_manifest_carries_research_block(
     runner: CliRunner, scaffold_in_tmp: Path
 ) -> None:
-    # FR-014a (depends on T014) — the block ships in the scaffolded manifest.
+    # FR-014a — the block ships in the scaffolded manifest.
     proj = _init_project(runner, scaffold_in_tmp)
     manifest_text = (proj / "manifest.toml").read_text(encoding="utf-8")
     assert "[research]" in manifest_text
@@ -67,7 +67,7 @@ def test_generated_manifest_carries_research_block(
 
 
 def test_project_override_shadows_packaged_index_template(tmp_path: Path) -> None:
-    """FR-008 / US3-2 — a project override resolves ahead of the packaged mold.
+    """FR-008 — a project override resolves ahead of the packaged mold.
 
     The molds are layer-resolvable exactly like the iteration-7 templates: a
     project that drops its own ``bible/research/_index.md.tmpl`` under

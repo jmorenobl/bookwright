@@ -1,4 +1,4 @@
-"""US4 - Acceptance Scenarios 2-4 + round-trip (FR-018, FR-019, FR-020, FR-021, SC-005)."""
+"""Manifest write + round-trip — FR-018, FR-019, FR-020, FR-021, SC-005."""
 
 from __future__ import annotations
 

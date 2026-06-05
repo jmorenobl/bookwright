@@ -1,4 +1,4 @@
-"""US5 - Acceptance Scenarios 1-3 (FR-013, FR-014, SC-006)."""
+"""Future manifest_version handling — FR-013, FR-014, SC-006."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def test_known_manifest_version_has_no_warning() -> None:
 
 
 def test_missing_manifest_version_raises_validation_error() -> None:
-    """AS3 / regression guard: a missing manifest_version still fails (US2 path)."""
+    """AS3 / regression guard: a missing manifest_version still fails."""
 
     with pytest.raises(ManifestValidationError) as exc_info:
         Manifest.load(load_fixture("invalid_bookwright_missing_manifest_version.toml"))
@@ -51,7 +51,7 @@ def test_missing_manifest_version_raises_validation_error() -> None:
 
 
 def test_malformed_manifest_version_raises_validation_error() -> None:
-    """A malformed manifest_version (e.g. '1.0') still fails (US2 path)."""
+    """A malformed manifest_version (e.g. '1.0') still fails."""
 
     with pytest.raises(ManifestValidationError) as exc_info:
         Manifest.load(load_fixture("invalid_manifest_version_dotted.toml"))

@@ -1,4 +1,4 @@
-"""``character_presence`` — orphan(error) + unknown-mention(warning) + dedup (T021)."""
+"""``character_presence`` — orphan(error) + unknown-mention(warning) + dedup."""
 
 from __future__ import annotations
 

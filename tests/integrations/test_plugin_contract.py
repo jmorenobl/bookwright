@@ -1,4 +1,4 @@
-"""US5 — plugin extensibility contract (FR-031, SC-007, research R8).
+"""plugin extensibility contract (FR-031, SC-007, research R8).
 
 Two assertions:
     1. A ``FakeIntegration`` declared inline + inserted into the registry
@@ -38,10 +38,10 @@ _SRC_ROOT = pathlib.Path(__file__).resolve().parents[2] / "src" / "bookwright" /
 # If you intentionally edit any of these files, recompute its sha256 and
 # update the value below; the diff makes the change auditable.
 _PINNED_FILE_HASHES: dict[str, str] = {
-    # base.py refreshed in iteration 9 (T010): the placeholder-marker stub
+    # base.py refreshed in iteration 9: the placeholder-marker stub
     # `setup()` was rewritten to materialize one SKILL.md per command via
     # `generate_skill_md`, gaining a keyword-only `ledger` parameter (FR-001/019).
-    "base.py": "6335ec24cbe184b6e740c4cdd809092a57a0fe82af32839128c63dea3ec1f5f2",
+    "base.py": "e8ae1c8c4d6c33788c9f4fbb7332920138da22824958e1b084e2e0713c64072e",
     "claude/__init__.py": "cd981edd40b5a2cf2de33600f4935accc07d3d77f06241e6740e8f95e0d39ab5",
     "generic/__init__.py": "eff8e531d559ac3c9512c1987593fd07a6ea777cd2b2ed768659642a2ea3c359",
 }

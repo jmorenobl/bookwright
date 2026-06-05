@@ -1,4 +1,4 @@
-"""Format-conformance of the shared **rich** research fixture (US1, SC-004/005).
+"""Format-conformance of the shared **rich** research fixture (SC-004/005).
 
 The iteration-14 ``bookwright-research`` skill instructs the agent to emit
 ``bible/research/*`` files in exactly the shape ``map_research()`` parses. This

@@ -1,4 +1,4 @@
-"""``setting_continuity`` — cross-file contradicting descriptors (T022)."""
+"""``setting_continuity`` — cross-file contradicting descriptors."""
 
 from __future__ import annotations
 

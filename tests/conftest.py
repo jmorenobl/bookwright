@@ -1,6 +1,6 @@
 """Shared pytest fixtures and the E2E harness for the bookwright test suite.
 
-The harness (T004, D1/D2) is two pieces both consumed by the fixture-validity
+The harness (D1/D2) is two pieces both consumed by the fixture-validity
 tests (``tests/fixtures/``) and the E2E suite (``tests/e2e/``):
 
 * :func:`copy_fixture` — copy a committed fixture project into a test's

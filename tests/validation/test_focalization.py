@@ -1,4 +1,4 @@
-"""``focalization`` — narrative-voice breaks, bilingual declaration parsing (T023)."""
+"""``focalization`` — narrative-voice breaks, bilingual declaration parsing."""
 
 from __future__ import annotations
 

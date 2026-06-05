@@ -1,4 +1,4 @@
-"""US4 — `--no-git` and git-missing warning."""
+"""`--no-git` and git-missing warning."""
 
 from __future__ import annotations
 

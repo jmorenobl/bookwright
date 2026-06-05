@@ -1,4 +1,4 @@
-"""US3 — capability-aware output + the FR-013 injection invariant (SC-006)."""
+"""capability-aware output + the FR-013 injection invariant (SC-006)."""
 
 from __future__ import annotations
 

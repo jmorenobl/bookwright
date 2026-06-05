@@ -1,4 +1,4 @@
-"""``factual_anchor`` validator — US1 structural audit + the drift-guard (T006).
+"""``factual_anchor`` validator — structural audit + the drift-guard.
 
 One hand-built graph per case (defense-in-depth: the validator is exercised against
 graphs the iteration-12 reader could not emit — e.g. an incomplete source). Each
@@ -273,7 +273,7 @@ def test_reliability_scale_matches_vocabulary() -> None:
     assert set(_RELIABILITY_RANK) == set(RELIABILITY_IRI)
 
 
-# --- R5 anachronism (US2) ---------------------------------------------------
+# --- R5 anachronism ---------------------------------------------------------
 
 
 def _errors(findings: list[Violation]) -> list[Violation]:
@@ -346,7 +346,7 @@ def test_timeline_target_uses_overall_bounds(project_root: Path) -> None:
     assert "anachronism" in errors[0].message
 
 
-# --- US3 discovery / selection / inert / scope ------------------------------
+# --- discovery / selection / inert / scope ----------------------------------
 
 
 def _active_names(root: Path) -> set[str]:

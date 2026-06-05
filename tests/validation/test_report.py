@@ -1,4 +1,4 @@
-"""``ValidationReport`` filtering, gate, and JSON shape (T031, D13.3)."""
+"""``ValidationReport`` filtering, gate, and JSON shape (D13.3)."""
 
 from __future__ import annotations
 

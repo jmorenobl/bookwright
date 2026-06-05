@@ -1,4 +1,4 @@
-"""US3 — `--integration` and `--integration-options`."""
+"""`--integration` and `--integration-options`."""
 
 from __future__ import annotations
 

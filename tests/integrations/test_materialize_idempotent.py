@@ -1,4 +1,4 @@
-"""US2 — per-``SKILL.md`` idempotency (FR-014, SC-005, A-005)."""
+"""per-``SKILL.md`` idempotency (FR-014, SC-005, A-005)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Shared fixtures + scaffolding for the validation suite (T019).
+"""Shared fixtures + scaffolding for the validation suite.
 
 A project-scaffold builder plus per-validator violation/clean helpers. Importable
 by the test modules (``from tests.validation.conftest import ...``) so each story's

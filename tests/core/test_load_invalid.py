@@ -1,4 +1,4 @@
-"""US2 - Acceptance Scenarios 1-9 (FR-002, FR-004 through FR-011, FR-013 parse failure)."""
+"""Invalid-manifest validation — FR-002, FR-004 through FR-011, FR-013 parse failure."""
 
 from __future__ import annotations
 

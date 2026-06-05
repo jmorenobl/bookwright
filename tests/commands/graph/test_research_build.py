@@ -1,7 +1,7 @@
 """Integration tests for the research pass of ``graph build`` (iteration 012).
 
 Builds the ``research="minimal"`` ``tiny_novel`` scaffold and queries the emitted graph,
-proving US1-US3 end to end (quickstart sections 1-3) and the foundational regression:
+proving sources, findings and anchors end to end (quickstart 1-3) and the foundational regression:
 a research-free build is byte-stable, adds zero research triples, and keeps the bible
 E13 count unchanged (FR-015 / SC-005, research D8/D9).
 """
@@ -64,7 +64,7 @@ def test_empty_research_dir_build_is_clean(project_factory: Factory, runner: Cli
     assert "@prefix bw:" not in (root / "bible" / "graph.ttl").read_text(encoding="utf-8")
 
 
-# --- US1: sources become typed nodes with full provenance -------------------
+# --- sources become typed nodes with full provenance -----------------------
 
 
 def test_source_node_has_full_provenance(project_factory: Factory, runner: CliRunner) -> None:
@@ -97,7 +97,7 @@ def test_bad_source_type_aborts_with_no_graph(project_factory: Factory, runner: 
     assert not (root / "bible" / "graph.ttl").exists()
 
 
-# --- US2: findings reify on E13 and link to the narrative -------------------
+# --- findings reify on E13 and link to the narrative -----------------------
 
 
 def test_finding_reified_with_claim_and_source(project_factory: Factory, runner: CliRunner) -> None:
@@ -145,7 +145,7 @@ def test_findings_distinguishable_from_inferred_assertions(
     assert len(claim_findings) == 1
 
 
-# --- US3: anchors constrain the fiction + the payoff query ------------------
+# --- anchors constrain the fiction + the payoff query ----------------------
 
 
 def test_payoff_query_returns_anchor_claim_source(

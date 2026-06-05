@@ -1,7 +1,7 @@
 """Unit coverage for the shared transactional-fs layer (``bookwright.io.fs``).
 
 Relocated from ``tests/commands/test_init_helpers.py`` when the ledger + tracked
-writers were extracted out of ``init/scaffold.py`` (iteration 9, T021). Adds a
+writers were extracted out of ``init/scaffold.py`` (iteration 9). Adds a
 ``NullLedger`` no-op contract test (FR-019, standalone callers).
 """
 

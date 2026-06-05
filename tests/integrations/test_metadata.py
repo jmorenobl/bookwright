@@ -1,4 +1,4 @@
-"""US4 — declared metadata pinning (FR-006..FR-011)."""
+"""declared metadata pinning (FR-006..FR-011)."""
 
 from __future__ import annotations
 

@@ -8,7 +8,7 @@ Subclasses live under ``bookwright.integrations.<key>/`` and override:
     - ``resolve_skills_dir()`` (when the resolved dir depends on
       ``parsed_options``).
 
-``setup()`` is implemented once here (T013); no v0 subclass overrides it.
+``setup()`` is implemented once here; no v0 subclass overrides it.
 """
 
 from __future__ import annotations

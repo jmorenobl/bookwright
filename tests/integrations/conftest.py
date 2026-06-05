@@ -45,7 +45,7 @@ def minimal_manifest() -> Manifest:
 def registry_snapshot() -> Iterator[dict[str, Any]]:
     """Snapshot ``INTEGRATION_REGISTRY`` and restore it on teardown.
 
-    Lets US5 tests safely mutate the registry (insert ``FakeIntegration``)
+    Lets the plugin-contract tests safely mutate the registry (insert ``FakeIntegration``)
     without bleeding into other tests in the suite.
     """
 

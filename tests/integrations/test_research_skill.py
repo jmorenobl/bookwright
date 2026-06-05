@@ -1,4 +1,4 @@
-"""Materialization-compliance of the ``bookwright-research`` skill (US1, SC-001).
+"""Materialization-compliance of the ``bookwright-research`` skill (SC-001).
 
 The new source command is materialized through the **unchanged** iteration-9
 pipeline into a lint-passing ``SKILL.md`` for **both** integrations. Asserts the

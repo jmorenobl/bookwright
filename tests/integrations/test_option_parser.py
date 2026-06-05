@@ -1,4 +1,4 @@
-"""US3 — ``parse_options`` contract (FR-016..FR-021, SC-005)."""
+"""``parse_options`` contract (FR-016..FR-021, SC-005)."""
 
 from __future__ import annotations
 

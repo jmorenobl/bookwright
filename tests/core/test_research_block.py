@@ -1,4 +1,4 @@
-"""The ``[research]`` manifest block contract (US2, RB-1..RB-8).
+"""The ``[research]`` manifest block contract (RB-1..RB-8).
 
 The optional ``[research]`` block extends the iteration-2 model with three typed
 fields (``enabled`` / ``source_languages`` / ``min_reliability_for_anchor``),

@@ -1,4 +1,4 @@
-"""Unit tests for the shared interval helpers in ``queries`` (T012).
+"""Unit tests for the shared interval helpers in ``queries``.
 
 ``intervals_disjoint`` is the single source of truth for "two year ranges provably
 do not overlap" (FR-011); ``timeline_bounds`` is the pure reduction over a

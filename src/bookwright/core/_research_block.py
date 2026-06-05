@@ -1,4 +1,4 @@
-"""The ``[research]`` manifest block model (US2, FR-011..FR-016).
+"""The ``[research]`` manifest block model (FR-011..FR-016).
 
 Extracted from ``manifest.py`` so that module stays under the Principle IV
 500-line ceiling (it is already 535 lines). ``Manifest`` imports

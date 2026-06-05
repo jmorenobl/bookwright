@@ -1,4 +1,4 @@
-"""US1 — registry lookup, listing, and conflict detection (FR-001..FR-005)."""
+"""registry lookup, listing, and conflict detection (FR-001..FR-005)."""
 
 from __future__ import annotations
 

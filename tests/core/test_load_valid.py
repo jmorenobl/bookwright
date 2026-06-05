@@ -1,4 +1,4 @@
-"""US1 - Acceptance Scenarios 1-3 (FR-001, FR-003, FR-022)."""
+"""Valid-manifest load — FR-001, FR-003, FR-022."""
 
 from __future__ import annotations
 

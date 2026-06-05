@@ -57,7 +57,7 @@ def dirhash(path: Path) -> list[tuple[str, str]]:
     Captures directories too (as a ``<DIR>`` sentinel) so the FR-030 / SC-005
     atomic-or-nothing assertions detect orphan directories left by a failed
     scaffold; files-only snapshots gave false negatives for `unknown_integration`
-    and absolute `--skills-dir` regressions (round-4 audit, T047).
+    and absolute `--skills-dir` regressions (round-4 audit).
     """
 
     if not path.exists():

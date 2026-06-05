@@ -1,4 +1,4 @@
-"""US2 — `bookwright init --here`."""
+"""`bookwright init --here`."""
 
 from __future__ import annotations
 

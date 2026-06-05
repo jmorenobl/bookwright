@@ -1,4 +1,4 @@
-# Minimal valid manifest fixture (US1, T013).
+# Minimal valid manifest fixture.
 # Only the fields the load path requires.
 
 [bookwright]

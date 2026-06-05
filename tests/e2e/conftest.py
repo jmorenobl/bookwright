@@ -1,7 +1,7 @@
 """E2E package harness — re-exports the root helpers and adds an empty workdir.
 
 The ``cli`` and ``runner`` fixtures and :func:`copy_fixture` live in the root
-``tests/conftest.py`` (T004) and are already visible here; this module re-exports
+``tests/conftest.py`` and are already visible here; this module re-exports
 ``copy_fixture``/``FIXTURES_DIR`` so an E2E module can import them by name, and adds
 the ``workdir`` fixture used by the init-from-scratch tests (C1/C2/C3).
 """

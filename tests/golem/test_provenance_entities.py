@@ -67,7 +67,7 @@ def _make_source(**overrides: object) -> Source:
     return Source(**kwargs)  # type: ignore[arg-type]
 
 
-# --- Source (US1) -----------------------------------------------------------
+# --- Source -----------------------------------------------------------------
 
 
 def test_source_uri_is_slugged_segment() -> None:
@@ -119,7 +119,7 @@ def test_source_rejects_empty_reliability_justification() -> None:
         _make_source(reliability_justification="   ")
 
 
-# --- Finding (US2) ----------------------------------------------------------
+# --- Finding ----------------------------------------------------------------
 
 
 def test_finding_reifies_on_e13_with_segment() -> None:
@@ -167,7 +167,7 @@ def test_closed_finding_emits_no_open_flag() -> None:
     assert BW_OPEN not in _po(finding)
 
 
-# --- Anchor (US3) -----------------------------------------------------------
+# --- Anchor -----------------------------------------------------------------
 
 
 def _anchor(**overrides: object) -> Anchor:

@@ -1,4 +1,4 @@
-"""Core finding types + the cached context accessors (T008)."""
+"""Core finding types + the cached context accessors."""
 
 from __future__ import annotations
 

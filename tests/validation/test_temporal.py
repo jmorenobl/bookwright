@@ -1,4 +1,4 @@
-"""``temporal`` validator -- FR-015 rules a-d, each pinned to SC-009 (T020).
+"""``temporal`` validator -- FR-015 rules a-d, each pinned to SC-009.
 
 One fixture per rule → exactly one ``error`` finding carrying the implicated relation
 edge in ``triples``; a clean timeline → zero; an open interval; and an end-to-end

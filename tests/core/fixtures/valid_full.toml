@@ -1,4 +1,4 @@
-# Fully-populated valid manifest fixture (US1, T012).
+# Fully-populated valid manifest fixture.
 # Every required and optional field from § 8.1 is present.
 # `book.authors` contains a duplicate to exercise the Edge Case (legitimate
 # duplicate co-author entries are allowed).

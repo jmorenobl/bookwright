@@ -124,7 +124,7 @@ def _constrains_target(cli: CliRunner, anchor_uri: str) -> str | None:
 
 
 # --------------------------------------------------------------------------------------
-# Group A — the deterministic flow over tiny-historical (US2 / FR-008..FR-011).
+# Group A — the deterministic flow over tiny-historical (FR-008..FR-011).
 # --------------------------------------------------------------------------------------
 
 
@@ -188,7 +188,7 @@ def test_validate_reports_exactly_the_planted_findings(
 
 
 # --------------------------------------------------------------------------------------
-# Group B — verify-step preconditions (US2 / FR-012).
+# Group B — verify-step preconditions (FR-012).
 # --------------------------------------------------------------------------------------
 
 
@@ -227,7 +227,7 @@ def test_oracle_is_present_and_parses(
 
 
 # --------------------------------------------------------------------------------------
-# Group C — inertness when the research system is unused (US3 / FR-013, FR-014).
+# Group C — inertness when the research system is unused (FR-013, FR-014).
 # --------------------------------------------------------------------------------------
 
 

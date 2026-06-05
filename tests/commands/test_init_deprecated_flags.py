@@ -1,4 +1,4 @@
-"""US5 — `--ai`, `--ai-skills`, `--ai-commands-dir`."""
+"""`--ai`, `--ai-skills`, `--ai-commands-dir`."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""US3 - Acceptance Scenarios 1-2 (FR-012, SC-003)."""
+"""manifest_version gate — FR-012, SC-003."""
 
 from __future__ import annotations
 

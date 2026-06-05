@@ -262,7 +262,7 @@ def test_serialize_options_record_uses_indent_2() -> None:
 
 # NOTE: the BackupLedger / mkdir_tracked / write_bytes_atomic unit tests moved
 # to tests/io/test_fs.py when those primitives were extracted into
-# bookwright.io.fs (iteration 9, T021).
+# bookwright.io.fs (iteration 9).
 
 
 # ---------- git ----------

@@ -4,7 +4,7 @@ Body non-empty + Spanish, the eight required sections detectable by ES
 heading-keyword, the generative marker/update-in-place rule, the report-only
 "no escribe nada" statement, and the inline ``graph build`` for the two commands
 that need the project graph. Data-driven by ``helpers`` classification so it
-covers all 12 files (US1 + US2) uniformly.
+covers all 12 files uniformly.
 """
 
 from __future__ import annotations

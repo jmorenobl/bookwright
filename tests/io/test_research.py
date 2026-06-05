@@ -83,7 +83,7 @@ def test_empty_research_dir_yields_empty_result(tmp_path: Path) -> None:
     assert result.files_processed == 0
 
 
-# --- sources.md (US1) -------------------------------------------------------
+# --- sources.md -------------------------------------------------------------
 
 
 def test_valid_source_parses(tmp_path: Path) -> None:
@@ -143,7 +143,7 @@ def test_translation_dropped_when_language_matches(tmp_path: Path) -> None:
     assert result.sources[0].translation is None
 
 
-# --- findings (US2) ---------------------------------------------------------
+# --- findings ---------------------------------------------------------------
 
 TOPIC_FINDING = textwrap.dedent(
     """\
@@ -206,7 +206,7 @@ def test_unresolved_bears_on_is_soft_warning(tmp_path: Path) -> None:
     assert result.warnings[0].name == "Personaje Inexistente"
 
 
-# --- anchors (US3) ----------------------------------------------------------
+# --- anchors ----------------------------------------------------------------
 
 TOPIC_ANCHOR = textwrap.dedent(
     """\

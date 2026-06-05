@@ -1,4 +1,4 @@
-"""US1 — `bookwright init <NAME>` default path."""
+"""`bookwright init <NAME>` default path."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""``bookwright validate`` integration — US1 baseline (T028).
+"""``bookwright validate`` integration — baseline.
 
 SC-001: a project with one inconsistency per built-in validator → the human report
 names each (validator / rule / why) and exits 1. SC-002: a clean project → "no
@@ -146,7 +146,7 @@ def test_no_project_exits_two(
     assert "error:" in result.stderr
 
 
-# --- User Story 2: --json, --scope, --severity, CI gate (T032) --------------
+# --- --json, --scope, --severity, CI gate -----------------------------------
 
 
 def test_json_is_single_document_with_prose_on_stderr(
@@ -265,7 +265,7 @@ def test_valid_scope_with_no_violations_exits_zero(
     assert payload["violations"] == []
 
 
-# --- User Story 3: [validators] config + custom validators (T036) -----------
+# --- [validators] config + custom validators --------------------------------
 
 _CUSTOM_NO_TODO = """
 from bookwright.validation import Severity, Violation

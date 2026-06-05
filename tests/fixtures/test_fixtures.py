@@ -1,4 +1,4 @@
-"""Each committed fixture is a *finished*, clean Bookwright project (US1, SC-001).
+"""Each committed fixture is a *finished*, clean Bookwright project (SC-001).
 
 Copies every fixture into ``tmp_path`` and drives the real CLI in-process
 (``graph build`` → ``graph query`` → ``validate``), then guards the committed

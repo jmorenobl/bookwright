@@ -1,4 +1,4 @@
-"""US4 — Acceptance Scenarios 1, 1a, 1b (FR-015, FR-016, FR-017, SC-004)."""
+"""Build/derive — FR-015, FR-016, FR-017, SC-004."""
 
 from __future__ import annotations
 

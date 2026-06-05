@@ -1,4 +1,4 @@
-"""Discovery + configuration resolution (T035, FR-004..007, D2/D7)."""
+"""Discovery + configuration resolution (FR-004..007, D2/D7)."""
 
 from __future__ import annotations
 
