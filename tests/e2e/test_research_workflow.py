@@ -131,6 +131,9 @@ def _constrains_target(cli: CliRunner, anchor_uri: str) -> str | None:
 def test_build_materializes_research_entities(cli: CliRunner, historical: Path) -> None:
     """``graph build`` succeeds and the graph holds Sources, Findings, Anchors (FR-008/009)."""
     payload = _build(cli)
+    # Structural build tallies (not planted defects): the fixture's fixed entity counts.
+    # Unlike the factual_anchor expectations, these aren't oracle-driven — they pin the
+    # shape of the corpus itself, so update them here if the fixture's entities change.
     assert payload["sources"] == 4
     assert payload["findings"] == 6  # 4 closed findings + 2 open questions
     assert payload["anchors"] == 4

@@ -63,7 +63,8 @@ target is a build error = the FR-021 "zero warnings" gate); global coverage stay
 (FR-022); every source file ≤ 500 lines (Constitution IV).
 
 **Scale/Scope**: 1 fixture (~12–16 files), 1 new E2E test module, 1 new docs page +
-edits to `docs/validation.md` / `docs/authoring.md` + a new `docs/changelog.md`, and the
+an edit to `docs/authoring.md` + a new `docs/changelog.md` (`docs/validation.md` already
+documents `factual_anchor` since iter 014), and the
 `mkdocs.yml` nav. Roughly the footprint of iteration 011/012 minus new product code.
 
 ## Constitution Check
@@ -130,7 +131,7 @@ tests/
 
 docs/
 ├── research.md          # NEW — the research page (FR-015/FR-017); also documents the two skills (FR-016)
-├── validation.md        # EDIT — add `factual_anchor` to "Validadores integrados" (FR-016)
+├── validation.md        # FR-016 — already documents `factual_anchor` since iter 014; no edit needed
 ├── authoring.md         # EDIT — note bookwright-research / bookwright-verify in the skills reference (FR-016)
 └── changelog.md         # NEW — v0.2.0 entry (+ retroactive v0.1.0) (FR-018)
 
