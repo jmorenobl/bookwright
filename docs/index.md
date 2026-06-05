@@ -29,6 +29,8 @@ en git, completamente auditable, y sobrevive al toolkit.
 
 ## El loop del escritor
 
+![El loop del escritor: idea → scaffolding → destila → build y valida → edita, y vuelta a empezar](https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/loop.svg)
+
 1. **Idea libremente** en tu agente o tu libreta y vuelca un brief a Markdown.
 2. **Scaffolding**: `bookwright init mi-novela --integration claude`.
 3. **Destila, en orden**: usa los *Agent Skills* (`/bookwright-constitution`,

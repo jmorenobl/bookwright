@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-label="El loop del escritor: idea, scaffolding, destila, build y valida, edita — y vuelta a empezar">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1426"/>
+      <stop offset="55%" stop-color="#241a3a"/>
+      <stop offset="100%" stop-color="#10243a"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f5c879"/>
+      <stop offset="100%" stop-color="#e98c6b"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f5c879"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="440" rx="20" fill="url(#bg)"/>
+
+  <!-- faint plain-text rules -->
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="2">
+    <line x1="0" y1="88" x2="1280" y2="88"/>
+    <line x1="0" y1="176" x2="1280" y2="176"/>
+    <line x1="0" y1="264" x2="1280" y2="264"/>
+    <line x1="0" y1="352" x2="1280" y2="352"/>
+  </g>
+
+  <text x="40" y="56" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="700" fill="#fbf7ef">El loop del escritor</text>
+  <text x="40" y="84" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" fill="#c9b8e0">iteras los documentos, no el borrador</text>
+
+  <!-- ===== nodes ===== -->
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <!-- box template values: width 200, height 116, y 132 -->
+    <!-- node 1 -->
+    <g transform="translate(40,132)">
+      <rect width="200" height="116" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <circle cx="30" cy="32" r="17" fill="url(#ink)"/>
+      <text x="30" y="38" text-anchor="middle" font-size="19" font-weight="700" fill="#241a3a">1</text>
+      <text x="60" y="38" font-size="21" font-weight="700" fill="#fbf7ef">Idea</text>
+      <text x="20" y="72" font-size="15" fill="#c9b8e0">Vuelca un brief libre</text>
+      <text x="20" y="96" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="14" fill="#f5c879">idea.md</text>
+    </g>
+    <!-- node 2 -->
+    <g transform="translate(290,132)">
+      <rect width="200" height="116" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <circle cx="30" cy="32" r="17" fill="url(#ink)"/>
+      <text x="30" y="38" text-anchor="middle" font-size="19" font-weight="700" fill="#241a3a">2</text>
+      <text x="60" y="38" font-size="21" font-weight="700" fill="#fbf7ef">Scaffolding</text>
+      <text x="20" y="72" font-size="15" fill="#c9b8e0">Estructura + Skills</text>
+      <text x="20" y="96" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="14" fill="#f5c879">bookwright init</text>
+    </g>
+    <!-- node 3 -->
+    <g transform="translate(540,132)">
+      <rect width="200" height="116" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <circle cx="30" cy="32" r="17" fill="url(#ink)"/>
+      <text x="30" y="38" text-anchor="middle" font-size="19" font-weight="700" fill="#241a3a">3</text>
+      <text x="60" y="38" font-size="21" font-weight="700" fill="#fbf7ef">Destila</text>
+      <text x="20" y="72" font-size="15" fill="#c9b8e0">Skills, en orden</text>
+      <text x="20" y="96" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="14" fill="#f5c879">constitution · bible…</text>
+    </g>
+    <!-- node 4 -->
+    <g transform="translate(790,132)">
+      <rect width="200" height="116" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <circle cx="30" cy="32" r="17" fill="url(#ink)"/>
+      <text x="30" y="38" text-anchor="middle" font-size="19" font-weight="700" fill="#241a3a">4</text>
+      <text x="60" y="38" font-size="21" font-weight="700" fill="#fbf7ef">Build &amp; valida</text>
+      <text x="20" y="72" font-size="15" fill="#c9b8e0">Grafo + continuidad</text>
+      <text x="20" y="96" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="14" fill="#f5c879">graph build · validate</text>
+    </g>
+    <!-- node 5 -->
+    <g transform="translate(1040,132)">
+      <rect width="200" height="116" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <circle cx="30" cy="32" r="17" fill="url(#ink)"/>
+      <text x="30" y="38" text-anchor="middle" font-size="19" font-weight="700" fill="#241a3a">5</text>
+      <text x="60" y="38" font-size="21" font-weight="700" fill="#fbf7ef">Edita</text>
+      <text x="20" y="72" font-size="15" fill="#c9b8e0">Tu editor favorito</text>
+      <text x="20" y="96" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="14" fill="#f5c879">*.md en Obsidian…</text>
+    </g>
+  </g>
+
+  <!-- ===== forward arrows between nodes (gaps at x 240->290, 490->540, 740->790, 990->1040) ===== -->
+  <g stroke="#f5c879" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+    <line x1="244" y1="190" x2="286" y2="190"/>
+    <line x1="494" y1="190" x2="536" y2="190"/>
+    <line x1="744" y1="190" x2="786" y2="190"/>
+    <line x1="994" y1="190" x2="1036" y2="190"/>
+  </g>
+
+  <!-- ===== return arc: node5 bottom -> node1 bottom ===== -->
+  <path d="M1140 248 C1140 360 1140 392 980 392 L300 392 C140 392 140 360 140 252"
+        stroke="#e98c6b" stroke-width="2.5" stroke-opacity="0.9" fill="none"
+        stroke-dasharray="2 7" stroke-linecap="round" marker-end="url(#arrow)"/>
+  <g transform="translate(560,380)">
+    <rect width="160" height="26" rx="13" fill="#241a3a" stroke="#e98c6b" stroke-opacity="0.5"/>
+    <text x="80" y="18" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#f5c879">el ciclo se repite</text>
+  </g>
+</svg>

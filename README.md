@@ -43,6 +43,13 @@ toolkit.
 
 ## El loop del escritor
 
+<p align="center">
+  <picture>
+    <source srcset="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/loop.svg" type="image/svg+xml">
+    <img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/loop.png" alt="El loop del escritor: idea → scaffolding → destila → build y valida → edita, y vuelta a empezar" width="100%">
+  </picture>
+</p>
+
 1. **Idea libremente** — conversa con tu agente o tu libreta y vuelca un
    brief a Markdown.
 2. **Scaffolding del proyecto** —

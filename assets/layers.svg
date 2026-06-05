@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="470" viewBox="0 0 1280 470" role="img" aria-label="Stack de capas de bookwright: CLI typer arriba, luego commands con envelopes JSON, una banda con validation, integrations e indexers, golem sobre rdflib, core manifest y errors.py como base sin dependencias">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1426"/>
+      <stop offset="55%" stop-color="#241a3a"/>
+      <stop offset="100%" stop-color="#10243a"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f5c879"/>
+      <stop offset="100%" stop-color="#e98c6b"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f5c879"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="470" rx="20" fill="url(#bg)"/>
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="2">
+    <line x1="0" y1="94" x2="1280" y2="94"/>
+    <line x1="0" y1="188" x2="1280" y2="188"/>
+    <line x1="0" y1="282" x2="1280" y2="282"/>
+    <line x1="0" y1="376" x2="1280" y2="376"/>
+  </g>
+
+  <text x="40" y="52" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#fbf7ef">Capas, en orden de dependencia</text>
+  <text x="40" y="78" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" fill="#c9b8e0">cada capa solo depende de las de abajo — errors.py es la base sin ciclos</text>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <!-- CLI -->
+    <g transform="translate(40,100)">
+      <rect width="1100" height="48" rx="12" fill="#ffffff" fill-opacity="0.09" stroke="url(#ink)" stroke-opacity="0.6"/>
+      <text x="24" y="31" font-size="18" font-weight="700" fill="#fbf7ef">CLI</text>
+      <text x="90" y="31" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="15" fill="#c9b8e0">typer · ensambla la app desde módulos por comando</text>
+    </g>
+    <!-- commands -->
+    <g transform="translate(40,158)">
+      <rect width="1100" height="48" rx="12" fill="#ffffff" fill-opacity="0.07" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="24" y="31" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">commands/</text>
+      <text x="170" y="31" font-size="15" fill="#c9b8e0">un verbo por módulo · envelope.py emite el contrato --json</text>
+    </g>
+    <!-- middle band: 3 columns -->
+    <g transform="translate(40,216)">
+      <rect width="356" height="60" rx="12" fill="#ffffff" fill-opacity="0.07" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="178" y="30" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">validation/</text>
+      <text x="178" y="48" text-anchor="middle" font-size="13" fill="#c9b8e0">chequeos de continuidad</text>
+    </g>
+    <g transform="translate(412,216)">
+      <rect width="356" height="60" rx="12" fill="#ffffff" fill-opacity="0.07" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="178" y="30" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">integrations/</text>
+      <text x="178" y="48" text-anchor="middle" font-size="13" fill="#c9b8e0">Agent Skills · plugins</text>
+    </g>
+    <g transform="translate(784,216)">
+      <rect width="356" height="60" rx="12" fill="#ffffff" fill-opacity="0.07" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="178" y="30" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">indexers/</text>
+      <text x="178" y="48" text-anchor="middle" font-size="13" fill="#c9b8e0">grafo + SPARQL (rdflib)</text>
+    </g>
+    <!-- golem -->
+    <g transform="translate(40,286)">
+      <rect width="1100" height="48" rx="12" fill="#ffffff" fill-opacity="0.07" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="24" y="31" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">golem/</text>
+      <text x="140" y="31" font-size="15" fill="#c9b8e0">dominio narrativo · entidades inmutables → Turtle · ontología frozen</text>
+    </g>
+    <!-- core -->
+    <g transform="translate(40,344)">
+      <rect width="1100" height="48" rx="12" fill="#ffffff" fill-opacity="0.07" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="24" y="31" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">core/</text>
+      <text x="120" y="31" font-size="15" fill="#c9b8e0">manifiesto pydantic + tomlkit (round-trip con comentarios)</text>
+    </g>
+    <!-- errors base -->
+    <g transform="translate(40,402)">
+      <rect width="1100" height="48" rx="12" fill="url(#ink)" fill-opacity="0.16" stroke="url(#ink)" stroke-opacity="0.9"/>
+      <text x="24" y="31" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">errors.py</text>
+      <text x="150" y="31" font-size="15" fill="#fbf7ef">BookwrightError · única base del envelope --json · no importa nada</text>
+    </g>
+  </g>
+
+  <!-- dependency arrow down the side -->
+  <g transform="translate(1170,100)">
+    <line x1="0" y1="0" x2="0" y2="350" stroke="#f5c879" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <text x="20" y="180" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#f5c879" transform="rotate(90 20 180)" text-anchor="middle">depende de</text>
+  </g>
+</svg>

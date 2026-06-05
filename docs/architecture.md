@@ -7,6 +7,8 @@ es *load-bearing* y se cita aquí como `bookwright-design.md § N.M`. Esta pági
 
 ## Capas
 
+![Capas de bookwright en orden de dependencia: CLI (typer), commands/ con envelopes --json, una banda con validation/ · integrations/ · indexers/, golem/ sobre rdflib, core/ con el manifiesto, y errors.py como base sin dependencias](https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/layers.svg)
+
 | Capa | Responsabilidad | Referencia de diseño |
 |------|-----------------|----------------------|
 | CLI (`typer`) | Superficie de comandos, envoltura JSON (Principio IX) | `bookwright-design.md § 11` |
@@ -32,13 +34,7 @@ Recogidos en la constitución del proyecto
 
 ## Flujo de datos
 
-```
-bible/*.md  ──map_bible──▶  entidades GOLEM  ──indexer──▶  bible/graph.ttl
-                                                              │
-manuscript/*.md ─────────────────────────────────────────────┤
-                                                              ▼
-                                                    bookwright validate
-```
+![Flujo de datos: bible/*.md y manuscript/*.md (texto plano) → map_bible → entidades GOLEM → indexer → graph.ttl (caché RDF derivada) → bookwright validate](https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/dataflow.svg)
 
 Para el detalle de la ontología GOLEM y la procedencia CIDOC-CRM de cada
 aserción derivada, consulta `bookwright-design.md § 5` y `§ 6`.

@@ -52,6 +52,8 @@ que sigue abierto. No duplica ni sobrescribe lo que ya hay.
 
 ## Las skills, en orden
 
+![Pipeline de destilación: /constitution → /bible → /outline → /scenes → /draft, con la rama opcional de investigación /research → /verify para obra basada en hechos](https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/pipeline.svg)
+
 El orden importa: cada paso se funda en el anterior. La constitución fija las
 reglas; la biblia puebla las entidades; el outline las estructura; las escenas
 las desglosan; el draft redacta.

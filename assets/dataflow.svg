@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-label="Flujo de datos: bible y manuscript en texto plano se mapean a entidades GOLEM, el indexer deriva graph.ttl y bookwright validate corre los chequeos">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1426"/>
+      <stop offset="55%" stop-color="#241a3a"/>
+      <stop offset="100%" stop-color="#10243a"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f5c879"/>
+      <stop offset="100%" stop-color="#e98c6b"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f5c879"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="360" rx="20" fill="url(#bg)"/>
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="2">
+    <line x1="0" y1="90" x2="1280" y2="90"/>
+    <line x1="0" y1="180" x2="1280" y2="180"/>
+    <line x1="0" y1="270" x2="1280" y2="270"/>
+  </g>
+
+  <text x="40" y="52" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#fbf7ef">Flujo de datos</text>
+  <text x="40" y="78" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" fill="#c9b8e0">el grafo es una caché derivada — la fuente de verdad es el texto plano</text>
+
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <!-- input: bible -->
+    <g transform="translate(40,118)">
+      <rect width="190" height="70" rx="14" fill="url(#page)" fill-opacity="0.0" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <rect width="190" height="70" rx="14" fill="#ffffff" fill-opacity="0.06"/>
+      <text x="20" y="32" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="17" font-weight="700" fill="#f5c879">bible/*.md</text>
+      <text x="20" y="54" font-size="14" fill="#c9b8e0">front-matter + Markdown</text>
+    </g>
+    <!-- input: manuscript -->
+    <g transform="translate(40,250)">
+      <rect width="190" height="70" rx="14" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="20" y="32" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="17" font-weight="700" fill="#f5c879">manuscript/*.md</text>
+      <text x="20" y="54" font-size="14" fill="#c9b8e0">la prosa redactada</text>
+    </g>
+
+    <!-- GOLEM entities -->
+    <g transform="translate(380,118)">
+      <rect width="190" height="70" rx="14" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="20" y="32" font-size="17" font-weight="700" fill="#fbf7ef">entidades GOLEM</text>
+      <text x="20" y="54" font-size="14" fill="#c9b8e0">modelos Pydantic inmutables</text>
+    </g>
+
+    <!-- graph.ttl as cache cylinder -->
+    <g transform="translate(720,108)">
+      <ellipse cx="95" cy="14" rx="95" ry="14" fill="#ffffff" fill-opacity="0.10" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <path d="M0 14 L0 76 A95 14 0 0 0 190 76 L190 14" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <path d="M0 14 A95 14 0 0 0 190 14" fill="none" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="95" y="50" text-anchor="middle" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="17" font-weight="700" fill="#f5c879">graph.ttl</text>
+      <text x="95" y="72" text-anchor="middle" font-size="13" fill="#c9b8e0">caché RDF derivada</text>
+    </g>
+
+    <!-- validate -->
+    <g transform="translate(1010,250)">
+      <rect width="230" height="70" rx="14" fill="#ffffff" fill-opacity="0.06" stroke="url(#ink)" stroke-opacity="0.55"/>
+      <text x="20" y="32" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#f5c879">bookwright validate</text>
+      <text x="20" y="54" font-size="14" fill="#c9b8e0">continuidad vía SPARQL</text>
+    </g>
+  </g>
+
+  <!-- arrows -->
+  <g stroke="#f5c879" stroke-width="2.5" fill="none" marker-end="url(#arrow)">
+    <!-- bible -> GOLEM -->
+    <line x1="234" y1="153" x2="374" y2="153"/>
+    <!-- GOLEM -> graph.ttl -->
+    <line x1="574" y1="153" x2="714" y2="153"/>
+    <!-- graph.ttl -> validate -->
+    <path d="M815 200 L815 285 L1004 285"/>
+    <!-- manuscript -> validate -->
+    <line x1="234" y1="285" x2="1004" y2="285"/>
+  </g>
+
+  <!-- arrow labels -->
+  <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#e98c6b" text-anchor="middle">
+    <text x="304" y="143">map_bible</text>
+    <text x="644" y="143">indexer</text>
+  </g>
+</svg>
