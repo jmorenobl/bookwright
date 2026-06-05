@@ -2,6 +2,7 @@
 name = "bookwright-cli"
 dynamic = ["version"]
 description = "Spec-driven authoring toolkit for novels, essays, and memoirs."
+readme = "README.md"
 authors = [
     { name = "Jorge MB", email = "jmorenobl@gmail.com" }
 ]
@@ -30,6 +31,12 @@ dependencies = [
     "typer>=0.12",
     "uuid-utils>=0.16",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jmorenobl/bookwright"
+Repository = "https://github.com/jmorenobl/bookwright"
+Issues = "https://github.com/jmorenobl/bookwright/issues"
+Changelog = "https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"
 
 [project.scripts]
 bookwright = "bookwright.cli:app"

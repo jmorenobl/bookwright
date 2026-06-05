@@ -1,11 +1,14 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Bookwright — toolkit de autoría spec-driven para novelas, ensayos y memorias" width="100%">
+  <picture>
+    <source srcset="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/banner.svg" type="image/svg+xml">
+    <img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/banner.png" alt="Bookwright — toolkit de autoría spec-driven para novelas, ensayos y memorias" width="100%">
+  </picture>
 </p>
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.2.0-6f42c1" alt="Versión 0.2.0"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Licencia: Apache-2.0"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.2.0-6f42c1" alt="Versión 0.2.0"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Licencia: Apache-2.0"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Cobertura ≥80%">
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white" alt="Lint con Ruff"></a>
@@ -15,7 +18,7 @@
 
 <p align="center">
   <b>Toolkit de autoría spec-driven para novelas, ensayos y memorias.</b><br>
-  <i><a href="README.en.md">Read in English</a></i>
+  <i><a href="https://github.com/jmorenobl/bookwright/blob/main/README.en.md">Read in English</a></i>
 </p>
 
 Bookwright aplica el patrón Spec-Driven Development a la escritura de
@@ -36,7 +39,7 @@ toolkit.
 > `Anchor`, las skills `/bookwright-research` y `/bookwright-verify`, el
 > validador `factual_anchor` y la envoltura `--json` unificada. La
 > documentación de usuario completa vive en el
-> [sitio de documentación](docs/index.md).
+> [sitio de documentación](https://github.com/jmorenobl/bookwright/blob/main/docs/index.md).
 
 ## El loop del escritor
 
@@ -127,7 +130,7 @@ bookwright integration use generic                # re-materializa en .agents/sk
 ```
 
 El recorrido completo está en
-[docs/getting-started.md](docs/getting-started.md).
+[docs/getting-started.md](https://github.com/jmorenobl/bookwright/blob/main/docs/getting-started.md).
 
 ## Principios de diseño
 
@@ -161,21 +164,21 @@ sin integración nativa dedicada.
 
 ## Documentos del proyecto
 
-- **[Sitio de documentación](docs/index.md)** — guía de usuario completa
+- **[Sitio de documentación](https://github.com/jmorenobl/bookwright/blob/main/docs/index.md)** — guía de usuario completa
   (primeros pasos, comandos, validación, extender, FAQ).
-- **[bookwright-design.md](bookwright-design.md)** — la especificación
+- **[bookwright-design.md](https://github.com/jmorenobl/bookwright/blob/main/bookwright-design.md)** — la especificación
   de diseño completa. La numeración de secciones es load-bearing.
-- **[bookwright-implementation-plan.md](bookwright-implementation-plan.md)**
+- **[bookwright-implementation-plan.md](https://github.com/jmorenobl/bookwright/blob/main/bookwright-implementation-plan.md)**
   — el plan de iteraciones ordenado.
-- **[.specify/memory/constitution.md](.specify/memory/constitution.md)** —
+- **[.specify/memory/constitution.md](https://github.com/jmorenobl/bookwright/blob/main/.specify/memory/constitution.md)** —
   los principios ratificados y vinculantes para cada PR.
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — instalación, quality gates y
+- **[CONTRIBUTING.md](https://github.com/jmorenobl/bookwright/blob/main/CONTRIBUTING.md)** — instalación, quality gates y
   cómo extender el toolkit (nueva integración, validador, vocabulario).
-- **[CHANGELOG.md](CHANGELOG.md)** — historial de cambios.
+- **[CHANGELOG.md](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md)** — historial de cambios.
 
 ## Licencia
 
-[Apache-2.0](LICENSE). Consulta [NOTICE](NOTICE) para la atribución.
+[Apache-2.0](https://github.com/jmorenobl/bookwright/blob/main/LICENSE). Consulta [NOTICE](https://github.com/jmorenobl/bookwright/blob/main/NOTICE) para la atribución.
 
 Esta licencia cubre **solo el software bookwright**. El contenido que crees
 con la herramienta —*bibles*, escaletas, manuscritos y los grafos de
