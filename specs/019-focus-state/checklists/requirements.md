@@ -32,8 +32,9 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
-- Validation run 2026-06-05: all items pass. Three small product decisions
-  (updated_at granularity, notes partial-update semantics, clear idempotency)
-  were resolved with documented assumptions rather than [NEEDS CLARIFICATION]
-  markers, since reasonable defaults exist and the user's input was thorough.
-  These are worth confirming in `/speckit-clarify`.
+- Validation run 2026-06-05: all items pass.
+- `/speckit-clarify` session 2026-06-05: three product decisions confirmed and
+  promoted from assumptions to firm requirements — `updated_at` granularity
+  (calendar date), notes partial-update semantics (FR-007), and the `--json`
+  success-envelope shape (FR-004/FR-005/FR-013). `focus clear` idempotency
+  remains a documented assumption (no-op success). No open ambiguities.

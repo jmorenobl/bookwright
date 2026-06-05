@@ -23,6 +23,14 @@ through a new `bookwright focus` command group. This iteration delivers only
 the authored state and its read/write/clear commands; derived state, the
 `status` command, and skill consumption are deferred to later iterations.
 
+## Clarifications
+
+### Session 2026-06-05
+
+- Q: On `focus set` against an existing block, what happens to `notes` when `--notes` is omitted? → A: Partial update — omitting `--notes` preserves the existing `notes`; passing `--notes ""` clears it. `target` and `updated_at` always refresh. (`--notes` omitted = `None` = keep; `--notes ""` = clear; `--notes "X"` = set to `X`.)
+- Q: What granularity should the auto-set `updated_at` use? → A: ISO 8601 *calendar date* `YYYY-MM-DD` (no time/timezone), matching the hand-editable plain-text manifest (Principle I).
+- Q: How should `focus show --json` shape its output? → A: The project's standard success envelope — `{"status":"ok","focus":{…}}` when a block exists, `{"status":"ok","focus":null}` when absent — consistent with `graph query` and the unified error envelope (Principle IX).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Record the current focus (Priority: P1)
@@ -127,7 +135,7 @@ focus instead.
   the block with no notes (an empty or absent notes field).
 - **Notes omitted on update**: `focus set --target "X"` with no `--notes` on an
   existing block leaves the existing `notes` unchanged (target and `updated_at`
-  are updated). See Assumptions.
+  are updated). Passing `--notes ""` explicitly clears the notes. See FR-007.
 - **Invalid `updated_at` on load**: a manifest whose `[focus].updated_at` is not a
   valid ISO 8601 date produces a clear manifest error (consistent with other
   manifest validation errors), never a crash or stack trace.
@@ -146,7 +154,7 @@ focus instead.
 
 - **FR-001**: The manifest MUST support an optional `[focus]` block with three
   fields: `target` (string), `notes` (free-text string), and `updated_at`
-  (ISO 8601 date).
+  (ISO 8601 calendar date, `YYYY-MM-DD`, with no time or timezone component).
 - **FR-002**: The `[focus]` block MUST be entirely optional. Its absence MUST NOT
   affect the loading, validation, or behavior of any other command (graph,
   validate, init, etc.), and existing v0.2 projects MUST continue to work
@@ -155,16 +163,20 @@ focus instead.
   notes, last-updated date) in a readable human form when a `[focus]` block
   exists.
 - **FR-004**: `bookwright focus show --json` MUST emit a single JSON document on
-  stdout representing the focus block, and only that document (human prose and
-  progress go to stderr), per Principle IX.
+  stdout — and only that document (human prose and progress go to stderr), per
+  Principle IX — using the standard success envelope:
+  `{"status":"ok","focus":{"target":…,"notes":…,"updated_at":…}}`.
 - **FR-005**: When no `[focus]` block exists, `bookwright focus show` MUST clearly
-  report that no focus is defined and exit successfully, and `--json` MUST emit an
-  equivalent JSON document indicating absence — in neither case an error.
+  report that no focus is defined and exit successfully; `--json` MUST emit
+  `{"status":"ok","focus":null}` and exit successfully — in neither case an error.
 - **FR-006**: `bookwright focus set --target "<text>"` MUST create the `[focus]`
   block if absent or update it if present, and MUST set `updated_at` to the
   current date automatically.
 - **FR-007**: `bookwright focus set` MUST accept an optional `--notes "<text>"`
-  argument that sets the `notes` field.
+  argument with partial-update semantics: when `--notes` is **omitted**, an
+  existing block's `notes` is preserved (and a newly created block has no notes);
+  `--notes "<text>"` sets `notes` to that text; `--notes ""` clears `notes`. In
+  all cases `target` and `updated_at` are (re)written.
 - **FR-008**: `bookwright focus set` MUST reject an empty or whitespace-only
   `--target` with a clear error and leave the manifest unchanged.
 - **FR-009**: Writing the `[focus]` block (via `set` or `clear`) MUST preserve the
@@ -178,8 +190,9 @@ focus instead.
 - **FR-012**: `target` and `notes` MUST be validated as strings on load; a
   non-string value MUST produce a clear manifest error.
 - **FR-013**: Every `focus` subcommand MUST accept `--json` and, when given, emit
-  a single JSON document on stdout following the project's standard error/success
-  envelope conventions.
+  a single JSON document on stdout following the project's standard success
+  envelope (`{"status":"ok", …}`) and the unified `--json` error envelope on
+  failure (Principle IX).
 - **FR-014**: The canonical manifest specification (`bookwright-design.md § 8`)
   MUST be updated to document the `[focus]` block and its fields.
 
@@ -191,8 +204,8 @@ focus instead.
     "arco de Berlín", "cap-04"). Required when the block exists.
   - **notes**: free-text log of open threads and pending decisions; a brief
     journal entry. Optional.
-  - **updated_at**: ISO 8601 date the CLI sets automatically whenever the block is
-    written. Validated on load.
+  - **updated_at**: ISO 8601 calendar date (`YYYY-MM-DD`) the CLI sets
+    automatically whenever the block is written. Validated on load.
 
 ## Success Criteria *(mandatory)*
 
@@ -217,13 +230,11 @@ focus instead.
 
 ## Assumptions
 
-- **updated_at granularity**: `updated_at` is stored as an ISO 8601 *calendar
-  date* (`YYYY-MM-DD`), set to the day the block is written. A full date is
-  sufficient for the authoring loop; sub-day precision is not required.
-- **Notes update semantics**: on `focus set` against an existing block, omitting
-  `--notes` leaves the existing `notes` unchanged (partial update); supplying
-  `--notes ""` is treated as clearing the notes. This keeps `set` predictable as a
-  partial-update command rather than a full overwrite.
+- **updated_at granularity** (resolved — see Clarifications): ISO 8601 calendar
+  date `YYYY-MM-DD`, sufficient for the authoring loop; sub-day precision is not
+  required.
+- **Notes update semantics** (resolved — see Clarifications / FR-007): partial
+  update — omitting `--notes` preserves existing notes, `--notes ""` clears them.
 - **`focus clear` idempotency**: clearing when no `[focus]` block exists is a
   successful no-op, not an error, matching the principle that the block's absence
   is normal.
