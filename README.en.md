@@ -41,9 +41,7 @@ constitution.
 
 ## Install
 
-Bookwright is a **command-line tool**, not a library — install it as an isolated
-executable, not as a dependency of a Python project. The PyPI package is
-`bookwright-cli`; the command it installs is `bookwright`.
+The PyPI package is `bookwright-cli`; the command it installs is `bookwright`.
 
 From PyPI (recommended):
 

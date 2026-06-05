@@ -75,8 +75,6 @@ toolkit.
 
 ## Instalación
 
-Bookwright es una **herramienta de línea de comandos**, no una librería: se
-instala como un ejecutable aislado, no como dependencia de un proyecto Python.
 El paquete en PyPI es `bookwright-cli`; el comando que instala es `bookwright`.
 
 Desde PyPI (recomendado):
