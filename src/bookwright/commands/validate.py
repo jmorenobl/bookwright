@@ -33,6 +33,8 @@ from bookwright.validation import (
     run_validators,
 )
 
+from ._envelope import INVALID_MANIFEST_CODE
+
 EXIT_OK = 0
 EXIT_GATE = 1
 EXIT_CONFIG = 2
@@ -91,7 +93,7 @@ def _validate(scope: Path | None) -> tuple[ValidationReport, ScopeFilter | None]
     try:
         manifest = Manifest.load(root / "manifest.toml")
     except ManifestError as exc:
-        raise _UsageError("invalid_manifest", str(exc)) from exc
+        raise _UsageError(INVALID_MANIFEST_CODE, str(exc)) from exc
 
     indexer = _load_indexer(manifest, root)
     project = ValidationContext(root=root, manifest=manifest)
@@ -100,7 +102,10 @@ def _validate(scope: Path | None) -> tuple[ValidationReport, ScopeFilter | None]
     try:
         active = resolve_active(builtins, customs, manifest.validators)
     except UnknownValidatorError as exc:
-        raise _UsageError("unknown_validator", exc.message, {"names": list(exc.names)}) from exc
+        # UnknownValidatorError is itself a BookwrightError carrying the exact
+        # ``unknown_validator`` envelope; re-thread its code/message/details into
+        # the exit-2 funnel rather than rebuilding them by hand.
+        raise _UsageError(exc.code, exc.message, exc.details) from exc
 
     scope_filter = _resolve_scope(scope, root)
 

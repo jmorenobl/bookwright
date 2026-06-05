@@ -14,16 +14,21 @@ from typing import Any
 
 from bookwright.errors import BookwrightError
 
+#: The contract code every caught ``ManifestError`` collapses to at a ``--json``
+#: boundary. Single-sourced here so the two remap sites — this module and
+#: ``commands.validate._UsageError`` — cannot drift to different literals.
+INVALID_MANIFEST_CODE = "invalid_manifest"
+
 
 class _InvalidManifestError(BookwrightError):
     """A caught ``ManifestError`` re-coded to the contract's ``invalid_manifest``.
 
-    Mirrors ``commands.validate._UsageError("invalid_manifest", ...)``: the remap
-    is expressed as a ``BookwrightError`` whose canonical ``to_json()`` builds the
-    envelope, never a hand-rolled dict.
+    Mirrors ``commands.validate._UsageError(INVALID_MANIFEST_CODE, ...)``: the
+    remap is expressed as a ``BookwrightError`` whose canonical ``to_json()``
+    builds the envelope, never a hand-rolled dict.
     """
 
-    code = "invalid_manifest"
+    code = INVALID_MANIFEST_CODE
 
 
 def invalid_manifest_payload(exc: Exception) -> dict[str, Any]:
