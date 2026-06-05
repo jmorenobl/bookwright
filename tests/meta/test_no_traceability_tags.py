@@ -66,3 +66,40 @@ def test_no_forbidden_traceability_tags() -> None:
     footer = "Convert to a durable FR/SC/D ref or rewrite to neutral prose."
     message = "\n".join([header, *offenders, footer])
     assert not offenders, message
+
+
+# The sweep above only proves the tree is *currently* clean; on its own it would
+# pass vacuously if the detector ever broke. These two guard the detector itself
+# so a future refactor of ``FORBIDDEN`` cannot silently neuter the gate.
+
+
+def test_detector_catches_each_forbidden_pattern(tmp_path: Path) -> None:
+    """Every forbidden shape (FR-001/FR-002) is detected by ``_scan``."""
+    sample = tmp_path / "sample.py"
+    sample.write_text(
+        "\n".join(
+            [
+                "tag T013 here",  # FR-001: T + exactly 3 digits
+                "story US1 here",  # FR-002: USx
+                "story US-3 here",  # FR-002: US-x
+                "story +US2 here",  # FR-002: +USx
+                "future T100 here",  # FR-001: T100+ must not leak
+            ]
+        ),
+        encoding="utf-8",
+    )
+    tokens = {token for _, token in _scan(sample)}
+    # ``+US2`` is consumed whole by the ``\+US[0-9]+`` alternative, so the bare
+    # ``US2`` is not yielded as a separate (overlapping) match.
+    assert tokens == {"T013", "US1", "US-3", "+US2", "T100"}
+
+
+def test_detector_ignores_permitted_refs(tmp_path: Path) -> None:
+    """Durable refs and the gate's own vocabulary do not false-positive (FR-011)."""
+    sample = tmp_path / "permitted.py"
+    sample.write_text(
+        "dedup feature values (FR-021); SC-001 clean; decision D8; "
+        "bookwright-design.md § 20.5; US English; matrix T273K and var _T013\n",
+        encoding="utf-8",
+    )
+    assert _scan(sample) == []
