@@ -4,6 +4,60 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.2.0] — 2026-06-05
+
+Research & verification milestone (M4). This release adds a provenance-backed
+research system on top of the v0.1.0 narrative graph: authors can record
+external **Sources**, the **Findings** drawn from them, and the **Anchors** that
+bind manuscript claims to evidence — all in plain text, all reconstructible into
+the graph. Two new Agent Skills drive the loop, a new validator guards anchor
+integrity, and an LLM-driven fidelity check flags claims the manuscript can't
+support. The system is **inert** for projects that don't use it: no `[research]`
+block or `bible/research/` means identical v0.1.0 behavior. This entry
+consolidates iterations 12–18.
+
+### Added
+
+- **Research provenance model** (iteration 12): `Source`, `Finding`, and
+  `Anchor` GOLEM-adjacent entities serialized through a new `sources.ttl`
+  vocabulary (the frozen GOLEM ontology is untouched — Constitution X), with an
+  `io/research.py` reader analogous to `bible.py` that maps `bible/research/*.md`
+  into entities with `file:line` provenance.
+- **`bookwright-research` Agent Skill** + **`[research]` manifest block**
+  (iteration 13): the author-facing loop for gathering sources and recording
+  findings, plus the `bible/research/` scaffold stamped by `init`. Triggers on
+  both ES and EN prompts.
+- **`factual_anchor` validator** (iteration 14): a continuity check that flags
+  malformed anchors and time-span anachronisms against the graph, wired into the
+  same error-only CI gate as the v0.1.0 validators.
+- **`bookwright-verify` Agent Skill** (iteration 15): a post-draft LLM fidelity
+  check that reads the manuscript against its anchored evidence and reports
+  claims the sources don't support.
+- **End-to-end research coverage & docs** (iteration 16): the `tiny-historical`
+  fixture (a documented mini-novel with real anchors and a deliberate
+  anachronism), `tests/e2e/test_research_workflow.py` exercising
+  build → query → validate → verify, the Spanish `docs/research.md` page, and
+  CHANGELOG/release metadata for this milestone.
+
+### Changed
+
+- **Unified error envelope** (iteration 18): every serializable error across the
+  eight origins (`core`, `golem`, `io`, `indexers`, `validation`,
+  `commands.validate`, `integrations`, `commands.init`) now subclasses the single
+  `BookwrightError` base in `errors.py`, which owns the one canonical `--json`
+  envelope (`{status, code, message[, details]}`) and its single `to_json()`.
+  Per-class serializers were removed; the base imports nothing from other layers,
+  so it sits below them with no cycle (Principle IX).
+
+### Removed
+
+- **Forbidden traceability tags** (iteration 17): purged all `T0xx` task IDs and
+  `US-x`/`+USx` user-story tags from `src/` and `tests/` (~57 occurrences across
+  ~40 files), converting each to a durable `FR`/`SC`/`D` or `bookwright-design.md
+  § N.M` reference or to neutral prose. Added a non-regression test gate
+  (`tests/meta/test_no_traceability_tags.py`) that fails CI if any reappear.
+  Comments/docstrings only — no logic, signature, or behavior changes.
+
 ## [0.1.0] — 2026-06-03
 
 First public release. Bookwright is a spec-driven authoring toolkit that turns a
@@ -51,9 +105,7 @@ This entry consolidates iterations 1–11.
 - The coverage gate threshold is single-sourced in `[tool.coverage.report]`
   (`fail_under = 80`, `precision = 2`) so it fails closed with no round-up.
 
-## [Unreleased]
-
-### Added — Iteration 7: Bible / Outline / Constitution templates
+### Added — Bible / Outline / Constitution templates
 
 - Authored the real narrative skeleton stamped by `bookwright init`: the
   `bible/` documents (constitution, timeline, relationships, themes, glossary,

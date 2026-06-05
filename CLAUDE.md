@@ -2,13 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.1.0 shipped, M4 in progress
+## Repository state: v0.2.0 shipped (M4 complete)
 
-The v0 toolkit is **fully implemented and released** (`v0.1.0`, 2026-06-03):
-iterations 1–14 are on `main` with a real `src/bookwright/` package, ~200
-Python files, the full test suite, docs, and CI gates green. Work has moved
-on to **M4 / v0.2** — the research & provenance system — currently on branch
-`015-bookwright-verify` (the post-draft fidelity check).
+Both milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
+the v0 toolkit, iterations 1–11) and `v0.2.0` (2026-06-05, the M4 research &
+verification system, iterations 12–18). All of it is on `main` with a real
+`src/bookwright/` package, ~200 Python files, the full test suite, docs, and CI
+gates green. The next planned work is **v0.3** — decoupled vector search
+(ChromaDB over rdflib); no iteration branch exists for it yet.
 
 The canonical references:
 
@@ -87,7 +88,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 ## Iterations (shipped + planned)
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0) and
-012–014 are merged (M4 in progress); 015 is the active branch.
+012–018 are merged (v0.2.0). There is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -105,12 +106,18 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 | 012 | Research provenance model (Source/Finding/Anchor) | M4 | ✅ merged |
 | 013 | `bookwright-research` skill + `[research]` manifest block | M4 | ✅ merged |
 | 014 | `factual_anchor` validator | M4 | ✅ merged |
-| 015 | `bookwright-verify` LLM check | M4 | 🔨 active |
+| 015 | `bookwright-verify` LLM check | M4 | ✅ merged |
+| 016 | Research E2E fixture, workflow test, docs | M4 | ✅ merged |
+| 017 | Traceability-tag cleanup + non-regression gate | — | ✅ merged |
+| 018 | Unified `--json` error envelope | — | ✅ merged |
 
-M4/v0.2 is nearly complete: the provenance model (012), the `bookwright-research`
-skill + `[research]` manifest block (013), and the `factual_anchor` validator
-(014) are merged; the `bookwright-verify` LLM check (015) is the active branch.
-v0.3 adds decoupled vector search (ChromaDB over rdflib).
+M4/v0.2 is **complete and released** (`v0.2.0`, 2026-06-05): the provenance
+model (012), the `bookwright-research` skill + `[research]` manifest block (013),
+the `factual_anchor` validator (014), the `bookwright-verify` LLM check (015),
+and the research E2E fixture/tests/docs (016) all merged, plus two maintenance
+iterations — traceability-tag cleanup (017) and the unified error envelope
+(018). The next planned work is v0.3: decoupled vector search (ChromaDB over
+rdflib).
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
