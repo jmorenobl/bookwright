@@ -104,7 +104,7 @@ A consumer already relying on the canonical-envelope hierarchies (io, indexers, 
 - **FR-008**: Error human-readable `message` strings MUST NOT change for any error.
 - **FR-009**: Per-command exit codes MUST NOT change for any command or failure mode.
 - **FR-010**: The base module MUST NOT import from `core`, `golem`, `io`, `indexers`, `validation`, `integrations`, or `commands` (dependencies flow only toward the base); no new import cycle may be introduced.
-- **FR-011**: The system MUST NOT introduce any new error type, and MUST NOT alter the JSON-over-stdout contract beyond reorganizing the two legacy flat shapes into the canonical envelope (Principle IX preserved).
+- **FR-011**: Aside from the shared base `BookwrightError` (FR-001), the system MUST NOT introduce any new error *code or failure mode*, and MUST NOT alter the JSON-over-stdout contract beyond reorganizing the two legacy flat shapes into the canonical envelope (Principle IX preserved).
 - **FR-012**: Success envelopes (`status:"ok"`, e.g. `io/report.py`, `validation/report.py`) and finding payloads (`Violation`, `ValidatorError`, `ManifestWarning`) MUST remain out of scope and keep their existing serialization unchanged.
 - **FR-013**: Tests that assert the former **flat** manifest/golem shapes MUST be updated to assert the canonical envelope; all other existing error-shape assertions MUST pass without modification.
 - **FR-014**: Contract documentation that describes the former flat shapes (e.g. `data-model § 6`, `specs/002-manifest-model/contracts/`) MUST be updated to reflect the unified envelope; documentation of the already-canonical shapes is unchanged.

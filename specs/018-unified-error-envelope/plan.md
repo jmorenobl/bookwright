@@ -61,7 +61,7 @@ codes frozen (FR-007/008/009). All four CI gates green (SC-007).
 
 **Scale/Scope**: 1 new module (~30 lines), ~10 source files refactored
 (6 `errors.py`/`base.py` modules + `integrations/errors.py` + `commands/init/validate.py`
-+ the `integration use` / `init resolve` boundaries), ~23 concrete error classes
++ the `integration use` / `init resolve` boundaries), ~25 concrete error classes
 migrated (incl. the 8 integration errors + `InvalidProjectNameError`), ~8 test
 files + 3 contract docs (`specs/002`, `005`, `003`) updated for the normalized
 shapes. No behavior change for the four canonical hierarchies and the `init`
