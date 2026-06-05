@@ -239,15 +239,7 @@ def run(  # noqa: PLR0913, PLR0912, PLR0915 — single Typer entry point; surfac
         _rollback_and_cleanup()
         if isinstance(exc, typer.Exit):
             raise
-        code, exit_code, details = envelope.classify_filesystem_failure(exc)
-        envelope.emit_error(
-            code=code,
-            message=str(exc) or code,
-            details=details,
-            exit_code=exit_code,
-            json_output=json_output,
-            rolled_back=True,
-        )
+        envelope.emit_scaffold_failure(exc, json_output=json_output)
 
     ledger.commit()
 

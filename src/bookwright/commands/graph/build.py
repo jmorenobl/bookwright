@@ -28,8 +28,9 @@ from bookwright.io.project import find_project_root
 from bookwright.io.report import BuildReport, ResearchTargetWarning
 from bookwright.io.research import map_research
 
+from .._envelope import invalid_manifest_payload
 from . import app
-from .envelope import emit_error, emit_json, error_payload
+from .envelope import emit_error, emit_json
 
 EXIT_CONFIG = 2
 EXIT_COLLISION = 3
@@ -49,7 +50,7 @@ def run(
     try:
         report = _build()
     except ManifestError as exc:
-        emit_error(error_payload("invalid_manifest", str(exc)), json_output)
+        emit_error(invalid_manifest_payload(exc), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except (
         ProjectNotFoundError,

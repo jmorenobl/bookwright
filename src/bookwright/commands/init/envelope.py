@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from bookwright import __version__ as _BOOKWRIGHT_VERSION
 from bookwright.core.iso639_1 import ISO_639_1_CODES
+from bookwright.errors import BookwrightError
 from bookwright.integrations import (
     MalformedOptionError,
     SkillLintError,
@@ -138,21 +139,33 @@ def success_envelope(
 
 
 def error_envelope(
-    code: str,
-    message: str,
-    details: dict[str, Any],
+    error: BookwrightError | str,
+    message: str | None = None,
+    details: dict[str, Any] | None = None,
+    *,
     rolled_back: bool,
 ) -> dict[str, Any]:
-    """Contract §3.2 error-envelope shape."""
+    """Contract §3.2 error-envelope shape: the canonical body + init's superset.
 
-    return {
-        "status": "error",
-        "code": code,
-        "message": message,
-        "details": dict(details),
-        "rolled_back": rolled_back,
-        "bookwright_version": _BOOKWRIGHT_VERSION,
-    }
+    The ``{status,code,message[,details]}`` skeleton lives in exactly one place —
+    ``BookwrightError.to_json`` (review R1). Pass a ``BookwrightError`` to spread
+    that body; pass a primitive ``code`` (as ``error``) plus ``message``/``details``
+    for the non-``BookwrightError`` carve-outs that ``classify_filesystem_failure``
+    maps by hand (``OSError``/``PermissionError``/``GitInitError`` and the two
+    ``io.fs`` errors).
+    """
+
+    body: dict[str, Any]
+    if isinstance(error, BookwrightError):
+        body = error.to_json()
+    else:
+        body = {
+            "status": "error",
+            "code": error,
+            "message": message,
+            "details": dict(details or {}),
+        }
+    return {**body, "rolled_back": rolled_back, "bookwright_version": _BOOKWRIGHT_VERSION}
 
 
 def dump_success_to_stdout(payload: dict[str, Any]) -> None:
@@ -167,6 +180,18 @@ def dump_error_to_stdout(payload: dict[str, Any]) -> None:
     sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
 
 
+def _emit(payload: dict[str, Any], message: str, *, exit_code: int, json_output: bool) -> NoReturn:
+    """Surface an error envelope, then exit: one JSON document on stdout under
+    ``--json`` (contract §3.2), else a single ``bookwright: error: <message>``
+    line on stderr (Principle IX). Always raises."""
+
+    if json_output:
+        dump_error_to_stdout(payload)
+    else:
+        sys.stderr.write(f"bookwright: error: {message}\n")
+    raise typer.Exit(exit_code)
+
+
 def emit_error(  # noqa: PLR0913 — structured-error envelope demands all six fields
     *,
     code: str,
@@ -176,21 +201,44 @@ def emit_error(  # noqa: PLR0913 — structured-error envelope demands all six f
     json_output: bool,
     rolled_back: bool,
 ) -> NoReturn:
-    """Build and emit the error envelope, then raise ``typer.Exit(exit_code)``.
+    """Build and emit the error envelope for a primitive ``code``/``message``/
+    ``details`` triple, then raise ``typer.Exit(exit_code)``.
 
-    JSON callers get a single envelope on stdout (contract §3.2); humans
-    get a single ``bookwright: error: <message>`` line on stderr. Always
-    raises — callers can rely on ``NoReturn`` for control-flow analysis.
+    The call sites with no ``BookwrightError`` in hand (mutex, removed flags, the
+    conflict matrix, and the filesystem/permission carve-outs). Always raises —
+    callers can rely on ``NoReturn`` for control-flow analysis.
     """
 
-    if json_output:
-        payload = error_envelope(
-            code=code, message=message, details=details, rolled_back=rolled_back
-        )
-        dump_error_to_stdout(payload)
+    _emit(
+        error_envelope(code, message, details, rolled_back=rolled_back),
+        message,
+        exit_code=exit_code,
+        json_output=json_output,
+    )
+
+
+def emit_scaffold_failure(exc: BaseException, *, json_output: bool) -> NoReturn:
+    """Emit the §3.2 envelope for a caught scaffold-time exception, then exit.
+
+    A ``BookwrightError`` (``MalformedOptionError``/``SkillLintError``/
+    ``SkillMaterializationError``) carries its own canonical body, so we spread
+    ``error_envelope(exc, ...)`` — keeping the skeleton single-sourced in
+    ``BookwrightError.to_json`` (review R1). The non-``BookwrightError`` carve-outs
+    (``OSError``/``PermissionError``/``GitInitError`` and the two ``io.fs`` errors)
+    have no envelope, so ``classify_filesystem_failure`` maps them to a primitive
+    ``code``/``details`` pair; only its ``exit_code`` is consulted for the base
+    path. The scaffold is already rolled back by the caller, hence
+    ``rolled_back=True``.
+    """
+
+    code, exit_code, details = classify_filesystem_failure(exc)
+    if isinstance(exc, BookwrightError):
+        payload = error_envelope(exc, rolled_back=True)
+        message = exc.message
     else:
-        sys.stderr.write(f"bookwright: error: {message}\n")
-    raise typer.Exit(exit_code)
+        message = str(exc) or code
+        payload = error_envelope(code, message, details, rolled_back=True)
+    _emit(payload, message, exit_code=exit_code, json_output=json_output)
 
 
 def classify_filesystem_failure(  # noqa: PLR0911 — one branch per contract §4 exception type

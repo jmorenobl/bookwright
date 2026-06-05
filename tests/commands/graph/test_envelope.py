@@ -1,9 +1,11 @@
 """Unit + CLI coverage for the ``graph`` JSON/error envelopes (Principle IX).
 
 Complements ``test_json_contract.py`` (which exercises the ``--json`` happy and
-error paths) by pinning the two branches that only the *human* mode reaches: the
-``details`` field of :func:`error_payload` and the ``stderr`` write in
-:func:`emit_error` when ``--json`` is off.
+error paths) by pinning the branch that only the *human* mode reaches: the
+``stderr`` write in :func:`emit_error` when ``--json`` is off. The error-body
+skeleton itself is now single-sourced in ``BookwrightError.to_json`` (review R1);
+the ``ManifestError``→``invalid_manifest`` remap is covered in
+``bookwright.commands._envelope``.
 """
 
 from __future__ import annotations
@@ -14,17 +16,7 @@ import pytest
 from typer.testing import CliRunner
 
 from bookwright.cli import app
-from bookwright.commands.graph.envelope import emit_error, error_payload
-
-
-def test_error_payload_omits_details_when_absent() -> None:
-    payload = error_payload("invalid_query", "bad SPARQL")
-    assert payload == {"status": "error", "code": "invalid_query", "message": "bad SPARQL"}
-
-
-def test_error_payload_includes_details_when_present() -> None:
-    payload = error_payload("slug_collision", "clash", {"identifier": "aparici"})
-    assert payload["details"] == {"identifier": "aparici"}
+from bookwright.commands.graph.envelope import emit_error
 
 
 def test_emit_error_human_mode_writes_prefixed_line_to_stderr(

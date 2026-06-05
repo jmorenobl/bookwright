@@ -34,6 +34,7 @@ from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.fs import BackupLedger
 from bookwright.io.project import find_project_root
 
+from .._envelope import invalid_manifest_payload
 from . import app
 
 EXIT_CONFIG = 2
@@ -54,7 +55,7 @@ def run(
         _emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except ManifestError as exc:
-        _emit_error(_error("invalid_manifest", str(exc)), json_output)
+        _emit_error(invalid_manifest_payload(exc), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except UnknownIntegrationError as exc:
         _emit_error(exc.to_json(), json_output)
@@ -105,11 +106,6 @@ def _use(key: str) -> dict[str, Any]:
         "materialized": materialized,
         "count": len(materialized),
     }
-
-
-def _error(code: str, message: str) -> dict[str, Any]:
-    """Build a Principle-IX error envelope."""
-    return {"status": "error", "code": code, "message": message}
 
 
 def _emit_json(payload: dict[str, Any]) -> None:

@@ -17,14 +17,6 @@ def emit_json(payload: dict[str, Any]) -> None:
     sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
 
 
-def error_payload(code: str, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Build the contract error envelope (cli-graph.md)."""
-    payload: dict[str, Any] = {"status": "error", "code": code, "message": message}
-    if details:
-        payload["details"] = details
-    return payload
-
-
 def emit_error(payload: dict[str, Any], json_output: bool) -> None:
     """Surface an error envelope: one JSON doc on stdout under ``--json``, else a
     single ``bookwright: error: <message>`` line on stderr (Principle IX)."""
