@@ -71,4 +71,8 @@ walkthrough.
 
 ## License
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](LICENSE). See [NOTICE](NOTICE) for attribution.
+
+This license covers the **bookwright software only**. The content you author
+with it — story bibles, outlines, manuscripts, and the derived knowledge
+graphs — remains entirely yours.

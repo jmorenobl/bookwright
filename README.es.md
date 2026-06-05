@@ -161,4 +161,8 @@ sin integración nativa dedicada.
 
 ## Licencia
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](LICENSE). Consulta [NOTICE](NOTICE) para la atribución.
+
+Esta licencia cubre **solo el software bookwright**. El contenido que crees
+con la herramienta —*bibles*, escaletas, manuscritos y los grafos de
+conocimiento derivados— sigue siendo enteramente tuyo.
