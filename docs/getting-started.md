@@ -5,18 +5,35 @@ Bookwright validado. Cada comando aquí coincide con el CLI publicado.
 
 ## Instalación
 
-Bookwright se desarrolla con [`uv`](https://docs.astral.sh/uv/). Para usar el
-CLI ya empaquetado, instala el *wheel* en un entorno aislado:
+Bookwright es una **herramienta de línea de comandos**, no una librería: se
+instala como un ejecutable aislado, no como dependencia de un proyecto Python.
+El paquete en PyPI es `bookwright-cli`; el comando que instala es `bookwright`.
+
+Desde PyPI (recomendado), con [`uv`](https://docs.astral.sh/uv/) o `pipx`:
 
 ```bash
-uv build
-pipx install ./dist/bookwright_cli-*.whl   # o: uv tool install ./dist/*.whl
+uv tool install bookwright-cli   # con uv
+pipx install bookwright-cli      # o con pipx
 bookwright version
 ```
 
-Para trabajar sobre el código del toolkit, sincroniza el entorno del proyecto:
+Directamente desde el repositorio (última versión de `main`):
 
 ```bash
+uv tool install "git+https://github.com/jmorenobl/bookwright"
+# o:  pipx install "git+https://github.com/jmorenobl/bookwright"
+```
+
+¿Solo quieres probarlo una vez, sin instalar nada?
+
+```bash
+uvx --from bookwright-cli bookwright version
+```
+
+Para trabajar sobre el código del toolkit, clona el repo y sincroniza el entorno:
+
+```bash
+git clone https://github.com/jmorenobl/bookwright && cd bookwright
 uv sync
 uv run bookwright --help
 ```

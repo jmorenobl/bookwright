@@ -39,6 +39,33 @@ constitution.
   add a new integration / validator / vocabulary.
 - **[CHANGELOG.md](CHANGELOG.md)** — release history.
 
+## Install
+
+Bookwright is a **command-line tool**, not a library — install it as an isolated
+executable, not as a dependency of a Python project. The PyPI package is
+`bookwright-cli`; the command it installs is `bookwright`.
+
+From PyPI (recommended):
+
+```bash
+uv tool install bookwright-cli   # with uv
+pipx install bookwright-cli      # or with pipx
+bookwright version
+```
+
+Straight from the repository (latest `main`):
+
+```bash
+uv tool install "git+https://github.com/jmorenobl/bookwright"
+# or:  pipx install "git+https://github.com/jmorenobl/bookwright"
+```
+
+Just want to try it once, without installing anything?
+
+```bash
+uvx --from bookwright-cli bookwright version
+```
+
 ## Quickstart
 
 Scaffold a project, then distill your idea with the authoring skills — you don't
