@@ -211,25 +211,34 @@ class _FieldFailure:
     message: str               # human-readable
 ```
 
-`ManifestValidationError.to_json() -> dict[str, Any]` returns:
+`ManifestValidationError` serializes to the **unified error envelope** owned by
+`BookwrightError.to_json()` (iteration 018 normalized the former flat
+`{"error": …}` shape onto it). The authoritative schema is
+[`specs/018-unified-error-envelope/contracts/error-envelope.md`](../018-unified-error-envelope/contracts/error-envelope.md);
+this error emits:
 
 ```json
 {
-  "error": "manifest_validation",
-  "failures": [
-    {
-      "field": "book.authors[0]",
-      "value": "",
-      "rule": "book.authors.entry.empty",
-      "message": "authors[0] must be a non-empty string"
-    }
-  ]
+  "status": "error",
+  "code": "manifest_validation",
+  "message": "1 validation failure(s); first: book.authors[0]: authors[0] must be a non-empty string",
+  "details": {
+    "failures": [
+      {
+        "field": "book.authors[0]",
+        "value": "",
+        "rule": "book.authors.entry.empty",
+        "message": "authors[0] must be a non-empty string"
+      }
+    ]
+  }
 }
 ```
 
-This shape is the FR-024 contract: a future `--json`-aware CLI command
-(iteration 4 `init` is the first) emits this dict directly inside its
-JSON envelope under an `error` key.
+This is the FR-024 contract (now the canonical envelope): a `--json`-aware CLI
+command emits this body. The former flat `"error"` value is preserved verbatim as
+`code`; `manifest_validation` is the one error that gains a top-level `message`
+(its existing summary string) under normalization.
 
 ### `ManifestWarning`
 

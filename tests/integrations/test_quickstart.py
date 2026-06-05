@@ -30,10 +30,10 @@ def test_quickstart_section_1_lookup() -> None:
 
     with pytest.raises(UnknownIntegrationError) as exc_info:
         get("copilot")
-    payload = exc_info.value.to_dict()
+    payload = exc_info.value.to_json()
     assert payload["code"] == "unknown_integration"
-    assert payload["value"] == "copilot"
-    assert payload["valid"] == ["claude", "generic"]
+    assert payload["details"]["value"] == "copilot"
+    assert payload["details"]["valid"] == ["claude", "generic"]
 
 
 # §2 — Inspect metadata
@@ -79,18 +79,18 @@ def test_quickstart_section_3_parse_options() -> None:
 
     with pytest.raises(UnknownOptionError) as unknown_info:
         parse_options("--bogus xyz", generic_cls)
-    payload = unknown_info.value.to_dict()
+    payload = unknown_info.value.to_json()
     assert payload["code"] == "unknown_option"
-    assert payload["integration"] == "generic"
-    assert payload["value"] == "--bogus"
-    assert payload["valid"] == ["--skills-dir"]
+    assert payload["details"]["integration"] == "generic"
+    assert payload["details"]["value"] == "--bogus"
+    assert payload["details"]["valid"] == ["--skills-dir"]
 
     with pytest.raises(MalformedOptionError) as malformed_info:
         parse_options("--skills-dir", generic_cls)
-    payload = malformed_info.value.to_dict()
+    payload = malformed_info.value.to_json()
     assert payload["code"] == "malformed_option"
-    assert payload["rule"] == "missing_value"
-    assert payload["value"] == "--skills-dir"
+    assert payload["details"]["rule"] == "missing_value"
+    assert payload["details"]["value"] == "--skills-dir"
 
 
 # §4 — Materialize the integration into a project

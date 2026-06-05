@@ -56,10 +56,10 @@ def test_claude_no_options_empty_input_returns_empty_dict() -> None:
 def test_claude_rejects_any_flag() -> None:
     with pytest.raises(UnknownOptionError) as exc_info:
         parse_options("--skills-dir x", ClaudeIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["integration"] == "claude"
-    assert payload["value"] == "--skills-dir"
-    assert payload["valid"] == []
+    details = exc_info.value.to_json()["details"]
+    assert details["integration"] == "claude"
+    assert details["value"] == "--skills-dir"
+    assert details["valid"] == []
 
 
 # ---------- generic error paths ----------
@@ -68,18 +68,18 @@ def test_claude_rejects_any_flag() -> None:
 def test_unknown_flag_lists_valid_alphabetic() -> None:
     with pytest.raises(UnknownOptionError) as exc_info:
         parse_options("--bogus x", GenericIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["integration"] == "generic"
-    assert payload["value"] == "--bogus"
-    assert payload["valid"] == ["--skills-dir"]
+    details = exc_info.value.to_json()["details"]
+    assert details["integration"] == "generic"
+    assert details["value"] == "--bogus"
+    assert details["valid"] == ["--skills-dir"]
 
 
 def test_missing_value_for_string_option() -> None:
     with pytest.raises(MalformedOptionError) as exc_info:
         parse_options("--skills-dir", GenericIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "missing_value"
-    assert payload["value"] == "--skills-dir"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "missing_value"
+    assert details["value"] == "--skills-dir"
 
 
 def test_inline_empty_value_for_string_option_raises_missing_value() -> None:
@@ -87,17 +87,17 @@ def test_inline_empty_value_for_string_option_raises_missing_value() -> None:
 
     with pytest.raises(MalformedOptionError) as exc_info:
         parse_options("--skills-dir=", GenericIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "missing_value"
-    assert payload["value"] == "--skills-dir"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "missing_value"
+    assert details["value"] == "--skills-dir"
 
 
 def test_duplicate_flag_rejected() -> None:
     with pytest.raises(MalformedOptionError) as exc_info:
         parse_options("--skills-dir a --skills-dir b", GenericIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "duplicate_flag"
-    assert payload["value"] == "--skills-dir"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "duplicate_flag"
+    assert details["value"] == "--skills-dir"
 
 
 # ---------- R7 — shlex tokenization errors surface as MalformedOptionError ----------
@@ -116,18 +116,18 @@ def test_unbalanced_quotes_raise_structured_malformed_option(raw: str) -> None:
     """R7 — `shlex.split` raises bare `ValueError` on unbalanced quotes; the
     parser MUST translate this into the structured-error contract (FR-035).
 
-    Iteration 4's `--json` envelope reads `to_dict()` directly; a leaked
+    The `--json` envelope reads the canonical `to_json()` body; a leaked
     `ValueError` would leave it without a `code`/`message` payload.
     """
 
     with pytest.raises(MalformedOptionError) as exc_info:
         parse_options(raw, GenericIntegration)
-    payload = exc_info.value.to_dict()
+    payload = exc_info.value.to_json()
     assert payload["code"] == "malformed_option"
-    assert payload["rule"] == "malformed_shell_syntax"
+    assert payload["details"]["rule"] == "malformed_shell_syntax"
     # The raw user input is carried in `value` (not a single flag) so the
     # caller can echo the offending string back to the user.
-    assert payload["value"] == raw
+    assert payload["details"]["value"] == raw
 
 
 # ---------- FR-019 — flag-typed option must NOT swallow a following token ----------
@@ -149,17 +149,17 @@ def test_flag_option_does_not_consume_following_dash_dash_token() -> None:
 
     with pytest.raises(UnknownOptionError) as exc_info:
         parse_options("--my-flag --foo", _FakeFlagIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["value"] == "--foo"
-    assert payload["valid"] == ["--my-flag"]
+    details = exc_info.value.to_json()["details"]
+    assert details["value"] == "--foo"
+    assert details["valid"] == ["--my-flag"]
 
 
 def test_flag_option_with_inline_value_raises_unexpected_value() -> None:
     with pytest.raises(MalformedOptionError) as exc_info:
         parse_options("--my-flag=oops", _FakeFlagIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "unexpected_value"
-    assert payload["value"] == "--my-flag"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "unexpected_value"
+    assert details["value"] == "--my-flag"
 
 
 def test_flag_option_alone_yields_true() -> None:
@@ -203,9 +203,9 @@ def test_required_flag_absent_with_other_input_raises_missing_required() -> None
 
     with pytest.raises(MalformedOptionError) as exc_info:
         parse_options("--opt x", FakeMix)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "missing_required"
-    assert payload["value"] == "--needed"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "missing_required"
+    assert details["value"] == "--needed"
 
 
 # ---------- FR-020 vs FR-021 precedence (R6) ----------
@@ -282,9 +282,9 @@ def test_invalid_flag_prefix_in_descriptor_raises_invalid_declaration() -> None:
 
     with pytest.raises(InvalidOptionDeclarationError) as exc_info:
         parse_options("--anything x", BadFlagIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "bad_flag_prefix"
-    assert payload["value"] == "skills-dir"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "bad_flag_prefix"
+    assert details["value"] == "skills-dir"
 
 
 @pytest.mark.parametrize("raw", [None, "", "   "])
@@ -304,7 +304,7 @@ def test_invalid_descriptor_raises_even_on_empty_input(raw: str | None) -> None:
 
     with pytest.raises(InvalidOptionDeclarationError) as exc_info:
         parse_options(raw, BadFlagIntegration)
-    assert exc_info.value.to_dict()["rule"] == "bad_flag_prefix"
+    assert exc_info.value.to_json()["details"]["rule"] == "bad_flag_prefix"
 
 
 def test_colliding_identifiers_in_descriptor_raises_invalid_declaration() -> None:
@@ -326,11 +326,11 @@ def test_colliding_identifiers_in_descriptor_raises_invalid_declaration() -> Non
 
     with pytest.raises(InvalidOptionDeclarationError) as exc_info:
         parse_options(None, CollidingIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "colliding_identifiers"
-    assert "skills_dir" in str(payload["value"])
-    assert "--skills-dir" in str(payload["value"])
-    assert "--skills_dir" in str(payload["value"])
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "colliding_identifiers"
+    assert "skills_dir" in str(details["value"])
+    assert "--skills-dir" in str(details["value"])
+    assert "--skills_dir" in str(details["value"])
 
 
 def test_duplicate_flag_declaration_raises_invalid_declaration() -> None:
@@ -351,9 +351,9 @@ def test_duplicate_flag_declaration_raises_invalid_declaration() -> None:
 
     with pytest.raises(InvalidOptionDeclarationError) as exc_info:
         parse_options("--foo x", DupFlagIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "duplicate_flag"
-    assert payload["value"] == "--foo"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "duplicate_flag"
+    assert details["value"] == "--foo"
 
 
 def test_invalid_type_in_descriptor_raises_invalid_declaration() -> None:
@@ -368,9 +368,9 @@ def test_invalid_type_in_descriptor_raises_invalid_declaration() -> None:
 
     with pytest.raises(InvalidOptionDeclarationError) as exc_info:
         parse_options("--x 1", BadTypeIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["rule"] == "bad_type"
-    assert payload["value"] == "weird"
+    details = exc_info.value.to_json()["details"]
+    assert details["rule"] == "bad_type"
+    assert details["value"] == "weird"
 
 
 # ---------- IntegrationOption descriptor itself ----------

@@ -46,4 +46,7 @@ def test_empty_result_rejected(name: str) -> None:
     with pytest.raises(EmptySlugError) as excinfo:
         make_slug(name)
     assert excinfo.value.name == name
-    assert excinfo.value.to_json()["error"] == "golem_empty_slug"
+    payload = excinfo.value.to_json()
+    assert payload["status"] == "error"
+    assert payload["code"] == "golem_empty_slug"
+    assert payload["details"]["name"] == name

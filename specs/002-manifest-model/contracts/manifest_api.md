@@ -241,32 +241,45 @@ before calling `build`.
 
 ## Exception JSON shapes (FR-024)
 
-These are the stable shapes a `--json` CLI command will embed in its
-JSON envelope. Any future change to a key name is a breaking change.
+These are the stable shapes a `--json` CLI command embeds in its JSON envelope.
+Since iteration 018 every error serializes through the **unified error envelope**
+owned by `BookwrightError.to_json()` — `{status, code, message[, details]}`; the
+authoritative schema is
+[`specs/018-unified-error-envelope/contracts/error-envelope.md`](../../018-unified-error-envelope/contracts/error-envelope.md).
+The former flat `"error"` value is preserved verbatim as `code` and all other
+former top-level fields move under `details`. Any change to a `code` or `details`
+key is a breaking change.
 
 ### `ManifestValidationError.to_json()`
 
 ```json
 {
-  "error": "manifest_validation",
-  "failures": [
-    {
-      "field": "book.authors[0]",
-      "value": "",
-      "rule": "book.authors.entry.empty",
-      "message": "authors[0] must be a non-empty string"
-    },
-    {
-      "field": "bookwright.uri_base",
-      "value": "https://example.org",
-      "rule": "bookwright.uri_base.no_trailing_slash",
-      "message": "uri_base must end with '/'"
-    }
-  ]
+  "status": "error",
+  "code": "manifest_validation",
+  "message": "2 validation failure(s); first: book.authors[0]: authors[0] must be a non-empty string",
+  "details": {
+    "failures": [
+      {
+        "field": "book.authors[0]",
+        "value": "",
+        "rule": "book.authors.entry.empty",
+        "message": "authors[0] must be a non-empty string"
+      },
+      {
+        "field": "bookwright.uri_base",
+        "value": "https://example.org",
+        "rule": "bookwright.uri_base.no_trailing_slash",
+        "message": "uri_base must end with '/'"
+      }
+    ]
+  }
 }
 ```
 
-- `failures` is always a non-empty list (a `ManifestValidationError`
+`manifest_validation` is the one error that gains a top-level `message` (its
+existing summary string) under normalization.
+
+- `details.failures` is always a non-empty list (a `ManifestValidationError`
   with zero failures is never raised).
 - `field` is a dotted path. List indices use `[N]` notation, e.g.
   `book.authors[2]`.
@@ -298,23 +311,27 @@ The consuming CLI command collects warnings into a top-level
 
 ```json
 {
-  "error": "manifest_syntax",
-  "field": "bookwright.<file>",
-  "line": 14,
-  "column": 3,
-  "message": "expected '=' after key, got newline"
+  "status": "error",
+  "code": "manifest_syntax",
+  "message": "expected '=' after key, got newline",
+  "details": {
+    "field": "bookwright.<file>",
+    "line": 14,
+    "column": 3
+  }
 }
 ```
 
-`line` and `column` may be `null` when tomlkit does not surface them.
+`details.line` and `details.column` may be `null` when tomlkit does not surface them.
 
 ### `ManifestNotFoundError.to_json()`
 
 ```json
 {
-  "error": "manifest_not_found",
-  "path": "/abs/path/to/manifest.toml",
-  "message": "no manifest at /abs/path/to/manifest.toml"
+  "status": "error",
+  "code": "manifest_not_found",
+  "message": "no manifest at /abs/path/to/manifest.toml",
+  "details": {"path": "/abs/path/to/manifest.toml"}
 }
 ```
 
@@ -322,9 +339,10 @@ The consuming CLI command collects warnings into a top-level
 
 ```json
 {
-  "error": "manifest_overwrite_refused",
-  "path": "/abs/path/to/manifest.toml",
-  "message": "refuse to overwrite existing manifest at /abs/path/to/manifest.toml (pass overwrite=True to force)"
+  "status": "error",
+  "code": "manifest_overwrite_refused",
+  "message": "refuse to overwrite existing manifest at /abs/path/to/manifest.toml (pass overwrite=True to force)",
+  "details": {"path": "/abs/path/to/manifest.toml"}
 }
 ```
 

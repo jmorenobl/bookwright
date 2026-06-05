@@ -1,17 +1,20 @@
 """Exception hierarchy for the indexer (graph-engine) seam.
 
-The ``.to_json()`` shapes mirror ``bookwright.golem.errors`` /
-``bookwright.core.errors`` so a downstream ``--json`` command that surfaces one
-of these stays Principle-IX compliant (data-model § 6).
+Every concrete error inherits the canonical ``--json`` envelope from the shared
+``BookwrightError`` base (Principle IX, data-model § 6); this module declares only
+each error's ``code`` and ``details``.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from bookwright.errors import BookwrightError
 
 
-class IndexerError(Exception):
-    """Base for every failure mode the ``bookwright.indexers`` package owns."""
+class IndexerError(BookwrightError):
+    """Base for every failure mode the ``bookwright.indexers`` package owns.
+
+    Abstract: declares no ``code`` and is never serialized directly.
+    """
 
 
 class UnknownIndexerError(IndexerError):
@@ -26,17 +29,10 @@ class UnknownIndexerError(IndexerError):
     def __init__(self, name: str, available: list[str]) -> None:
         self.name = name
         self.available = available
-        message = f"unknown indexer {name!r}; available: {', '.join(available)}"
-        super().__init__(message)
-        self.message = message
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "status": "error",
-            "code": self.code,
-            "message": self.message,
-            "details": {"name": self.name, "available": self.available},
-        }
+        super().__init__(
+            f"unknown indexer {name!r}; available: {', '.join(available)}",
+            {"name": name, "available": available},
+        )
 
 
 class GraphNotBuiltError(IndexerError):
@@ -46,17 +42,10 @@ class GraphNotBuiltError(IndexerError):
 
     def __init__(self, path: str) -> None:
         self.path = path
-        message = f"no graph at {path}; run `bookwright graph build` first"
-        super().__init__(message)
-        self.message = message
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "status": "error",
-            "code": self.code,
-            "message": self.message,
-            "details": {"path": self.path},
-        }
+        super().__init__(
+            f"no graph at {path}; run `bookwright graph build` first",
+            {"path": path},
+        )
 
 
 class GraphLoadError(IndexerError):
@@ -72,17 +61,10 @@ class GraphLoadError(IndexerError):
     def __init__(self, path: str, reason: str) -> None:
         self.path = path
         self.reason = reason
-        message = f"could not parse graph at {path}: {reason}"
-        super().__init__(message)
-        self.message = message
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "status": "error",
-            "code": self.code,
-            "message": self.message,
-            "details": {"path": self.path, "reason": self.reason},
-        }
+        super().__init__(
+            f"could not parse graph at {path}: {reason}",
+            {"path": path, "reason": reason},
+        )
 
 
 class InvalidQueryError(IndexerError):
@@ -95,14 +77,4 @@ class InvalidQueryError(IndexerError):
 
     def __init__(self, reason: str) -> None:
         self.reason = reason
-        message = f"invalid SPARQL query: {reason}"
-        super().__init__(message)
-        self.message = message
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "status": "error",
-            "code": self.code,
-            "message": self.message,
-            "details": {"reason": self.reason},
-        }
+        super().__init__(f"invalid SPARQL query: {reason}", {"reason": reason})

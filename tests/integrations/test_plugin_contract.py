@@ -125,8 +125,8 @@ def test_parse_options_is_generic_over_options(
 
     with pytest.raises(UnknownOptionError) as exc_info:
         parse_options("--bogus x", FakeWithOptionsIntegration)
-    payload = exc_info.value.to_dict()
-    assert payload["valid"] == ["--scope"]
+    payload = exc_info.value.to_json()
+    assert payload["details"]["valid"] == ["--scope"]
 
 
 # ---------- Pinned-file hash assertion ----------

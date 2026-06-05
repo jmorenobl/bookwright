@@ -69,7 +69,7 @@ def test_setup_rejects_skills_dir_escaping_project_root(
 ) -> None:
     with pytest.raises(MalformedOptionError) as exc:
         GenericIntegration().setup(tmp_project, minimal_manifest, {"skills_dir": escape_value})
-    assert exc.value.to_dict()["rule"] == "escapes_project_root"
+    assert exc.value.to_json()["details"]["rule"] == "escapes_project_root"
     assert (tmp_project / ".agents/skills").exists() is False
 
 
@@ -82,9 +82,9 @@ def test_setup_rejects_skills_dir_that_resolves_to_project_root(
 ) -> None:
     with pytest.raises(MalformedOptionError) as exc:
         GenericIntegration().setup(tmp_project, minimal_manifest, {"skills_dir": collapse_value})
-    payload = exc.value.to_dict()
-    assert payload["rule"] == "resolves_to_project_root"
-    assert payload["value"] == expected_value
+    payload = exc.value.to_json()
+    assert payload["details"]["rule"] == "resolves_to_project_root"
+    assert payload["details"]["value"] == expected_value
 
 
 # ---------- ledger contract ----------

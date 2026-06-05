@@ -8,8 +8,13 @@ shipped by iteration 3. Iteration 4 (`bookwright init`) and iteration 9
 (`SKILL.md` materialization) consume exactly this surface; any rename,
 signature change, or behaviour change after merge is a breaking change.
 
-The shape of every `to_dict()` payload below is contractual (FR-036) —
-the iteration-4 `init --json` consumer will assert against these fields.
+Since iteration 018 every integration error serializes through the **unified
+error envelope** owned by `BookwrightError.to_json()` — `{status, code,
+message[, details]}` — and the former hand-rolled `to_dict()` is deleted. The
+public attributes move under `details`; the authoritative envelope schema is
+[`specs/018-unified-error-envelope/contracts/error-envelope.md`](../../018-unified-error-envelope/contracts/error-envelope.md).
+The `code` and `details` keys below are contractual (FR-036) — the `init --json`
+and `integration use --json` consumers assert against them.
 
 ---
 
@@ -97,7 +102,7 @@ def get(key: str) -> type[SkillsIntegration]:
 - `get("claude") is ClaudeIntegration`
 - `get("generic") is GenericIntegration`
 - `get("copilot")` raises `UnknownIntegrationError` with
-  `to_dict() == {"code": "unknown_integration", "value": "copilot", "valid": ["claude", "generic"], "message": ...}`
+  `to_json() == {"status": "error", "code": "unknown_integration", "message": ..., "details": {"value": "copilot", "valid": ["claude", "generic"]}}`
 - `get("")` and `get(None)` (via `cast(str, None)` or `# type: ignore`)
   both raise `UnknownIntegrationError`.
 
@@ -294,15 +299,19 @@ parametrized table:
 
 Every exception MUST expose:
 - a class-level `code: str` attribute (immutable),
-- a constructor that captures the offending values on `self`,
-- a `to_dict()` method returning a `json.dumps`-compatible dict,
+- a constructor that captures the offending values on `self` and passes them as
+  the `details` dict to `BookwrightError.__init__`,
 - a `message: str` attribute (the human-readable form passed up to
   `Exception.__init__`).
 
-The `to_dict()` shapes are pinned in [../data-model.md § 6](../data-model.md).
-Tests in `tests/integrations/test_errors_json.py` parametrize over all
-five types, instantiate each, call `to_dict()`, then `json.dumps(...)`
-the result — round-trip success is the assertion (SC-008).
+Serialization is the **single** `BookwrightError.to_json()` (no per-class
+`to_dict()` — deleted in iteration 018); the public attributes surface under the
+envelope's `details`. The shapes are pinned in
+[../data-model.md § 6](../data-model.md) and the canonical schema in
+[`specs/018-unified-error-envelope/contracts/error-envelope.md`](../../018-unified-error-envelope/contracts/error-envelope.md).
+Tests in `tests/integrations/test_errors_json.py` parametrize over the types,
+instantiate each, call `to_json()`, then `json.dumps(...)` the result —
+round-trip success is the assertion (SC-008).
 
 ---
 

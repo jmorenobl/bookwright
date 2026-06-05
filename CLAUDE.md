@@ -120,9 +120,16 @@ When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright` is a CLI (`src/bookwright/cli.py`) that assembles a `typer` app
 from per-command modules. The layers, in dependency order:
 
+- **`errors.py`** (package root) — `BookwrightError`, the **single** shared base
+  that owns the canonical `--json` error envelope (`{status, code, message
+  [, details]}`) and its one `to_json()`. Every serializable error across the
+  codebase (eight origins: `core`, `golem`, `io`, `indexers`, `validation`,
+  `commands.validate`, `integrations`, `commands.init`) subclasses it and defines
+  **no** per-class serializer. The module imports nothing from the other layers,
+  so it sits below all of them with no cycle (Principle IX, iteration 018).
 - **`core/`** — the manifest (`manifest.py`, `pydantic` model round-tripped
-  through `tomlkit` so author comments survive), the project error/warning
-  hierarchy (`errors.py`, every public error has a `.to_json()` contract),
+  through `tomlkit` so author comments survive), the manifest error hierarchy
+  (`errors.py`, `ManifestError(BookwrightError)` + the `ManifestWarning` payload),
   and language helpers (`iso639_1.py`).
 - **`golem/`** — the GOLEM narrative domain model serialized to Turtle/RDF.
   Each concept is an **immutable Pydantic v2 model** subclassing `GolemEntity`

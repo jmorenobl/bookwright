@@ -49,10 +49,10 @@ def test_list_keys_returns_fresh_list() -> None:
 def test_get_unknown_key_raises_structured_error(bad_key: str) -> None:
     with pytest.raises(UnknownIntegrationError) as exc_info:
         get(bad_key)
-    payload = exc_info.value.to_dict()
+    payload = exc_info.value.to_json()
     assert payload["code"] == "unknown_integration"
-    assert payload["value"] == bad_key
-    assert payload["valid"] == ["claude", "generic"]
+    assert payload["details"]["value"] == bad_key
+    assert payload["details"]["valid"] == ["claude", "generic"]
 
 
 def test_get_none_raises_structured_error_with_none_value() -> None:
@@ -60,9 +60,9 @@ def test_get_none_raises_structured_error_with_none_value() -> None:
 
     with pytest.raises(UnknownIntegrationError) as exc_info:
         get(cast(str, None))
-    payload = exc_info.value.to_dict()
-    assert payload["value"] is None
-    assert payload["valid"] == ["claude", "generic"]
+    details = exc_info.value.to_json()["details"]
+    assert details["value"] is None
+    assert details["valid"] == ["claude", "generic"]
 
 
 def test_reregistering_builtins_is_noop() -> None:
@@ -96,12 +96,12 @@ def test_register_different_class_under_existing_key_raises(
 
     with pytest.raises(DuplicateRegistrationError) as exc_info:
         _register(ConflictingClaude)
-    payload = exc_info.value.to_dict()
+    payload = exc_info.value.to_json()
     assert payload["code"] == "duplicate_registration"
-    assert payload["value"] == "claude"
+    assert payload["details"]["value"] == "claude"
     # `existing` names the original Claude class; `new` names the conflicting one.
-    existing = payload["existing"]
-    new_name = payload["new"]
+    existing = payload["details"]["existing"]
+    new_name = payload["details"]["new"]
     assert isinstance(existing, str) and existing.endswith("ClaudeIntegration")
     assert isinstance(new_name, str) and new_name.endswith("ConflictingClaude")
 
@@ -135,10 +135,10 @@ def test_register_base_class_raises_invalid_integration() -> None:
 
     with pytest.raises(InvalidIntegrationError) as exc_info:
         _register(SkillsIntegration)
-    payload = exc_info.value.to_dict()
+    payload = exc_info.value.to_json()
     assert payload["code"] == "invalid_integration"
-    assert payload["rule"] == "empty_key"
-    assert "SkillsIntegration" in str(payload["value"])
+    assert payload["details"]["rule"] == "empty_key"
+    assert "SkillsIntegration" in str(payload["details"]["value"])
     # Nothing was inserted — the empty key sentinel never lands in the
     # registry.
     assert "" not in INTEGRATION_REGISTRY
@@ -157,7 +157,7 @@ def test_register_forgetful_subclass_raises_invalid_integration(
 
     with pytest.raises(InvalidIntegrationError) as exc_info:
         _register(ForgetfulIntegration)
-    assert exc_info.value.to_dict()["rule"] == "empty_key"
+    assert exc_info.value.to_json()["details"]["rule"] == "empty_key"
 
 
 def test_register_subclass_without_default_skills_dir_raises_invalid_integration(
@@ -179,9 +179,9 @@ def test_register_subclass_without_default_skills_dir_raises_invalid_integration
 
     with pytest.raises(InvalidIntegrationError) as exc_info:
         _register(HalfForgetfulIntegration)
-    payload = exc_info.value.to_dict()
+    payload = exc_info.value.to_json()
     assert payload["code"] == "invalid_integration"
-    assert payload["rule"] == "empty_default_skills_dir"
-    assert "HalfForgetfulIntegration" in str(payload["value"])
+    assert payload["details"]["rule"] == "empty_default_skills_dir"
+    assert "HalfForgetfulIntegration" in str(payload["details"]["value"])
     # Nothing was inserted under the would-be key.
     assert "half-forgetful" not in INTEGRATION_REGISTRY

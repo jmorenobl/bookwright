@@ -1,7 +1,8 @@
 """Public exception hierarchy and warning model for the manifest module.
 
-JSON shapes returned by `.to_json()` are part of the FR-024 contract.
-See specs/002-manifest-model/contracts/manifest_api.md.
+The error JSON shape is the canonical envelope owned by ``BookwrightError``
+(this iteration normalized the former flat ``{"error": …}`` bodies onto it).
+See specs/018-unified-error-envelope/contracts/error-envelope.md.
 """
 
 from __future__ import annotations
@@ -12,13 +13,15 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from bookwright.errors import BookwrightError
+
 
 @dataclass(frozen=True)
 class _FieldFailure:
     """One field-level validation failure.
 
-    Internal type. The public JSON form is returned by
-    `ManifestValidationError.to_json()`.
+    Internal type. The public JSON form is emitted under
+    ``ManifestValidationError``'s ``details["failures"]``.
     """
 
     field_path: str
@@ -27,29 +30,27 @@ class _FieldFailure:
     message: str
 
 
-class ManifestError(Exception):
-    """Base for every failure mode the manifest module owns."""
+class ManifestError(BookwrightError):
+    """Base for every failure mode the manifest module owns.
+
+    Abstract: declares no ``code`` and is never serialized directly.
+    """
 
 
 class ManifestNotFoundError(ManifestError):
     """The manifest file does not exist."""
 
+    code = "manifest_not_found"
+
     def __init__(self, path: Path | str) -> None:
         self.path = Path(path).resolve()
-        message = f"no manifest at {self.path}"
-        super().__init__(message)
-        self.message = message
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "error": "manifest_not_found",
-            "path": str(self.path),
-            "message": self.message,
-        }
+        super().__init__(f"no manifest at {self.path}", {"path": str(self.path)})
 
 
 class ManifestSyntaxError(ManifestError):
     """The manifest file exists but is not valid TOML."""
+
+    code = "manifest_syntax"
 
     def __init__(
         self,
@@ -61,21 +62,16 @@ class ManifestSyntaxError(ManifestError):
         self.path = Path(path).resolve()
         self.line = line
         self.column = column
-        self.message = message
-        super().__init__(message)
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "error": "manifest_syntax",
-            "field": f"bookwright.{self.path.name}",
-            "line": self.line,
-            "column": self.column,
-            "message": self.message,
-        }
+        super().__init__(
+            message,
+            {"field": f"bookwright.{self.path.name}", "line": line, "column": column},
+        )
 
 
 class ManifestValidationError(ManifestError):
     """One or more field-level validation failures (FR-004..FR-013)."""
+
+    code = "manifest_validation"
 
     def __init__(self, failures: tuple[_FieldFailure, ...]) -> None:
         if not failures:
@@ -85,41 +81,33 @@ class ManifestValidationError(ManifestError):
         summary = (
             f"{len(failures)} validation failure(s); first: {first.field_path}: {first.message}"
         )
-        super().__init__(summary)
-        self.message = summary
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "error": "manifest_validation",
-            "failures": [
-                {
-                    "field": f.field_path,
-                    "value": f.rejected_value,
-                    "rule": f.rule_id,
-                    "message": f.message,
-                }
-                for f in self.failures
-            ],
-        }
+        super().__init__(
+            summary,
+            {
+                "failures": [
+                    {
+                        "field": f.field_path,
+                        "value": f.rejected_value,
+                        "rule": f.rule_id,
+                        "message": f.message,
+                    }
+                    for f in failures
+                ]
+            },
+        )
 
 
 class ManifestOverwriteError(ManifestError):
     """Refuse to overwrite an existing manifest (FR-019)."""
 
+    code = "manifest_overwrite_refused"
+
     def __init__(self, path: Path | str) -> None:
         self.path = Path(path).resolve()
-        message = (
-            f"refuse to overwrite existing manifest at {self.path} (pass overwrite=True to force)"
+        super().__init__(
+            f"refuse to overwrite existing manifest at {self.path} (pass overwrite=True to force)",
+            {"path": str(self.path)},
         )
-        super().__init__(message)
-        self.message = message
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "error": "manifest_overwrite_refused",
-            "path": str(self.path),
-            "message": self.message,
-        }
 
 
 class ManifestWarning(BaseModel):

@@ -123,12 +123,15 @@ Worked examples (from spec US1):
 
 ## Error contract
 
-- `GolemError` — base for all errors this package raises.
+- `GolemError` — abstract base for all errors this package raises (inherits
+  `BookwrightError`; no own `code`/`to_json`).
 - `EmptySlugError(GolemError)` — raised at construction when the canonical name
-  slugs to empty. Exposes `.to_json()` returning
-  `{"error": "golem_empty_slug", "name": <str>, "message": <str>}`, matching the
-  `core/errors.py` JSON shape so downstream `--json` commands stay compliant
-  (Principle IX).
+  slugs to empty. Serializes through the **unified error envelope** owned by
+  `BookwrightError.to_json()` (iteration 018) as
+  `{"status": "error", "code": "golem_empty_slug", "message": <str>, "details": {"name": <str>}}`,
+  so downstream `--json` commands stay compliant (Principle IX). Authoritative
+  schema:
+  [`specs/018-unified-error-envelope/contracts/error-envelope.md`](../../018-unified-error-envelope/contracts/error-envelope.md).
 
 ## Frozen-ontology contract (FR-011)
 

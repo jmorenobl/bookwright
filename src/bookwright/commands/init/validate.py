@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from bookwright.errors import BookwrightError
+
 from .envelope import emit_error
 
 ProjectNameRule = Literal[
@@ -34,7 +36,7 @@ _WINDOWS_RESERVED: frozenset[str] = frozenset(
 )
 
 
-class InvalidProjectNameError(Exception):
+class InvalidProjectNameError(BookwrightError):
     """Raised when ``PROJECT_NAME`` violates one of the FR-021a rules."""
 
     code = "invalid_project_name"
@@ -42,7 +44,10 @@ class InvalidProjectNameError(Exception):
     def __init__(self, *, value: str, rule: ProjectNameRule) -> None:
         self.value = value
         self.rule = rule
-        super().__init__(f"invalid project name {value!r}; rule: {rule}")
+        super().__init__(
+            f"invalid project name {value!r}; rule: {rule}",
+            {"value": value, "rule": rule},
+        )
 
 
 def _is_reserved(candidate: str) -> bool:
@@ -125,7 +130,7 @@ def parse_named_name(value: str, json_output: bool) -> str:
         emit_error(
             code=exc.code,
             message=str(exc),
-            details={"value": exc.value, "rule": exc.rule},
+            details=exc.details or {},
             exit_code=2,
             json_output=json_output,
             rolled_back=False,
@@ -159,7 +164,7 @@ def parse_here_basename(basename: str, json_output: bool) -> str:
         emit_error(
             code=exc.code,
             message=str(exc),
-            details={"value": exc.value, "rule": exc.rule},
+            details=exc.details or {},
             exit_code=2,
             json_output=json_output,
             rolled_back=False,

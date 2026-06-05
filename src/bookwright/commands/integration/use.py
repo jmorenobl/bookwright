@@ -57,10 +57,10 @@ def run(
         _emit_error(_error("invalid_manifest", str(exc)), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except UnknownIntegrationError as exc:
-        _emit_error({"status": "error", **exc.to_dict()}, json_output)
+        _emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except (SkillLintError, SkillMaterializationError) as exc:
-        _emit_error({"status": "error", **exc.to_dict()}, json_output)
+        _emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_MATERIALIZE) from exc
 
     if json_output:

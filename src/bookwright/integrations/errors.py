@@ -1,48 +1,33 @@
 """Structured exception family for the integrations layer (FR-035, FR-036).
 
-Every public error inherits from the private `_IntegrationError` base and
-exposes:
+Every public error inherits from the private `_IntegrationError` base — which now
+inherits the shared `BookwrightError` — and exposes:
     - a class-level ``code: str`` (immutable identifier),
     - a ``message: str`` attribute (human-readable, also passed to
       ``Exception.__init__``),
-    - a ``to_dict()`` method returning a ``json.dumps``-compatible dict
-      whose shape is pinned in
-      ``specs/003-integration-architecture/data-model.md § 6``.
+    - the structured fields under the canonical envelope's ``details`` (the
+      single ``to_json()`` is owned by `BookwrightError`; see
+      ``specs/018-unified-error-envelope/contracts/error-envelope.md``).
 
-The iteration-4 ``init --json`` consumer reads ``to_dict()`` directly to
-populate its error envelope; renaming any field below is a breaking change.
+The ``init --json`` / ``integration use --json`` consumers read the canonical
+``to_json()`` body; renaming any ``details`` field below is a breaking change.
 """
 
 from __future__ import annotations
 
+from bookwright.errors import BookwrightError
 
-class _IntegrationError(Exception):
+
+class _IntegrationError(BookwrightError):
     """Private base for all structured errors raised by the integrations layer.
 
     Subclasses MUST set a non-empty class-level ``code`` and assign their
     structured fields on ``self`` in ``__init__`` (e.g., ``self.rule``,
-    ``self.value``). The base ``to_dict()`` (R20) returns
-    ``{'code': self.code, 'message': self.message, **<public instance attrs>}``
-    — derived from ``vars(self)`` minus dunder/underscore-prefixed names
-    and the ``message`` key (which is hoisted up). Subclasses do NOT need
-    to override ``to_dict`` for the standard payload shape; the field
-    order in the returned dict is ``code, message, <attrs in insertion
-    order>`` because the iteration-4 ``--json`` envelope compares by
-    value, not by serialised string.
+    ``self.value``), then end ``__init__`` with
+    ``super().__init__(message, {<public attrs>})`` so the inherited
+    ``BookwrightError.to_json()`` emits the canonical envelope. The base is
+    abstract: it declares no ``code`` and is never serialized directly.
     """
-
-    code: str = ""
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-        self.message = message
-
-    def to_dict(self) -> dict[str, object]:
-        return {
-            "code": self.code,
-            "message": self.message,
-            **{k: v for k, v in vars(self).items() if not k.startswith("_") and k != "message"},
-        }
 
 
 class UnknownIntegrationError(_IntegrationError):
@@ -54,7 +39,7 @@ class UnknownIntegrationError(_IntegrationError):
         self.value = value
         self.valid = list(valid)
         message = f"unknown integration: {value!r}; valid: [{', '.join(self.valid)}]"
-        super().__init__(message)
+        super().__init__(message, {"value": value, "valid": self.valid})
 
 
 class UnknownOptionError(_IntegrationError):
@@ -70,7 +55,10 @@ class UnknownOptionError(_IntegrationError):
             f"unknown option {value} for integration {integration!r}; "
             f"valid: [{', '.join(self.valid)}]"
         )
-        super().__init__(message)
+        super().__init__(
+            message,
+            {"integration": integration, "value": value, "valid": self.valid},
+        )
 
 
 class MalformedOptionError(_IntegrationError):
@@ -82,7 +70,7 @@ class MalformedOptionError(_IntegrationError):
         self.rule = rule
         self.value = value
         message = f"malformed option {value!r}: {rule}"
-        super().__init__(message)
+        super().__init__(message, {"rule": rule, "value": value})
 
 
 class DuplicateRegistrationError(_IntegrationError):
@@ -98,7 +86,7 @@ class DuplicateRegistrationError(_IntegrationError):
             f"duplicate integration registration for key {value!r}: "
             f"already registered as {existing}, refusing to replace with {new}"
         )
-        super().__init__(message)
+        super().__init__(message, {"value": value, "existing": existing, "new": new})
 
 
 class InvalidOptionDeclarationError(_IntegrationError):
@@ -118,7 +106,7 @@ class InvalidOptionDeclarationError(_IntegrationError):
             f"invalid option declaration ({rule}): {value!r}; "
             "this is a programming error in the integration's options()"
         )
-        super().__init__(message)
+        super().__init__(message, {"rule": rule, "value": value})
 
 
 class InvalidIntegrationError(_IntegrationError):
@@ -139,7 +127,7 @@ class InvalidIntegrationError(_IntegrationError):
             f"invalid integration ({rule}): {value!r}; "
             "this is a programming error in the integration class"
         )
-        super().__init__(message)
+        super().__init__(message, {"rule": rule, "value": value})
 
 
 class SkillLintError(_IntegrationError):
@@ -161,7 +149,7 @@ class SkillLintError(_IntegrationError):
         self.rule = rule
         self.detail = detail
         message = f"skill {skill!r} failed lint rule {rule!r}: {detail}"
-        super().__init__(message)
+        super().__init__(message, {"skill": skill, "rule": rule, "detail": detail})
 
 
 class SkillMaterializationError(_IntegrationError):
@@ -179,4 +167,4 @@ class SkillMaterializationError(_IntegrationError):
         self.rule = rule
         self.detail = detail
         message = f"skill {skill!r} materialization failed ({rule}): {detail}"
-        super().__init__(message)
+        super().__init__(message, {"skill": skill, "rule": rule, "detail": detail})

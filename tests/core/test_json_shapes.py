@@ -33,10 +33,15 @@ def test_manifest_validation_error_json_shape() -> None:
         Manifest.load(load_fixture("invalid_multi_error.toml"))
     payload = _roundtrip(exc_info.value.to_json())
 
-    assert payload["error"] == "manifest_validation"
-    assert isinstance(payload["failures"], list)
-    assert len(payload["failures"]) >= 1
-    for failure in payload["failures"]:
+    assert payload["status"] == "error"
+    assert payload["code"] == "manifest_validation"
+    # The one error that gains a top-level message under normalization (the
+    # existing summary string) — required by the canonical envelope.
+    assert isinstance(payload["message"], str) and payload["message"]
+    failures = payload["details"]["failures"]
+    assert isinstance(failures, list)
+    assert len(failures) >= 1
+    for failure in failures:
         assert set(failure.keys()) == {"field", "value", "rule", "message"}
         assert isinstance(failure["field"], str)
         assert isinstance(failure["rule"], str)
@@ -69,12 +74,14 @@ def test_manifest_syntax_error_json_shape(tmp_path: Path) -> None:
     with pytest.raises(ManifestSyntaxError) as exc_info:
         Manifest.load(bad)
     payload = _roundtrip(exc_info.value.to_json())
-    assert payload["error"] == "manifest_syntax"
-    assert payload["field"].startswith("bookwright.")
-    assert "message" in payload
+    assert payload["status"] == "error"
+    assert payload["code"] == "manifest_syntax"
+    assert payload["message"]
+    details = payload["details"]
+    assert details["field"].startswith("bookwright.")
     # line/column may be int or null per the contract.
-    assert payload["line"] is None or isinstance(payload["line"], int)
-    assert payload["column"] is None or isinstance(payload["column"], int)
+    assert details["line"] is None or isinstance(details["line"], int)
+    assert details["column"] is None or isinstance(details["column"], int)
 
 
 def test_manifest_not_found_error_json_shape(tmp_path: Path) -> None:
@@ -84,8 +91,9 @@ def test_manifest_not_found_error_json_shape(tmp_path: Path) -> None:
     with pytest.raises(ManifestNotFoundError) as exc_info:
         Manifest.load(target)
     payload = _roundtrip(exc_info.value.to_json())
-    assert payload["error"] == "manifest_not_found"
-    assert payload["path"].endswith("missing.toml")
+    assert payload["status"] == "error"
+    assert payload["code"] == "manifest_not_found"
+    assert payload["details"]["path"].endswith("missing.toml")
     assert payload["message"]
 
 
@@ -103,6 +111,7 @@ def test_manifest_overwrite_error_json_shape(tmp_path: Path) -> None:
     with pytest.raises(ManifestOverwriteError) as exc_info:
         m.dump(target)
     payload = _roundtrip(exc_info.value.to_json())
-    assert payload["error"] == "manifest_overwrite_refused"
-    assert payload["path"].endswith("manifest.toml")
+    assert payload["status"] == "error"
+    assert payload["code"] == "manifest_overwrite_refused"
+    assert payload["details"]["path"].endswith("manifest.toml")
     assert "refuse to overwrite" in payload["message"]

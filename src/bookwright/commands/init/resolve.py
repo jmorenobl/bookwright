@@ -130,7 +130,7 @@ def parse_named_slug(name: str, json_output: bool) -> str:
         emit_error(
             code=exc.code,
             message=str(exc),
-            details={"value": exc.value, "rule": exc.rule},
+            details=exc.details or {},
             exit_code=2,
             json_output=json_output,
             rolled_back=False,
@@ -165,11 +165,10 @@ def resolve_integration(
     try:
         integration_cls = _integrations.get(key)
     except _integrations.UnknownIntegrationError as exc:
-        details = {k: v for k, v in exc.to_dict().items() if k not in {"code", "message"}}
         emit_error(
             code=exc.code,
             message=exc.message,
-            details=details,
+            details=exc.details or {},
             exit_code=5,
             json_output=json_output,
             rolled_back=False,
@@ -182,11 +181,10 @@ def resolve_integration(
         _integrations.MalformedOptionError,
         _integrations.InvalidOptionDeclarationError,
     ) as exc:
-        details = {k: v for k, v in exc.to_dict().items() if k not in {"code", "message"}}
         emit_error(
             code=exc.code,
             message=exc.message,
-            details=details,
+            details=exc.details or {},
             exit_code=5,
             json_output=json_output,
             rolled_back=False,

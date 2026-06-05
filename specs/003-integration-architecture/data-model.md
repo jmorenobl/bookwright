@@ -10,8 +10,10 @@ iteration persists data beyond the one marker file written by `setup()`.
 The contract surface — class names, attribute names, exception names,
 method signatures — is what iteration 4 (`init`) and iteration 9 (skills
 materialization) will import. Renaming any of these after this iteration
-merges is a breaking change. The shapes of the JSON `to_dict()` outputs
-are also part of the contract (FR-036; iteration-4 `--json` consumer).
+merges is a breaking change. The serialized error bodies are also part of
+the contract (FR-036; the `--json` consumers). Since iteration 018 those bodies
+are the **unified error envelope** owned by `BookwrightError.to_json()` (the
+former `to_dict()` is deleted); see § 6.
 
 ---
 
@@ -237,9 +239,15 @@ torn down — process-lifetime singleton.
 
 ## 6. Exception family (`integrations/errors.py`)
 
-All five exception types share a private base `_IntegrationError(Exception)`
-and follow the contract of FR-035 / FR-036. Each carries a class-level
-`code` and a `to_dict()` returning a `json.dumps`-compatible dict.
+All exception types share a private base `_IntegrationError`, which since
+iteration 018 inherits the shared `BookwrightError` and follows the contract of
+FR-035 / FR-036. Each carries a class-level `code` and passes its public
+attributes as the `details` dict to `BookwrightError.__init__`; the **single**
+serializer is the inherited `BookwrightError.to_json()` (the former per-base
+`to_dict()` is deleted). Every body below is the canonical envelope
+`{status, code, message[, details]}`, with the former top-level attributes now
+under `details`; the authoritative schema is
+[`specs/018-unified-error-envelope/contracts/error-envelope.md`](../../018-unified-error-envelope/contracts/error-envelope.md).
 
 ### 6.1 `UnknownIntegrationError`
 
@@ -252,9 +260,9 @@ and follow the contract of FR-035 / FR-036. Each carries a class-level
 
 **Raised by**: `get(key)` when `key not in INTEGRATION_REGISTRY` (FR-003).
 
-**`to_dict()` shape**:
+**`to_json()` envelope**:
 ```json
-{"code": "unknown_integration", "value": "copilot", "valid": ["claude", "generic"], "message": "..."}
+{"status": "error", "code": "unknown_integration", "message": "...", "details": {"value": "copilot", "valid": ["claude", "generic"]}}
 ```
 
 ### 6.2 `UnknownOptionError`
@@ -270,9 +278,9 @@ and follow the contract of FR-035 / FR-036. Each carries a class-level
 **Raised by**: `parse_options(...)` when the input contains a flag the
 integration does not declare (FR-018).
 
-**`to_dict()` shape**:
+**`to_json()` envelope**:
 ```json
-{"code": "unknown_option", "integration": "generic", "value": "--bogus", "valid": ["--skills-dir"], "message": "..."}
+{"status": "error", "code": "unknown_option", "message": "...", "details": {"integration": "generic", "value": "--bogus", "valid": ["--skills-dir"]}}
 ```
 
 ### 6.3 `MalformedOptionError`
@@ -286,9 +294,9 @@ integration does not declare (FR-018).
 
 **Raised by**: `parse_options(...)` per FR-019, FR-021 (rules `missing_value`, `unexpected_value`, `duplicate_flag`, `missing_required`, `malformed_shell_syntax`); `SkillsIntegration.setup(...)` per FR-029 (rules `escapes_project_root`, `resolves_to_project_root`).
 
-**`to_dict()` shape**:
+**`to_json()` envelope**:
 ```json
-{"code": "malformed_option", "rule": "missing_value", "value": "--skills-dir", "message": "..."}
+{"status": "error", "code": "malformed_option", "message": "...", "details": {"rule": "missing_value", "value": "--skills-dir"}}
 ```
 
 ### 6.4 `DuplicateRegistrationError`
@@ -304,9 +312,9 @@ integration does not declare (FR-018).
 **Raised by**: `_register(cls)` when the registry already holds a
 *different* class under `cls.key` (FR-005, R5).
 
-**`to_dict()` shape**:
+**`to_json()` envelope**:
 ```json
-{"code": "duplicate_registration", "value": "claude", "existing": "...", "new": "...", "message": "..."}
+{"status": "error", "code": "duplicate_registration", "message": "...", "details": {"value": "claude", "existing": "...", "new": "..."}}
 ```
 
 ### 6.5 `InvalidOptionDeclarationError`
@@ -323,9 +331,9 @@ malformed descriptor (the parser does this on first introspection of the
 integration's `options()`). Per FR-015 this is a class-definition guard,
 not a user-facing validation.
 
-**`to_dict()` shape**:
+**`to_json()` envelope**:
 ```json
-{"code": "invalid_option_declaration", "rule": "bad_flag_prefix", "value": "skills-dir", "message": "..."}
+{"status": "error", "code": "invalid_option_declaration", "message": "...", "details": {"rule": "bad_flag_prefix", "value": "skills-dir"}}
 ```
 
 ---

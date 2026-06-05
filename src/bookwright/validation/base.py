@@ -11,6 +11,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast, runtime_checkable
 
+from bookwright.errors import BookwrightError
 from bookwright.indexers import Indexer
 
 if TYPE_CHECKING:
@@ -129,7 +130,7 @@ class Validator(Protocol):
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]: ...
 
 
-class UnknownValidatorError(Exception):
+class UnknownValidatorError(BookwrightError):
     """A configured ``[validators]`` name is absent from the discovered set (FR-007)."""
 
     code = "unknown_validator"
@@ -137,16 +138,7 @@ class UnknownValidatorError(Exception):
     def __init__(self, names: tuple[str, ...]) -> None:
         self.names = names
         joined = ", ".join(names)
-        self.message = f"unknown validator(s): {joined}"
-        super().__init__(self.message)
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "status": "error",
-            "code": self.code,
-            "message": self.message,
-            "details": {"names": list(self.names)},
-        }
+        super().__init__(f"unknown validator(s): {joined}", {"names": list(names)})
 
 
 # Sentinel distinguishing "not yet computed" from a cached ``None`` result.

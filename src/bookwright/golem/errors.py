@@ -1,16 +1,19 @@
 """Exception hierarchy for the GOLEM domain model.
 
-The ``.to_json()`` shapes mirror ``bookwright.core.errors`` so a downstream
-``--json`` command that surfaces one of these stays Principle-IX compliant.
+The error JSON shape is the canonical envelope owned by ``BookwrightError`` (this
+iteration normalized the former flat ``{"error": …}`` body onto it).
 """
 
 from __future__ import annotations
 
-from typing import Any
+from bookwright.errors import BookwrightError
 
 
-class GolemError(Exception):
-    """Base for every failure mode the ``bookwright.golem`` package owns."""
+class GolemError(BookwrightError):
+    """Base for every failure mode the ``bookwright.golem`` package owns.
+
+    Abstract: declares no ``code`` and is never serialized directly.
+    """
 
 
 class EmptySlugError(GolemError):
@@ -19,15 +22,8 @@ class EmptySlugError(GolemError):
     Carries the offending name so a caller can report exactly what was rejected.
     """
 
+    code = "golem_empty_slug"
+
     def __init__(self, name: str) -> None:
         self.name = name
-        message = f"name {name!r} slugifies to an empty string"
-        super().__init__(message)
-        self.message = message
-
-    def to_json(self) -> dict[str, Any]:
-        return {
-            "error": "golem_empty_slug",
-            "name": self.name,
-            "message": self.message,
-        }
+        super().__init__(f"name {name!r} slugifies to an empty string", {"name": name})

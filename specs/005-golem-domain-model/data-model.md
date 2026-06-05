@@ -222,10 +222,13 @@ created in sequence sort in creation order (US3-4).
   `bind_prefixes`, add all `to_triples()`, `serialize(format="turtle")`.
 
 ### `golem/errors.py`
-- `GolemError(Exception)` — base.
+- `GolemError(BookwrightError)` — abstract base (no `code`, no `to_json`).
 - `EmptySlugError(GolemError)` — canonical name slugified to empty; carries the
-  offending name; `.to_json()` mirrors `core/errors.py` shape
-  (`{"error": "golem_empty_slug", "name": …, "message": …}`).
+  offending name; serializes through the **unified error envelope** owned by
+  `BookwrightError.to_json()` (iteration 018) as
+  `{"status": "error", "code": "golem_empty_slug", "message": …, "details": {"name": …}}`.
+  Authoritative schema:
+  [`specs/018-unified-error-envelope/contracts/error-envelope.md`](../../018-unified-error-envelope/contracts/error-envelope.md).
 
 ---
 

@@ -18,6 +18,7 @@ from rich.console import Console
 
 from bookwright.core.errors import ManifestError
 from bookwright.core.manifest import Manifest
+from bookwright.errors import BookwrightError
 from bookwright.indexers import GraphLoadError, UnknownIndexerError, resolve_indexer
 from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.project import find_project_root
@@ -39,20 +40,17 @@ EXIT_CONFIG = 2
 _CUSTOM_SUBPATH = (".bookwright", "validators")
 
 
-class _UsageError(Exception):
-    """An exit-2 config/usage failure carrying a contract error envelope."""
+class _UsageError(BookwrightError):
+    """An exit-2 config/usage failure carrying a contract error envelope.
+
+    A single class whose ``code`` is set per instance (``no_project`` /
+    ``invalid_manifest`` / ``unknown_validator`` / ``empty_scope``) — hence the
+    per-instance ``self.code`` override the base supports (research Decision 2).
+    """
 
     def __init__(self, code: str, message: str, details: dict[str, Any] | None = None) -> None:
         self.code = code
-        self.message = message
-        self.details = details or {}
-        super().__init__(message)
-
-    def to_json(self) -> dict[str, Any]:
-        payload: dict[str, Any] = {"status": "error", "code": self.code, "message": self.message}
-        if self.details:
-            payload["details"] = self.details
-        return payload
+        super().__init__(message, details)
 
 
 def run(
