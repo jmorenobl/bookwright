@@ -29,6 +29,14 @@ emits the standard single-document JSON envelope with `--json`
 (Principle I). Skill consumption of this command is deferred to iterations
 021–022.
 
+## Clarifications
+
+### Session 2026-06-11
+
+- Q: In the `--json` report, what should the `state` object carry for the research/validation facts — counts only (as the design § 21.6 example shows) or also the items? → A: Counts + item lists — `state` carries both the aggregate counts and the identifying items (open question texts/IDs, anchor IDs, low-reliability finding IDs); the design's count-only example is a minimal illustration. Iteration 021's bottom-up consumption needs the actual queue without re-querying the graph.
+- Q: What language do the paste-ready prompt templates in `next_actions` use? → A: Fixed English — one static template set, matching the CLI/code language convention (the design § 21.5 Spanish examples are illustrative). Skills must trigger on both ES and EN prompts anyway; no i18n machinery.
+- Q: What does `status` do when the graph rebuild fails because a source file is malformed (vs. nothing to build)? → A: Hard error — the standard unified error envelope and non-zero exit, exactly as `graph build` / `validate` on the same corpus. Graceful degradation (FR-013) is reserved for *absent* information, never *corrupt* information.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - See the project's derived state at a glance (Priority: P1)
@@ -151,11 +159,16 @@ that any human prose went to stderr, and that
 
 ### Edge Cases
 
-- **No graph and nothing to build it from**: in a project where the graph
-  cannot be built (e.g., no bible content), `status` does not fail — it
-  reports the facts it can (phase, focus echo) and emits either no next
-  actions or a single bootstrap action (e.g., "build the graph" / "define a
-  focus").
+- **No graph and nothing to build it from**: in a project where there is
+  nothing to build the graph from (e.g., no bible content), `status` does
+  not fail — it reports the facts it can (phase, focus echo) and emits
+  either no next actions or a single bootstrap action (e.g., "build the
+  graph" / "define a focus").
+- **Graph rebuild fails on malformed sources**: a corpus that `graph build`
+  / `validate` would reject (e.g., broken front-matter) makes `status` fail
+  the same way — standard error reporting, unified `--json` error envelope,
+  non-zero exit. Corrupt information is an error; only *absent* information
+  degrades gracefully.
 - **v0.2-era project**: a project with no `[focus]` block and no
   `bible/research/` directory runs `status` successfully; missing areas are
   reported as absent/empty, never as errors.
@@ -214,7 +227,8 @@ that any human prose went to stderr, and that
 - **FR-008**: `status` MUST compute `next_actions` via a static rule table:
   a pure, deterministic mapping from state predicates to recommended
   actions, where each action carries the skill or command to invoke, a
-  paste-ready prompt, and a brief reason. Given the same state it MUST
+  paste-ready prompt (a fixed English template parameterized only by state
+  facts), and a brief reason. Given the same state it MUST
   always produce the same actions, and it MUST be unit-testable without a
   graph or a project on disk.
 - **FR-009**: The rule table MUST cover at least these mappings: unresolved
@@ -231,17 +245,26 @@ that any human prose went to stderr, and that
   with human prose going to stderr (Principle IX). Without `--json`, a
   readable human report goes to stdout. Failures use the unified `--json`
   error envelope (iteration 018).
+- **FR-011a**: For each research/validation fact, the `state` object MUST
+  carry both the aggregate count and the identifying items themselves (open
+  question texts/identifiers, anchor identifiers, low-reliability finding
+  identifiers), so consumers can act on the queue without re-querying the
+  graph. Item lists MUST be deterministically ordered (FR-010/FR-014).
 - **FR-012**: Every successful run MUST regenerate the computed report at
   `.bookwright/cache/status.json`. This cache is a derived, reconstructible
   artifact — never read back as a source of truth, and excluded from
   version control (the project scaffold's `.gitignore` already covers
   `.bookwright/cache/`).
-- **FR-013**: `status` MUST degrade gracefully when information is missing:
-  with no buildable graph, no research content, or no focus, it MUST report
-  the facts it can compute, leave `next_actions` empty or with a single
-  bootstrap action (e.g., "build the graph" / "define a focus"), and exit
-  successfully. A v0.2-era project with no `[focus]` block and no
-  `bible/research/` MUST NOT fail.
+- **FR-013**: `status` MUST degrade gracefully when information is *absent*:
+  with nothing to build the graph from, no research content, or no focus, it
+  MUST report the facts it can compute, leave `next_actions` empty or with a
+  single bootstrap action (e.g., "build the graph" / "define a focus"), and
+  exit successfully. A v0.2-era project with no `[focus]` block and no
+  `bible/research/` MUST NOT fail. Graceful degradation does NOT extend to
+  *corrupt* information: a graph rebuild failure on malformed sources MUST
+  fail with the project's standard error reporting (unified error envelope,
+  non-zero exit), exactly as `graph build` / `validate` would on the same
+  corpus.
 - **FR-014**: The computation MUST be fully deterministic: the same input
   corpus MUST yield byte-identical facts and `next_actions`, with no LLM
   calls, no network access, and no run-dependent data (timestamps, random
@@ -261,7 +284,9 @@ that any human prose went to stderr, and that
 - **State facts**: the deterministic observations aggregated from existing
   sources — project phase, open research questions, anchors without
   sufficient sources, findings below the reliability threshold, and
-  validation counts per severity. Facts only; no judgment.
+  validation counts per severity. Each research/validation fact carries both
+  its aggregate count and the identifying items (see Clarifications). Facts
+  only; no judgment.
 - **Next action**: one recommendation produced by the rule table. Attributes:
   the **skill** (or CLI command) to invoke, a **prompt** ready to paste
   without editing, and a **reason** briefly justifying the recommendation
@@ -308,10 +333,10 @@ that any human prose went to stderr, and that
 - **Reliability threshold source**: the threshold for "low-reliability
   findings" is the existing `research.min_reliability_for_anchor` manifest
   knob (default `media`); no new configuration is introduced.
-- **Prompt templates**: the prompts in `next_actions` are fixed static
-  templates parameterized only by state facts (counts, identifiers); their
-  exact wording and language follow the design's § 21.5 examples and are
-  settled at planning time. Determinism only requires that they are fixed.
+- **Prompt templates** (resolved — see Clarifications): the prompts in
+  `next_actions` are fixed static **English** templates parameterized only by
+  state facts (counts, identifiers); exact wording is settled at planning
+  time. Determinism only requires that they are fixed.
 - **Cache freshness model**: the status cache is regenerated on *every* run
   rather than invalidated on demand — the command is cheap enough that
   recomputation is the freshness mechanism, mirroring how `graph.ttl` is a
