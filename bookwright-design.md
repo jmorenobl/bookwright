@@ -591,6 +591,34 @@ my-book/
 
 El principio: lo que un humano puede leer o reconstruir desde texto, se versiona. Lo que es caché o ruido del sistema, no.
 
+### 7.2 Ingesta de localizaciones (G13) — decisión 2026-06-07
+
+`bible/locations/*.md` aparece arriba como `(opcional)` y el command
+`/bookwright-bible` instruye hoy escribir cada localización **sin frontmatter
+ingerido** ("no se indexa en v0"). Es un **atajo de v0**, no una decisión de
+diseño: la clase `G13_Narrative_Location` ya es de primera clase en este
+documento (tabla de clases § 4.2, generación de URIs § 4.5 con `path_segment`
+`location`) y ya existe en el código —modelo `NarrativeLocation` en
+`golem/modules/setting.py`, en el cierre congelado `CLASS_IRI`, registrada en
+`CONCEPTS`, con su cross-ref `setting` vía `dlp:generic-location`. Lo único que
+falta es el *builder* de `locations/` en `io/bible.py` (espejo del de
+`settings/`).
+
+**Consecuencia observada:** mientras el atajo siga vigente, una investigación
+con `bears_on:`/`constrains:` apuntando a una localización **no resuelve** —
+queda como *soft-miss* (`ResearchWarning`, § 20), que es comportamiento
+esperado y correcto del indexador, **no** una grieta entre research y biblia.
+
+**Decisión:** wired-up de G13 en una **iteración suelta posterior a v0.3**
+(fuera del hito M5; ver el plan de implementación). No toca la ontología
+congelada (Principio X a salvo: la clase ya está reservada) ni requiere
+enmienda constitucional. Al ejecutarla: (1) se añade el builder de `locations/`
+resolviendo el cross-ref `setting:` contra el índice de settings; (2) el
+command `/bookwright-bible` pasa a dar a cada localización frontmatter `name:`
+(+ `setting:` opcional); (3) se elimina el `(opcional)`/"no se indexa en v0" de
+esta sección. Hasta entonces, el comportamiento vigente es el de v0
+(localizaciones no indexadas).
+
 ---
 
 ## 8. Manifest del proyecto: `manifest.toml`

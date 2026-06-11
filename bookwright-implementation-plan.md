@@ -401,6 +401,84 @@ también versionado, vaciando este de lo ya entregado. Quedan descartados (no se
 implementarán): presets, GrafeoIndexer/Grafeo, multi-integración y extension
 system; ver `bookwright-design.md` § 15.5.
 
+Además hay **una iteración suelta pendiente** (no pertenece a M5, se ejecuta
+tras mergear v0.3.0): indexar localizaciones (G13) — ver § 5.
+
+---
+
+## 5. Iteración suelta (post-v0.3, fuera de M5)
+
+> Esta sección **no** forma parte del hito M5. Es una iteración de
+> mantenimiento autocontenida, estilo 017/018, capturada el **2026-06-07** y
+> ejecutable **una vez v0.3.0 esté mergeado**. No depende de 019–023 ni ellas
+> de ella. Numerarla a continuación de los `specs/` existentes al arrancarla.
+
+### Iteración suelta — Indexar localizaciones (`G13_Narrative_Location`)
+
+**Origen:** en uso real, una investigación con `bears_on:`/`constrains:`
+apuntando a una localización (p. ej. "Roncesvalles", "Alto del Perdón") no
+resuelve y queda como *soft-miss* (`ResearchWarning`). Eso es comportamiento
+esperado del indexador, **no** un bug — pero la causa de fondo es que
+`bible/locations/*.md` **no se procesa en absoluto** en v0 (atajo, no decisión
+de diseño). La clase `G13_Narrative_Location` está **ya reservada y modelada**:
+existe en el cierre congelado `CLASS_IRI`, tiene modelo `NarrativeLocation` en
+`golem/modules/setting.py` (con cross-ref `setting` vía `dlp:generic-location`)
+y está registrada en `CONCEPTS`. Solo falta el *builder* que la alimente. Ver
+`bookwright-design.md` § 7.2 (decisión).
+
+**Objetivo:** cerrar el atajo de v0 cableando la clase G13 ya existente a un
+*builder* de `bible/locations/`, sin tocar la ontología congelada (Principio X
+a salvo) ni requerir enmienda constitucional.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: hoy bible/locations/*.md no se procesa en absoluto (atajo de v0): el command bookwright-bible instruye escribir cada localización sin frontmatter ingerido y el mapper no tiene builder para locations/. La clase G13_Narrative_Location ya está reservada y modelada en el código (modelo NarrativeLocation en golem/modules/setting.py, en el cierre congelado CLASS_IRI, registrada en CONCEPTS, con cross-ref `setting` vía dlp:generic-location). Queremos que las localizaciones entren al grafo como entidades de primera clase, de modo que una investigación con bears_on:/constrains: a una localización resuelva en vez de quedar como soft-miss.
+
+Comportamiento esperado:
+
+- map_bible procesa bible/locations/*.md como directorio uno-entidad-por-fichero (espejo de settings/), construyendo entidades NarrativeLocation a partir de su frontmatter.
+- El frontmatter de una localización admite `name` (cadena obligatoria) y `setting` (opcional, nombre de un setting hermano). Cuando `setting` está presente, se resuelve contra el índice de settings y emite el cross-ref dlp:generic-location (location → su setting); si no resuelve, es un soft-miss coherente con el contrato existente del mapper (no un crash).
+- El command source bookwright-bible se actualiza: las localizaciones pasan a llevar frontmatter `name:` (+ `setting:` opcional) además de sus secciones sensoriales en prosa. Se re-materializa como SKILL.md por el pipeline existente, en claude y generic, con triggers bilingües preservados.
+- Compatibilidad: una localización antigua sin frontmatter (estilo v0) se trata como fichero no ingerible (skip elegante, como hoy hace el mapper con frontmatter inservible), nunca un crash. Un proyecto sin bible/locations/ sigue funcionando igual.
+
+Validaciones:
+
+- name es cadena obligatoria; setting, si está, es cadena.
+- Colisión de slug entre localizaciones se rechaza igual que en characters/settings.
+
+Fuera de scope:
+
+- Cualquier clase o propiedad nueva en la ontología (Principio X): G13 ya existe, no se añade nada.
+- Cambiar el validador factual_anchor o el comportamiento de research más allá de que los enlaces a localizaciones ahora resuelvan.
+- Atributos de localización más allá de identidad + setting (v0 de la clase es identity-only, igual que Setting).
+
+Referencia: ver bookwright-design.md § 7.2 (decisión de ingesta G13), § 4.2 y § 4.5 (G13 como concepto y su URI), § 20 (research / soft-miss). Principio I (texto plano), Principio X (ontología congelada). Precedente de builder: el de settings/ en io/bible.py.
+```
+
+**Pista para `/speckit-plan`:** *"Añade una `DirectorySpec` para `locations/`
+en `io/bible.py` espejando la de `settings/`, con un builder que construya
+`NarrativeLocation` y resuelva el cross-ref `setting` contra el índice de
+settings ya disponible en el mapper (mismo patrón que la resolución de nombres
+existente). No toques `golem/` salvo lo estrictamente necesario: la clase, el
+cross-ref y el registro en `CONCEPTS` ya existen. Edita
+`resources/commands/bookwright-bible.md` para dar frontmatter a las
+localizaciones y re-materializa vía el pipeline de la iteración 9. Actualiza
+`bookwright-design.md` § 7.2 retirando el atajo. Tests: round-trip de una
+localización con y sin `setting`, resolución del cross-ref, soft-miss cuando el
+setting no existe, fichero sin frontmatter tratado como skip, colisión de
+slug."*
+
+**Criterio de aceptación:** una `bible/locations/<slug>.md` con `name:` (y
+`setting:`) se materializa en el grafo como `G13_Narrative_Location` con su
+triple `dlp:generic-location`; una investigación con `bears_on:` a esa
+localización resuelve (sin `ResearchWarning`); una localización sin frontmatter
+se omite sin crash; el cierre congelado de la ontología no cambia (test de
+clausura verde); `ruff`, `mypy --strict` y `pytest` verdes; cobertura > 85 % en
+el código nuevo.
+
 ---
 
 **Fin del plan.**
