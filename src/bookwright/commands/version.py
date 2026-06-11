@@ -1,13 +1,12 @@
 """`bookwright version` — report the package and GOLEM schema versions."""
 
-import json
-import sys
-
 import typer
 from rich.console import Console
 
 from bookwright import __version__
 from bookwright.resources.schemas import load_schema_version
+
+from ._envelope import emit_json
 
 
 def _read_golem_schema_version() -> str:
@@ -28,7 +27,7 @@ def run(
         "golem_schema_version": _read_golem_schema_version(),
     }
     if json_output:
-        sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+        emit_json(payload)
         return
     console = Console()
     console.print(f"bookwright {payload['package_version']}")

@@ -10,9 +10,10 @@ already does for the same case.
 The :func:`emit_json` / :func:`emit_error` pair is single-sourced here too: a
 single-line ``json.dumps(payload, separators=(",", ":")) + "\\n"`` to stdout,
 with human prose / progress going to stderr via a ``Console(stderr=True)`` owned
-by each command. Every agent-facing command group (``focus``, ``graph``,
-``integration``, ``validate``) imports the pair from this module (iteration 019
-consolidation) instead of hand-rolling a per-group copy.
+by each command. Every ``--json`` command (``check``, ``focus``, ``graph``,
+``init``, ``integration``, ``validate``, ``version``) routes its stdout encoding
+through :func:`emit_json` (iteration 019 consolidation) instead of hand-rolling
+a per-group copy.
 """
 
 from __future__ import annotations

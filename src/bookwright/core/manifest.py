@@ -253,6 +253,22 @@ class Manifest(BaseModel):
             **overrides,
         )
 
+    def _require_document(self, method: str) -> TOMLDocument:
+        """The backing ``tomlkit`` document, or ``RuntimeError`` for bare constructions.
+
+        The shared guard for every document-backed method (``set_integration``,
+        ``set_focus``, ``clear_focus``, ``dump``): each requires an instance
+        produced by :meth:`load` or :meth:`build`.
+        """
+
+        document = self._document
+        if document is None:
+            raise RuntimeError(
+                f"Manifest.{method}() requires an instance produced by "
+                "Manifest.load() or Manifest.build()."
+            )
+        return document
+
     def set_integration(self, *, key: str, skills_dir: str) -> None:
         """Update the ``[integration]`` block in place, preserving comments and order.
 
@@ -268,12 +284,7 @@ class Manifest(BaseModel):
         the same contract as :meth:`dump`.
         """
 
-        document = self._document
-        if document is None:
-            raise RuntimeError(
-                "Manifest.set_integration() requires an instance produced by "
-                "Manifest.load() or Manifest.build()."
-            )
+        document = self._require_document("set_integration")
         table = document["integration"]
         table["key"] = key
         table["skills_dir"] = skills_dir
@@ -281,36 +292,37 @@ class Manifest(BaseModel):
             update={"key": key, "skills_dir": skills_dir}
         )
 
-    def set_focus(self, *, target: str, notes: str, updated_at: str) -> None:
+    def set_focus(self, *, target: str, notes: str, updated_at: str) -> FocusBlock:
         """Create or update the ``[focus]`` block in place, preserving comments and order.
 
-        Mutates **both** the validated ``self.focus`` field and the backing
-        ``tomlkit`` document — exactly like :meth:`set_integration` — so a
+        Validates first: the :class:`FocusBlock` is constructed *before* either
+        the model or the backing document is touched, so invalid input raises
+        ``pydantic.ValidationError`` and leaves the manifest unchanged — a failed
+        call can never desync the two or poison a subsequent :meth:`dump`. On
+        success it mutates **both** the validated ``self.focus`` field and the
+        backing ``tomlkit`` document — exactly like :meth:`set_integration` — so a
         subsequent :meth:`dump` writes the new block while every other block,
         comment, and the block ordering round-trip untouched (FR-009, SC-002). The
         ``[focus]`` table is appended last when absent, or updated in place when
         present. ``notes`` is always written (an explicit ``notes = ""`` on a
         create with no ``--notes``), so an omitted and an empty key are
         equivalent — the explicit form is the greppable, unambiguous one
-        (data-model write-shape decision 1).
+        (data-model write-shape decision 1). Returns the validated block.
 
         Requires an instance produced by :meth:`load` or :meth:`build`; a bare
         construction raises ``RuntimeError``, the same contract as :meth:`dump`.
         """
 
-        document = self._document
-        if document is None:
-            raise RuntimeError(
-                "Manifest.set_focus() requires an instance produced by "
-                "Manifest.load() or Manifest.build()."
-            )
+        document = self._require_document("set_focus")
+        block = FocusBlock(target=target, notes=notes, updated_at=updated_at)
         if "focus" not in document:
             document["focus"] = tomlkit.table()
         table = document["focus"]
-        table["target"] = target
-        table["notes"] = notes
-        table["updated_at"] = updated_at
-        self.focus = FocusBlock(target=target, notes=notes, updated_at=updated_at)
+        table["target"] = block.target
+        table["notes"] = block.notes
+        table["updated_at"] = block.updated_at
+        self.focus = block
+        return block
 
     def clear_focus(self) -> None:
         """Remove the ``[focus]`` block if present; set ``self.focus = None``.
@@ -321,12 +333,7 @@ class Manifest(BaseModel):
         document-backed contract as :meth:`set_integration` / :meth:`dump`.
         """
 
-        document = self._document
-        if document is None:
-            raise RuntimeError(
-                "Manifest.clear_focus() requires an instance produced by "
-                "Manifest.load() or Manifest.build()."
-            )
+        document = self._require_document("clear_focus")
         if "focus" in document:
             del document["focus"]
         self.focus = None
@@ -338,13 +345,7 @@ class Manifest(BaseModel):
         if target.exists() and not overwrite:
             raise ManifestOverwriteError(target)
 
-        document = self._document
-        if document is None:
-            raise RuntimeError(
-                "Manifest.dump() requires an instance produced by Manifest.load() "
-                "or Manifest.build(); bare constructions have no tomlkit document "
-                "to serialize."
-            )
+        document = self._require_document("dump")
 
         body = tomlkit.dumps(document)
 

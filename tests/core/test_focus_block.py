@@ -10,6 +10,8 @@ failures. See specs/019-focus-state/data-model.md.
 
 from __future__ import annotations
 
+import datetime
+
 import pytest
 from pydantic import ValidationError
 
@@ -75,6 +77,20 @@ def test_impossible_date_rejected() -> None:
     with pytest.raises(ValidationError) as exc:
         FocusBlock(target="cap-04", updated_at="2026-13-40")
     assert "not_iso_date" in _errors(exc.value)
+
+
+def test_toml_native_date_normalized_to_string() -> None:
+    # TOML's unquoted date parses to `datetime.date`; the block accepts it and
+    # stores the equivalent YYYY-MM-DD string (Principle I — string on disk).
+    block = FocusBlock(target="cap-04", updated_at=datetime.date(2026, 6, 11))  # type: ignore[arg-type]
+    assert block.updated_at == "2026-06-11"
+
+
+def test_datetime_with_time_rejected() -> None:
+    # The clarification fixed the no-time/no-timezone calendar-date form.
+    with pytest.raises(ValidationError) as exc:
+        FocusBlock(target="cap-04", updated_at=datetime.datetime(2026, 6, 11, 10, 0))  # type: ignore[arg-type]
+    assert "string_type" in _errors(exc.value)
 
 
 # --- block hygiene -----------------------------------------------------------

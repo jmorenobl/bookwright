@@ -112,17 +112,13 @@ def test_empty_target_human_mode_error_to_stderr(project: Path, runner: CliRunne
     assert result.stderr.startswith("bookwright: error:")
 
 
-# --- shared fault boundary ----------------------------------------------------
+# --- author text is never rich markup (channel discipline) --------------------
 
 
-def test_outside_project(outside_project: Path, runner: CliRunner) -> None:
-    result = runner.invoke(app, ["focus", "set", "--target", "cap-04", "--json"])
-    assert result.exit_code == 2
-    assert json.loads(result.stdout)["code"] == "not_a_project"
-
-
-def test_invalid_manifest(project: Path, runner: CliRunner) -> None:
-    (project / "manifest.toml").write_text("this = = invalid toml", encoding="utf-8")
-    result = runner.invoke(app, ["focus", "set", "--target", "cap-04", "--json"])
-    assert result.exit_code == 2
-    assert json.loads(result.stdout)["code"] == "invalid_manifest"
+def test_confirmation_echoes_bracketed_target_literally(project: Path, runner: CliRunner) -> None:
+    # Square brackets are ordinary narrative shorthand; the confirmation must
+    # echo them verbatim, not parse (or crash on) them as rich markup tags.
+    target = "cerrar fin[/] de [cap 4]"
+    result = runner.invoke(app, ["focus", "set", "--target", target])
+    assert result.exit_code == 0
+    assert target in result.stderr

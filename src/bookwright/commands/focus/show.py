@@ -13,8 +13,8 @@ import typer
 from rich.console import Console
 
 from .._envelope import emit_json
+from .._project import load_manifest_or_exit
 from . import app
-from ._project import load_manifest_or_exit
 
 
 @app.command("show")
@@ -35,18 +35,11 @@ def run(
         return
 
     if json_output:
-        emit_json(
-            {
-                "status": "ok",
-                "focus": {
-                    "target": focus.target,
-                    "notes": focus.notes,
-                    "updated_at": focus.updated_at,
-                },
-            }
-        )
+        emit_json({"status": "ok", "focus": focus.model_dump()})
     else:
-        console = Console(highlight=False)
+        # markup=False: `target`/`notes` are author text — bracketed words must
+        # echo literally, not be parsed (or crash) as rich markup tags.
+        console = Console(highlight=False, markup=False)
         console.print(f"target:     {focus.target}")
         console.print(f"notes:      {focus.notes}")
         console.print(f"updated_at: {focus.updated_at}")

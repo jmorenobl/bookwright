@@ -1,10 +1,11 @@
-"""Shared project-load + ``--json`` fault boundary for the ``focus`` subcommands.
+"""Shared project-load + ``--json`` fault boundary for the command layer.
 
-All three subcommands (``show``/``set``/``clear``) locate the project and load the
-manifest the same way and remap the same two faults to exit 2 (research D10).
-Factoring it here keeps each command body to its own logic — ``set`` keeps its own
-``FocusTargetEmptyError`` rejection, the one per-command fault, visible in
-``set.py``.
+Every manifest-reading subcommand locates the project and loads the manifest the
+same way and remaps the same two faults to exit 2 (research D10). Factoring it
+here — next to the envelope helpers in :mod:`bookwright.commands._envelope` —
+keeps each command body to its own logic and gives later iterations (e.g. the
+020 ``bookwright status`` read path) the boundary without reaching into a
+sibling command package.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from bookwright.core.manifest import Manifest
 from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.project import find_project_root
 
-from .._envelope import EXIT_CONFIG, emit_error, invalid_manifest_payload
+from ._envelope import EXIT_CONFIG, emit_error, invalid_manifest_payload
 
 
 def load_manifest_or_exit(json_output: bool) -> tuple[Path, Manifest]:

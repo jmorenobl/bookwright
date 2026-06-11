@@ -27,6 +27,7 @@ from bookwright.integrations import (
     SkillMaterializationError,
 )
 
+from .._envelope import emit_json
 from .git import GitInitError
 from .scaffold import BackupCreationError, TargetOutsideProjectRootError
 
@@ -169,15 +170,20 @@ def error_envelope(
 
 
 def dump_success_to_stdout(payload: dict[str, Any]) -> None:
-    """Write the success envelope to stdout (contract §3.1 encoding)."""
+    """Write the success envelope to stdout (contract §3.1 encoding).
 
-    sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+    The encoding itself is single-sourced in ``commands._envelope.emit_json``;
+    this name (and its §3.2 sibling) survives so init call sites keep naming
+    which contract section they are emitting.
+    """
+
+    emit_json(payload)
 
 
 def dump_error_to_stdout(payload: dict[str, Any]) -> None:
     """Write the error envelope to stdout (contract §3.2 encoding)."""
 
-    sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+    emit_json(payload)
 
 
 def _emit(payload: dict[str, Any], message: str, *, exit_code: int, json_output: bool) -> NoReturn:

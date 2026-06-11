@@ -56,19 +56,3 @@ def test_absent_json_reports_cleared_false(project: Path, runner: CliRunner) -> 
     result = runner.invoke(app, ["focus", "clear", "--json"])
     assert result.exit_code == 0
     assert json.loads(result.stdout) == {"status": "ok", "cleared": False}
-
-
-# --- shared fault boundary ----------------------------------------------------
-
-
-def test_outside_project(outside_project: Path, runner: CliRunner) -> None:
-    result = runner.invoke(app, ["focus", "clear", "--json"])
-    assert result.exit_code == 2
-    assert json.loads(result.stdout)["code"] == "not_a_project"
-
-
-def test_invalid_manifest(project: Path, runner: CliRunner) -> None:
-    (project / "manifest.toml").write_text("this = = invalid toml", encoding="utf-8")
-    result = runner.invoke(app, ["focus", "clear", "--json"])
-    assert result.exit_code == 2
-    assert json.loads(result.stdout)["code"] == "invalid_manifest"

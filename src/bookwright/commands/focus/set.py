@@ -10,7 +10,6 @@ otherwise a confirmation to stderr (Principle IX).
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -18,8 +17,8 @@ from rich.console import Console
 from bookwright.core.manifest import Manifest
 
 from .._envelope import EXIT_CONFIG, emit_error, emit_json
+from .._project import load_manifest_or_exit
 from . import app
-from ._project import load_manifest_or_exit
 from .errors import FocusTargetEmptyError
 
 
@@ -31,7 +30,7 @@ def _today() -> str:
 @app.command("set")
 def run(
     target: str = typer.Option(..., "--target", help="What you are working on now."),
-    notes: Optional[str] = typer.Option(  # noqa: UP045 — Typer needs Optional, not `str | None`
+    notes: str | None = typer.Option(
         None, "--notes", help="Open threads / pending decisions. Omit to keep; '' to clear."
     ),
     json_output: bool = typer.Option(
@@ -47,25 +46,21 @@ def run(
         raise typer.Exit(EXIT_CONFIG) from exc
 
     resolved_notes = _resolve_notes(notes, manifest)
-    updated_at = _today()
     # `target` is stored verbatim, not stripped (data-model write-shape decision 2).
-    manifest.set_focus(target=target, notes=resolved_notes, updated_at=updated_at)
+    block = manifest.set_focus(target=target, notes=resolved_notes, updated_at=_today())
     manifest.dump(path, overwrite=True)
 
     if json_output:
-        emit_json(
-            {
-                "status": "ok",
-                "focus": {"target": target, "notes": resolved_notes, "updated_at": updated_at},
-            }
-        )
+        emit_json({"status": "ok", "focus": block.model_dump()})
     else:
-        Console(stderr=True, highlight=False).print(
-            f'focus set: target="{target}", updated_at={updated_at}'
+        # markup=False: `target` is author text — bracketed words must echo
+        # literally, not be parsed (or crash) as rich markup tags.
+        Console(stderr=True, highlight=False, markup=False).print(
+            f'focus set: target="{block.target}", updated_at={block.updated_at}'
         )
 
 
-def _resolve_notes(notes: Optional[str], manifest: Manifest) -> str:  # noqa: UP045
+def _resolve_notes(notes: str | None, manifest: Manifest) -> str:
     """Apply the partial-``notes`` rule (FR-007, research D4).
 
     ``--notes`` omitted (``None``) ⇒ keep the existing notes (or ``""`` on create);

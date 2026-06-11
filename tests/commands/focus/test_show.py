@@ -58,17 +58,19 @@ def test_absent_json_emits_focus_null(project: Path, runner: CliRunner) -> None:
     assert json.loads(result.stdout) == {"status": "ok", "focus": None}
 
 
-# --- shared fault boundary ----------------------------------------------------
+# --- author text is never rich markup (channel discipline) --------------------
 
 
-def test_outside_project(outside_project: Path, runner: CliRunner) -> None:
-    result = runner.invoke(app, ["focus", "show", "--json"])
-    assert result.exit_code == 2
-    assert json.loads(result.stdout)["code"] == "not_a_project"
-
-
-def test_invalid_manifest(project: Path, runner: CliRunner) -> None:
-    (project / "manifest.toml").write_text("this = = invalid toml", encoding="utf-8")
-    result = runner.invoke(app, ["focus", "show", "--json"])
-    assert result.exit_code == 2
-    assert json.loads(result.stdout)["code"] == "invalid_manifest"
+def test_bracketed_author_text_prints_literally(
+    project_with_focus: Callable[[str], Path], runner: CliRunner
+) -> None:
+    # Square brackets are ordinary narrative shorthand; human mode must print
+    # them verbatim, not swallow (or crash on) them as rich markup tags.
+    project_with_focus(
+        'target = "cerrar fin[/] de [cap 4]"\nnotes = "ver [b]timeline[/b]"\n'
+        'updated_at = "2026-06-11"\n'
+    )
+    result = runner.invoke(app, ["focus", "show"])
+    assert result.exit_code == 0
+    assert "cerrar fin[/] de [cap 4]" in result.stdout
+    assert "ver [b]timeline[/b]" in result.stdout

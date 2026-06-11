@@ -13,8 +13,8 @@ import typer
 from rich.console import Console
 
 from .._envelope import emit_json
+from .._project import load_manifest_or_exit
 from . import app
-from ._project import load_manifest_or_exit
 
 
 @app.command("clear")

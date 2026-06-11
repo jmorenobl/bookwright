@@ -51,6 +51,25 @@ class FocusBlock(BaseModel):
             raise PydanticCustomError("empty", "target must be a non-empty string")
         return value
 
+    @field_validator("updated_at", mode="before")
+    @classmethod
+    def _accept_toml_date(cls, value: object) -> object:
+        """Accept TOML's native (unquoted) date — the idiomatic TOML spelling.
+
+        ``updated_at = 2026-06-11`` parses to a ``datetime.date``, which
+        ``strict=True`` would otherwise reject with a generic "should be a valid
+        string" *before* the bespoke ``not_iso_date`` validator could fire —
+        bricking every manifest-loading command over a spelling that is a valid
+        ISO 8601 calendar date. Normalizing it to its ``isoformat()`` string here
+        keeps the stored type a string (Principle I, research D2) without
+        rejecting the natural hand-edit. A ``datetime`` (date *with* time) stays
+        rejected — the clarification fixed the no-time/no-timezone form.
+        """
+
+        if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
+            return value.isoformat()
+        return value
+
     @field_validator("updated_at", mode="after")
     @classmethod
     def _check_updated_at(cls, value: str) -> str:
@@ -63,12 +82,9 @@ class FocusBlock(BaseModel):
         (Principle I, research D2).
         """
 
-        if not _ISO_CALENDAR_DATE.fullmatch(value):
-            raise PydanticCustomError(
-                "not_iso_date",
-                "updated_at must be an ISO 8601 calendar date YYYY-MM-DD",
-            )
         try:
+            if not _ISO_CALENDAR_DATE.fullmatch(value):
+                raise ValueError(value)
             datetime.date.fromisoformat(value)
         except ValueError as exc:
             raise PydanticCustomError(

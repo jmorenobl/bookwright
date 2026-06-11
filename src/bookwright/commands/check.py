@@ -1,12 +1,13 @@
 """`bookwright check` — verify the running interpreter and runtime dependencies."""
 
 import importlib
-import json
 import sys
 from typing import TypedDict
 
 import typer
 from rich.console import Console
+
+from ._envelope import emit_json
 
 RUNTIME_MODULES: tuple[str, ...] = (
     "typer",
@@ -64,7 +65,7 @@ def run(
     ok = all(c["status"] == "ok" for c in checks)
     payload = {"ok": ok, "checks": checks}
     if json_output:
-        sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+        emit_json(payload)
     else:
         console = Console()
         for check in checks:

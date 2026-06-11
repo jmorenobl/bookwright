@@ -11,37 +11,16 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from bookwright.core import FocusBlock, Manifest, ManifestValidationError
-
-_BASE = """\
-[bookwright]
-cli_version_min = "0.0.1"
-schema_version = "golem-1.1"
-manifest_version = "1"
-uri_base = "https://example.org/focus/"
-
-[book]
-title = "Focus Book"
-type = "novel"
-language = "es"
-authors = ["Solo Author"]
-
-[integration]
-key = "generic"
-skills_dir = ".agents/skills"
-"""
-
-
-def _with_focus(block: str) -> str:
-    return f"{_BASE}\n[focus]\n{block}"
-
+from tests.fixtures.manifests import MINIMAL_MANIFEST, with_focus
 
 # --- load: backward compatibility (FR-002, SC-004) ---------------------------
 
 
 def test_absent_block_loads_as_none(tmp_manifest: Callable[[str], Path]) -> None:
-    manifest = Manifest.load(tmp_manifest(_BASE))
+    manifest = Manifest.load(tmp_manifest(MINIMAL_MANIFEST))
     assert manifest.focus is None
     # other fields intact
     assert manifest.book.title == "Focus Book"
@@ -53,7 +32,7 @@ def test_absent_block_loads_as_none(tmp_manifest: Callable[[str], Path]) -> None
 
 def test_present_valid_block_populates_focus(tmp_manifest: Callable[[str], Path]) -> None:
     path = tmp_manifest(
-        _with_focus('target = "cap-04"\nnotes = "cerrar timeline"\nupdated_at = "2026-06-11"\n')
+        with_focus('target = "cap-04"\nnotes = "cerrar timeline"\nupdated_at = "2026-06-11"\n')
     )
     manifest = Manifest.load(path)
     assert isinstance(manifest.focus, FocusBlock)
@@ -62,11 +41,20 @@ def test_present_valid_block_populates_focus(tmp_manifest: Callable[[str], Path]
     assert manifest.focus.updated_at == "2026-06-11"
 
 
+def test_bare_toml_date_accepted_and_normalized(tmp_manifest: Callable[[str], Path]) -> None:
+    # TOML's native (unquoted) date — the idiomatic hand-edit — must load, not
+    # brick every manifest-reading command with a generic type error.
+    path = tmp_manifest(with_focus('target = "cap-04"\nupdated_at = 2026-06-11\n'))
+    manifest = Manifest.load(path)
+    assert manifest.focus is not None
+    assert manifest.focus.updated_at == "2026-06-11"
+
+
 # --- load: invalid updated_at surfaces as manifest_validation (FR-011, SC-005) -
 
 
 def test_bad_updated_at_names_the_field(tmp_manifest: Callable[[str], Path]) -> None:
-    path = tmp_manifest(_with_focus('target = "cap-04"\nupdated_at = "nope"\n'))
+    path = tmp_manifest(with_focus('target = "cap-04"\nupdated_at = "nope"\n'))
     with pytest.raises(ManifestValidationError) as exc:
         Manifest.load(path)
     fields = {f.field_path for f in exc.value.failures}
@@ -102,18 +90,33 @@ bible = "bible"
 
 
 def test_set_focus_creates_block_when_absent(tmp_manifest: Callable[[str], Path]) -> None:
-    path = tmp_manifest(_BASE)
+    path = tmp_manifest(MINIMAL_MANIFEST)
     manifest = Manifest.load(path)
     assert manifest.focus is None
-    manifest.set_focus(target="cap-04", notes="x", updated_at="2026-06-11")
-    assert manifest.focus == FocusBlock(target="cap-04", notes="x", updated_at="2026-06-11")
+    block = manifest.set_focus(target="cap-04", notes="x", updated_at="2026-06-11")
+    assert block == FocusBlock(target="cap-04", notes="x", updated_at="2026-06-11")
+    assert manifest.focus == block  # the returned block IS the new field value
     manifest.dump(path, overwrite=True)
     reloaded = Manifest.load(path)
     assert reloaded.focus == FocusBlock(target="cap-04", notes="x", updated_at="2026-06-11")
 
 
+def test_set_focus_invalid_input_leaves_manifest_untouched(
+    tmp_manifest: Callable[[str], Path],
+) -> None:
+    path = tmp_manifest(MINIMAL_MANIFEST)
+    manifest = Manifest.load(path)
+    with pytest.raises(ValidationError):
+        manifest.set_focus(target="   ", notes="", updated_at="2026-06-11")
+    # Validate-first contract: neither the model nor the backing document was
+    # touched, so a subsequent dump cannot persist a poisoned [focus] block.
+    assert manifest.focus is None
+    manifest.dump(path, overwrite=True)
+    assert "[focus]" not in path.read_text(encoding="utf-8")
+
+
 def test_set_focus_updates_block_when_present(tmp_manifest: Callable[[str], Path]) -> None:
-    path = tmp_manifest(_with_focus('target = "old"\nnotes = "n"\nupdated_at = "2026-01-01"\n'))
+    path = tmp_manifest(with_focus('target = "old"\nnotes = "n"\nupdated_at = "2026-01-01"\n'))
     manifest = Manifest.load(path)
     manifest.set_focus(target="new", notes="n2", updated_at="2026-06-11")
     manifest.dump(path, overwrite=True)
@@ -134,7 +137,7 @@ def test_set_focus_preserves_comments_and_ordering(tmp_manifest: Callable[[str],
 
 
 def test_set_focus_on_bare_manifest_raises(tmp_manifest: Callable[[str], Path]) -> None:
-    bare = Manifest.load(tmp_manifest(_BASE)).model_copy()
+    bare = Manifest.load(tmp_manifest(MINIMAL_MANIFEST)).model_copy()
     object.__setattr__(bare, "_document", None)
     with pytest.raises(RuntimeError):
         bare.set_focus(target="cap-04", notes="", updated_at="2026-06-11")
@@ -144,7 +147,7 @@ def test_set_focus_on_bare_manifest_raises(tmp_manifest: Callable[[str], Path]) 
 
 
 def test_clear_focus_removes_present_block(tmp_manifest: Callable[[str], Path]) -> None:
-    path = tmp_manifest(_with_focus('target = "cap-04"\nnotes = "n"\nupdated_at = "2026-06-11"\n'))
+    path = tmp_manifest(with_focus('target = "cap-04"\nnotes = "n"\nupdated_at = "2026-06-11"\n'))
     manifest = Manifest.load(path)
     assert manifest.focus is not None
     manifest.clear_focus()
@@ -169,14 +172,14 @@ def test_clear_focus_preserves_rest_of_manifest(tmp_manifest: Callable[[str], Pa
 
 
 def test_clear_focus_absent_is_noop(tmp_manifest: Callable[[str], Path]) -> None:
-    path = tmp_manifest(_BASE)
+    path = tmp_manifest(MINIMAL_MANIFEST)
     manifest = Manifest.load(path)
     manifest.clear_focus()  # no error
     assert manifest.focus is None
 
 
 def test_clear_focus_on_bare_manifest_raises(tmp_manifest: Callable[[str], Path]) -> None:
-    bare = Manifest.load(tmp_manifest(_BASE)).model_copy()
+    bare = Manifest.load(tmp_manifest(MINIMAL_MANIFEST)).model_copy()
     object.__setattr__(bare, "_document", None)
     with pytest.raises(RuntimeError):
         bare.clear_focus()
