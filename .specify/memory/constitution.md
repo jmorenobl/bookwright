@@ -1,36 +1,35 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.2.0 → 1.3.0
-Bump rationale: MINOR — materially expanded guidance in Principle VIII (Test
-Discipline). The principle enumerated an end-to-end author workflow
-(`init → constitution → bible → outline → scenes → draft`) as if every leg were
-an executable CLI command. The authoring legs (`constitution`, `bible`,
-`outline`, `scenes`, `draft`) ship as Agent Skills — LLM-driven `SKILL.md`
-prompts (Principles VI, X), not CLI commands — so they cannot be driven by an
-automated end-to-end CLI test. This amendment clarifies that their E2E
-verification is satisfied by agentskills.io materialization compliance
-(Principle VII), while the executable surface is exercised through the real
-CLI. The coverage bar (≥ 80%) and CI gates are unchanged; no workflow step is
-exempted. Surfaced by /speckit-analyze on iteration 011-release-prep
-(finding C1): the prior wording forced an inline reinterpretation in plan.md,
-which this amendment moves into the binding document.
+Version change: 1.3.0 → 1.4.0
+Bump rationale: MINOR — materially updated guidance in the Scope & Release
+Discipline section to match shipped reality and the canonical roadmap. The
+prior wording said "the v0 line ships exactly the M0–M3 milestones" and listed
+deferred capabilities against stale version targets (preset system → v0.2,
+GrafeoIndexer + vector search → v0.3, multi-integration → v0.4, extension
+system → v0.5). Since ratification, M0–M3 shipped as v0.1.0 and M4 as v0.2.0,
+M5 / v0.3 (context orchestration) is the active line, and the owner cancelled
+the preset system, Grafeo/GrafeoIndexer, multi-integration beyond claude/
+generic, and the extension system outright (design § 15.5, § 20.12), while
+vector search moved to v0.4. The section now distinguishes **deferred**
+(vector search v0.4, export v1.0) from **cancelled** capabilities and keeps the
+anti-speculative-generality rule. Surfaced by /speckit-analyze on iteration
+019-focus-state (finding C1): the "ships exactly M0–M3" sentence contradicted
+M5 work without this refresh. No principle is reworded; this reflects decisions
+already recorded in the design document and reopens no § 16 axiom (Principle X).
 
-Principles: VIII reworded (clarification + expanded guidance); I–VII, IX, X
-unchanged (no renames, no additions, no removals).
+Principles: I–X unchanged (no renames, additions, or removals). Only the
+Scope & Release Discipline section changed.
 
 Propagation:
-- ✅ Principle VIII text updated in place.
-- ✅ .specify/templates/*.md — no change required (no template restates the VIII
-  workflow; the plan-template Constitution Check is generic).
-- ✅ bookwright-design.md — no change required: line 62 maps the conceptual
-  Spec-Kit↔Bookwright flow (not the E2E test mandate) and § 15 ("Tests E2E de
-  cada command sobre fixtures") already matches the clarified split; no axiom in
-  § 16 is reopened (Principle X), so no design change accompanies this.
-- ✅ specs/011-release-prep/plan.md — the "Note on Principle VIII" now cites this
-  clarified principle instead of reinterpreting it; the gate reference is bumped
-  to v1.3.0.
-- ✅ .claude/skills/speckit-*/ — no change required.
+- ✅ Scope & Release Discipline section rewritten in place.
+- ✅ .specify/templates/*.md — no change required (the plan-template Constitution
+  Check is generic; no template restates the deferred/cancelled list).
+- ✅ bookwright-design.md — no change required: § 15.5 / § 20.12 already record
+  the cancellations this section now mirrors; no § 16 axiom is reopened.
+- ✅ CLAUDE.md — the "Scope discipline" and roadmap notes already match the
+  refreshed deferred/cancelled split; the Spec Kit pin was bumped to v0.10.1 in
+  the same housekeeping change.
 
 History:
 - 1.0.0 (2026-05-28): initial ratification (Principles I–X, Technical
@@ -40,6 +39,9 @@ History:
 - 1.2.0 (2026-06-01): added `pyyaml` (runtime dependency list).
 - 1.3.0 (2026-06-03): clarified Principle VIII E2E verification for Agent-Skill
   authoring legs (iteration 011-release-prep, finding C1).
+- 1.4.0 (2026-06-11): refreshed Scope & Release Discipline to shipped reality
+  (M0–M4 done, M5/v0.3 active) and split deferred (vector search v0.4, export
+  v1.0) from cancelled capabilities (iteration 019-focus-state, finding C1).
 -->
 
 # Bookwright Constitution
@@ -213,20 +215,26 @@ constitutional bump.
 
 ## Scope & Release Discipline
 
-The v0 line ships exactly the M0–M3 milestones described in design § 15.
-The following capabilities are deliberately deferred and MUST NOT be pulled
-into v0 scope:
+Milestones M0–M3 shipped as `v0.1.0` and the M4 research & verification system
+as `v0.2.0`. Active work is M5 / v0.3 — context orchestration (design § 21).
+Every milestone lands through numbered iterations, never as freehand commits.
 
-- **Preset system** (genre packages, template overlays) — v0.2.
-- **`GrafeoIndexer`** and vector search — v0.3.
-- **Multi-integration beyond `claude` and `generic`** (Copilot, Gemini,
-  Cursor-specific, etc.) — v0.4.
-- **Extension system** (distributable validators, pre-commit hooks) — v0.5.
+The following capabilities remain **deferred** and MUST NOT be pulled into the
+current line ahead of their milestone:
+
+- **Vector search** (ChromaDB over rdflib, decoupled from Grafeo) — v0.4.
 - **Export to EPUB / PDF / print** (pandoc pipeline) — v1.0.
 
-A pull request that introduces any of the deferred capabilities, or that
-adds plumbing whose only justification is "future preset support", MUST be
-rejected at review or split out into a post-v0 branch. Speculative
+The following are **cancelled** by owner decision (design § 15.5, § 20.12) and
+MUST NOT be implemented at all: the preset / genre-package system (template
+resolution is two layers, overrides → core); the `GrafeoIndexer` / Grafeo
+engine; any integration beyond `claude` and `generic`; the extension system.
+Cancelling these reflects decisions already recorded in the design document and
+reopens no § 16 axiom (Principle X).
+
+A pull request that introduces a deferred-but-not-yet-due capability, a
+cancelled capability, or plumbing whose only justification is "future X", MUST
+be rejected at review or split into a later-milestone branch. Speculative
 generality is treated as a violation of this constitution.
 
 ## Governance
@@ -258,4 +266,4 @@ either the code is fixed or the constitution is amended through the
 procedure above. The CI pipeline (Principle VIII) is the automated half of
 this gate; human review covers the rest.
 
-**Version**: 1.3.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-06-03
+**Version**: 1.4.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-06-11
