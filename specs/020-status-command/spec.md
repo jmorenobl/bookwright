@@ -19,8 +19,9 @@ hand, and structurally meaningful queues like "anchors without sufficient
 sources" go unconsumed.
 
 This iteration adds `bookwright status`: a **deterministic** CLI verb that
-computes the project's derived state from the graph (rebuilding it when stale,
-exactly as `bookwright validate` does), reports the resulting facts, and maps
+computes the project's derived state from the graph (rebuilt from the corpus
+on every run via the same pipeline `graph build` uses — recomputation is the
+freshness mechanism), reports the resulting facts, and maps
 them through a **static rule table** to a list of recommended next actions —
 each one naming a skill to invoke, a paste-ready prompt, and a brief reason.
 It is pure aggregation over the frozen ontology (no new classes, Principle X),
@@ -36,6 +37,8 @@ emits the standard single-document JSON envelope with `--json`
 - Q: In the `--json` report, what should the `state` object carry for the research/validation facts — counts only (as the design § 21.6 example shows) or also the items? → A: Counts + item lists — `state` carries both the aggregate counts and the identifying items (open question texts/IDs, anchor IDs, low-reliability finding IDs); the design's count-only example is a minimal illustration. Iteration 021's bottom-up consumption needs the actual queue without re-querying the graph.
 - Q: What language do the paste-ready prompt templates in `next_actions` use? → A: Fixed English — one static template set, matching the CLI/code language convention (the design § 21.5 Spanish examples are illustrative). Skills must trigger on both ES and EN prompts anyway; no i18n machinery.
 - Q: What does `status` do when the graph rebuild fails because a source file is malformed (vs. nothing to build)? → A: Hard error — the standard unified error envelope and non-zero exit, exactly as `graph build` / `validate` on the same corpus. Graceful degradation (FR-013) is reserved for *absent* information, never *corrupt* information.
+- Q: How does `status` resolve graph staleness, given that `validate` has no staleness detection (it loads `graph.ttl` as-is) and only `graph build` rebuilds? → A: Unconditional rebuild — `status` always reconstructs the graph from the corpus by reusing the `graph build` pipeline (extracted to a shared helper) and refreshes the derived `graph.ttl` cache; recomputation is the freshness mechanism (plan research.md D1, owner-approved 2026-06-11).
+- Q: How can repeated runs be byte-identical (SC-002) when `Finding`/`Anchor` mint fresh uuid7 URIs on every rebuild? → A: The report never contains minted URIs — items are identified by corpus-stable keys (authored finding `id`s, file relpaths, claim texts), carried by an additive extension of the research mapping result; anchor-gap detection reuses the `factual_anchor` predicates extracted as pure functions (plan research.md D2/D3, owner-approved 2026-06-11).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -67,8 +70,8 @@ validation counts per severity — all matching what `graph query` and
    research questions as facts (the "bottom-up" research queue).
 2. **Given** a project whose graph cache is stale relative to the bible and
    research sources, **When** the author runs `bookwright status`, **Then**
-   the graph is rebuilt/refreshed first (same staleness resolution as
-   `validate`) and the reported facts reflect the current corpus.
+   the graph is rebuilt from the corpus first (the `graph build` pipeline,
+   run unconditionally) and the reported facts reflect the current corpus.
 3. **Given** a project with anchors whose findings lack sufficient supporting
    sources, **When** the author runs `status`, **Then** those anchors are
    reported, reusing the same detection logic as the existing
@@ -178,8 +181,9 @@ that any human prose went to stderr, and that
 - **Nothing to recommend**: a healthy project (no open questions, no
   violations, focus defined) yields an empty `next_actions` list — an empty
   list is a valid, meaningful answer.
-- **Stale graph cache**: `status` refreshes it before computing, exactly as
-  `validate` does; it never reports facts from a stale graph.
+- **Stale graph cache**: `status` rebuilds the graph from the corpus on every
+  run (and refreshes the derived `graph.ttl`), so it never reports facts from
+  a stale graph.
 - **Cache directory missing**: `.bookwright/cache/` is created if absent;
   the scaffold's `.gitignore` already excludes it (no project file changes
   needed).
@@ -200,8 +204,10 @@ that any human prose went to stderr, and that
 
 - **FR-001**: The CLI MUST provide a `bookwright status` command that
   computes the project's derived state from the knowledge graph, rebuilding
-  or refreshing the graph when it is stale relative to its sources, using
-  the same staleness resolution `bookwright validate` already uses.
+  the graph from the corpus on every run by reusing the `graph build`
+  pipeline (single shared implementation, no fork) and refreshing the
+  derived `graph.ttl` cache, so the facts always reflect the current
+  corpus (see Clarifications: recomputation is the freshness mechanism).
 - **FR-002**: `status` MUST be exclusively read-only aggregation over the
   frozen ontology: it MUST NOT add classes or properties to the ontology
   (Principle X), MUST NOT mutate the graph beyond the existing
@@ -250,6 +256,9 @@ that any human prose went to stderr, and that
   question texts/identifiers, anchor identifiers, low-reliability finding
   identifiers), so consumers can act on the queue without re-querying the
   graph. Item lists MUST be deterministically ordered (FR-010/FR-014).
+  Identifiers MUST be corpus-stable (authored ids, file paths, claim texts)
+  — never minted entity URIs, which change on every rebuild (see
+  Clarifications).
 - **FR-012**: Every successful run MUST regenerate the computed report at
   `.bookwright/cache/status.json`. This cache is a derived, reconstructible
   artifact — never read back as a source of truth, and excluded from
@@ -344,9 +353,11 @@ that any human prose went to stderr, and that
 - **`.gitignore` coverage**: the project scaffold already excludes
   `.bookwright/cache/`, so no scaffold change is required for the new cache
   file.
-- **Graph staleness resolution**: "stale" is whatever `bookwright validate`
-  already considers stale; `status` reuses that mechanism rather than
-  defining a new one.
+- **Graph staleness resolution** (resolved — see Clarifications): `validate`
+  has no staleness detection (it loads the on-disk `graph.ttl` as-is), so
+  there is no existing mechanism to reuse; `status` rebuilds unconditionally
+  via the shared `graph build` pipeline instead of defining new staleness
+  machinery.
 
 ## Out of Scope
 
@@ -365,8 +376,8 @@ that any human prose went to stderr, and that
 
 ## Dependencies
 
-- The knowledge graph build/refresh mechanism shared with
-  `bookwright validate` (iterations 006, 010; design § 13).
+- The knowledge graph build pipeline of `bookwright graph build`
+  (iteration 006; design § 13), extracted to a helper shared by both verbs.
 - The validation runner and its severity model (iterations 010–011), and
   the `factual_anchor` validator (iteration 015) — both reused, not
   duplicated.
