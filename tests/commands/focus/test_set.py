@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-import bookwright.commands.focus.set as set_module
+import bookwright.commands.focus.set_ as set_module
 from bookwright.cli import app
 from bookwright.core import Manifest
 

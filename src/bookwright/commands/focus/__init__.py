@@ -20,5 +20,5 @@ app = typer.Typer(
 # `from . import …` lines are appended below as the modules land. The `as`
 # redirect marks the import as an intentional re-export (registration side effect).
 from . import clear as clear  # noqa: E402
-from . import set as set  # noqa: E402
+from . import set_ as set_  # noqa: E402  (module name avoids shadowing builtins.set)
 from . import show as show  # noqa: E402

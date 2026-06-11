@@ -47,7 +47,7 @@ PY
 export UV_PUBLISH_TOKEN
 
 echo ">> target index: ${REPO}${PUBLISH_URL:+ ($PUBLISH_URL)}"
-echo ">> token:         ${UV_PUBLISH_TOKEN:0:9}…[hidden]"
+echo ">> token:         pypi-…[hidden]"
 
 if [ "$DO_BUILD" -eq 1 ]; then
   echo ">> building artifacts (rm -rf dist && uv build)"
