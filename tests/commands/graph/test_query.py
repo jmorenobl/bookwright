@@ -111,3 +111,17 @@ def test_query_unknown_indexer(project_factory: Callable[..., Path], runner: Cli
     result = runner.invoke(app, ["graph", "query", CHARACTERS_QUERY, "--json"])
     assert result.exit_code == 2
     assert json.loads(result.stdout)["code"] == "unknown_indexer"
+
+
+def test_query_human_error_goes_to_stderr(tiny_novel: Path, runner: CliRunner) -> None:
+    """``graph query`` without ``--json`` and no graph built → human error on stderr.
+
+    Pins the human-channel discipline (Principle IX): the deliverable channel
+    (stdout) stays empty and the error line lands on stderr. Relocated from the
+    former ``graph/test_envelope.py`` when ``emit_error`` was single-sourced into
+    ``commands/_envelope.py`` (iteration 019).
+    """
+    result = runner.invoke(app, ["graph", "query", CHARACTERS_QUERY])
+    assert result.exit_code == 2
+    assert result.stdout.strip() == ""
+    assert result.stderr.startswith("bookwright: error:")

@@ -26,9 +26,8 @@ from bookwright.indexers import (
 from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.project import find_project_root
 
-from .._envelope import invalid_manifest_payload
+from .._envelope import emit_error, emit_json, invalid_manifest_payload
 from . import app
-from .envelope import emit_error, emit_json
 
 EXIT_CONFIG = 2
 EXIT_INVALID_QUERY = 3

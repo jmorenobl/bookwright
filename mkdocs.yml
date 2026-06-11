@@ -26,6 +26,9 @@ nav:
       - bookwright graph build: commands/graph-build.md
       - bookwright graph query: commands/graph-query.md
       - bookwright integration use: commands/integration-use.md
+      - bookwright focus set: commands/focus-set.md
+      - bookwright focus show: commands/focus-show.md
+      - bookwright focus clear: commands/focus-clear.md
   - Validación: validation.md
   - Investigación: research.md
   - Extender: extending.md

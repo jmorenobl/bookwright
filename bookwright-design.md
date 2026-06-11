@@ -690,6 +690,15 @@ bible = "bible/"
 outline = "outline/"
 graph = "bible/graph.ttl"
 constitution = "bible/constitution.md"
+
+[focus]
+# OPCIONAL. Hilo conductor autorado (§ 21.3). El bloque entero puede no existir;
+# cuando existe, `target` y `updated_at` son obligatorios. Lo escribe el CLI
+# (`bookwright focus set` / `clear`), que sella `updated_at` en cada escritura;
+# editable a mano como cualquier otro bloque.
+target = "arco de Berlín"           # qué se está trabajando ahora (texto corto, no vacío)
+notes = "cerrar la timeline del cap-04"  # hilos abiertos / decisiones pendientes ("" si ninguno)
+updated_at = "2026-06-11"           # fecha ISO 8601 YYYY-MM-DD (sin hora ni zona)
 ```
 
 ### 8.2 Versionado y compatibilidad

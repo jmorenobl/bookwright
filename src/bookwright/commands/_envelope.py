@@ -1,4 +1,4 @@
-"""Shared command-layer envelope helper (review R1).
+"""Shared command-layer envelope helpers (review R1, iteration 019).
 
 Several agent-facing commands catch a ``ManifestError`` at their ``--json``
 boundary and remap it to the contract's single ``invalid_manifest`` code. Rather
@@ -6,13 +6,36 @@ than re-build the ``{status,code,message}`` skeleton by hand in each command
 module, the remap routes through the base ``BookwrightError.to_json`` — the one
 place the envelope skeleton lives — exactly as ``commands.validate._UsageError``
 already does for the same case.
+
+The :func:`emit_json` / :func:`emit_error` pair is single-sourced here too: a
+single-line ``json.dumps(payload, separators=(",", ":")) + "\\n"`` to stdout,
+with human prose / progress going to stderr via a ``Console(stderr=True)`` owned
+by each command. ``focus`` and ``graph`` both import the pair from this module
+(iteration 019 consolidation) instead of hand-rolling a per-group copy.
 """
 
 from __future__ import annotations
 
+import json
+import sys
 from typing import Any
 
 from bookwright.errors import BookwrightError
+
+
+def emit_json(payload: dict[str, Any]) -> None:
+    """Write exactly one JSON document to stdout (the only thing on stdout)."""
+    sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+
+
+def emit_error(payload: dict[str, Any], json_output: bool) -> None:
+    """Surface an error envelope: one JSON doc on stdout under ``--json``, else a
+    single ``bookwright: error: <message>`` line on stderr (Principle IX)."""
+    if json_output:
+        emit_json(payload)
+    else:
+        sys.stderr.write(f"bookwright: error: {payload['message']}\n")
+
 
 #: The contract code every caught ``ManifestError`` collapses to at a ``--json``
 #: boundary. Single-sourced here so the two remap sites — this module and

@@ -41,6 +41,7 @@ from bookwright.core._blocks import (
     VocabulariesBlock,
 )
 from bookwright.core._build import _build_manifest
+from bookwright.core._focus_block import FocusBlock
 from bookwright.core._research_block import ResearchBlock
 from bookwright.core._translate import _translate_validation_error
 from bookwright.core.errors import (
@@ -136,6 +137,7 @@ class Manifest(BaseModel):
     integration: IntegrationBlock
     paths: PathsBlock = Field(default_factory=PathsBlock)
     research: ResearchBlock = Field(default_factory=ResearchBlock)
+    focus: FocusBlock | None = None  # absent [focus] block ⇒ None (research D1)
 
     _document: TOMLDocument | None = PrivateAttr(default=None)
     _warnings: tuple[ManifestWarning, ...] = PrivateAttr(default=())
@@ -278,6 +280,56 @@ class Manifest(BaseModel):
         self.integration = self.integration.model_copy(
             update={"key": key, "skills_dir": skills_dir}
         )
+
+    def set_focus(self, *, target: str, notes: str, updated_at: str) -> None:
+        """Create or update the ``[focus]`` block in place, preserving comments and order.
+
+        Mutates **both** the validated ``self.focus`` field and the backing
+        ``tomlkit`` document — exactly like :meth:`set_integration` — so a
+        subsequent :meth:`dump` writes the new block while every other block,
+        comment, and the block ordering round-trip untouched (FR-009, SC-002). The
+        ``[focus]`` table is appended last when absent, or updated in place when
+        present. ``notes`` is always written (an explicit ``notes = ""`` on a
+        create with no ``--notes``), so an omitted and an empty key are
+        equivalent — the explicit form is the greppable, unambiguous one
+        (data-model write-shape decision 1).
+
+        Requires an instance produced by :meth:`load` or :meth:`build`; a bare
+        construction raises ``RuntimeError``, the same contract as :meth:`dump`.
+        """
+
+        document = self._document
+        if document is None:
+            raise RuntimeError(
+                "Manifest.set_focus() requires an instance produced by "
+                "Manifest.load() or Manifest.build()."
+            )
+        if "focus" not in document:
+            document["focus"] = tomlkit.table()
+        table = document["focus"]
+        table["target"] = target
+        table["notes"] = notes
+        table["updated_at"] = updated_at
+        self.focus = FocusBlock(target=target, notes=notes, updated_at=updated_at)
+
+    def clear_focus(self) -> None:
+        """Remove the ``[focus]`` block if present; set ``self.focus = None``.
+
+        A no-op (no error) when already absent. Mutates the backing ``tomlkit``
+        document so a subsequent :meth:`dump` drops the block while preserving
+        every other block, comment, and ordering (FR-010, SC-002). Same
+        document-backed contract as :meth:`set_integration` / :meth:`dump`.
+        """
+
+        document = self._document
+        if document is None:
+            raise RuntimeError(
+                "Manifest.clear_focus() requires an instance produced by "
+                "Manifest.load() or Manifest.build()."
+            )
+        if "focus" in document:
+            del document["focus"]
+        self.focus = None
 
     def dump(self, path: Path | str, *, overwrite: bool = False) -> Path:
         """Atomically write the manifest to `path`. See contracts/manifest_api.md."""
