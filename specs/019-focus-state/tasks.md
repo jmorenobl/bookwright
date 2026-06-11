@@ -57,7 +57,7 @@ dependency on the model; T002 is a no-behaviour-change refactor of shipped `grap
 code guarded by graph's existing tests.
 
 - [ ] T001 Create `src/bookwright/commands/focus/__init__.py` as a **bare** Typer sub-app — `app = typer.Typer(name="focus", help="Record, view, and clear the authored focus state.", no_args_is_help=True, add_completion=False)` — mirroring `commands/graph/__init__.py` but **without** any `from . import …` command-registration lines yet (each story appends its own). (contracts/cli-focus.md:8-10)
-- [ ] T002 Single-source the JSON envelope instead of copying it: **move** `emit_json(payload)` and `emit_error(payload, json_output)` verbatim from `src/bookwright/commands/graph/envelope.py` into the existing shared `src/bookwright/commands/_envelope.py` (the module review R1 created to stop per-command envelope hand-rolling; already imported by `graph`/`integration`/`validate`), repoint `commands/graph/build.py` and `commands/graph/query.py` to `from .._envelope import emit_json, emit_error`, and **delete `commands/graph/envelope.py`**. No `commands/focus/envelope.py` is created — `focus` imports the pair from `.._envelope`. Behaviour is unchanged; graph's existing tests must stay green. (research D6, Principle IX) *(touches shipped `graph` import lines — not [P] with focus files conceptually; run the graph tests after.)*
+- [ ] T002 Single-source the JSON envelope instead of copying it: **move** `emit_json(payload)` and `emit_error(payload, json_output)` verbatim from `src/bookwright/commands/graph/envelope.py` into the existing shared `src/bookwright/commands/_envelope.py` (the module review R1 created to stop per-command envelope hand-rolling; already imported by `graph`/`integration`/`validate`), repoint `commands/graph/build.py` and `commands/graph/query.py` to `from .._envelope import emit_json, emit_error`, and **delete `commands/graph/envelope.py`**. **Also relocate its dedicated test**: move `tests/commands/graph/test_envelope.py` → `tests/commands/test_envelope.py` and repoint its import `from bookwright.commands.graph.envelope import emit_error` → `from bookwright.commands._envelope import emit_error` (the module is gone, so leaving the test in place would break pytest *collection* — ImportError, a red bar under Principle VIII). No `commands/focus/envelope.py` is created — `focus` imports the pair from `.._envelope`. Behaviour is unchanged; the relocated graph envelope test plus `graph`'s build/query tests must stay green. (research D6, Principle IX) *(touches shipped `graph` imports + one test move — not [P] with focus files; run `pytest tests/commands/test_envelope.py tests/commands/graph` right after.)*
 - [ ] T003 [P] Create `src/bookwright/commands/focus/errors.py` defining `FocusError(BookwrightError)` (group base, no serializer) and `FocusTargetEmptyError(FocusError)` with `code = "focus_target_empty"` and the message `"--target must be a non-empty string"`; subclass `BookwrightError` from `bookwright.errors` so `to_json()` is inherited (define **no** per-class serializer). (research D6, contracts/cli-focus.md:33,99-104)
 
 ---
@@ -100,7 +100,7 @@ confirm update; run `--target "   "` and confirm exit 2 + manifest untouched.
 ### Implementation for User Story 1
 
 - [ ] T012 [US1] Add `Manifest.set_focus(*, target: str, notes: str, updated_at: str) -> None` to `src/bookwright/core/manifest.py`, mirroring `set_integration` (manifest.py:254): require `self._document` else `raise RuntimeError(...)`; create the `[focus]` `tomlkit.table()` (appended last) if absent or update keys in place if present; set `target`/`notes`/`updated_at` on the document and refresh `self.focus = FocusBlock(target=…, notes=…, updated_at=…)`. (data-model.md:94-103, research D3; FR-006, FR-009) *(same file as T006 — sequential)*
-- [ ] T013a [US1] Create `src/bookwright/commands/focus/_project.py` with `load_manifest_or_exit(json_output: bool) -> tuple[Path, Manifest]`: `find_project_root()` + `Manifest.load(...)` wrapped in the shared `--json` fault boundary (`except ManifestError → emit_error(invalid_manifest_payload(exc), json_output)`, `except ProjectNotFoundError → emit_error(exc.to_json(), json_output)`, exit 2). Imports `emit_json`/`emit_error`/`invalid_manifest_payload` from `.._envelope` (T002). This is the single load+fault seam reused by all three subcommands (research D10); it does **not** handle `FocusTargetEmptyError` — that stays in `set.py`. *(first consumer is T013b; reused by T016/T021)*
+- [ ] T013a [US1] Create `src/bookwright/commands/focus/_project.py` with `load_manifest_or_exit(json_output: bool) -> tuple[Path, Manifest]`: call `find_project_root()` (same import source `graph/query.py` uses) + `Manifest.load(...)` wrapped in the shared `--json` fault boundary — `except ManifestError → emit_error(invalid_manifest_payload(exc), json_output)` then `raise typer.Exit(2)`; `except ProjectNotFoundError as exc → emit_error(exc.to_json(), json_output)` then `raise typer.Exit(2)` (the explicit `typer.Exit(2)` matching `graph/query.py`'s `EXIT_CONFIG`). Imports `emit_error`/`invalid_manifest_payload` from `.._envelope` (T002). This is the single load+fault seam reused by all three subcommands (research D10); it does **not** handle `FocusTargetEmptyError` — that stays in `set.py`. *(first consumer is T013b; reused by T016/T021)*
 - [ ] T013b [US1] Create `src/bookwright/commands/focus/set.py` — `@app.command("set")` with `target: str = typer.Option(..., "--target")`, `notes: Optional[str] = typer.Option(None, "--notes")`, `json_output: bool = typer.Option(False, "--json")`. Logic: obtain `(path, manifest)` via `load_manifest_or_exit(json_output)` (T013a); reject `target.strip() == ""` by raising `FocusTargetEmptyError` (caught → `emit_error(exc.to_json(), json_output)`, exit 2, manifest never written, FR-008); resolve effective notes per research D4 (`None` ⇒ keep `manifest.focus.notes` or `""` on create; `""` ⇒ clear; `"X"` ⇒ set); add a module-level `_today() -> str` returning `date.today().isoformat()` (research D5); call `set_focus(...)` (passing `target` **verbatim**, not stripped — data-model write-shape decision 2) then `manifest.dump(path, overwrite=True)`; emit `{"status":"ok","focus":{…}}` via `emit_json` under `--json`, else confirmation to a `Console(stderr=True)`. (contracts/cli-focus.md:66-105, research D4/D5/D6/D8)
 - [ ] T014 [US1] Append `from . import set as set  # noqa: E402` to `src/bookwright/commands/focus/__init__.py` so `set` self-registers on the sub-app at import. *(depends on T013b; same file appended again in US2/US3)*
 
@@ -191,7 +191,10 @@ confirm the block is gone and the rest of `manifest.toml` is preserved
 
 ### Parallel opportunities
 
-- Phase 1: T002, T003 alongside T001.
+- Phase 1: T001 and T003 in parallel. T002 edits disjoint files (so it does not
+  block T001/T003) but it is a refactor of shipped `graph` code plus a test move,
+  so treat it as its own serialized step and run the graph/envelope tests right
+  after it rather than folding it into the [P] batch.
 - Phase 2: T005, T007, T008, T009 once T004 lands (T006 also needs T004).
 - Within a story, the two test tasks marked [P] (different files) run together, e.g. T010 ∥ T011, T018 ∥ T019.
 - Phase 6: T023 ∥ T024.
@@ -234,8 +237,11 @@ Each story leaves the build green and adds value without breaking the prior ones
 ## Notes
 
 - [P] = different files, no dependency on an incomplete task.
-- This iteration touches **no** graph/SPARQL/skills code — derived `status`,
+- This iteration adds **no** graph/SPARQL/skills *behaviour* — derived `status`,
   `next_actions`, and skill consumption are iteration 020-022 (spec Out of Scope).
+  The only `graph` touch is T002's envelope consolidation (repoint two imports,
+  delete `graph/envelope.py`, move its test): a no-behaviour-change refactor that
+  *reduces* duplication, guarded by graph's existing tests.
 - `manifest_version` does **not** change — the `[focus]` block is purely additive
   (data-model.md:106-109; FR-002, SC-004).
 - Commit after each task or logical group (the `extensions.yml` git hooks offer

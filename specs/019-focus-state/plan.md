@@ -115,10 +115,12 @@ tests/
 ├── core/
 │   ├── test_focus_block.py        # NEW — FocusBlock validation (target/notes/updated_at)
 │   └── test_manifest_focus.py     # NEW — set_focus/clear_focus round-trip preservation
-└── commands/focus/
-    ├── test_show.py               # NEW — human + --json, present + absent
-    ├── test_set.py                # NEW — create/update, partial notes, empty-target reject
-    └── test_clear.py              # NEW — remove + no-op
+└── commands/
+    ├── test_envelope.py           # MOVED from graph/test_envelope.py — now targets _envelope (T002)
+    └── focus/
+        ├── test_show.py           # NEW — human + --json, present + absent
+        ├── test_set.py            # NEW — create/update, partial notes, empty-target reject
+        └── test_clear.py          # NEW — remove + no-op
 
 bookwright-design.md               # + [focus] block documented in § 8.1 (Spanish)
 ```
