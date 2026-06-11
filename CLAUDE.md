@@ -260,5 +260,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+`specs/020-status-command/plan.md` (iteration 020 — `bookwright status`,
+with `research.md`, `data-model.md`, `contracts/cli-status.md`, and
+`quickstart.md` alongside it).
 <!-- SPECKIT END -->
