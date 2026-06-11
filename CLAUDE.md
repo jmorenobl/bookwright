@@ -2,29 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.2.0 shipped (M4 complete)
+## Repository state: v0.2.0 shipped, v0.3 / M5 in progress
 
-Both milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
+Both released milestones are **fully implemented**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11) and `v0.2.0` (2026-06-05, the M4 research &
 verification system, iterations 12–18). All of it is on `main` with a real
 `src/bookwright/` package, ~200 Python files, the full test suite, docs, and CI
-gates green. The next planned work is **v0.3 / M5 — context orchestration**
-(design § 21): authored focus (`[focus]` + `bookwright focus`), deterministic
-derived state (`bookwright status` + `next_actions`), and skills that consume it.
-Its iteration plan (019–023) is in `bookwright-implementation-plan.md`; no
-iteration branch exists for it yet. Vector search (ChromaDB over rdflib) moved to
-v0.4.
+gates green. Current work is **v0.3 / M5 — context orchestration**
+(design § 21), iterations 019–023 in `bookwright-implementation-plan.md`:
+iteration 019 — authored focus (the `[focus]` manifest block +
+`bookwright focus show|set|clear`) — is **merged on `main`** (unreleased). The
+next planned iteration is **020 — `bookwright status`** (deterministic derived
+state + `next_actions`), then skills consuming it (021–022) and the v0.3.0
+release (023). No iteration branch is currently active. Vector search (ChromaDB
+over rdflib) moved to v0.4.
 
 The canonical references:
 
 - `bookwright-design.md` (Spanish, ~74 KB) — canonical design spec. Section
   numbering is load-bearing; specs and iteration prompts cite it as
   `bookwright-design.md § N.M`. Section 16 lists axiomatic decisions that
-  MUST NOT be reopened. § 20 covers the research system now being built.
+  MUST NOT be reopened. § 20 covers the research system (shipped in v0.2);
+  § 21 the context orchestration now being built.
 - `bookwright-implementation-plan.md` (Spanish, ~45 KB) — ordered iteration
   plan. § 2 has the dependency map; § 3+ have one ready-to-paste
   `/speckit-specify` prompt per iteration.
-- `.specify/memory/constitution.md` — ratified, currently **v1.3.0**.
+- `.specify/memory/constitution.md` — ratified, currently **v1.4.0**.
   **Binding** on every PR. Three principles are explicitly NON-NEGOTIABLE:
   plain-text source of truth (I), Agent Skills only — no legacy `commands/`
   directories (VI), and test discipline with ≥ 80 % coverage (VIII).
@@ -91,8 +94,9 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 
 ## Iterations (shipped + planned)
 
-`specs/` holds one directory per iteration. 001–011 are merged (v0.1.0) and
-012–018 are merged (v0.2.0). There is no active iteration branch.
+`specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
+012–018 are merged (v0.2.0), and 019 is merged on `main` (M5, unreleased).
+There is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -114,14 +118,17 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 | 016 | Research E2E fixture, workflow test, docs | M4 | ✅ merged |
 | 017 | Traceability-tag cleanup + non-regression gate | — | ✅ merged |
 | 018 | Unified `--json` error envelope | — | ✅ merged |
+| 019 | Authored focus state: `[focus]` block + `bookwright focus` | M5 | ✅ merged |
 
 M4/v0.2 is **complete and released** (`v0.2.0`, 2026-06-05): the provenance
 model (012), the `bookwright-research` skill + `[research]` manifest block (013),
 the `factual_anchor` validator (014), the `bookwright-verify` LLM check (015),
 and the research E2E fixture/tests/docs (016) all merged, plus two maintenance
 iterations — traceability-tag cleanup (017) and the unified error envelope
-(018). The next planned work is v0.3 / M5: context orchestration (design § 21);
-vector search (ChromaDB over rdflib) moved to v0.4.
+(018). v0.3 / M5 — context orchestration (design § 21) — is underway: 019
+(authored focus) is merged; the next planned iteration is **020 —
+`bookwright status`** (deterministic derived state + `next_actions`), followed
+by 021–023. Vector search (ChromaDB over rdflib) moved to v0.4.
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
@@ -215,13 +222,12 @@ source of truth (Constitution I).
 A PR that adds plumbing whose only justification is "future X" MUST be
 rejected (Constitution "Scope & Release Discipline").
 
-- v0.2 / M4 (design § 20) — research & verification: the provenance model (012),
-  the `bookwright-research` skill (013) and the `factual_anchor` validator (014)
-  are merged, and `bookwright-verify` (015) is in flight — this milestone is
-  essentially done. Don't pull v0.3+ work below into it.
-- v0.3 / M5 — context orchestration (design § 21): `[focus]` block +
-  `bookwright focus`, `bookwright status` (deterministic derived state +
-  `next_actions`), skills consuming it. Iterations 019–023.
+- v0.2 / M4 (design § 20) — research & verification: shipped in `v0.2.0`
+  (iterations 012–016). Don't pull v0.3+ work below into it.
+- v0.3 / M5 — context orchestration (design § 21), iterations 019–023:
+  `[focus]` block + `bookwright focus` (019, ✅ merged); `bookwright status`
+  (deterministic derived state + `next_actions`, 020 — next); skills
+  consuming it (021–022); v0.3.0 release (023).
 - v0.4 — vector search (ChromaDB over rdflib, decoupled from Grafeo).
 - v1.0 — export to EPUB / PDF / print via pandoc.
 

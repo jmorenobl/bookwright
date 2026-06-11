@@ -1401,7 +1401,7 @@ Estas decisiones se discutieron extensamente en la fase de diseño. Cambiarlas r
 3. **GOLEM como ontología.** No diseñar una ontología propia.
 4. **Texto plano (Markdown, TOML, Turtle) como fuente de verdad.** No SQLite, no JSON binario, no LevelDB.
 5. **Patrón Spec Kit como referencia operacional, sin acoplamiento.** Adoptamos su arquitectura (`INTEGRATION_REGISTRY`, `SkillsIntegration`, formato de command templates, resolución de templates por capas), pero Bookwright es proyecto autónomo. No depende del wheel de `specify-cli`.
-6. **Sin scripts shell.** Todo Python, vía Typer.
+6. **Sin scripts shell.** Todo Python, vía Typer. El axioma gobierna la superficie del toolkit que se distribuye: el CLI `bookwright`, sus subcomandos y las skills generadas; ninguna funcionalidad de Bookwright puede depender de un script shell. El utillaje interno del repositorio (release, regeneración de assets bajo `scripts/`) queda fuera de su alcance.
 7. **Solo Agent Skills, no commands legacy.** Bookwright se alinea con Agent Skills (agentskills.io) como formato canónico: progressive disclosure de tres tiers, portabilidad entre Claude Code, Codex, Cursor y Copilot, y validación estructural por estándar abierto. No usamos `.claude/commands/` ni equivalentes; toda la lógica de cada command vive en su SKILL.md.
 8. **`.agents/skills/` como default para `--integration generic`.** Es la convención que usan Codex CLI y Cursor, y la más portable entre agentes. No usar `.agents/commands/` (no existe como convención).
 9. **Bookwright como toolkit separado de Spec Kit y de su preset `fiction-book-writing`.** No es un preset, no es una extensión. Comparte patrón y se inspira en sus templates, pero es proyecto independiente con licencia propia.
