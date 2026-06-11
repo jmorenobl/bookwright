@@ -1,9 +1,14 @@
-# Quality Audit — 019-focus-state
+# Quality Audit — main (iteration 019-focus-state, post-merge)
 
-**Scope:** 77 changed files vs main (35 source/test — all read in full; remainder are spec artifacts, docs, and the sanctioned Spec Kit v0.10.1 upgrade)
-**Commit range:** main..b8953f5
+**Scope:** 99 changed files vs `v0.2.0` (33 source/test files, 1 project config, the rest specs/docs/assets)
+**Commit range:** v0.2.0..4cac153
 **Date:** 2026-06-11
-**Conventions discovered:** `.specify/memory/constitution.md` (v1.4.0), `CLAUDE.md`, `CONTRIBUTING.md`
+**Conventions discovered:** `CLAUDE.md`, `.specify/memory/constitution.md` (v1.4.0)
+
+Note: `main` is the current branch; the `019-focus-state` branch tip equals
+`main` HEAD (fast-forward merge), so the audit range is the last release tag →
+HEAD. This report supersedes the pre-merge review previously at this path
+(compare via `git diff`).
 
 ## 1. Summary
 
@@ -11,13 +16,14 @@
 |---|---|
 | CRITICAL | 0 |
 | HIGH | 0 |
-| MEDIUM | 1 |
+| MEDIUM | 3 |
 | LOW | 2 |
-| **Total** | 3 |
+| **Total** | 5 |
 
-Coverage gate: **PASS** (0 modules below threshold, threshold = 80%). Total 96.94%; every changed module ≥ 90% (focus package: 97–100%).
-
-All four CI gates verified locally at b8953f5: `pytest` (1109 passed, 1 skipped), `ruff check` clean, `ruff format --check` clean (231 files), `mypy --strict` clean (230 files).
+Coverage gate: **PASS** (0 modules below threshold, threshold = 80%). Total
+96.94%; lowest changed module 90.00% (`commands/version.py`). All four CI gates
+verified locally: `ruff check`, `ruff format --check`, `mypy --strict` (230
+files), `pytest` (1109 passed, 1 skipped).
 
 ## 2. Conventions Compliance Matrix
 
@@ -25,67 +31,60 @@ All four CI gates verified locally at b8953f5: `pytest` (1109 passed, 1 skipped)
 
 | Rule (verbatim ≤120 chars) | Source | Kind | Status | Evidence |
 |---|---|---|---|---|
-| "Every artifact … MUST be Markdown, TOML, or Turtle" (Principle I, NON-NEGOTIABLE) | constitution.md:59-66 | io-contract | PASS | `[focus]` lives in `manifest.toml`; `updated_at` stored as a string, TOML-native dates normalized to string (`_focus_block.py:54-71`), never coerced to an opaque form |
-| "Introducing an additional runtime dependency requires an amendment" (Principle II) | constitution.md:78-80 | dependency | PASS | `pyproject.toml` / `uv.lock` untouched on this branch |
-| "All production code MUST live under `src/bookwright/` … tests under `tests/`" (Principle III, no exceptions) | constitution.md:86-89 | layout | PASS | All 21 source files under `src/bookwright/`, all 14 test files under `tests/` |
-| "Each CLI subcommand MUST live in its own module … No source file … may exceed 500 lines" (Principle IV) | constitution.md:97-101 | module-size | PASS | `focus/{show,set,clear}.py` one module each (graph-style sub-app); largest changed file `manifest.py` = 396 lines, largest test 185 |
-| "Integrations MUST be … registered in `INTEGRATION_REGISTRY` … monolithic dispatcher forbidden" (Principle V) | constitution.md:108-113 | plugin-shape | PASS | `integration/use.py` change is envelope consolidation only; registry shape untouched |
-| "Bookwright MUST emit Agent Skills … and nothing else" (Principle VI, NON-NEGOTIABLE) | constitution.md:121-124 | directory-ban | PASS | No writes/references to `.claude/commands/` or analogues anywhere in the diff; `.claude/skills/speckit-*` changes are the pinned Spec Kit v0.10.1 upgrade |
-| "Every generated SKILL.md MUST satisfy the agentskills.io specification" (Principle VII) | constitution.md:133-141 | frontmatter-constraint | N/A | Iteration 019 generates no skills; skill-consuming work comes in later 019–023 iterations |
-| "v0 MUST hold a minimum of 80% line coverage" (Principle VIII, NON-NEGOTIABLE) | constitution.md:149-150 | coverage-threshold | PASS | 96.94% total; per changed module see §5 |
-| "CI MUST run pytest, ruff, and mypy strict on every push" (Principle VIII) | constitution.md:163-164 | workflow-step | PASS | All four gates run locally on b8953f5, all green |
-| "`--json` … MUST emit a single well-formed JSON document on stdout and nothing else" (Principle IX) | constitution.md:171-177 | io-contract | PASS | Single-sourced `emit_json` (`_envelope.py:33`); pinned by tests (`test_set.py:51`, `test_show.py:42` asserts empty stderr, `test_query.py:111+` stderr discipline); exit 2 with JSON error body verified |
-| "Section 16 … decisions that are closed … MUST NOT be reopened" (Principle X) | constitution.md:184-192 | scope-ban | PASS | Sync Impact Report explicitly states "reopens no § 16 axiom"; no Grafeo/preset/extension symbols in diff |
-| "Runtime dependencies (minimum set): jinja2, packaging, … uuid-utils" | constitution.md:204-207 | dependency | PASS | `check.py:12-24` RUNTIME_MODULES matches the 11-entry list exactly; no additions |
-| "deferred … MUST NOT be pulled into the current line": vector search v0.4, export v1.0 | constitution.md:222-226 | scope-ban | PASS | No chromadb/pandoc/export symbols in diff |
-| "cancelled … MUST NOT be implemented at all": presets, Grafeo, extra integrations, extensions | constitution.md:228-233 | scope-ban | PASS | No matching symbols/imports in diff |
-| "plumbing whose only justification is 'future X' MUST be rejected" | constitution.md:235-238 | scope-ban | PASS | `_project.py` mentions iteration 020 but is load-bearing now (all three focus commands route through it) |
-| "Amendments are proposed in a dedicated pull request" (Governance) | constitution.md:247-252 | workflow-step | FAIL | Amendment 1.3.0→1.4.0 landed in commit d1e5aaf on this feature branch, not a dedicated PR → R1 |
+| "Every artifact … MUST be Markdown, TOML, or Turtle … Binary stores … forbidden as canonical storage" | constitution.md:60-66 | layout | PASS | New `assets/banner.png` / `loop.png` are README/PyPI render assets, regenerable from committed SVGs via `scripts/banner-png.sh` — not canonical storage. `[focus]` persists as TOML strings (`updated_at` never coerced to a date type). |
+| "Introducing an additional runtime dependency requires an amendment to the dependency list" | constitution.md:78-80 | dependency | PASS | `pyproject.toml` diff adds only packaging metadata (`readme`, `[project.urls]`, NOTICE in `license-files`); `[project.dependencies]` untouched. |
+| "All production code MUST live under `src/bookwright/`. All automated tests MUST live under `tests/`" | constitution.md:86-89 | layout | PASS | Every new module under `src/bookwright/` (focus package, `_project.py`, `_focus_block.py`) or `tests/`. |
+| "Each CLI subcommand MUST live in its own module … No source file … may exceed 500 lines" | constitution.md:97-100 | module-size | PASS | `focus` split into `set.py`/`show.py`/`clear.py`/`errors.py`. Largest changed file: `core/manifest.py` at 396 lines. |
+| "Integrations MUST be … registered in `INTEGRATION_REGISTRY` … monolithic dispatcher … forbidden" | constitution.md:108-113 | plugin-shape | PASS | `integration/use.py` resolves via `get(key)` against the registry; no type ladders introduced anywhere in the diff. |
+| "Writing to `.claude/commands/`, `.agents/commands/`, or any analogous … directory is prohibited" | constitution.md:122-124 | directory-ban | PASS | Diff grep: zero references to legacy command directories. |
+| "Every generated SKILL.md MUST satisfy the agentskills.io specification" | constitution.md:133-141 | frontmatter-constraint | PASS | The only new SKILL.md (`speckit-agent-context-update`, both trees) has `name` matching its parent dir, description ≪1024 chars, valid frontmatter. It is Spec Kit–managed, not bookwright-generated; the generator and `lint_skill_md` gate are untouched. |
+| "v0 MUST hold a minimum of 80% line coverage across `src/bookwright/`" | constitution.md:149-150 | coverage-threshold | PASS | 96.94% total; per-module detail in §5. |
+| "CI MUST run pytest, ruff, and mypy strict on every push and pull request; a red bar blocks merge" | constitution.md:163-164 | workflow-step | PASS | All four gates re-run locally for this audit: green. |
+| "a `--json` flag and, when set, emit a single well-formed JSON document on stdout and nothing else" | constitution.md:170-173 | io-contract | PASS | All three focus verbs route through the single-sourced `emit_json`/`emit_error` (`commands/_envelope.py`); tests pin stdout emptiness in human mode and stderr emptiness under `--json` (e.g. `test_show.py:42`, `test_set.py:47`). `check`/`version`/`graph` were consolidated onto the same helper (net deletion of `graph/envelope.py`). |
+| "Section 16 … axioms … MUST NOT be reopened in spec, plan, or task discussions" | constitution.md:184-192 | scope-ban | PASS | No axiom reopened; rdflib remains the only engine; skills-only delivery intact. See R3 for a scope ambiguity around design § 16.6 ("Sin scripts shell") and the two new `scripts/*.sh` — dev tooling, not toolkit surface, hence PASS here. |
+| "deferred … MUST NOT be pulled into the current line ahead of their milestone" / cancelled list | constitution.md:222-238 | scope-ban | PASS | `[focus]` + `bookwright focus` is iteration 019, the sanctioned M5/v0.3 work. Diff grep for `chromadb`/`Grafeo`/preset plumbing: zero hits. `_project.py` is justified today by three concrete callers, not "future X". |
+| "Amendments are proposed in a dedicated pull request that updates … constitution.md, bumps the version line" | constitution.md:247-253 | workflow-step | FAIL | The 1.3.0→1.4.0 amendment landed inside `d1e5aaf` ("chore: housekeeping after Spec Kit upgrade + constitution scope refresh"), bundled with the Spec Kit pin bump — not a dedicated change. See R1. |
 
 ### `CLAUDE.md`
 
 | Rule (verbatim ≤120 chars) | Source | Kind | Status | Evidence |
 |---|---|---|---|---|
-| "Don't modify Spec Kit *core* (templates, scripts, manifests)" | CLAUDE.md (Spec Kit specifics) | directory-ban | PASS | `.specify/` script/manifest changes are the documented v0.8.16→v0.10.1 upgrade (commit 97a9d79), recorded in CLAUDE.md as deliberate; per-project copies remain editable |
-| "do **not** add `--cov-fail-under` anywhere; one source, no drift" | CLAUDE.md (Common commands) | other | PASS | No pyproject/CI change on branch; threshold still single-sourced in `[tool.coverage.report]` |
-| "the README, and the `docs/` site are **Spanish**" | CLAUDE.md (Language conventions) | other | PASS | `docs/commands/focus-{set,show,clear}.md` written in Spanish |
-| "Source code, identifiers, commit messages … are **English**" | CLAUDE.md (Language conventions) | other | PASS | All branch commits and identifiers English |
-| Fixed iteration sequence "specify → clarify → plan → tasks → analyze → implement; do not skip steps" | CLAUDE.md (How work is done) | workflow-step | PASS | See A.4 trail below |
-| "Every feature lands through a numbered iteration, not as a freehand commit" | CLAUDE.md (Repository state) | workflow-step | PASS | Branch `019-focus-state` + `specs/019-focus-state/` per plan iteration 019 |
+| "do **not** add `--cov-fail-under` anywhere; one source, no drift" | CLAUDE.md (Common commands) | coverage-threshold | PASS | Threshold still single-sourced in `[tool.coverage.report]`; no flag added anywhere in the diff. |
+| "Each iteration is a branch `NNN-<short-name>` … Merge to `main` only when tests are green" | CLAUDE.md (How work is done) | workflow-step | PASS | Branch `019-focus-state` exists; its tip equals `main` HEAD (fast-forward). Gates green, `tasks.md` fully checked, `/speckit-analyze` evidenced (constitution Sync Impact Report cites its finding C1). |
+| "Don't modify Spec Kit *core* (templates, scripts, manifests)" | CLAUDE.md (Spec Kit specifics) | scope-ban | PASS | `.specify/scripts/`, templates, and `speckit-*` SKILL.md files changed only via the documented v0.8.16→v0.10.1 upgrade (97a9d79); per-project copies (`extensions.yml`) edited as permitted. |
+| "bookwright-design.md, bookwright-implementation-plan.md … are **Spanish** … code, identifiers, commit messages … **English**" | CLAUDE.md (Language conventions) | other | PASS | § 21 design additions are Spanish; all new identifiers/docstrings/commits English. |
+| Repository-state section: "no iteration branch exists for it yet" / iterations table ends at 018 | CLAUDE.md (Repository state) | track-integrity | FAIL | CLAUDE.md still describes 019 as not started while its implementation is merged on `main`. Stale convention file — see R2. |
 
-### `CONTRIBUTING.md`
+**Track integrity (A.3):** `git status` is clean; every file under
+`specs/019-focus-state/`, `.claude/skills/`, and `.specify/` is tracked and
+committed on `main`. No uncommitted or `.gitignore`-shadowed governance
+artifacts. PASS.
 
-| Rule (verbatim ≤120 chars) | Source | Kind | Status | Evidence |
-|---|---|---|---|---|
-| "Allowed in source/tests: FR-0xx / SC-0xx … D-x … bookwright-design.md § N.M" | CONTRIBUTING.md:51-56 | other | PASS | New code's FR/SC/D refs all resolve to `specs/019-focus-state/` artifacts; refs paired with reasons per the stated preference |
-| "Forbidden in source/tests … US-x / +USx … T0xx" | CONTRIBUTING.md:58-61 | directory-ban | PASS | grep over every changed src/tests file: zero hits; the iteration-017 meta gate (`tests/meta/test_no_traceability_tags.py`) also passed in the suite |
-| "Run before pushing: ruff check, ruff format --check, mypy, pytest" | CONTRIBUTING.md:32-43 | workflow-step | PASS | All four executed in this audit, all green |
-
-### Track integrity (A.3)
-
-`git status` is clean and `git ls-files --others --ignored` over `specs/`, `.claude/`, `docs/`, `.specify/`, `src/`, `tests/` returns only `__pycache__`/`.pyc` files and `.claude/settings.local.json`. Every governance artifact in `specs/019-focus-state/` appears in the branch diff. **No git-invisible governance files.**
-
-### Workflow trail (A.4)
-
-`spec.md` (commit 846f32d) → clarify (e469332f, clarifications encoded in spec) → `plan.md`/`research.md`/`data-model.md`/`contracts/`/`quickstart.md` (192aaac) → `tasks.md` (27/27 tasks `[X]`) → analyze (evidenced: constitution Sync Impact Report cites "/speckit-analyze on iteration 019-focus-state (finding C1)") → implement (source + tests, gates green). **Trail complete, no step skipped.**
+**Workflow trail (A.4):** spec (846f32d) → clarify (e469be2) → plan/research/
+tasks (192aaac) → analyze (finding C1 recorded in the constitution Sync Impact
+Report and `checklists/`) → implement (ad454b9..4cac153). No step skipped. PASS.
 
 ## 3. Findings
 
 | ID | Pass | Severity | Location | Summary | Recommendation |
 |---|---|---|---|---|---|
-| R1 | A | MEDIUM | .specify/memory/constitution.md:269 (commit d1e5aaf) | Constitution amendment 1.3.0→1.4.0 bundled into the 019 feature branch; Governance prescribes "a dedicated pull request" | State the amendment (bump type + rationale) explicitly in the 019 PR description, or split d1e5aaf's constitution hunk into its own PR before merging |
-| R2 | B | LOW | src/bookwright/commands/_envelope.py:1, src/bookwright/core/manifest.py:228-241, tests/fixtures/manifests.py:1 | Review-ID comments ("review R1", "R10", "R23", "iteration 019 review") cite review artifacts that are overwritten on each re-audit — outside CONTRIBUTING.md's allowed FR/SC/D tag set, and their referents decay | On next touch, keep the *why* (the contract being protected) and drop the review-ID citation; git blame preserves lineage |
-| R3 | D | LOW | src/bookwright/commands/focus/set.py:25-27 | `_today()` is monkeypatched in every test, so its real one-line body is the focus package's only uncovered statement — intentional test seam (research D5), recorded for transparency | Nothing to do; not worth a clock-freezing E2E |
+| R1 | A | MEDIUM | .specify/memory/constitution.md:247 (commit d1e5aaf) | Constitution amendment 1.3.0→1.4.0 bundled into a housekeeping commit; Governance requires a dedicated change | Already merged — not retroactively fixable. For the next amendment, isolate it in its own commit/PR whose description states the bump type, per the Governance procedure. |
+| R2 | A | MEDIUM | CLAUDE.md (Repository state + iterations table) | CLAUDE.md still says 019 has no branch and its table ends at 018, while 019 is implemented and merged | Refresh the repository-state paragraph and the iterations table to record 019 ✅ merged and name 020 (`bookwright status`) as the next planned iteration. |
+| R3 | A | MEDIUM | scripts/publish.sh, scripts/banner-png.sh | First first-party bash outside `.specify/`; design § 16.6 axiom reads "Sin scripts shell. Todo Python, vía Typer" | The axiom's context (design lines 1404, 2039) governs the toolkit surface, not repo tooling — but the boundary is undocumented. Either port `publish.sh` to a `uv run` Python script or add one clause to design § 16.6 scoping the axiom to shipped functionality. |
+| R4 | D | LOW | scripts/publish.sh:50 | Echoes the first 9 chars of the PyPI token (4 real chars past the `pypi-` prefix) to the terminal | Drop the preview line or print only `pypi-…[hidden]`. |
+| R5 | B | LOW | src/bookwright/commands/focus/set.py:1, focus/__init__.py:23 | Module named `set` shadows the builtin (`from . import set as set`) | Cosmetic and contained (nothing imports the module by bare name). Optionally rename the module `set_.py` while keeping the CLI verb `set`; fine to leave as-is. |
+
+No CRITICAL or HIGH findings. Overflow: none (5 total).
 
 ## 4. Remediation Detail
 
-### R1 — Constitution amendment rode the feature branch instead of a dedicated PR
-
-- **Where:** `.specify/memory/constitution.md` (1.3.0 → 1.4.0), commit d1e5aaf "chore: housekeeping after Spec Kit upgrade + constitution scope refresh"
-- **Why it matters:** the Governance section's amendment procedure exists so constitution changes are reviewed on their own terms, not approved implicitly inside a feature merge. The amendment is exemplary in substance — version bumped, Sync Impact Report updated, MINOR rationale stated, no principle reworded, no § 16 axiom reopened — so this is a process deviation, not a content problem. It was also *triggered by* this iteration (`/speckit-analyze` finding C1), which explains, without fully excusing, the bundling.
-- **Suggested change:** lowest-cost path — state the amendment explicitly in the 019 PR description (bump type MINOR + rationale, lifted verbatim from the Sync Impact Report) so the reviewer approves it knowingly. Strict-compliance path — split d1e5aaf's constitution hunk into a dedicated PR merged ahead of 019.
+No CRITICAL or HIGH findings — this section is intentionally empty. The three
+MEDIUMs are governance/documentation items, detailed in the table above; none
+touches shipped code behavior.
 
 ## 5. Coverage Detail
+
+Changed source modules only (threshold 80%):
 
 | Module | Coverage | Threshold | Status |
 |---|---|---|---|
@@ -106,10 +105,35 @@ All four CI gates verified locally at b8953f5: `pytest` (1109 passed, 1 skipped)
 | src/bookwright/commands/version.py | 90.00% | 80% | PASS |
 | src/bookwright/core/_focus_block.py | 100.00% | 80% | PASS |
 | src/bookwright/core/manifest.py | 98.73% | 80% | PASS |
-| **Suite total** | **96.94%** | 80% | **PASS** |
+| **TOTAL (src/)** | **96.94%** | **80%** | **PASS** |
+
+**Test quality (Pass D):** strong. Byte-for-byte manifest preservation is
+asserted directly (`test_set.py:105`, `test_clear.py:52`); the shared fault
+boundary is parametrized once across all three verbs
+(`test_project_boundary.py`); channel discipline (stdout/stderr) is pinned per
+mode; rich-markup injection via author text is covered (`test_show.py:64`); the
+clock is a monkeypatched seam, not a frozen library. No assertion-free tests, no
+mock-count-only assertions, no interdependence. TDD-order heuristic is
+inconclusive (Spec Kit batches commits as "Implementation progress").
+
+**Security (Pass D):** no `yaml.load`/`pickle`/`eval`/`shell=True` in the diff;
+no hardcoded secrets (R4 is a terminal echo of a token *prefix* read from
+`~/.pypirc`, not a committed secret). `validate --scope` containment uses
+`resolve()` + `relative_to(root)` correctly. All file input crosses a Pydantic
+boundary (`FocusBlock` with `extra="forbid", strict=True`; the TOML-native-date
+normalizer keeps strictness without bricking hand-edits).
+
+**Positives worth keeping:** the envelope consolidation (net deletion of
+`graph/envelope.py`, `check`/`version` rerouted through `emit_json`) reduced
+duplication while widening the contract's test coverage; `_project.py` extracts
+the load-or-exit boundary exactly at the third caller, not before.
 
 ## 6. Inability-to-verify notes
 
-- **TDD signal (Pass D heuristic):** branch implementation commits are bulk "[Spec Kit] Implementation progress" snapshots, so per-file test-before-impl ordering is not recoverable from `git log`. The Spec Kit task flow orders test tasks before implementation tasks in `tasks.md`, which is the available (indirect) evidence.
-- **Passes B (smells) and C (patterns) produced no findings beyond R2.** The iteration's structural moves run *against* the usual smell directions: the per-group `emit_json`/`emit_error` copies (3 occurrences — exactly the DRY threshold) were consolidated into `_envelope.py`, `graph/envelope.py` deleted, `FocusBlock` extracted to keep `manifest.py` under the Principle IV ceiling, the `outside_project` fixture hoisted to the shared conftest, and the manifest literal single-sourced in `tests/fixtures/manifests.py`. No singleton/factory/observer misuse; the focus sub-app mirrors the existing `graph` sub-app pattern; `rich` markup injection from author text is explicitly neutralized (`markup=False`) and pinned by tests.
-- **Pass D security:** no user-controlled path joins beyond `find_project_root()` (upward walk from cwd; writes confined to the resolved project's `manifest.toml` via atomic tempfile-in-parent + `os.replace`/`os.link`); no `yaml.load`/pickle/eval/`shell=True`; no secrets; all file-boundary input crosses Pydantic `strict=True, extra="forbid"` validation. Nothing to flag.
+- `pytest -m manual` (packaged-install / networked smoke) was not run — slow,
+  networked, opt-in by design; CI history is the evidence for it.
+- The TDD-order signal cannot be derived from this branch's commit granularity
+  (Spec Kit auto-commits batch tests and implementation together).
+- agentskills.io compliance of *generated* skills was verified indirectly (the
+  generator and its `lint_skill_md` gate are untouched and their tests pass);
+  no skill was re-materialized during this read-only audit.
