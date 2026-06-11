@@ -18,9 +18,7 @@ from bookwright.core.manifest import Manifest
 from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.project import find_project_root
 
-from .._envelope import emit_error, invalid_manifest_payload
-
-EXIT_CONFIG = 2
+from .._envelope import EXIT_CONFIG, emit_error, invalid_manifest_payload
 
 
 def load_manifest_or_exit(json_output: bool) -> tuple[Path, Manifest]:

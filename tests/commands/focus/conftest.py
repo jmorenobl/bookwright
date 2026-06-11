@@ -9,7 +9,7 @@ commands never touch.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -57,12 +57,3 @@ def project_with_focus(project: Path) -> Callable[[str], Path]:
         return project
 
     return _make
-
-
-@pytest.fixture()
-def outside_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
-    """A directory with no ``manifest.toml`` in it or any ancestor under tmp."""
-    here = tmp_path / "nowhere"
-    here.mkdir()
-    monkeypatch.chdir(here)
-    yield here

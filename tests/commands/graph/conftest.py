@@ -8,7 +8,7 @@ directory) and ``chdir``s into it. Reused across the ``graph`` command tests.
 from __future__ import annotations
 
 import textwrap
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal, TypedDict, Unpack
 
@@ -171,12 +171,3 @@ def project_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Callable
         return root
 
     return _make
-
-
-@pytest.fixture()
-def outside_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
-    """A directory with no ``manifest.toml`` in it or any ancestor under tmp."""
-    here = tmp_path / "nowhere"
-    here.mkdir()
-    monkeypatch.chdir(here)
-    yield here

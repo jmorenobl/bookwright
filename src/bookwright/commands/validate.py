@@ -8,8 +8,6 @@ goes to stdout; all prose goes to stderr.
 
 from __future__ import annotations
 
-import json
-import sys
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -33,11 +31,10 @@ from bookwright.validation import (
     run_validators,
 )
 
-from ._envelope import INVALID_MANIFEST_CODE
+from ._envelope import EXIT_CONFIG, INVALID_MANIFEST_CODE, emit_error, emit_json
 
 EXIT_OK = 0
 EXIT_GATE = 1
-EXIT_CONFIG = 2
 
 _CUSTOM_SUBPATH = (".bookwright", "validators")
 
@@ -72,11 +69,11 @@ def run(
     try:
         report, scope_filter = _validate(scope)
     except _UsageError as exc:
-        _emit_error(exc.to_json(), json_output)
+        emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
 
     if json_output:
-        _emit_json(report.to_json(scope=scope_filter, severity=severity))
+        emit_json(report.to_json(scope=scope_filter, severity=severity))
     else:
         report.render(Console(), scope=scope_filter, severity=severity)
 
@@ -123,14 +120,14 @@ def _load_indexer(manifest: Manifest, root: Path) -> Any:
     try:
         engine_cls = resolve_indexer(manifest.bookwright.indexer)
     except UnknownIndexerError as exc:
-        raise _UsageError("invalid_manifest", str(exc)) from exc
+        raise _UsageError(INVALID_MANIFEST_CODE, str(exc)) from exc
     engine = engine_cls()
     graph_path = root / manifest.paths.graph
     if graph_path.is_file():
         try:
             engine.load(graph_path)
         except GraphLoadError as exc:
-            raise _UsageError("invalid_manifest", str(exc)) from exc
+            raise _UsageError(INVALID_MANIFEST_CODE, str(exc)) from exc
     return engine
 
 
@@ -147,14 +144,3 @@ def _resolve_scope(scope: Path | None, root: Path) -> ScopeFilter | None:
     except ValueError as exc:
         raise _UsageError("empty_scope", f"scope path is outside the project: {scope}") from exc
     return ScopeFilter(rel=rel, is_dir=resolved.is_dir())
-
-
-def _emit_json(payload: dict[str, Any]) -> None:
-    sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
-
-
-def _emit_error(payload: dict[str, Any], json_output: bool) -> None:
-    if json_output:
-        _emit_json(payload)
-    else:
-        sys.stderr.write(f"bookwright: error: {payload['message']}\n")

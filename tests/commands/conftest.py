@@ -24,6 +24,15 @@ def scaffold_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator
 
 
 @pytest.fixture()
+def outside_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
+    """A directory with no ``manifest.toml`` in it or any ancestor under tmp."""
+    here = tmp_path / "nowhere"
+    here.mkdir()
+    monkeypatch.chdir(here)
+    yield here
+
+
+@pytest.fixture()
 def git_available() -> None:
     """Skip the test when ``git`` is not on PATH."""
 

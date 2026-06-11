@@ -10,8 +10,9 @@ already does for the same case.
 The :func:`emit_json` / :func:`emit_error` pair is single-sourced here too: a
 single-line ``json.dumps(payload, separators=(",", ":")) + "\\n"`` to stdout,
 with human prose / progress going to stderr via a ``Console(stderr=True)`` owned
-by each command. ``focus`` and ``graph`` both import the pair from this module
-(iteration 019 consolidation) instead of hand-rolling a per-group copy.
+by each command. Every agent-facing command group (``focus``, ``graph``,
+``integration``, ``validate``) imports the pair from this module (iteration 019
+consolidation) instead of hand-rolling a per-group copy.
 """
 
 from __future__ import annotations
@@ -21,6 +22,11 @@ import sys
 from typing import Any
 
 from bookwright.errors import BookwrightError
+
+#: The CLI-wide "configuration fault" exit status (missing project, unparseable
+#: manifest, unknown engine/integration, bad scope, …). Single-sourced here so
+#: the command groups cannot drift to different statuses for the same fault class.
+EXIT_CONFIG = 2
 
 
 def emit_json(payload: dict[str, Any]) -> None:

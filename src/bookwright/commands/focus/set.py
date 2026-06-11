@@ -17,12 +17,10 @@ from rich.console import Console
 
 from bookwright.core.manifest import Manifest
 
-from .._envelope import emit_error, emit_json
+from .._envelope import EXIT_CONFIG, emit_error, emit_json
 from . import app
 from ._project import load_manifest_or_exit
 from .errors import FocusTargetEmptyError
-
-EXIT_CONFIG = 2
 
 
 def _today() -> str:

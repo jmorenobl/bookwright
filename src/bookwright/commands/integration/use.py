@@ -19,8 +19,6 @@ exit 2; a skill materialization or lint failure → exit 3 (fully rolled back).
 
 from __future__ import annotations
 
-import json
-import sys
 from typing import Any
 
 import typer
@@ -34,10 +32,9 @@ from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.fs import BackupLedger
 from bookwright.io.project import find_project_root
 
-from .._envelope import invalid_manifest_payload
+from .._envelope import EXIT_CONFIG, emit_error, emit_json, invalid_manifest_payload
 from . import app
 
-EXIT_CONFIG = 2
 EXIT_MATERIALIZE = 3
 
 
@@ -52,20 +49,20 @@ def run(
     try:
         payload = _use(key)
     except ProjectNotFoundError as exc:
-        _emit_error(exc.to_json(), json_output)
+        emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except ManifestError as exc:
-        _emit_error(invalid_manifest_payload(exc), json_output)
+        emit_error(invalid_manifest_payload(exc), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except UnknownIntegrationError as exc:
-        _emit_error(exc.to_json(), json_output)
+        emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except (SkillLintError, SkillMaterializationError) as exc:
-        _emit_error(exc.to_json(), json_output)
+        emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_MATERIALIZE) from exc
 
     if json_output:
-        _emit_json(payload)
+        emit_json(payload)
     else:
         Console(stderr=True, highlight=False).print(
             f"bookwright: switched integration to '{payload['integration']}' "
@@ -106,15 +103,3 @@ def _use(key: str) -> dict[str, Any]:
         "materialized": materialized,
         "count": len(materialized),
     }
-
-
-def _emit_json(payload: dict[str, Any]) -> None:
-    sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
-
-
-def _emit_error(payload: dict[str, Any], json_output: bool) -> None:
-    if json_output:
-        _emit_json(payload)
-    else:
-        message = payload.get("message", payload.get("code", "error"))
-        sys.stderr.write(f"bookwright: error: {message}\n")
