@@ -193,7 +193,7 @@ focus instead.
   a single JSON document on stdout following the project's standard success
   envelope (`{"status":"ok", …}`) and the unified `--json` error envelope on
   failure (Principle IX).
-- **FR-014**: The canonical manifest specification (`bookwright-design.md § 8`)
+- **FR-014**: The canonical manifest specification (`bookwright-design.md § 8.1`)
   MUST be updated to document the `[focus]` block and its fields.
 
 ### Key Entities *(include if feature involves data)*
