@@ -117,9 +117,7 @@ def test_query_human_error_goes_to_stderr(tiny_novel: Path, runner: CliRunner) -
     """``graph query`` without ``--json`` and no graph built → human error on stderr.
 
     Pins the human-channel discipline (Principle IX): the deliverable channel
-    (stdout) stays empty and the error line lands on stderr. Relocated from the
-    former ``graph/test_envelope.py`` when ``emit_error`` was single-sourced into
-    ``commands/_envelope.py`` (iteration 019).
+    (stdout) stays empty and the error line lands on stderr.
     """
     result = runner.invoke(app, ["graph", "query", CHARACTERS_QUERY])
     assert result.exit_code == 2

@@ -1,4 +1,4 @@
-"""Shared command-layer envelope helpers (review R1, iteration 019).
+"""Shared command-layer envelope helpers.
 
 Several agent-facing commands catch a ``ManifestError`` at their ``--json``
 boundary and remap it to the contract's single ``invalid_manifest`` code. Rather
@@ -12,8 +12,7 @@ single-line ``json.dumps(payload, separators=(",", ":")) + "\\n"`` to stdout,
 with human prose / progress going to stderr via a ``Console(stderr=True)`` owned
 by each command. Every ``--json`` command (``check``, ``focus``, ``graph``,
 ``init``, ``integration``, ``validate``, ``version``) routes its stdout encoding
-through :func:`emit_json` (iteration 019 consolidation) instead of hand-rolling
-a per-group copy.
+through :func:`emit_json` instead of hand-rolling a per-group copy.
 """
 
 from __future__ import annotations

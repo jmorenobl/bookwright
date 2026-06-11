@@ -1,4 +1,4 @@
-"""The single shared minimal-manifest TOML literal (iteration 019 review).
+"""The single shared minimal-manifest TOML literal.
 
 One source of truth for the "smallest valid manifest" used by both the
 ``focus`` command suite (``tests/commands/focus/conftest.py``) and the core

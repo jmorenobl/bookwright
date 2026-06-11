@@ -1,11 +1,10 @@
 """Unit coverage for the shared command-layer envelope (Principle IX).
 
 ``emit_json`` / ``emit_error`` are single-sourced in
-:mod:`bookwright.commands._envelope` (iteration 019 consolidation — previously
-``graph.envelope``). This pins the branch that only the *human* mode reaches: the
-``stderr`` write in :func:`emit_error` when ``--json`` is off. The error-body
-skeleton itself is single-sourced in ``BookwrightError.to_json`` (review R1); the
-``ManifestError``→``invalid_manifest`` remap is covered alongside its callers.
+:mod:`bookwright.commands._envelope`. This pins the branch that only the *human*
+mode reaches: the ``stderr`` write in :func:`emit_error` when ``--json`` is off.
+The error-body skeleton itself is single-sourced in ``BookwrightError.to_json``;
+the ``ManifestError``→``invalid_manifest`` remap is covered alongside its callers.
 """
 
 from __future__ import annotations

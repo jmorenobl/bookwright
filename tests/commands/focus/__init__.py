@@ -1,1 +1,1 @@
-"""Tests for ``bookwright.commands.focus`` (iteration 019)."""
+"""Tests for ``bookwright.commands.focus``."""
