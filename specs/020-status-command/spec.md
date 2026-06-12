@@ -163,8 +163,9 @@ that any human prose went to stderr, and that
 
 ### Edge Cases
 
-- **No graph and nothing to build it from**: in a project where there is
-  nothing to build the graph from (e.g., no bible content), `status` does
+- **No graph and nothing to build it from**: in a project where a build
+  prerequisite is absent (no bible directory, or no manuscript — the same
+  conditions `graph build` treats as missing directories), `status` does
   not fail — it reports the facts it can (phase, focus echo) and emits
   either no next actions or a single bootstrap action (e.g., "build the
   graph" / "define a focus").
@@ -227,7 +228,10 @@ that any human prose went to stderr, and that
   than duplicating it.
 - **FR-006**: The report MUST include the findings whose reliability is
   below the manifest's `research.min_reliability_for_anchor` threshold
-  (design § 20.9).
+  (design § 20.9). Membership is restricted to findings with at least one
+  supporting source (an unrated source counts as below every threshold);
+  findings with no sources at all surface through FR-005's anchor gaps,
+  never as low-reliability items — no double-labeling.
 - **FR-007**: The report MUST include a validation summary with problem
   counts per severity, obtained by reusing the existing validation runner
   (iteration 010/011) — not by re-implementing validator logic.
