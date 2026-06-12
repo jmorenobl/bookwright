@@ -11,23 +11,35 @@ from bookwright.integrations.materialize import _transform_body
 
 
 class MockIntegration(SkillsIntegration):
-    def __init__(self, dynamic: bool):
-        self._dynamic = dynamic
+    """Minimal ``SkillsIntegration`` stub for body-injection tests.
 
-    @property
-    def supports_dynamic_context(self) -> bool:
-        return self._dynamic
+    Only ``supports_dynamic_context`` (a ``ClassVar[bool]`` on the base) drives
+    ``_transform_body``, so the two subclasses below set it as a class attribute
+    rather than overriding it with a property. ``setup`` is a no-op that matches
+    the base signature so ``mypy --strict`` accepts the override.
+    """
 
-    @property
-    def skills_dir(self) -> Path:
-        return Path(".mock/skills")
-
-    def setup(self, repo_root: Path, manifest: Any) -> None:
+    def setup(
+        self,
+        project_root: Path,
+        manifest: Any,
+        parsed_options: Any = None,
+        *,
+        ledger: Any = None,
+    ) -> None:
         pass
 
 
+class DynamicMockIntegration(MockIntegration):
+    supports_dynamic_context = True
+
+
+class StaticMockIntegration(MockIntegration):
+    supports_dynamic_context = False
+
+
 def test_status_injection_claude_contains_required_sections() -> None:
-    integration = MockIntegration(dynamic=True)
+    integration = DynamicMockIntegration()
     body = "## Existing Content\n\nSome body text."
     result = _transform_body("test-skill", body, integration)
 
@@ -39,7 +51,7 @@ def test_status_injection_claude_contains_required_sections() -> None:
 
 
 def test_status_injection_generic_contains_required_sections() -> None:
-    integration = MockIntegration(dynamic=False)
+    integration = StaticMockIntegration()
     body = "## Existing Content\n\nSome body text."
     result = _transform_body("test-skill", body, integration)
 
@@ -51,7 +63,7 @@ def test_status_injection_generic_contains_required_sections() -> None:
 
 
 def test_idempotency() -> None:
-    integration = MockIntegration(dynamic=True)
+    integration = DynamicMockIntegration()
     body = "## Existing Content"
     # First materialization
     result1 = _transform_body("test-skill", body, integration)
@@ -65,7 +77,7 @@ def test_idempotency() -> None:
 
 
 def test_preserves_bilingual_triggers() -> None:
-    integration = MockIntegration(dynamic=True)
+    integration = DynamicMockIntegration()
     body = "Triggers: english and español\n\n## Content"
     result = _transform_body("test-skill", body, integration)
     assert "Triggers: english and español" in result
