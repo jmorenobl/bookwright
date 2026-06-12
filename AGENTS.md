@@ -34,7 +34,7 @@ The canonical references:
 - `specs/NNN-<name>/` — per-iteration `{spec,plan,tasks}.md` (plus
   `research.md`, `data-model.md`, `contracts/`, `quickstart.md`). The
   iteration's plan is the most precise statement of what its code does.
-- `.agents/skills/speckit-*` — the Spec Kit slash-command skills that drive
+- `.claude/skills/speckit-*` — the Spec Kit slash-command skills that drive
   the workflow for general agents.
 
 Every feature lands through a numbered iteration, not as a freehand commit.
