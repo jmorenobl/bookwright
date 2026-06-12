@@ -25,10 +25,43 @@ manuscrito ni inventas datos: documentas y citas.
 
 ## Input
 
-`{ARGS}` — el tema a investigar (p. ej. "logística de la Wehrmacht en 1943"). Si
-no se da tema, pregunta cuál antes de continuar. La configuración vive en el bloque
-`[research]` del `manifest.toml` (`enabled`, `source_languages`,
+`{ARGS}` — el tema a investigar (p. ej. "logística de la Wehrmacht en 1943").
+**Con tema dado**, ve directo al paso 1 de `## Procedimiento`; **sin tema**,
+arranca primero por `## Punto de partida (sin tema)`. La configuración vive en el
+bloque `[research]` del `manifest.toml` (`enabled`, `source_languages`,
 `min_reliability_for_anchor`).
+
+## Punto de partida (sin tema)
+
+Aplica **solo** cuando no se da tema. Si `{ARGS}` trae un tema, omite por completo
+este arranque y ve al paso 1 de `## Procedimiento` (la consulta de estado **no**
+es obligatoria en la vía con tema). Si `[research].enabled = false`, el aviso de
+sistema **inerte** (ver `## Procedimiento`) tiene precedencia: dalo y no
+construyas cola.
+
+1. Ejecuta `bookwright status --json` y lee **solo** los hechos en bruto
+   `state.open_questions.items[]` (`id`, `text`, `file`) y
+   `state.unresolved_anchors.items[]` (`promotes`, `constrains`, `file`,
+   `problems`). **No** uses `next_actions[]`: es un traspaso entre skills, no la
+   cola propia de este comando.
+2. Construye una **cola de investigación** con esos hechos: primero las preguntas
+   abiertas, después las anclas sin resolver, numeradas `1..N` respetando el orden
+   estable que da `status`, sin inventar elementos de relleno. Omite un grupo
+   vacío (no pongas marcadores). Muestra ≈10 elementos como mucho; si hay más,
+   añade una línea `+M more (ejecuta \`bookwright status\` para la lista completa)`.
+3. Ofrece al autor la elección explícita: **investigar uno o varios de estos N**,
+   o **proponer un tema nuevo**. Una sola selección es un tema; **varias**
+   selecciones ejecutan el `## Procedimiento` completo **una vez por elemento, en
+   secuencia** (un único tema por pasada, para conservar limpia la procedencia por
+   tema). Una respuesta "tema nuevo: X" convierte X en el tema. Si la respuesta es
+   ambigua o vacía, vuelve a preguntar en vez de adivinar.
+4. Trata como **"sin cola"** cualquiera de estos casos: la cola está vacía,
+   `state.graph.available` es `false`, `status` sale con código distinto de cero,
+   o su salida no se puede parsear. En todos ellos, **pregunta al autor qué tema
+   investigar** y continúa con normalidad: no muestres un error ni bloquees.
+
+Una vez determinado el tema, los siete pasos de `## Procedimiento` se ejecutan
+**sin cambios**.
 
 ## Procedimiento
 

@@ -69,3 +69,22 @@ def test_body_instructs_the_final_graph_build() -> None:
     # and anchors land in the graph; the call survives into the materialized body.
     source_body = parse_frontmatter(_source().read_text(encoding="utf-8")).body
     assert "bookwright graph build --json" in source_body
+
+
+def test_body_consults_status_queue(tmp_path: Path) -> None:
+    # RQ-1 / RQ-3 (iteration 021) — on the no-topic path the protocol consults the
+    # derived status (FR-001, SC-002) and builds its queue from the *raw* facts
+    # ``open_questions`` and ``unresolved_anchors`` (FR-002), not the
+    # ``next_actions`` handoff prompt. These are frozen iteration-020 contract
+    # field names the prose cites verbatim, so the assertions harden the contract
+    # without over-fitting to prose wording. Verified against the source body and
+    # the materialized body for ``claude`` so the step survives materialization.
+    source_body = parse_frontmatter(_source().read_text(encoding="utf-8")).body
+    materialized = generate_skill_md(_source(), tmp_path, ClaudeIntegration(), ledger=NullLedger())
+    assert materialized is not None
+    materialized_body = parse_frontmatter(materialized.read_text(encoding="utf-8")).body
+
+    for body in (source_body, materialized_body):
+        assert "bookwright status" in body  # RQ-1: the first-step consult.
+        assert "open_questions" in body  # RQ-3: queue built from the raw facts.
+        assert "unresolved_anchors" in body  # RQ-3: ...and the second fact list.

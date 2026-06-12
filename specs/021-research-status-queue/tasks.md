@@ -41,7 +41,7 @@ only two files that may change are the command source and the one test file.
 
 **Purpose**: Establish a known-good starting point so any regression is attributable.
 
-- [ ] T001 Run the full gate suite from repo root to confirm a green baseline before editing: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest`; record the current `bookwright-research` body approx-token count reported by `tests/resources/test_command_budget.py` (≈1135, ceiling 5000) so the post-edit budget headroom can be confirmed.
+- [X] T001 Run the full gate suite from repo root to confirm a green baseline before editing: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest`; record the current `bookwright-research` body approx-token count reported by `tests/resources/test_command_budget.py` (≈1135, ceiling 5000) so the post-edit budget headroom can be confirmed.
 
 ---
 
@@ -51,7 +51,7 @@ only two files that may change are the command source and the one test file.
 
 **⚠️ CRITICAL**: Do this before any body edit; wrong field names would be silent debt the tests cannot catch.
 
-- [ ] T002 From `specs/020-status-command/contracts/cli-status.md`, confirm and note the exact read-view field paths the prose will name: `state.open_questions.items[].{id,text,file}` and `state.unresolved_anchors.items[].{promotes,constrains,file,problems}`, each list carrying `count == len(items)` in corpus-stable order; confirm `state.graph.available` is the degraded-state flag (data-model.md "Read view"). The prose MUST cite these `state.*` facts and MUST NOT reference `next_actions[]` (clarification #1 / RQ-3).
+- [X] T002 From `specs/020-status-command/contracts/cli-status.md`, confirm and note the exact read-view field paths the prose will name: `state.open_questions.items[].{id,text,file}` and `state.unresolved_anchors.items[].{promotes,constrains,file,problems}`, each list carrying `count == len(items)` in corpus-stable order; confirm `state.graph.available` is the degraded-state flag (data-model.md "Read view"). The prose MUST cite these `state.*` facts and MUST NOT reference `next_actions[]` (clarification #1 / RQ-3).
 
 **Checkpoint**: Field names pinned — body edits can begin.
 
@@ -65,15 +65,15 @@ only two files that may change are the command source and the one test file.
 
 ### Tests for User Story 1 (write FIRST, must FAIL before T004) ⚠️
 
-- [ ] T003 [US1] Add a failing contract test `test_body_consults_status_queue` to `tests/integrations/test_research_skill.py`, mirroring the existing `test_body_instructs_the_final_graph_build`. Assert, against **both** the source body (`parse_frontmatter(_source().read_text(...)).body`) and the materialized body for at least one integration via `generate_skill_md(... NullLedger())`: (a) `"bookwright status"` is present (RQ-1, the first-step consult); (b) both raw-fact names `"open_questions"` **and** `"unresolved_anchors"` are present (RQ-3/FR-002 — the queue is built from the raw facts). Run it; confirm it FAILS (the body does not yet mention `bookwright status`/the raw facts). This is RQ-1 + RQ-3 (FR-001 / FR-002 / SC-002). These are stable iteration-020 contract field names the prose must cite verbatim, so the assertions harden the contract without over-fitting to prose wording. **Deliberately do NOT assert `"next_actions"` is absent**: the prose legitimately names `next_actions` to forbid its use (T004), and `status --json` emits a `next_actions` entry addressed to `bookwright-research` at runtime — a presence/absence check on that token would either contradict T004 or be brittle. The "raw facts, not the handoff prompt" guarantee is verified by prose review (RQ-3).
+- [X] T003 [US1] Add a failing contract test `test_body_consults_status_queue` to `tests/integrations/test_research_skill.py`, mirroring the existing `test_body_instructs_the_final_graph_build`. Assert, against **both** the source body (`parse_frontmatter(_source().read_text(...)).body`) and the materialized body for at least one integration via `generate_skill_md(... NullLedger())`: (a) `"bookwright status"` is present (RQ-1, the first-step consult); (b) both raw-fact names `"open_questions"` **and** `"unresolved_anchors"` are present (RQ-3/FR-002 — the queue is built from the raw facts). Run it; confirm it FAILS (the body does not yet mention `bookwright status`/the raw facts). This is RQ-1 + RQ-3 (FR-001 / FR-002 / SC-002). These are stable iteration-020 contract field names the prose must cite verbatim, so the assertions harden the contract without over-fitting to prose wording. **Deliberately do NOT assert `"next_actions"` is absent**: the prose legitimately names `next_actions` to forbid its use (T004), and `status --json` emits a `next_actions` entry addressed to `bookwright-research` at runtime — a presence/absence check on that token would either contradict T004 or be brittle. The "raw facts, not the handoff prompt" guarantee is verified by prose review (RQ-3).
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] In `src/bookwright/resources/commands/bookwright-research.md`, replace the current no-topic instruction — the sentence "Si no se da tema, pregunta cuál antes de continuar." in `## Input` (soft-wrapped across lines 28–29 in the source; it appears **only** there, not in `## Procedimiento`) — with a conditional **first step** for the no-topic path: instruct the agent to run `bookwright status --json`, read `state.open_questions.items[]` and `state.unresolved_anchors.items[]` (explicitly **not** `next_actions[]`), and present a research queue — grouped (open questions first, then unresolved anchors), each item numbered 1..N preserving the status corpus-stable order, with a soft cap of ≈10 combined and a "+M more (ejecuta `bookwright status` para la lista completa)" overflow note, never inventing placeholder items — then offer the author the explicit choice "investigar uno/varios de estos N / proponer un tema nuevo". Spanish prose to match the file (RQ-3, RQ-4; FR-002/FR-002a).
+- [X] T004 [US1] In `src/bookwright/resources/commands/bookwright-research.md`, replace the current no-topic instruction — the sentence "Si no se da tema, pregunta cuál antes de continuar." in `## Input` (soft-wrapped across lines 28–29 in the source; it appears **only** there, not in `## Procedimiento`) — with a conditional **first step** for the no-topic path: instruct the agent to run `bookwright status --json`, read `state.open_questions.items[]` and `state.unresolved_anchors.items[]` (explicitly **not** `next_actions[]`), and present a research queue — grouped (open questions first, then unresolved anchors), each item numbered 1..N preserving the status corpus-stable order, with a soft cap of ≈10 combined and a "+M more (ejecuta `bookwright status` para la lista completa)" overflow note, never inventing placeholder items — then offer the author the explicit choice "investigar uno/varios de estos N / proponer un tema nuevo". Spanish prose to match the file (RQ-3, RQ-4; FR-002/FR-002a).
 
-- [ ] T005 [US1] In the same step, specify the selection→topic transition: a single pick becomes one topic; **multiple** picks run the existing seven-step procedure **sequentially, once per item** (one determined topic per pass, clean per-topic provenance); a "tema nuevo: X" answer makes X the topic; an ambiguous/empty answer re-asks rather than guessing. State that once a topic is determined the seven steps run **unchanged** (RQ-5; FR-003/FR-007, clarifications #2/#3 edge case). Keep the body under the 5000-token budget.
+- [X] T005 [US1] In the same step, specify the selection→topic transition: a single pick becomes one topic; **multiple** picks run the existing seven-step procedure **sequentially, once per item** (one determined topic per pass, clean per-topic provenance); a "tema nuevo: X" answer makes X the topic; an ambiguous/empty answer re-asks rather than guessing. State that once a topic is determined the seven steps run **unchanged** (RQ-5; FR-003/FR-007, clarifications #2/#3 edge case). Keep the body under the 5000-token budget.
 
-- [ ] T006 [US1] Run `uv run pytest tests/integrations/test_research_skill.py -q`; confirm `test_body_consults_status_queue` now PASSES and `test_materializes_and_lints_for_both_integrations` (both `claude` and `generic` + `lint_skill_md`) stays green — the new step survived materialization for both integrations (RQ-1/RQ-9; SC-001/SC-002).
+- [X] T006 [US1] Run `uv run pytest tests/integrations/test_research_skill.py -q`; confirm `test_body_consults_status_queue` now PASSES and `test_materializes_and_lints_for_both_integrations` (both `claude` and `generic` + `lint_skill_md`) stays green — the new step survived materialization for both integrations (RQ-1/RQ-9; SC-001/SC-002).
 
 **Checkpoint**: MVP — the blank prompt is gone; the bottom-up queue is delivered and tested.
 
@@ -87,9 +87,9 @@ only two files that may change are the command source and the one test file.
 
 ### Implementation for User Story 2
 
-- [ ] T007 [US2] In the same `src/bookwright/resources/commands/bookwright-research.md` step (sequential after T004–T005; same file, not `[P]`), make the condition explicit and unambiguous: **only** when no topic is supplied does the status-queue step run; when `$ARGUMENTS` carries a topic, the skill skips the queue entirely and proceeds directly to step 1 of `## Procedimiento`. Ensure no wording makes the status consultation mandatory on the top-down path (RQ-2; FR-004/SC-004).
+- [X] T007 [US2] In the same `src/bookwright/resources/commands/bookwright-research.md` step (sequential after T004–T005; same file, not `[P]`), make the condition explicit and unambiguous: **only** when no topic is supplied does the status-queue step run; when `$ARGUMENTS` carries a topic, the skill skips the queue entirely and proceeds directly to step 1 of `## Procedimiento`. Ensure no wording makes the status consultation mandatory on the top-down path (RQ-2; FR-004/SC-004).
 
-- [ ] T008 [US2] Prose review of the edited body against spec US2 acceptance scenario AS1 and SC-004: confirm the explicit-topic path reads identically to the pre-021 protocol (no status call, no queue), and that the seven steps and final `bookwright graph build --json` are untouched.
+- [X] T008 [US2] Prose review of the edited body against spec US2 acceptance scenario AS1 and SC-004: confirm the explicit-topic path reads identically to the pre-021 protocol (no status call, no queue), and that the seven steps and final `bookwright graph build --json` are untouched.
 
 **Checkpoint**: Top-down behavior provably preserved; bottom-up addition is opt-in to the no-topic case only.
 
@@ -103,9 +103,9 @@ only two files that may change are the command source and the one test file.
 
 ### Implementation for User Story 3
 
-- [ ] T009 [US3] In the same step (sequential after T007; same file, not `[P]`), add the degradation clause: treat **all** of {empty queue, `state.graph.available == false`, non-zero `status` exit, unparseable output} as "no queue" → fall back to asking the author which topic to research, without surfacing an error or blocking (research.md D6; FR-005/FR-006/SC-003). Explicitly preserve precedence of the existing `[research].enabled = false` inert-system notice over the queue step (spec Edge Cases; RQ-6).
+- [X] T009 [US3] In the same step (sequential after T007; same file, not `[P]`), add the degradation clause: treat **all** of {empty queue, `state.graph.available == false`, non-zero `status` exit, unparseable output} as "no queue" → fall back to asking the author which topic to research, without surfacing an error or blocking (research.md D6; FR-005/FR-006/SC-003). Explicitly preserve precedence of the existing `[research].enabled = false` inert-system notice over the queue step (spec Edge Cases; RQ-6).
 
-- [ ] T010 [US3] Prose review against spec US3 acceptance scenarios AS1/AS2 and the "Partial queue" / "degraded state" / "ambiguous answer" / "resolved item" edge cases: confirm partial queues omit the empty group (no placeholders), the queue is read fresh each invocation (no skill-side cache), and no failure mode reaches the author as an error (RQ-6).
+- [X] T010 [US3] Prose review against spec US3 acceptance scenarios AS1/AS2 and the "Partial queue" / "degraded state" / "ambiguous answer" / "resolved item" edge cases: confirm partial queues omit the empty group (no placeholders), the queue is read fresh each invocation (no skill-side cache), and no failure mode reaches the author as an error (RQ-6).
 
 **Checkpoint**: All three entry behaviors (queue / top-down / fallback) coexist in the one conditional step.
 
@@ -115,13 +115,13 @@ only two files that may change are the command source and the one test file.
 
 **Purpose**: Prove the change is green, in-budget, bilingual-intact, and confined to two files.
 
-- [ ] T011 [P] Run `uv run ruff check && uv run ruff format --check` — lint/format clean (the new test included).
-- [ ] T012 [P] Run `uv run mypy --strict` — type-clean across src + tests.
-- [ ] T013 Run `uv run pytest` — full suite green at ≥80% coverage; since no `src/` line changed, confirm coverage is **not** regressed (RQ-9; SC-006).
-- [ ] T014 [P] Run `uv run pytest tests/resources/test_command_budget.py -q` — `bookwright-research` body stays under the 5000-token tier-2 budget; compare against the T001 baseline to confirm the step added well under ~250 tokens (research.md D5; RQ-9).
-- [ ] T015 [P] Run `uv run pytest tests/integrations/test_descriptions.py -q` — the bilingual `description` (ES + EN trigger phrasings) is preserved verbatim and the `SKILL_DESCRIPTIONS` mirror is unchanged (RQ-7; FR-008/SC-005). Confirm by inspection that `src/bookwright/integrations/descriptions.py` was **not** edited.
-- [ ] T016 Run the quickstart manual spot-check (quickstart.md §2): in a scratch `bookwright init` project, materialize and `grep -n "bookwright status"` in both `.claude/skills/bookwright-research/SKILL.md` and `.agents/skills/bookwright-research/SKILL.md` — both reference the no-topic protocol (SC-001).
-- [ ] T017 Prove scope confinement (FR-009 / RQ-8): `git diff --name-only main...021-research-status-queue` lists **only** `src/bookwright/resources/commands/bookwright-research.md` and `tests/integrations/test_research_skill.py` (plus this iteration's `specs/021-*` docs); no Python source, no `bookwright status`, no other skill changed.
+- [X] T011 [P] Run `uv run ruff check && uv run ruff format --check` — lint/format clean (the new test included).
+- [X] T012 [P] Run `uv run mypy --strict` — type-clean across src + tests.
+- [X] T013 Run `uv run pytest` — full suite green at ≥80% coverage; since no `src/` line changed, confirm coverage is **not** regressed (RQ-9; SC-006).
+- [X] T014 [P] Run `uv run pytest tests/resources/test_command_budget.py -q` — `bookwright-research` body stays under the 5000-token tier-2 budget; compare against the T001 baseline to confirm the step added well under ~250 tokens (research.md D5; RQ-9).
+- [X] T015 [P] Run `uv run pytest tests/integrations/test_descriptions.py -q` — the bilingual `description` (ES + EN trigger phrasings) is preserved verbatim and the `SKILL_DESCRIPTIONS` mirror is unchanged (RQ-7; FR-008/SC-005). Confirm by inspection that `src/bookwright/integrations/descriptions.py` was **not** edited.
+- [X] T016 Run the quickstart manual spot-check (quickstart.md §2): in a scratch `bookwright init` project, materialize and `grep -n "bookwright status"` in both `.claude/skills/bookwright-research/SKILL.md` and `.agents/skills/bookwright-research/SKILL.md` — both reference the no-topic protocol (SC-001).
+- [X] T017 Prove scope confinement (FR-009 / RQ-8): `git diff --name-only main...021-research-status-queue` lists **only** `src/bookwright/resources/commands/bookwright-research.md` and `tests/integrations/test_research_skill.py` (plus this iteration's `specs/021-*` docs); no Python source, no `bookwright status`, no other skill changed.
 
 ---
 
