@@ -116,7 +116,7 @@ def low_reliability_findings(
         finding = row["finding"]
         rating = _RELIABILITY_NAME.get(row.get("reliability", ""))
         best = best_by_finding.get(finding)
-        if finding not in best_by_finding or _rank(rating) > _rank(best):
+        if best is None or _rank(rating) > _rank(best):
             best_by_finding[finding] = rating
     by_uri = {identity.uri: identity for identity in identities}
     items = [
