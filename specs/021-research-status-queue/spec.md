@@ -59,8 +59,11 @@ choice rather than asking the topic on a blank slate.
    one/more of them or supply a new topic.
 2. **Given** the author then picks one queued item, **When** the protocol
    continues, **Then** that item becomes the topic and the existing rigorous
-   research procedure (decompose → search → record provenance → mark anchors →
-   leave open questions → persist → reindex) runs against it unchanged.
+   research procedure (the seven steps — decompose → search authoritative
+   sources → cross-check provenances on sensitive topics → record full
+   provenance → record each discrepant version → mark/promote anchors by the
+   reliability threshold → leave unresolved sub-questions open — then the final
+   `bookwright graph build`) runs against it unchanged.
 3. **Given** the author instead answers "a new topic: X", **When** the protocol
    continues, **Then** X is treated as the topic exactly as the top-down path
    would.

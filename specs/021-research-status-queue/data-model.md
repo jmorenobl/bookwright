@@ -75,7 +75,9 @@ invoke (no topic)
   → [research disabled] inert-system notice (precedence over queue step, unchanged)
 ```
 
-The seven-step procedure itself (decompose → search → provenance → discrepancies
-→ anchor promotion → open questions → graph build) is **unchanged** (FR-007); per
-multi-item pass it operates on exactly one determined topic to preserve clean
-per-topic provenance (clarification #2).
+The seven-step procedure itself (decompose → search authoritative sources →
+cross-check provenances on sensitive topics → record full provenance → record
+each discrepant version → mark/promote anchors by the reliability threshold →
+leave unresolved sub-questions open), followed by the final `bookwright graph
+build`, is **unchanged** (FR-007); per multi-item pass it operates on exactly one
+determined topic to preserve clean per-topic provenance (clarification #2).
