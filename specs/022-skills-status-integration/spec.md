@@ -8,6 +8,13 @@
 
 **Input**: User description: "Necesidad: el hilo conductor solo funciona si las skills lo usan. Cada skill debería orientarse al empezar (foco actual + qué falta) consultando `bookwright status`, y terminar proponiendo el siguiente paso concreto, en vez de dejar al autor sin saber qué hacer después. Hoy las skills no consultan estado ni recomiendan continuación. Comportamiento esperado: - Cada command source de la suite (los 10 de v0.1 + bookwright-research y bookwright-verify de v0.2) gana: (al inicio) un paso para consultar `bookwright status --json` y orientarse con el foco y los elementos abiertos; (al final) una sección 'Próximos pasos' que muestra las next_actions relevantes con sus prompts listos para pegar. - Donde tenga sentido tras una transición de fase (p. ej. terminar la biblia), la skill actualiza el foco con `bookwright focus set` (iteración 019). Es opcional y solo donde aporte. - La integración claude, con contexto dinámico, puede inyectar el estado vía !`bookwright status --json`; la generic lo instruye como paso explícito a ejecutar (respetando las convenciones de la iteración 9). - La re-materialización es idempotente y aplica a ambas integraciones. Los triggers bilingües se preservan. - El sistema es inerte si status no aporta nada: las skills siguen funcionando igual que hoy en un proyecto sin foco ni investigación. Fuera de scope: - El fixture E2E, los tests de flujo, la documentación y el release (iteración 023). - Cambiar la lógica de `status` o `focus`."
 
+## Clarifications
+
+### Session 2026-06-12
+
+- Q: How should the skill handle `bookwright status --json` failures? → A: Halt execution and ask the user to fix the error (guarantees the workflow is not broken).
+- Q: How should "phase transitions" be handled for `bookwright focus set`? → A: Hardcode the `bookwright focus set` instruction only in specific, pre-determined skills (safer, deterministic).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Skill Orientation and Next Steps (Priority: P1)
@@ -36,7 +43,7 @@ As an author, when a skill completes a major phase of the project (e.g., finishi
 
 **Acceptance Scenarios**:
 
-1. **Given** a skill that completes a clear phase (e.g., finishing the project bible), **When** the skill concludes, **Then** it should run `bookwright focus set` to update the project focus appropriately.
+1. **Given** a specific, pre-determined skill that concludes a phase (e.g., finishing the project bible), **When** the skill concludes, **Then** its hardcoded instructions should run `bookwright focus set` to update the project focus appropriately.
 
 ---
 
@@ -56,7 +63,7 @@ As an integration user (Claude or Generic), I should receive the project status 
 
 ### Edge Cases
 
-- What happens if the `bookwright status --json` command fails or returns invalid JSON? The skill should gracefully handle the error and either proceed without context or inform the user.
+- What happens if the `bookwright status --json` command fails or returns invalid JSON? The skill MUST halt execution and inform the user to fix the error to guarantee the workflow is strictly enforced without operating blindly.
 - What happens if the focus update `bookwright focus set` fails during phase transition? The skill should warn the user but not crash, as focus updates are optional.
 - How does the system handle materializing a skill that has custom manual edits? The materialization process should ideally overwrite it according to templates, but custom non-templated content might be lost. This is a known constraint.
 
@@ -66,7 +73,7 @@ As an integration user (Claude or Generic), I should receive the project status 
 
 - **FR-001**: All 12 command sources (10 from v0.1 + bookwright-research and bookwright-verify) MUST include an initial step to consult the project status.
 - **FR-002**: All 12 command sources MUST include a final step to propose next actions ("Próximos pasos") using prompts ready to copy and paste.
-- **FR-003**: Skills that transition phases (where applicable) MUST optionally update the focus using `bookwright focus set`.
+- **FR-003**: Specific, pre-determined skills that officially conclude a phase MUST include a hardcoded instruction to update the focus using `bookwright focus set` (this is not evaluated dynamically by all skills).
 - **FR-004**: For the `claude` integration, the status check MUST be implemented via the dynamic context feature (`!bookwright status --json`).
 - **FR-005**: For the `generic` integration, the status check MUST be included as an explicit command step.
 - **FR-006**: The materialization process MUST be idempotent, allowing repeated generation without duplicating instructions.
