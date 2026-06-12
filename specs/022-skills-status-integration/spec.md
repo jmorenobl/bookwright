@@ -63,7 +63,7 @@ As an integration user (Claude or Generic), I should receive the project status 
 
 ### Edge Cases
 
-- What happens if the `bookwright status --json` command fails or returns invalid JSON? The skill MUST halt execution and inform the user to fix the error to guarantee the workflow is strictly enforced without operating blindly.
+- What happens if the `bookwright status --json` command fails or returns invalid JSON? The injected instruction text MUST direct the agent to halt further processing and report the error to the user, guaranteeing the workflow is not broken by operating blindly. (Skills are Markdown instructions, not executable code; "halt" means the instruction tells the agent to stop.)
 - What happens if the focus update `bookwright focus set` fails during phase transition? The skill should warn the user but not crash, as focus updates are optional.
 - How does the system handle materializing a skill that has custom manual edits? The materialization process should ideally overwrite it according to templates, but custom non-templated content might be lost. This is a known constraint.
 
@@ -73,7 +73,7 @@ As an integration user (Claude or Generic), I should receive the project status 
 
 - **FR-001**: All 12 command sources (10 from v0.1 + bookwright-research and bookwright-verify) MUST include an initial step to consult the project status.
 - **FR-002**: All 12 command sources MUST include a final step to propose next actions ("Próximos pasos") using prompts ready to copy and paste.
-- **FR-003**: Specific, pre-determined skills that officially conclude a phase MUST include a hardcoded instruction to update the focus using `bookwright focus set` (this is not evaluated dynamically by all skills).
+- **FR-003**: Specific, pre-determined skills that officially conclude a phase MUST include a hardcoded instruction to update the focus using `bookwright focus set` (this is not evaluated dynamically by all skills). In v0.3, the designated phase-transition skills are exactly `bookwright-bible` and `bookwright-outline`.
 - **FR-004**: For the `claude` integration, the status check MUST be implemented via the dynamic context feature (`!bookwright status --json`).
 - **FR-005**: For the `generic` integration, the status check MUST be included as an explicit command step.
 - **FR-006**: The materialization process MUST be idempotent, allowing repeated generation without duplicating instructions.

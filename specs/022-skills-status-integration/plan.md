@@ -8,6 +8,8 @@
 
 This iteration updates the `SKILL.md` materializer to inject `bookwright status --json` logic at the start and a "Próximos pasos" boilerplate at the end of every command skill. The injection varies depending on the integration (`claude` vs `generic`) to optimize context loading without duplicating instructions across all 12 command source files. It also adds phase transitions (updating focus) to specific command files.
 
+**Injection points**: The status check is prepended at the very top of the `SKILL.md` body (after frontmatter, before the first heading). The "Próximos pasos" boilerplate is appended at the very end of the body.
+
 ## Technical Context
 
 **Language/Version**: Python 3.11+
@@ -26,7 +28,7 @@ This iteration updates the `SKILL.md` materializer to inject `bookwright status 
 
 **Constraints**: Generated `SKILL.md` files MUST remain within the `agentskills.io` token constraints. Modifying the materializer MUST NOT break the bilingual triggers or fail validation rules.
 
-**Scale/Scope**: Updating 1 materialization module and 12 static markdown templates.
+**Scale/Scope**: Updating 1 materialization module (`materialize.py`) and 2 static command templates (`bookwright-bible.md`, `bookwright-outline.md` for phase-transition focus instructions); the remaining 10 commands receive status/next-steps injection dynamically via the materializer.
 
 ## Constitution Check
 

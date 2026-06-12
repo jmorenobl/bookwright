@@ -36,8 +36,8 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Define reusable injection and boilerplate text constants in src/bookwright/integrations/constants.py to avoid hardcoding
-- [ ] T004 Add mypy type annotations and import checks for SkillsIntegration in src/bookwright/integrations/materialize.py
+- [ ] T003 Remove the `del integration` guard (L151-153) in `generate_skill_md` and update `_transform_body` signature to accept `integration: SkillsIntegration` in src/bookwright/integrations/materialize.py. Thread the parameter through from `generate_skill_md` to `_transform_body`. No injection logic yet — structural plumbing only.
+- [ ] T004 Run `uv run mypy --strict src/bookwright/integrations/materialize.py` to confirm T003's signature change is type-safe before proceeding.
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -53,15 +53,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T005 [P] [US1] Add test cases to tests/integrations/test_materialize.py asserting that materialized skills contain the status orientation check (with explicit halt-on-failure and inert-when-empty instructions) and the "Próximos pasos" boilerplate
+- [ ] T005 [P] [US1] Create tests/integrations/test_status_injection.py with test cases asserting: (a) materialized skills contain the status orientation check at the top of the body, (b) materialized skills contain the "Próximos pasos" boilerplate at the end of the body, (c) when `bookwright status --json` fails the injected text instructs the agent to halt, (d) when status returns no focus or next actions the skill operates normally (inert behavior). Separate test file to avoid bloating test_materialize.py (Constitution IV).
 
 ### Implementation for User Story 1
 
 - [ ] T006 [P] [US1] Create status injection pattern for Claude integration in src/bookwright/integrations/constants.py
 - [ ] T007 [P] [US1] Create status injection pattern for Generic integration in src/bookwright/integrations/constants.py
 - [ ] T008 [P] [US1] Create "Próximos pasos" (Next Steps) boilerplate in src/bookwright/integrations/constants.py
-- [ ] T009 [US1] Modify _transform_body in src/bookwright/integrations/materialize.py to accept integration and inject status header/footer
-- [ ] T010 [US1] Modify generate_skill_md in src/bookwright/integrations/materialize.py to pass integration to _transform_body
+- [ ] T009 [US1] Implement status injection logic inside `_transform_body` in src/bookwright/integrations/materialize.py: use `integration.supports_dynamic_context` to select the Claude (`!bookwright status --json`) or Generic (explicit step) pattern from constants. Prepend the status check at the top of the body and append the "Próximos pasos" boilerplate at the end.
+- [ ] ~~T010~~ [US1] ABSORBED into T003 — the `generate_skill_md` → `_transform_body` parameter threading is part of the foundational phase (T003).
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -86,11 +86,11 @@
 
 **Goal**: Correct status check formatting per integration (dynamic context vs explicit run) with preserved triggers and idempotency.
 
-### Implementation for User Story 3
+### Tests for User Story 3
 
-- [ ] T013 [US3] Verify idempotency of dynamic and explicit status injections during repeated materialization in src/bookwright/integrations/materialize.py
-- [ ] T014 [US3] Verify bilingual triggers are preserved verbatim after body transformation in src/bookwright/integrations/materialize.py
-- [ ] T014b [US1] Add test cases to tests/integrations/test_materialize.py to verify that status failure halts execution and that the system remains inert if status returns no focus or next actions.
+- [ ] T013 [US3] Add test case to tests/integrations/test_status_injection.py verifying idempotency: materializing the same skill source twice produces identical output with status injection for both claude and generic integrations.
+- [ ] T014 [US3] Add test case to tests/integrations/test_status_injection.py verifying bilingual triggers are preserved verbatim after body transformation with status injection.
+- [ ] ~~T014b~~ ABSORBED into T005 — halt-on-failure and inert-when-empty test cases are consolidated in T005 to avoid duplication.
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -100,7 +100,7 @@
 
 **Purpose**: Quality verification, formatting, type checking, and zero technical debt validation
 
-- [ ] T015 Run mypy strict on modified modules to ensure absolute type safety: src/bookwright/integrations/materialize.py
+- [ ] T015 Run mypy strict on all modified modules: src/bookwright/integrations/materialize.py and src/bookwright/integrations/constants.py
 - [ ] T016 Run ruff check and ruff format on all modified files to eliminate formatting issues
 - [ ] T017 Run pytest tests/integrations/ to ensure 100% test success and verify code coverage is above 80%
 - [ ] T018 Execute the three validation scenarios in specs/022-skills-status-integration/quickstart.md to verify integration functionality
