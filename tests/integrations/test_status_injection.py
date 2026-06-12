@@ -1,12 +1,15 @@
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from bookwright.integrations.base import SkillsIntegration
 from bookwright.integrations.constants import (
     NEXT_STEPS_BOILERPLATE,
     STATUS_INJECTION_CLAUDE,
     STATUS_INJECTION_GENERIC,
 )
+from bookwright.integrations.errors import SkillMaterializationError
 from bookwright.integrations.materialize import _transform_body
 
 
@@ -81,3 +84,19 @@ def test_preserves_bilingual_triggers() -> None:
     body = "Triggers: english and español\n\n## Content"
     result = _transform_body("test-skill", body, integration)
     assert "Triggers: english and español" in result
+
+
+def test_residual_script_token_rejected() -> None:
+    """A ``{SCRIPT}`` token left in the body fails loud (SC-003, materialize.py:89).
+
+    Only ``{ARGS}`` is substituted, so any other ``_RESIDUAL_TOKENS`` member that
+    survives the transform must raise rather than ship a broken skill body.
+    """
+
+    integration = DynamicMockIntegration()
+    body = "## Content\n\nRun {SCRIPT} to continue."
+    with pytest.raises(SkillMaterializationError) as excinfo:
+        _transform_body("test-skill", body, integration)
+
+    assert excinfo.value.rule == "residual_token"
+    assert "{SCRIPT}" in excinfo.value.detail

@@ -28,8 +28,10 @@ import bookwright
 from bookwright.integrations.constants import (
     DEFAULT_SKILL_LICENSE,
     NEXT_STEPS_BOILERPLATE,
+    NEXT_STEPS_HEADING,
     STATUS_INJECTION_CLAUDE,
     STATUS_INJECTION_GENERIC,
+    STATUS_INJECTION_HEADING,
 )
 from bookwright.integrations.descriptions import get_description
 from bookwright.integrations.errors import SkillMaterializationError
@@ -78,10 +80,13 @@ def _transform_body(skill_name: str, body: str, integration: SkillsIntegration) 
         if integration.supports_dynamic_context
         else STATUS_INJECTION_GENERIC
     )
-    if status_injection.strip() not in transformed:
+    # Idempotency gates on the stable heading sentinel, not the full prose (R1): a
+    # re-run over an already-injected body never double-injects even if the block copy
+    # is later reworded.
+    if STATUS_INJECTION_HEADING not in transformed:
         transformed = f"{status_injection}\n{transformed}"
 
-    if NEXT_STEPS_BOILERPLATE.strip() not in transformed:
+    if NEXT_STEPS_HEADING not in transformed:
         transformed = f"{transformed}\n{NEXT_STEPS_BOILERPLATE}"
 
     for token in _RESIDUAL_TOKENS:
