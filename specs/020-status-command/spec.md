@@ -113,8 +113,9 @@ state-to-actions function with no graph or project on disk.
 2. **Given** a state with findings below the reliability threshold, **When**
    next actions are computed, **Then** they include a `bookwright-verify`
    recommendation.
-3. **Given** a state with continuity violations, **When** next actions are
-   computed, **Then** they include a recommendation to review the bible.
+3. **Given** a state with error-severity continuity violations, **When**
+   next actions are computed, **Then** they include a recommendation to
+   review the bible.
 4. **Given** a state with no focus defined, **When** next actions are
    computed, **Then** they include a recommendation to run
    `bookwright focus set`.
@@ -240,8 +241,10 @@ that any human prose went to stderr, and that
 - **FR-009**: The rule table MUST cover at least these mappings: unresolved
   anchors / open research questions → recommend `bookwright-research` with a
   prompt listing them; findings below the reliability threshold → recommend
-  `bookwright-verify`; continuity violations → recommend reviewing the
-  bible; no focus defined → recommend `bookwright focus set`.
+  `bookwright-verify`; continuity violations of severity `error` → recommend
+  reviewing the bible (warnings appear in the validation summary as facts,
+  without triggering a recommendation); no focus defined → recommend
+  `bookwright focus set`.
 - **FR-010**: The order of `next_actions` MUST be stable and fully
   determined by the state (e.g., by fixed rule priority, then a fixed key),
   so that repeated runs produce byte-identical output.
@@ -251,11 +254,15 @@ that any human prose went to stderr, and that
   with human prose going to stderr (Principle IX). Without `--json`, a
   readable human report goes to stdout. Failures use the unified `--json`
   error envelope (iteration 018).
-- **FR-011a**: For each research/validation fact, the `state` object MUST
-  carry both the aggregate count and the identifying items themselves (open
-  question texts/identifiers, anchor identifiers, low-reliability finding
+- **FR-011a**: For each research fact (open questions, unresolved anchors,
+  low-reliability findings), the `state` object MUST carry both the
+  aggregate count and the identifying items themselves (open question
+  texts/identifiers, anchor identifiers, low-reliability finding
   identifiers), so consumers can act on the queue without re-querying the
-  graph. Item lists MUST be deterministically ordered (FR-010/FR-014).
+  graph. The validation summary carries counts per severity and the list of
+  validators that ran (FR-007), with no per-violation items: violation
+  messages embed minted, run-unstable entity labels (see Clarifications).
+  Item lists MUST be deterministically ordered (FR-010/FR-014).
   Identifiers MUST be corpus-stable (authored ids, file paths, claim texts)
   — never minted entity URIs, which change on every rebuild (see
   Clarifications).
@@ -293,9 +300,10 @@ that any human prose went to stderr, and that
 - **State facts**: the deterministic observations aggregated from existing
   sources — project phase, open research questions, anchors without
   sufficient sources, findings below the reliability threshold, and
-  validation counts per severity. Each research/validation fact carries both
-  its aggregate count and the identifying items (see Clarifications). Facts
-  only; no judgment.
+  validation counts per severity. Each research fact carries both its
+  aggregate count and the identifying items; the validation summary carries
+  counts per severity and the validators that ran (see Clarifications).
+  Facts only; no judgment.
 - **Next action**: one recommendation produced by the rule table. Attributes:
   the **skill** (or CLI command) to invoke, a **prompt** ready to paste
   without editing, and a **reason** briefly justifying the recommendation
@@ -328,8 +336,11 @@ that any human prose went to stderr, and that
   synthetic state exercises it and yields the expected actions without a
   graph or project on disk.
 - **SC-006**: A v0.2-era project (no `[focus]`, no `bible/research/`) runs
-  `status` to successful completion in 100% of cases, reporting what exists
-  and recommending at most a single bootstrap action.
+  `status` to successful completion in 100% of cases, reporting missing
+  areas as absent/empty and never recommending a research or verification
+  action; remaining recommendations (continuity review, define a focus)
+  follow the rule table, and a clean such corpus yields at most the single
+  define-focus action.
 - **SC-007**: Running `status` never modifies any source file: the corpus
   (manifest, bible, research, manuscript) is byte-identical before and
   after, with only derived caches (`graph.ttl`, `status.json`) changing.

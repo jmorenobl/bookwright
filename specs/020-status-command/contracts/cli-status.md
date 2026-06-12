@@ -78,7 +78,7 @@ On failure the previous cache file, if any, is left untouched.
 | 0 | report computed — regardless of how unhealthy the state is (FR-015); includes degraded/absent-information states (FR-013) | — |
 | 2 | not a project | `no_project` |
 | 2 | manifest unparseable/invalid | `invalid_manifest` |
-| 2 | unknown indexer engine | `invalid_manifest` |
+| 2 | unknown indexer engine | `unknown_indexer` |
 | 2 | malformed research corpus (`ResearchError`) | the error's own code |
 | 3 | bible slug collision (`SlugCollisionError`) | the error's own code |
 | 4 | ≥ 1 bible file skipped by the build (malformed front-matter — corrupt corpus, research.md D4) | `skipped_sources`, `details` lists `{path, reason}` per skipped file |
@@ -93,8 +93,10 @@ research.md D5) instead of `graph build`'s exit 2.
 ## Degraded-state guarantees (FR-013, SC-006)
 
 - v0.2-era project (no `[focus]`, no `bible/research/`): exit 0; `focus`
-  `null`; research facts all `{"count": 0, "items": []}`; at most one
-  bootstrap action.
+  `null`; research facts all `{"count": 0, "items": []}`; never a
+  research/verify action — remaining rules (continuity review, define focus)
+  apply per the rule table; a clean corpus yields at most the define-focus
+  action.
 - Nothing to build the graph from: exit 0; `graph.available` `false`;
   `next_actions` empty or a single bootstrap action.
 

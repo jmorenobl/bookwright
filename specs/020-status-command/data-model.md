@@ -38,9 +38,9 @@ Frozen dataclass; `to_payload() -> dict` produces the `state` object.
 | `phase` | `BookStatus` (str literal) | `manifest.book.status` | `phase` |
 | `focus_defined` | `bool` | `manifest.focus is not None` | *(not serialized — `focus` is top-level; predicate input only)* |
 | `graph` | `GraphFacts` | build pipeline outcome | `graph` |
-| `open_questions` | `tuple[OpenQuestion, ...]` | `status/queries.open_findings` ⋈ finding records | `open_questions` |
-| `unresolved_anchors` | `tuple[AnchorGap, ...]` | `anchor_queries` projections + extracted predicates ⋈ anchor records | `unresolved_anchors` |
-| `low_reliability_findings` | `tuple[LowReliabilityFinding, ...]` | `status/queries.low_reliability_findings` ⋈ finding records | `low_reliability_findings` |
+| `open_questions` | `tuple[OpenQuestion, ...]` | `status/queries.open_findings` ⋈ finding identities | `open_questions` |
+| `unresolved_anchors` | `tuple[AnchorGap, ...]` | `anchor_queries` projections + extracted predicates ⋈ anchor identities | `unresolved_anchors` |
+| `low_reliability_findings` | `tuple[LowReliabilityFinding, ...]` | `status/queries.low_reliability_findings` ⋈ finding identities | `low_reliability_findings` |
 | `validation` | `ValidationSummary` | `run_validators` output | `validation` |
 
 Each item-list payload is an object `{"count": N, "items": [...]}` (FR-011a:
@@ -93,7 +93,7 @@ extraction (research.md D3). Order: `(file, id)` ascending.
 
 | Field | Type | Notes |
 |---|---|---|
-| `counts` | `dict[str, int]` | one key per `Severity` (`error`/`warning`/`info`), zero-filled — the `ValidationReport._by_severity` shape |
+| `counts` | `dict[str, int]` | one key per `Severity`, zero-filled, serialized in fixed key order `error`/`warning`/`info` — the `ValidationReport._by_severity` shape (byte-identity, SC-002) |
 | `ran` | `tuple[str, ...]` | validator names, sorted (the runner's `ran`) |
 
 No violation items: messages embed minted-URI labels (research.md D2/D8);
@@ -124,11 +124,11 @@ most the bootstrap action.
 
 | # | name | predicate | action (skill / reason sketch) |
 |---|---|---|---|
-| 1 | `bootstrap_graph` | `not graph.available or graph.entities == 0` | author/build the bible (bootstrap; suppresses 2–4) |
+| 1 | `bootstrap_graph` | `not graph.available or graph.entities == 0` | author/build the bible (bootstrap; suppresses 2–5) |
 | 2 | `research_queue` | `open_questions or unresolved_anchors` | `bookwright-research`; prompt lists the queue ids/texts; reason cites the count |
 | 3 | `verify_findings` | `low_reliability_findings` | `bookwright-verify`; reason cites the count |
 | 4 | `review_continuity` | `validation.counts["error"] > 0` | review the bible (run `bookwright validate` for detail) |
-| 5 | `define_focus` | `not focus_defined` | `bookwright focus set`; applies in both healthy and degraded states |
+| 5 | `define_focus` | `not focus_defined` | `bookwright focus set`; suppressed by the D5 short-circuit, like rules 2–4 |
 
 Exact prompt wording is fixed at implementation time and pinned by the
 exact-match tests (FR-008: determinism requires the templates be *fixed*, not
@@ -138,11 +138,11 @@ any particular wording).
 
 | Type | Fields | Purpose |
 |---|---|---|
-| `FindingRecord` | `id: str`, `relpath: str`, `uri: str` | authored identity for every finding; `uri` is the in-process join key to graph projections, never serialized |
-| `AnchorRecord` *(io-level; distinct from `anchor_queries.AnchorRecord`)* | `promotes_id: str`, `constrains: str \| None` (authored name / `"timeline"`), `relpath: str`, `uri: str` | authored identity for every anchor |
+| `FindingIdentity` | `id: str`, `relpath: str`, `uri: str` | authored identity for every finding; `uri` is the in-process join key to graph projections, never serialized |
+| `AnchorIdentity` | `promotes_id: str`, `constrains: str \| None` (authored name / `"timeline"`), `relpath: str`, `uri: str` | authored identity for every anchor |
 
-`ResearchResult` gains `finding_records: tuple[FindingRecord, ...]` and
-`anchor_records: tuple[AnchorRecord, ...]`; existing fields, entity models,
+`ResearchResult` gains `finding_identities: tuple[FindingIdentity, ...]` and
+`anchor_identities: tuple[AnchorIdentity, ...]`; existing fields, entity models,
 and emitted triples are untouched (no ontology change, no behavior change for
 `graph build`).
 
@@ -151,7 +151,7 @@ and emitted triples are untouched (no ontology change, no behavior change for
 `build_project_graph(root, manifest) -> BuildOutcome` where `BuildOutcome`
 bundles `engine: Indexer`, `report: BuildReport`, `research: ResearchResult`.
 `graph build` keeps its exact observable behavior (same report, same writes,
-same fault model); `status` consumes the engine + records and applies its own
+same fault model); `status` consumes the engine + the research identities and applies its own
 fault mapping (research.md D4/D5).
 
 ## 6. Status cache (`.bookwright/cache/status.json`)

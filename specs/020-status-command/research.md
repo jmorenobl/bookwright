@@ -15,8 +15,9 @@ shared `commands/_graph.py::build_project_graph()` returning the populated
 engine, the `BuildReport`, and the research mapping result; `graph build` and
 `status` both call it.
 
-**Rationale**: The spec assumes "the same staleness resolution `bookwright
-validate` already uses" (FR-001), but **no staleness machinery exists
+**Rationale**: The pre-clarification spec draft assumed "the same staleness
+resolution `bookwright validate` already uses" (FR-001 has since been synced
+to the unconditional-rebuild wording), but **no staleness machinery exists
 anywhere in `src/`** (verified by grep: no mtime/staleness logic;
 `commands/validate.py::_load_indexer` simply loads whatever `graph.ttl` is on
 disk). The spec's intent — "never report facts from a stale graph" (edge
@@ -47,7 +48,7 @@ report (SC-003).
 keys**: the authored finding `id` (YAML front-matter), the file relpath, and
 the claim/question text. Minted entity URIs never appear in the report. To
 make this possible, `io/research.py` is extended **additively**:
-`ResearchResult` gains `finding_records` / `anchor_records` tuples (frozen
+`ResearchResult` gains `finding_identities` / `anchor_identities` tuples (frozen
 dataclasses carrying `id`/`relpath`/minted-`uri` for findings, and
 `promotes_id`/`constrains` (authored name or `"timeline"` or `None`)/
 `relpath`/minted-`uri` for anchors). The minted `uri` field exists only as a
@@ -208,7 +209,7 @@ below-threshold best support (`?f bw:supportedBy ?s . ?s bw:reliability ?r`)
 — live in `src/bookwright/status/queries.py`, written like
 `validation/queries.py` / `anchor_queries.py`: through the `Indexer`
 protocol, IRIs from `golem.namespaces`, no rdflib import, results joined to
-authored identity via the D2 record maps and sorted by `(relpath, id)`.
+authored identity via the D2 identity maps and sorted by `(relpath, id)`.
 Anchor facts reuse `anchor_queries.load_anchors` / `load_sources_by_anchor`
 unchanged. The validation summary reuses
 `discover_validators` / `resolve_active` / `run_validators` and reports

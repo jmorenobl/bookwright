@@ -129,8 +129,8 @@ src/bookwright/
 │   ├── queries.py                  # SPARQL aggregations via the Indexer seam
 │   └── rules.py                    # RULES table + next_actions(state) — pure, no I/O
 ├── io/
-│   └── research.py                 # MODIFIED (additive): FindingRecord/AnchorRecord
-│                                   #   exposing authored ids + relpaths on ResearchResult
+│   └── research.py                 # MODIFIED (additive): FindingIdentity/AnchorIdentity
+│                                   #   exposing authored identity on ResearchResult
 └── validation/
     └── validators/
         └── factual_anchor.py       # MODIFIED: R1/R3/R4 decisions extracted as pure
