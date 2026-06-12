@@ -53,7 +53,7 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T005 [P] [US1] Add test cases to tests/integrations/test_materialize.py asserting that materialized skills contain the status orientation check and the "Próximos pasos" boilerplate
+- [ ] T005 [P] [US1] Add test cases to tests/integrations/test_materialize.py asserting that materialized skills contain the status orientation check (with explicit halt-on-failure and inert-when-empty instructions) and the "Próximos pasos" boilerplate
 
 ### Implementation for User Story 1
 
@@ -90,6 +90,7 @@
 
 - [ ] T013 [US3] Verify idempotency of dynamic and explicit status injections during repeated materialization in src/bookwright/integrations/materialize.py
 - [ ] T014 [US3] Verify bilingual triggers are preserved verbatim after body transformation in src/bookwright/integrations/materialize.py
+- [ ] T014b [US1] Add test cases to tests/integrations/test_materialize.py to verify that status failure halts execution and that the system remains inert if status returns no focus or next actions.
 
 **Checkpoint**: All user stories should now be independently functional
 

@@ -49,9 +49,9 @@ As an author, when a skill completes a major phase of the project (e.g., finishi
 
 ### User Story 3 - Integration-Specific Status Injections (Priority: P1)
 
-As an integration user (Claude or Generic), I should receive the project status context efficiently based on my integration's capabilities.
+As an integration user (Claude or Generic), I should receive the project status context with minimal token overhead (respecting agentskills.io token budget limits) based on my integration's capabilities.
 
-**Why this priority**: Different agents/integrations have different capabilities. Optimizing context delivery per integration is key for performance and correct execution.
+**Why this priority**: Different agents/integrations have different capabilities. Optimizing context delivery per integration is key for performance, keeping within token limits, and ensuring correct execution.
 
 **Independent Test**: Can be tested by materializing the skills for both integrations and checking the generated instructions.
 
