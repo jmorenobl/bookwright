@@ -71,16 +71,21 @@ def test_body_instructs_the_final_graph_build() -> None:
     assert "bookwright graph build --json" in source_body
 
 
-def test_body_consults_status_queue(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "integration",
+    [ClaudeIntegration(), GenericIntegration()],
+    ids=["claude", "generic"],
+)
+def test_body_consults_status_queue(integration: SkillsIntegration, tmp_path: Path) -> None:
     # RQ-1 / RQ-3 (iteration 021) — on the no-topic path the protocol consults the
     # derived status (FR-001, SC-002) and builds its queue from the *raw* facts
     # ``open_questions`` and ``unresolved_anchors`` (FR-002), not the
     # ``next_actions`` handoff prompt. These are frozen iteration-020 contract
     # field names the prose cites verbatim, so the assertions harden the contract
     # without over-fitting to prose wording. Verified against the source body and
-    # the materialized body for ``claude`` so the step survives materialization.
+    # the materialized body for both integrations so the step survives materialization.
     source_body = parse_frontmatter(_source().read_text(encoding="utf-8")).body
-    materialized = generate_skill_md(_source(), tmp_path, ClaudeIntegration(), ledger=NullLedger())
+    materialized = generate_skill_md(_source(), tmp_path, integration, ledger=NullLedger())
     assert materialized is not None
     materialized_body = parse_frontmatter(materialized.read_text(encoding="utf-8")).body
 
