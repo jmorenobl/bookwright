@@ -17,7 +17,7 @@ and the same ``RELIABILITY_RANK`` scale, with zero logic forks (FR-005).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from bookwright.golem.namespaces import (
     BW_CLAIM,
@@ -38,7 +38,11 @@ from bookwright.validation.anchor_queries import (
     load_sources_by_anchor,
 )
 from bookwright.validation.base import Severity, ValidationContext
-from bookwright.validation.registry import discover_validators, resolve_active
+from bookwright.validation.registry import (
+    CUSTOM_VALIDATORS_SUBPATH,
+    discover_validators,
+    resolve_active,
+)
 from bookwright.validation.runner import run_validators
 from bookwright.validation.validators.factual_anchor import (
     RELIABILITY_RANK,
@@ -60,11 +64,16 @@ __all__ = [
     "validation_summary",
 ]
 
-_CUSTOM_SUBPATH = (".bookwright", "validators")
-
 # Reliability rating name ← its E55 individual IRI, inverted from the single
 # vocabulary source (the same derivation ``anchor_queries`` uses, research D6).
 _RELIABILITY_NAME: dict[str, str] = {str(iri): name for name, iri in RELIABILITY_IRI.items()}
+
+_I = TypeVar("_I", bound="FindingIdentity | AnchorIdentity")
+
+
+def _by_uri(identities: tuple[_I, ...]) -> dict[str, _I]:
+    """The minted-URI → authored-identity join map every aggregation uses (D2)."""
+    return {identity.uri: identity for identity in identities}
 
 
 def open_questions(
@@ -83,7 +92,7 @@ def open_questions(
         }}
         """
     )
-    by_uri = {identity.uri: identity for identity in identities}
+    by_uri = _by_uri(identities)
     items = [
         OpenQuestion(id=identity.id, text=row.get("claim"), file=identity.relpath)
         for row in rows
@@ -118,7 +127,7 @@ def low_reliability_findings(
         best = best_by_finding.get(finding)
         if best is None or _rank(rating) > _rank(best):
             best_by_finding[finding] = rating
-    by_uri = {identity.uri: identity for identity in identities}
+    by_uri = _by_uri(identities)
     items = [
         LowReliabilityFinding(id=identity.id, best_reliability=best, file=identity.relpath)
         for uri, best in best_by_finding.items()
@@ -146,7 +155,7 @@ def anchor_gaps(
     Sorted by ``(file, promotes, constrains or "")``.
     """
     sources_by_anchor = load_sources_by_anchor(indexer)
-    by_uri = {identity.uri: identity for identity in identities}
+    by_uri = _by_uri(identities)
     items: list[AnchorGap] = []
     for record in load_anchors(indexer):
         identity = by_uri.get(record.uri)
@@ -191,7 +200,7 @@ def validation_summary(root: Path, manifest: Manifest, indexer: Indexer) -> Vali
     manifest names an undiscovered validator — a config fault the command maps
     to exit 2, as ``validate`` does.
     """
-    builtins, customs, _load_errors = discover_validators(root.joinpath(*_CUSTOM_SUBPATH))
+    builtins, customs, _load_errors = discover_validators(root.joinpath(*CUSTOM_VALIDATORS_SUBPATH))
     active = resolve_active(builtins, customs, manifest.validators)
     violations, _run_errors, ran = run_validators(
         active, ValidationContext(root=root, manifest=manifest), indexer

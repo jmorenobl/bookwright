@@ -22,7 +22,12 @@ from bookwright.validation.base import UnknownValidatorError, Validator, Validat
 if TYPE_CHECKING:
     from bookwright.core.manifest import ValidatorsBlock
 
-__all__ = ["discover_validators", "resolve_active"]
+__all__ = ["CUSTOM_VALIDATORS_SUBPATH", "discover_validators", "resolve_active"]
+
+#: Where a project keeps its custom validators, relative to the project root —
+#: the path every ``discover_validators`` caller joins. Single-sourced next to
+#: the discovery it feeds so call sites cannot drift to different locations.
+CUSTOM_VALIDATORS_SUBPATH = (".bookwright", "validators")
 
 
 def _looks_like_validator_class(value: object) -> bool:

@@ -18,7 +18,6 @@ into a full error here while the exit code stays aligned per-corpus).
 
 from __future__ import annotations
 
-import json
 import sys
 from typing import TYPE_CHECKING, TypeVar
 
@@ -54,7 +53,14 @@ from bookwright.status.queries import (
 from bookwright.status.rules import Action, next_actions
 from bookwright.validation.base import Severity, UnknownValidatorError
 
-from ._envelope import EXIT_CONFIG, emit_error, invalid_manifest_payload, ok_payload
+from ._envelope import (
+    EXIT_CONFIG,
+    emit_error,
+    invalid_manifest_payload,
+    no_project_payload,
+    ok_payload,
+    render_json,
+)
 from ._graph import build_project_graph
 
 if TYPE_CHECKING:
@@ -81,16 +87,6 @@ _CONFIG_FAULTS = (
 _T = TypeVar("_T")
 
 
-class _NoProjectError(BookwrightError):
-    """A caught ``ProjectNotFoundError`` re-coded to the contract's ``no_project``.
-
-    Mirrors ``commands.validate._UsageError("no_project", …)``: the remap is a
-    ``BookwrightError`` whose canonical ``to_json()`` builds the envelope.
-    """
-
-    code = "no_project"
-
-
 class _SkippedSourcesError(BookwrightError):
     """≥ 1 bible file was skipped — a corrupt corpus for a facts report (D4)."""
 
@@ -113,7 +109,7 @@ def run(
     try:
         root = find_project_root()
     except ProjectNotFoundError as exc:
-        emit_error(_NoProjectError(str(exc), {"start": exc.start}).to_json(), json_output)
+        emit_error(no_project_payload(exc), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     try:
         manifest = Manifest.load(root / "manifest.toml")
@@ -161,8 +157,8 @@ def _aggregate(root: Path, manifest: Manifest) -> StatusState:
             open_questions=(),
             unresolved_anchors=(),
             low_reliability_findings=(),
-            # Zero-filled, not {}: rule predicates index counts["error"] directly
-            # and must stay correct without the bootstrap rule short-circuiting first.
+            # Zero-filled, not {}: the degraded state carries the same in-memory
+            # counts shape ``validation_summary`` produces on the full path.
             validation=ValidationSummary(counts={level.value: 0 for level in Severity}, ran=()),
         )
 
@@ -196,7 +192,7 @@ def _render_document(manifest: Manifest, state: StatusState, actions: list[Actio
         state=state.to_payload(),
         next_actions=[action.to_payload() for action in actions],
     )
-    return json.dumps(payload, separators=(",", ":")) + "\n"
+    return render_json(payload)
 
 
 def _write_cache(root: Path, document: str) -> None:

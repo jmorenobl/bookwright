@@ -30,13 +30,12 @@ from bookwright.validation import (
     resolve_active,
     run_validators,
 )
+from bookwright.validation.registry import CUSTOM_VALIDATORS_SUBPATH
 
-from ._envelope import EXIT_CONFIG, INVALID_MANIFEST_CODE, emit_error, emit_json
+from ._envelope import EXIT_CONFIG, INVALID_MANIFEST_CODE, NO_PROJECT_CODE, emit_error, emit_json
 
 EXIT_OK = 0
 EXIT_GATE = 1
-
-_CUSTOM_SUBPATH = (".bookwright", "validators")
 
 
 class _UsageError(BookwrightError):
@@ -85,7 +84,7 @@ def _validate(scope: Path | None) -> tuple[ValidationReport, ScopeFilter | None]
     try:
         root = find_project_root()
     except ProjectNotFoundError as exc:
-        raise _UsageError("no_project", str(exc), {"start": exc.start}) from exc
+        raise _UsageError(NO_PROJECT_CODE, str(exc), {"start": exc.start}) from exc
 
     try:
         manifest = Manifest.load(root / "manifest.toml")
@@ -95,7 +94,7 @@ def _validate(scope: Path | None) -> tuple[ValidationReport, ScopeFilter | None]
     indexer = _load_indexer(manifest, root)
     project = ValidationContext(root=root, manifest=manifest)
 
-    builtins, customs, load_errors = discover_validators(root.joinpath(*_CUSTOM_SUBPATH))
+    builtins, customs, load_errors = discover_validators(root.joinpath(*CUSTOM_VALIDATORS_SUBPATH))
     try:
         active = resolve_active(builtins, customs, manifest.validators)
     except UnknownValidatorError as exc:

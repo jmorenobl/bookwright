@@ -19,9 +19,12 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from bookwright.errors import BookwrightError
+
+if TYPE_CHECKING:
+    from bookwright.io.errors import ProjectNotFoundError
 
 #: The CLI-wide "configuration fault" exit status (missing project, unparseable
 #: manifest, unknown engine/integration, bad scope, …). Single-sourced here so
@@ -40,9 +43,20 @@ def ok_payload(**fields: Any) -> dict[str, Any]:
     return {"status": "ok", **fields}
 
 
+def render_json(payload: dict[str, Any]) -> str:
+    """The canonical one-line JSON encoding of a contract document.
+
+    The single place the compact-separators + trailing-newline format lives:
+    :func:`emit_json` routes stdout through it, and ``status`` renders its
+    document once here so stdout and the cache file share the exact bytes
+    (020 research D6) by construction, not by parallel formatting calls.
+    """
+    return json.dumps(payload, separators=(",", ":")) + "\n"
+
+
 def emit_json(payload: dict[str, Any]) -> None:
     """Write exactly one JSON document to stdout (the only thing on stdout)."""
-    sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+    sys.stdout.write(render_json(payload))
 
 
 def emit_error(payload: dict[str, Any], json_output: bool) -> None:
@@ -74,3 +88,24 @@ class _InvalidManifestError(BookwrightError):
 def invalid_manifest_payload(exc: Exception) -> dict[str, Any]:
     """The ``invalid_manifest`` error envelope for a caught ``ManifestError``."""
     return _InvalidManifestError(str(exc)).to_json()
+
+
+#: The contract code for "ran outside a project" at a ``--json`` boundary.
+#: Single-sourced here so the two remap sites — ``commands.status`` and
+#: ``commands.validate._UsageError`` — cannot drift to different literals.
+NO_PROJECT_CODE = "no_project"
+
+
+class _NoProjectError(BookwrightError):
+    """A caught ``ProjectNotFoundError`` re-coded to the contract's ``no_project``.
+
+    Mirrors :class:`_InvalidManifestError`: the remap is a ``BookwrightError``
+    whose canonical ``to_json()`` builds the envelope, never a hand-rolled dict.
+    """
+
+    code = NO_PROJECT_CODE
+
+
+def no_project_payload(exc: ProjectNotFoundError) -> dict[str, Any]:
+    """The ``no_project`` error envelope for a caught ``ProjectNotFoundError``."""
+    return _NoProjectError(str(exc), {"start": exc.start}).to_json()

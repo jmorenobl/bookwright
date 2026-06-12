@@ -113,7 +113,7 @@ def _review_continuity(state: StatusState) -> Action:
             "`bookwright validate` for the detailed report, then fix each error "
             "at its source file."
         ),
-        reason=_plural(state.validation.counts["error"], "validation error"),
+        reason=_plural(state.validation.counts.get("error", 0), "validation error"),
     )
 
 
@@ -147,7 +147,7 @@ RULES: tuple[Rule, ...] = (
     ),
     Rule(
         name="review_continuity",
-        applies=lambda s: s.validation.counts["error"] > 0,
+        applies=lambda s: s.validation.counts.get("error", 0) > 0,
         build=_review_continuity,
     ),
     Rule(
