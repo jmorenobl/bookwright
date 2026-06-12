@@ -40,7 +40,7 @@ SKILL_PLACEHOLDER_MARKER_NAME: Final[str] = ".bookwright-skills-placeholder"
 
 #: Status injection pattern for Claude integration (dynamic context)
 STATUS_INJECTION_CLAUDE: Final[str] = """\
-## 1. Orientación inicial
+## Orientación inicial
 
 Antes de empezar, debes entender el estado actual del proyecto. Analiza el siguiente estado:
 
@@ -52,7 +52,7 @@ Antes de empezar, debes entender el estado actual del proyecto. Analiza el sigui
 
 #: Status injection pattern for Generic integration (explicit step)
 STATUS_INJECTION_GENERIC: Final[str] = """\
-## 1. Orientación inicial
+## Orientación inicial
 
 Antes de empezar, ejecuta el siguiente comando para entender el estado actual del proyecto:
 
