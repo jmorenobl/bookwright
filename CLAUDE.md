@@ -259,3 +259,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 - `auto_execute_hooks: true`. Mandatory hooks (`before_constitution`,
   `before_specify`) execute without prompting; optional commit hooks ask
   first.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->

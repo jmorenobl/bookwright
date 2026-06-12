@@ -2,12 +2,6 @@
 
 This file provides guidance to AI coding agents (such as Windsurf, Cursor, Copilot, Gemini) when working with code in this repository.
 
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan:
-[specs/022-skills-status-integration/plan.md](specs/022-skills-status-integration/plan.md)
-<!-- SPECKIT END -->
-
 ## Repository state: v0.2.0 shipped, v0.3 / M5 in progress
 
 Both released milestones are **fully implemented**: `v0.1.0` (2026-06-03,
