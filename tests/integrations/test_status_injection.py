@@ -1,9 +1,6 @@
-from pathlib import Path
-from typing import Any
-
 import pytest
 
-from bookwright.integrations.base import SkillsIntegration
+from bookwright.integrations import ClaudeIntegration, GenericIntegration
 from bookwright.integrations.constants import (
     NEXT_STEPS_BOILERPLATE,
     STATUS_INJECTION_CLAUDE,
@@ -12,37 +9,13 @@ from bookwright.integrations.constants import (
 from bookwright.integrations.errors import SkillMaterializationError
 from bookwright.integrations.materialize import _transform_body
 
-
-class MockIntegration(SkillsIntegration):
-    """Minimal ``SkillsIntegration`` stub for body-injection tests.
-
-    Only ``supports_dynamic_context`` (a ``ClassVar[bool]`` on the base) drives
-    ``_transform_body``, so the two subclasses below set it as a class attribute
-    rather than overriding it with a property. ``setup`` is a no-op that matches
-    the base signature so ``mypy --strict`` accepts the override.
-    """
-
-    def setup(
-        self,
-        project_root: Path,
-        manifest: Any,
-        parsed_options: Any = None,
-        *,
-        ledger: Any = None,
-    ) -> None:
-        pass
-
-
-class DynamicMockIntegration(MockIntegration):
-    supports_dynamic_context = True
-
-
-class StaticMockIntegration(MockIntegration):
-    supports_dynamic_context = False
+# ``_transform_body`` branches only on ``supports_dynamic_context``; the two real
+# integrations already differ on exactly that flag (claude=True, generic=False),
+# so they stand in for the dynamic/static cases without a bespoke stub.
 
 
 def test_status_injection_claude_contains_required_sections() -> None:
-    integration = DynamicMockIntegration()
+    integration = ClaudeIntegration()
     body = "## Existing Content\n\nSome body text."
     result = _transform_body("test-skill", body, integration)
 
@@ -54,7 +27,7 @@ def test_status_injection_claude_contains_required_sections() -> None:
 
 
 def test_status_injection_generic_contains_required_sections() -> None:
-    integration = StaticMockIntegration()
+    integration = GenericIntegration()
     body = "## Existing Content\n\nSome body text."
     result = _transform_body("test-skill", body, integration)
 
@@ -66,7 +39,7 @@ def test_status_injection_generic_contains_required_sections() -> None:
 
 
 def test_idempotency() -> None:
-    integration = DynamicMockIntegration()
+    integration = ClaudeIntegration()
     body = "## Existing Content"
     # First materialization
     result1 = _transform_body("test-skill", body, integration)
@@ -80,7 +53,7 @@ def test_idempotency() -> None:
 
 
 def test_preserves_bilingual_triggers() -> None:
-    integration = DynamicMockIntegration()
+    integration = ClaudeIntegration()
     body = "Triggers: english and español\n\n## Content"
     result = _transform_body("test-skill", body, integration)
     assert "Triggers: english and español" in result
@@ -93,7 +66,7 @@ def test_residual_script_token_rejected() -> None:
     survives the transform must raise rather than ship a broken skill body.
     """
 
-    integration = DynamicMockIntegration()
+    integration = ClaudeIntegration()
     body = "## Content\n\nRun {SCRIPT} to continue."
     with pytest.raises(SkillMaterializationError) as excinfo:
         _transform_body("test-skill", body, integration)
