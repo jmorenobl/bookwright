@@ -6,11 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from bookwright.integrations import ClaudeIntegration, GenericIntegration
 from bookwright.integrations.errors import SkillLintError
 from bookwright.integrations.lint import lint_skill_md
-from bookwright.integrations.materialize import generate_skill_md, iter_command_sources
-from bookwright.io.fs import NullLedger
 
 
 def _write_skill(skill_dir: Path, body: str) -> None:
@@ -26,38 +23,6 @@ def _write_skill(skill_dir: Path, body: str) -> None:
         "---\n" + body,
         encoding="utf-8",
     )
-
-
-# ---------- AC-3: claude and generic emit identical bodies ----------
-
-
-def test_claude_and_generic_bodies_are_identical(tmp_path: Path) -> None:
-    claude = ClaudeIntegration()
-    generic = GenericIntegration()
-    assert claude.supports_dynamic_context is True
-    assert generic.supports_dynamic_context is False
-
-    for source in iter_command_sources():
-        name = Path(source.name).stem
-        claude_dir = tmp_path / "claude"
-        generic_dir = tmp_path / "generic"
-        claude_dir.mkdir(exist_ok=True)
-        generic_dir.mkdir(exist_ok=True)
-
-        c = generate_skill_md(source, claude_dir, claude, ledger=NullLedger())
-        g = generate_skill_md(source, generic_dir, generic, ledger=NullLedger())
-        assert c is not None and g is not None
-        assert c.read_text(encoding="utf-8") == g.read_text(encoding="utf-8"), name
-
-
-def test_no_generated_body_contains_injection_syntax(tmp_path: Path) -> None:
-    """FR-011/012, SC-006 — the v0 materializer emits no `` !`…` `` injection."""
-
-    integration = ClaudeIntegration()
-    for source in iter_command_sources():
-        written = generate_skill_md(source, tmp_path, integration, ledger=NullLedger())
-        assert written is not None
-        assert "!`" not in written.read_text(encoding="utf-8")
 
 
 # ---------- Rule 5: forbidden_injection allowlist (FR-013) ----------

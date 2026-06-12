@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Agent Skills (agentskills.io) compliance constants for the integrations layer.
 
 Single source of truth for the numeric caps, the inherited default license,
@@ -36,3 +37,38 @@ INJECTION_READ_COMMANDS: Final[frozenset[str]] = frozenset({"cat", "head", "tail
 #: ``SKILL.md`` files. Retained only so the deprecated symbol stays importable
 #: for the legacy-cleanup tests; do not write this file in new code.
 SKILL_PLACEHOLDER_MARKER_NAME: Final[str] = ".bookwright-skills-placeholder"
+
+#: Status injection pattern for Claude integration (dynamic context)
+STATUS_INJECTION_CLAUDE: Final[str] = """\
+## 1. Orientación inicial
+
+Antes de empezar, debes entender el estado actual del proyecto. Analiza el siguiente estado:
+
+!`bookwright status --json`
+
+- Si el comando falla o devuelve un JSON inválido, **DETENTE INMEDIATAMENTE (halt)** y pide al usuario que corrija el error.
+- Si el estado está vacío (no hay foco ni siguientes acciones), simplemente ignóralo y continúa normalmente.
+"""
+
+#: Status injection pattern for Generic integration (explicit step)
+STATUS_INJECTION_GENERIC: Final[str] = """\
+## 1. Orientación inicial
+
+Antes de empezar, ejecuta el siguiente comando para entender el estado actual del proyecto:
+
+```bash
+bookwright status --json
+```
+
+- Si el comando falla o devuelve un JSON inválido, **DETENTE INMEDIATAMENTE (halt)** y pide al usuario que corrija el error.
+- Si el estado está vacío (no hay foco ni siguientes acciones), simplemente ignóralo y continúa normalmente.
+"""
+
+#: Next steps boilerplate appended at the end of skills
+NEXT_STEPS_BOILERPLATE: Final[str] = """\
+
+## Próximos pasos
+
+- Revisa las acciones pendientes (`next_actions`) que obtuviste en la orientación inicial.
+- Propón al usuario los comandos listos para copiar y pegar para continuar con la siguiente acción lógica.
+"""

@@ -25,7 +25,12 @@ from typing import TYPE_CHECKING
 import yaml
 
 import bookwright
-from bookwright.integrations.constants import DEFAULT_SKILL_LICENSE
+from bookwright.integrations.constants import (
+    DEFAULT_SKILL_LICENSE,
+    NEXT_STEPS_BOILERPLATE,
+    STATUS_INJECTION_CLAUDE,
+    STATUS_INJECTION_GENERIC,
+)
 from bookwright.integrations.descriptions import get_description
 from bookwright.integrations.errors import SkillMaterializationError
 from bookwright.integrations.lint import lint_skill_md
@@ -58,7 +63,7 @@ def iter_command_sources() -> list[Traversable]:
     )
 
 
-def _transform_body(skill_name: str, body: str) -> str:
+def _transform_body(skill_name: str, body: str, integration: SkillsIntegration) -> str:
     """Substitute the sole ``{ARGS}`` token; reject any residual token (SC-003).
 
     Raises ``SkillMaterializationError`` (``residual_token``) rather than asserting,
@@ -67,6 +72,18 @@ def _transform_body(skill_name: str, body: str) -> str:
     """
 
     transformed = body.replace("{ARGS}", "$ARGUMENTS")
+
+    status_injection = (
+        STATUS_INJECTION_CLAUDE
+        if integration.supports_dynamic_context
+        else STATUS_INJECTION_GENERIC
+    )
+    if status_injection.strip() not in transformed:
+        transformed = f"{status_injection}\n{transformed}"
+
+    if NEXT_STEPS_BOILERPLATE.strip() not in transformed:
+        transformed = f"{transformed}\n{NEXT_STEPS_BOILERPLATE}"
+
     for token in _RESIDUAL_TOKENS:
         if token in transformed:
             raise SkillMaterializationError(
@@ -148,10 +165,6 @@ def generate_skill_md(
     dangling reference or a frontmatter ``name`` ≠ filename-stem mismatch.
     """
 
-    # `integration` is read structurally in v0 only via the shared roster; its
-    # `supports_dynamic_context` flag is intentionally NOT acted on (FR-011).
-    del integration
-
     name = Path(command_path.name).stem
     skill_dir = target_dir / name
 
@@ -176,7 +189,7 @@ def generate_skill_md(
     description = get_description(name, parsed.metadata.get("description", ""))
 
     # Step 4 — body transform (sole token substitution).
-    body = _transform_body(name, parsed.body)
+    body = _transform_body(name, parsed.body, integration)
 
     # Step 5 — resolve cited references (pure; a dangling ref aborts pre-write).
     copy_list = _resolve_references(name, body)

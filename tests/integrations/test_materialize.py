@@ -11,6 +11,10 @@ import pytest
 
 import bookwright
 from bookwright.integrations import ClaudeIntegration
+from bookwright.integrations.constants import (
+    NEXT_STEPS_BOILERPLATE,
+    STATUS_INJECTION_CLAUDE,
+)
 from bookwright.integrations.descriptions import SKILL_DESCRIPTIONS
 from bookwright.integrations.errors import SkillMaterializationError
 from bookwright.integrations.materialize import generate_skill_md, iter_command_sources
@@ -88,9 +92,11 @@ def test_each_source_materializes_with_expected_frontmatter_and_body(tmp_path: P
         assert meta["license"] == "Apache-2.0"
         assert meta["metadata"] == {"author": "bookwright", "version": bookwright.__version__}
 
-        # The sole transform is {ARGS} -> $ARGUMENTS; everything else is verbatim.
         source_body = parse_frontmatter(source.read_text(encoding="utf-8")).body
-        assert parsed.body == source_body.replace("{ARGS}", "$ARGUMENTS")
+        expected_core_body = source_body.replace("{ARGS}", "$ARGUMENTS")
+        assert expected_core_body in parsed.body
+        assert parsed.body.startswith(STATUS_INJECTION_CLAUDE)
+        assert parsed.body.endswith(NEXT_STEPS_BOILERPLATE.strip())
         assert "{ARGS}" not in parsed.body
         assert "{SCRIPT}" not in parsed.body
 
