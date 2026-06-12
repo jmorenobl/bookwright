@@ -11,11 +11,11 @@ verification system, iterations 12–18). All of it is on `main` with a real
 gates green. Current work is **v0.3 / M5 — context orchestration**
 (design § 21), iterations 019–023 in `bookwright-implementation-plan.md`:
 iteration 019 — authored focus (the `[focus]` manifest block +
-`bookwright focus show|set|clear`) — is **merged on `main`** (unreleased). The
-next planned iteration is **020 — `bookwright status`** (deterministic derived
-state + `next_actions`), then skills consuming it (021–022) and the v0.3.0
-release (023). No iteration branch is currently active. Vector search (ChromaDB
-over rdflib) moved to v0.4.
+`bookwright focus show|set|clear`) — and iteration 020 — `bookwright status`
+(deterministic derived state + `next_actions`) — are both **merged on `main`**
+(unreleased). The next planned iterations are the skills consuming status
+(021–022) and the v0.3.0 release (023). No iteration branch is currently
+active. Vector search (ChromaDB over rdflib) moved to v0.4.
 
 The canonical references:
 
@@ -95,7 +95,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 ## Iterations (shipped + planned)
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
-012–018 are merged (v0.2.0), and 019 is merged on `main` (M5, unreleased).
+012–018 are merged (v0.2.0), and 019–020 are merged on `main` (M5, unreleased).
 There is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
@@ -119,6 +119,7 @@ There is no active iteration branch.
 | 017 | Traceability-tag cleanup + non-regression gate | — | ✅ merged |
 | 018 | Unified `--json` error envelope | — | ✅ merged |
 | 019 | Authored focus state: `[focus]` block + `bookwright focus` | M5 | ✅ merged |
+| 020 | `bookwright status` (derived state + `next_actions`) | M5 | ✅ merged |
 
 M4/v0.2 is **complete and released** (`v0.2.0`, 2026-06-05): the provenance
 model (012), the `bookwright-research` skill + `[research]` manifest block (013),
@@ -126,9 +127,10 @@ the `factual_anchor` validator (014), the `bookwright-verify` LLM check (015),
 and the research E2E fixture/tests/docs (016) all merged, plus two maintenance
 iterations — traceability-tag cleanup (017) and the unified error envelope
 (018). v0.3 / M5 — context orchestration (design § 21) — is underway: 019
-(authored focus) is merged; the next planned iteration is **020 —
-`bookwright status`** (deterministic derived state + `next_actions`), followed
-by 021–023. Vector search (ChromaDB over rdflib) moved to v0.4.
+(authored focus) and 020 (`bookwright status` — deterministic derived state +
+`next_actions`) are merged; the next planned iterations are the status-consuming
+skills (021–022) and the v0.3.0 release (023). Vector search (ChromaDB over
+rdflib) moved to v0.4.
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
@@ -226,8 +228,8 @@ rejected (Constitution "Scope & Release Discipline").
   (iterations 012–016). Don't pull v0.3+ work below into it.
 - v0.3 / M5 — context orchestration (design § 21), iterations 019–023:
   `[focus]` block + `bookwright focus` (019, ✅ merged); `bookwright status`
-  (deterministic derived state + `next_actions`, 020 — next); skills
-  consuming it (021–022); v0.3.0 release (023).
+  (deterministic derived state + `next_actions`, 020, ✅ merged); skills
+  consuming it (021–022 — next); v0.3.0 release (023).
 - v0.4 — vector search (ChromaDB over rdflib, decoupled from Grafeo).
 - v1.0 — export to EPUB / PDF / print via pandoc.
 
@@ -260,5 +262,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+`specs/020-status-command/plan.md` (iteration 020 — `bookwright status`,
+with `research.md`, `data-model.md`, `contracts/cli-status.md`, and
+`quickstart.md` alongside it).
 <!-- SPECKIT END -->

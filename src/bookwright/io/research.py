@@ -37,8 +37,24 @@ from bookwright.golem.errors import EmptySlugError
 from bookwright.golem.namespaces import RELIABILITY_IRI, SOURCE_TYPE_IRI
 from bookwright.golem.slug import make_slug
 
+from ._research_identity import (
+    AnchorIdentity,
+    FindingIdentity,
+    _constrains_identity,
+    is_timeline_ref,
+)
 from .errors import ResearchError
 from .frontmatter import parse_frontmatter
+
+__all__ = [
+    "INDEX_FILE",
+    "SOURCES_FILE",
+    "AnchorIdentity",
+    "FindingIdentity",
+    "ResearchResult",
+    "ResearchWarning",
+    "map_research",
+]
 
 SOURCES_FILE = "sources.md"
 INDEX_FILE = "_index.md"
@@ -81,6 +97,8 @@ class ResearchResult:
     anchors: tuple[Anchor, ...] = ()
     files_processed: int = 0
     warnings: tuple[ResearchWarning, ...] = ()
+    finding_identities: tuple[FindingIdentity, ...] = ()
+    anchor_identities: tuple[AnchorIdentity, ...] = ()
 
     @property
     def entities(self) -> tuple[GolemEntity, ...]:
@@ -102,6 +120,8 @@ class _Accumulator:
     warnings: list[ResearchWarning] = field(default_factory=list)
     files_processed: int = 0
     source_index: dict[str, URIRef] = field(default_factory=dict)
+    finding_identities: list[FindingIdentity] = field(default_factory=list)
+    anchor_identities: list[AnchorIdentity] = field(default_factory=list)
 
     def result(self) -> ResearchResult:
         return ResearchResult(
@@ -110,6 +130,8 @@ class _Accumulator:
             anchors=tuple(self.anchors),
             files_processed=self.files_processed,
             warnings=tuple(self.warnings),
+            finding_identities=tuple(self.finding_identities),
+            anchor_identities=tuple(self.anchor_identities),
         )
 
 
@@ -268,6 +290,9 @@ def _map_findings(
             )
         finding_ids[identifier] = finding.uri
         acc.findings.append(finding)
+        acc.finding_identities.append(
+            FindingIdentity(id=identifier, relpath=relpath, uri=str(finding.uri))
+        )
     return finding_ids
 
 
@@ -341,19 +366,29 @@ def _build_anchor(
         )
     if "constrains" not in raw:
         raise ResearchError(relpath, f"anchor is missing required `constrains` in {relpath}")
-    constrains = _resolve_constrains(acc, raw.get("constrains"), relpath)
+    raw_constrains = raw.get("constrains")
+    constrains = _resolve_constrains(acc, raw_constrains, relpath)
     begin, end = _resolve_span(raw, relpath)
-    return Anchor(
+    anchor = Anchor(
         uri_base=acc.uri_base,
         promotes=finding_ids[promotes_id],
         constrains=constrains,
         begin=begin,
         end=end,
     )
+    acc.anchor_identities.append(
+        AnchorIdentity(
+            promotes_id=promotes_id,
+            constrains=_constrains_identity(raw_constrains, constrains),
+            relpath=relpath,
+            uri=str(anchor.uri),
+        )
+    )
+    return anchor
 
 
 def _resolve_constrains(acc: _Accumulator, raw: Any, relpath: str) -> URIRef | None:
-    if isinstance(raw, str) and raw.strip() == "timeline":
+    if is_timeline_ref(raw):
         return acc.timeline_uri
     return _resolve_narrative(acc, raw, "constrains", relpath)
 

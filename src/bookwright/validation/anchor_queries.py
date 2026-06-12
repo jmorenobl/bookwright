@@ -42,6 +42,7 @@ from bookwright.validation.queries import EventInterval, parse_gyear
 
 __all__ = [
     "FACETS",
+    "RELIABILITY_NAME",
     "AnchorRecord",
     "Facet",
     "SourceRecord",
@@ -140,7 +141,9 @@ FACETS: tuple[Facet, ...] = (
 
 # Reliability rank name ← its E55 individual IRI, inverted from the single
 # vocabulary source (``RELIABILITY_IRI``) so the scale never re-spells it (D6).
-_RELIABILITY_NAME: dict[str, str] = {str(iri): name for name, iri in RELIABILITY_IRI.items()}
+# Public alongside the projections (020): ``status`` aggregation joins ratings
+# back to names through this same map, never a re-derived copy.
+RELIABILITY_NAME: dict[str, str] = {str(iri): name for name, iri in RELIABILITY_IRI.items()}
 
 
 @dataclass(frozen=True)
@@ -202,7 +205,7 @@ def load_sources_by_anchor(indexer: Indexer) -> dict[str, list[SourceRecord]]:
                 uri=source,
                 present_predicates=frozenset(acc.predicates),
                 original_language=acc.language,
-                reliability=_RELIABILITY_NAME.get(acc.reliability_iri or ""),
+                reliability=RELIABILITY_NAME.get(acc.reliability_iri or ""),
             )
             for source, acc in sorted(sources.items())
         ]

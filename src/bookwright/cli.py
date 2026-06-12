@@ -2,7 +2,7 @@
 
 import typer
 
-from bookwright.commands import check, focus, graph, init, integration, validate, version
+from bookwright.commands import check, focus, graph, init, integration, status, validate, version
 
 app = typer.Typer(
     name="bookwright",
@@ -14,6 +14,7 @@ app = typer.Typer(
 app.command("version")(version.run)
 app.command("check")(check.run)
 app.command("init", context_settings=init.CONTEXT_SETTINGS)(init.run)
+app.command("status")(status.run)
 app.command("validate")(validate.run)
 app.add_typer(graph.app, name="graph")
 app.add_typer(integration.app, name="integration")

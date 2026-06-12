@@ -19,8 +19,9 @@ non-research project. No rdflib here: all SPARQL lives in the projection modules
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from bookwright.golem.namespaces import (
     BW_CONSTRAINS,
@@ -51,11 +52,47 @@ from bookwright.validation.queries import (
 # vocabulary source (``RELIABILITY_IRI`` keys); only the domain ordering
 # (``baja < media < alta``) lives here. The membership guard below trips if the
 # vocabulary ever gains or renames a rating, so the scale can never silently drift.
-_RELIABILITY_ORDER: tuple[str, ...] = ("baja", "media", "alta")
-_RELIABILITY_RANK: dict[str, int] = {name: rank for rank, name in enumerate(_RELIABILITY_ORDER)}
-assert set(_RELIABILITY_RANK) == set(RELIABILITY_IRI), (
+# Public alongside the extracted predicates (020 research D3): ``status``
+# aggregation ranks reliabilities on this same scale, never a re-spelled copy.
+RELIABILITY_ORDER: tuple[str, ...] = ("baja", "media", "alta")
+RELIABILITY_RANK: dict[str, int] = {name: rank for rank, name in enumerate(RELIABILITY_ORDER)}
+assert set(RELIABILITY_RANK) == set(RELIABILITY_IRI), (
     "reliability scale drifted from RELIABILITY_IRI"
 )
+
+
+# --- Pure rule predicates (020 research D3) ----------------------------------
+#
+# The R1/R3 *decisions*, extracted so `status` aggregation reuses the exact
+# detection logic (020 FR-005) with zero forks. The validator's methods call
+# these and keep owning message construction and `Violation` assembly; R4's
+# presence decision is already the public `anchor_queries.entity_present`.
+
+
+def anchor_unsourced(sources: Sequence[SourceRecord], finding_present: bool) -> bool:
+    """R1 (FR-006): the anchor promotes a present finding with zero sources.
+
+    A missing finding suppresses R1 — that defect is R4's to report once.
+    """
+    return finding_present and not sources
+
+
+def anchor_under_reliable(
+    sources: Sequence[SourceRecord], minimum: str
+) -> Literal["under_reliable", "unrated"] | None:
+    """R3 (FR-008): how the anchor's best support compares to ``minimum``.
+
+    ``None`` when satisfied (or when unsourced — R1's concern, no double-label);
+    ``"under_reliable"`` when the best *rated* support ranks below ``minimum``;
+    ``"unrated"`` when sources exist but none carries a rating at all — which
+    sits below every threshold without being literally "below" any rating.
+    """
+    if not sources:
+        return None
+    rated = [RELIABILITY_RANK[s.reliability] for s in sources if s.reliability is not None]
+    if not rated:
+        return "unrated"
+    return None if max(rated) >= RELIABILITY_RANK[minimum] else "under_reliable"
 
 
 def _label(uri: str) -> str:
@@ -150,7 +187,7 @@ class FactualAnchor:
         indexer: Indexer,
     ) -> list[Violation]:
         # Suppressed when the finding is absent — R4 reports that once (no double-label).
-        if not finding_present or sources:
+        if not anchor_unsourced(sources, finding_present):
             return []
         message = f"anchor '{_label(anchor.uri)}' promotes a finding with no supporting source"
         triple = (anchor.uri, str(BW_PROMOTES), anchor.promotes)
@@ -196,14 +233,11 @@ class FactualAnchor:
         project: ValidationContext,
         indexer: Indexer,
     ) -> list[Violation]:
-        if not sources:  # an unsourced anchor is R1's concern, not R3's (no double-label)
-            return []
         minimum = project.manifest.research.min_reliability_for_anchor
-        rated = [_RELIABILITY_RANK[s.reliability] for s in sources if s.reliability is not None]
-        # No rated source at all → below every threshold; else compare the best.
-        if rated and max(rated) >= _RELIABILITY_RANK[minimum]:
+        verdict = anchor_under_reliable(sources, minimum)
+        if verdict is None:  # satisfied, or unsourced (R1's concern, no double-label)
             return []
-        if rated:  # a rating is present, it is just too low
+        if verdict == "under_reliable":  # a rating is present, it is just too low
             message = (
                 f"anchor '{_label(anchor.uri)}' is backed only by sources below the "
                 f"minimum reliability '{minimum}'"
