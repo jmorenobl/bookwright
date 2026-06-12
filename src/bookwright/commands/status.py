@@ -27,33 +27,27 @@ from rich.console import Console
 from bookwright.core.errors import ManifestError
 from bookwright.core.manifest import Manifest
 from bookwright.errors import BookwrightError
-from bookwright.indexers import UnknownIndexerError
-from bookwright.io.errors import (
-    MissingDirectoryError,
-    ProjectNotFoundError,
-    ResearchError,
-    SlugCollisionError,
-)
-from bookwright.io.manuscript import manuscript_present
+from bookwright.io.errors import ProjectNotFoundError, SlugCollisionError
 from bookwright.io.project import find_project_root
-from bookwright.status.model import (
+from bookwright.io.report import EXIT_SKIPPED
+from bookwright.status import (
+    Action,
     AnchorGap,
     GraphFacts,
     LowReliabilityFinding,
     OpenQuestion,
     StatusState,
     ValidationSummary,
-)
-from bookwright.status.queries import (
     anchor_gaps,
     low_reliability_findings,
+    next_actions,
     open_questions,
     validation_summary,
 )
-from bookwright.status.rules import Action, next_actions
-from bookwright.validation.base import Severity, UnknownValidatorError
+from bookwright.validation.base import UnknownValidatorError
 
 from ._envelope import (
+    EXIT_COLLISION,
     EXIT_CONFIG,
     emit_error,
     invalid_manifest_payload,
@@ -61,7 +55,7 @@ from ._envelope import (
     ok_payload,
     render_json,
 )
-from ._graph import build_project_graph
+from ._graph import PIPELINE_CONFIG_FAULTS, build_project_graph, missing_prerequisite
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -69,18 +63,13 @@ if TYPE_CHECKING:
 
     from bookwright.io.report import SkippedFile
 
-EXIT_COLLISION = 3
-EXIT_SKIPPED = 4
-
 _CACHE_SUBPATH = (".bookwright", "cache", "status.json")
 
-#: The exit-2 pipeline/config faults, mirrored from ``graph build`` (D4) plus
+#: status's exit-2 faults: the shared pipeline roster (D4) plus
 #: ``UnknownValidatorError`` — the one fault the validation leg adds, exiting 2
 #: with its own envelope exactly as ``bookwright validate`` does.
-_CONFIG_FAULTS = (
-    MissingDirectoryError,
-    UnknownIndexerError,
-    ResearchError,
+_CONFIG_FAULTS: tuple[type[BookwrightError], ...] = (
+    *PIPELINE_CONFIG_FAULTS,
     UnknownValidatorError,
 )
 
@@ -147,9 +136,7 @@ def _aggregate(root: Path, manifest: Manifest) -> StatusState:
     and "nothing here yet" is a fact, not a failure. An empty-but-present bible
     builds normally (zero entities) and is likewise degraded, not an error.
     """
-    bible_dir = root / manifest.paths.bible
-    manuscript_dir = root / manifest.paths.manuscript
-    if not bible_dir.is_dir() or not manuscript_present(manuscript_dir):
+    if missing_prerequisite(root, manifest) is not None:
         return StatusState(
             phase=manifest.book.status,
             focus_defined=manifest.focus is not None,
@@ -157,9 +144,7 @@ def _aggregate(root: Path, manifest: Manifest) -> StatusState:
             open_questions=(),
             unresolved_anchors=(),
             low_reliability_findings=(),
-            # Zero-filled, not {}: the degraded state carries the same in-memory
-            # counts shape ``validation_summary`` produces on the full path.
-            validation=ValidationSummary(counts={level.value: 0 for level in Severity}, ran=()),
+            validation=ValidationSummary(counts={}, ran=()),
         )
 
     outcome = build_project_graph(root, manifest)  # refreshes bible/graph.ttl (D1)

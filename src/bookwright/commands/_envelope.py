@@ -31,6 +31,11 @@ if TYPE_CHECKING:
 #: the command groups cannot drift to different statuses for the same fault class.
 EXIT_CONFIG = 2
 
+#: The CLI-wide "slug collision" exit status. ``graph build`` and ``status``
+#: must exit identically on the same corpus (020 research D4), so the literal
+#: lives once here, beside :data:`EXIT_CONFIG`.
+EXIT_COLLISION = 3
+
 
 def ok_payload(**fields: Any) -> dict[str, Any]:
     """The success-envelope skeleton: ``{"status": "ok", **fields}`` (Principle IX).

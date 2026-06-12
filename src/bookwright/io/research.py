@@ -37,7 +37,12 @@ from bookwright.golem.errors import EmptySlugError
 from bookwright.golem.namespaces import RELIABILITY_IRI, SOURCE_TYPE_IRI
 from bookwright.golem.slug import make_slug
 
-from ._research_identity import AnchorIdentity, FindingIdentity, _constrains_identity
+from ._research_identity import (
+    AnchorIdentity,
+    FindingIdentity,
+    _constrains_identity,
+    is_timeline_ref,
+)
 from .errors import ResearchError
 from .frontmatter import parse_frontmatter
 
@@ -383,7 +388,7 @@ def _build_anchor(
 
 
 def _resolve_constrains(acc: _Accumulator, raw: Any, relpath: str) -> URIRef | None:
-    if isinstance(raw, str) and raw.strip() == "timeline":
+    if is_timeline_ref(raw):
         return acc.timeline_uri
     return _resolve_narrative(acc, raw, "constrains", relpath)
 

@@ -14,21 +14,20 @@ from rich.console import Console
 
 from bookwright.core.errors import ManifestError
 from bookwright.core.manifest import Manifest
-from bookwright.indexers import UnknownIndexerError
-from bookwright.io.errors import (
-    MissingDirectoryError,
-    ProjectNotFoundError,
-    ResearchError,
-    SlugCollisionError,
-)
+from bookwright.errors import BookwrightError
+from bookwright.io.errors import ProjectNotFoundError, SlugCollisionError
 from bookwright.io.project import find_project_root
 from bookwright.io.report import BuildReport
 
-from .._envelope import EXIT_CONFIG, emit_error, emit_json, invalid_manifest_payload
-from .._graph import build_project_graph
+from .._envelope import EXIT_COLLISION, EXIT_CONFIG, emit_error, emit_json, invalid_manifest_payload
+from .._graph import PIPELINE_CONFIG_FAULTS, build_project_graph
 from . import app
 
-EXIT_COLLISION = 3
+#: build's exit-2 faults: project resolution plus the shared pipeline roster (D4).
+_CONFIG_FAULTS: tuple[type[BookwrightError], ...] = (
+    ProjectNotFoundError,
+    *PIPELINE_CONFIG_FAULTS,
+)
 
 
 @app.command("build")
@@ -47,12 +46,7 @@ def run(
     except ManifestError as exc:
         emit_error(invalid_manifest_payload(exc), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
-    except (
-        ProjectNotFoundError,
-        MissingDirectoryError,
-        UnknownIndexerError,
-        ResearchError,
-    ) as exc:
+    except _CONFIG_FAULTS as exc:
         emit_error(exc.to_json(), json_output)
         raise typer.Exit(EXIT_CONFIG) from exc
     except SlugCollisionError as exc:

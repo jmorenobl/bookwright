@@ -48,6 +48,16 @@ class AnchorIdentity:
     uri: str
 
 
+def is_timeline_ref(raw: object) -> bool:
+    """Whether an authored ``constrains`` value names the timeline sentinel.
+
+    The single spelling of the rule: ``research._resolve_constrains`` links the
+    anchor to the timeline URI with it, and :func:`_constrains_identity`
+    normalizes the authored identity with it — one predicate, no drift.
+    """
+    return isinstance(raw, str) and raw.strip() == "timeline"
+
+
 def _constrains_identity(raw: Any, resolved: URIRef | None) -> str | None:
     """The authored ``constrains`` for an :class:`AnchorIdentity` (020 research D2).
 
@@ -59,4 +69,4 @@ def _constrains_identity(raw: Any, resolved: URIRef | None) -> str | None:
     if raw is None or resolved is None:
         return None
     name = str(raw)
-    return "timeline" if name.strip() == "timeline" else name
+    return "timeline" if is_timeline_ref(name) else name

@@ -19,9 +19,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from bookwright.golem.namespaces import timeline_uri
-from bookwright.indexers import Indexer, resolve_indexer
+from bookwright.indexers import Indexer, UnknownIndexerError, resolve_indexer
 from bookwright.io.bible import build_provenance, map_bible
-from bookwright.io.errors import MissingDirectoryError
+from bookwright.io.errors import MissingDirectoryError, ResearchError
 from bookwright.io.manuscript import manuscript_present
 from bookwright.io.report import BuildReport, ResearchTargetWarning
 from bookwright.io.research import ResearchResult, map_research
@@ -30,6 +30,32 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from bookwright.core.manifest import Manifest
+    from bookwright.errors import BookwrightError
+
+#: The pipeline's own exit-2 fault classes, single-sourced beside the pipeline
+#: that raises them so the two consuming except-ladders (`graph build`,
+#: `status`) cannot drift apart on the same corpus (020 research D4).
+PIPELINE_CONFIG_FAULTS: tuple[type[BookwrightError], ...] = (
+    MissingDirectoryError,
+    UnknownIndexerError,
+    ResearchError,
+)
+
+
+def missing_prerequisite(root: Path, manifest: Manifest) -> tuple[str, Path] | None:
+    """The first absent build prerequisite as ``(label, path)``, or ``None``.
+
+    The single statement of "can this corpus build?": :func:`build_project_graph`
+    raises ``MissingDirectoryError`` from it, and ``status`` branches to its
+    degraded report on it (020 research D5) — one predicate, no drift.
+    """
+    bible_dir = root / manifest.paths.bible
+    if not bible_dir.is_dir():
+        return ("bible", bible_dir)
+    manuscript_dir = root / manifest.paths.manuscript
+    if not manuscript_present(manuscript_dir):
+        return ("manuscript", manuscript_dir)
+    return None
 
 
 @dataclass(frozen=True)
@@ -53,13 +79,12 @@ def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
     success the returned engine holds the full graph and the Turtle cache on
     disk matches it.
     """
-    bible_dir = root / manifest.paths.bible
-    manuscript_dir = root / manifest.paths.manuscript
-    if not bible_dir.is_dir():
-        raise MissingDirectoryError("bible", str(bible_dir))
-    if not manuscript_present(manuscript_dir):
-        raise MissingDirectoryError("manuscript", str(manuscript_dir))
+    missing = missing_prerequisite(root, manifest)
+    if missing is not None:
+        label, path = missing
+        raise MissingDirectoryError(label, str(path))
 
+    bible_dir = root / manifest.paths.bible
     engine_cls = resolve_indexer(manifest.bookwright.indexer)
     engine = engine_cls()
 

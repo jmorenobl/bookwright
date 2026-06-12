@@ -9,7 +9,6 @@ corpus safety (SC-007). Error paths live in
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -19,6 +18,7 @@ from rdflib import Graph
 from typer.testing import CliRunner
 
 from bookwright.cli import app
+from tests.commands.conftest import dirhash
 from tests.commands.graph.conftest import scaffold_project
 from tests.conftest import copy_fixture
 
@@ -215,15 +215,7 @@ def test_human_mode_also_regenerates_the_cache(tiny_historical: Path, runner: Cl
 def _corpus_digest(root: Path) -> dict[str, str]:
     """sha256 per corpus file — everything except the two sanctioned caches."""
     exempt = {"bible/graph.ttl", ".bookwright/cache/status.json"}
-    digests: dict[str, str] = {}
-    for path in sorted(root.rglob("*")):
-        if not path.is_file():
-            continue
-        rel = path.relative_to(root).as_posix()
-        if rel in exempt:
-            continue
-        digests[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
-    return digests
+    return {rel: h for rel, h in dirhash(root) if h != "<DIR>" and rel not in exempt}
 
 
 def test_corpus_files_are_byte_identical_after_a_run(

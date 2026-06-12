@@ -24,7 +24,6 @@ from bookwright.golem.namespaces import (
     BW_OPEN,
     BW_RELIABILITY,
     BW_SUPPORTED_BY,
-    RELIABILITY_IRI,
 )
 from bookwright.status.model import (
     AnchorGap,
@@ -33,6 +32,7 @@ from bookwright.status.model import (
     ValidationSummary,
 )
 from bookwright.validation.anchor_queries import (
+    RELIABILITY_NAME,
     entity_present,
     load_anchors,
     load_sources_by_anchor,
@@ -63,10 +63,6 @@ __all__ = [
     "open_questions",
     "validation_summary",
 ]
-
-# Reliability rating name ← its E55 individual IRI, inverted from the single
-# vocabulary source (the same derivation ``anchor_queries`` uses, research D6).
-_RELIABILITY_NAME: dict[str, str] = {str(iri): name for name, iri in RELIABILITY_IRI.items()}
 
 _I = TypeVar("_I", bound="FindingIdentity | AnchorIdentity")
 
@@ -123,7 +119,7 @@ def low_reliability_findings(
     best_by_finding: dict[str, str | None] = {}
     for row in rows:
         finding = row["finding"]
-        rating = _RELIABILITY_NAME.get(row.get("reliability", ""))
+        rating = RELIABILITY_NAME.get(row.get("reliability", ""))
         best = best_by_finding.get(finding)
         if best is None or _rank(rating) > _rank(best):
             best_by_finding[finding] = rating
