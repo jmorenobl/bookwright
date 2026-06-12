@@ -36,6 +36,10 @@ _ROSTER = {
     "bookwright-verify",
 }
 
+# FR-003 — the phase-transition skills that hardcode the focus handoff.
+_FOCUS_HANDOFF_SKILLS = {"bookwright-bible", "bookwright-outline"}
+_FOCUS_HANDOFF_INSTRUCTION = "bookwright focus set --target"
+
 
 class RecordingLedger:
     """A FileLedger fake that records every path it is asked to track."""
@@ -72,6 +76,35 @@ def test_iter_command_sources_is_exactly_the_roster() -> None:
     assert names == _ROSTER
     # references/ subdir is skipped (only *.md files at the top level).
     assert all(node.name.endswith(".md") for node in iter_command_sources())
+
+
+# ---------- focus handoff (FR-003) ----------
+
+
+@pytest.mark.parametrize("skill_name", sorted(_FOCUS_HANDOFF_SKILLS))
+def test_phase_transition_skills_carry_focus_handoff(skill_name: str, tmp_path: Path) -> None:
+    """FR-003 — bible/outline hardcode `bookwright focus set --target`, in source and output."""
+
+    integration = ClaudeIntegration()
+    source = next(s for s in iter_command_sources() if Path(s.name).stem == skill_name)
+
+    source_body = parse_frontmatter(source.read_text(encoding="utf-8")).body
+    assert _FOCUS_HANDOFF_INSTRUCTION in source_body
+
+    written = generate_skill_md(source, tmp_path, integration, ledger=NullLedger())
+    assert written is not None
+    assert _FOCUS_HANDOFF_INSTRUCTION in written.read_text(encoding="utf-8")
+
+
+def test_only_phase_transition_skills_carry_focus_handoff() -> None:
+    """FR-003 — the focus handoff lives in *exactly* bible/outline, nowhere else."""
+
+    carriers = {
+        Path(source.name).stem
+        for source in iter_command_sources()
+        if _FOCUS_HANDOFF_INSTRUCTION in parse_frontmatter(source.read_text(encoding="utf-8")).body
+    }
+    assert carriers == _FOCUS_HANDOFF_SKILLS
 
 
 # ---------- generation / frontmatter / body transform ----------
