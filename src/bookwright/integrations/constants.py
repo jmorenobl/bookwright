@@ -38,31 +38,32 @@ INJECTION_READ_COMMANDS: Final[frozenset[str]] = frozenset({"cat", "head", "tail
 #: for the legacy-cleanup tests; do not write this file in new code.
 SKILL_PLACEHOLDER_MARKER_NAME: Final[str] = ".bookwright-skills-placeholder"
 
-#: Status injection pattern for Claude integration (dynamic context)
-STATUS_INJECTION_CLAUDE: Final[str] = """\
+#: Shared shape of the "## Orientación inicial" block. Only the lead sentence and
+#: the status-command rendering differ between integrations, so they are the sole
+#: ``{lead}``/``{invocation}`` slots — the header and the halt/empty-state bullets
+#: live here once, keeping the Claude and Generic variants in sync by construction.
+_STATUS_INJECTION_TEMPLATE: Final[str] = """\
 ## Orientación inicial
 
-Antes de empezar, debes entender el estado actual del proyecto. Analiza el siguiente estado:
+{lead}
 
-!`bookwright status --json`
+{invocation}
 
 - Si el comando falla o devuelve un JSON inválido, **DETENTE INMEDIATAMENTE (halt)** y pide al usuario que corrija el error.
 - Si el estado está vacío (no hay foco ni siguientes acciones), simplemente ignóralo y continúa normalmente.
 """
+
+#: Status injection pattern for Claude integration (dynamic context)
+STATUS_INJECTION_CLAUDE: Final[str] = _STATUS_INJECTION_TEMPLATE.format(
+    lead="Antes de empezar, debes entender el estado actual del proyecto. Analiza el siguiente estado:",
+    invocation="!`bookwright status --json`",
+)
 
 #: Status injection pattern for Generic integration (explicit step)
-STATUS_INJECTION_GENERIC: Final[str] = """\
-## Orientación inicial
-
-Antes de empezar, ejecuta el siguiente comando para entender el estado actual del proyecto:
-
-```bash
-bookwright status --json
-```
-
-- Si el comando falla o devuelve un JSON inválido, **DETENTE INMEDIATAMENTE (halt)** y pide al usuario que corrija el error.
-- Si el estado está vacío (no hay foco ni siguientes acciones), simplemente ignóralo y continúa normalmente.
-"""
+STATUS_INJECTION_GENERIC: Final[str] = _STATUS_INJECTION_TEMPLATE.format(
+    lead="Antes de empezar, ejecuta el siguiente comando para entender el estado actual del proyecto:",
+    invocation="```bash\nbookwright status --json\n```",
+)
 
 #: Next steps boilerplate appended at the end of skills
 NEXT_STEPS_BOILERPLATE: Final[str] = """\
