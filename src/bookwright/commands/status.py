@@ -52,7 +52,7 @@ from bookwright.status.queries import (
     validation_summary,
 )
 from bookwright.status.rules import Action, next_actions
-from bookwright.validation.base import UnknownValidatorError
+from bookwright.validation.base import Severity, UnknownValidatorError
 
 from ._envelope import EXIT_CONFIG, emit_error, invalid_manifest_payload, ok_payload
 from ._graph import build_project_graph
@@ -161,7 +161,9 @@ def _aggregate(root: Path, manifest: Manifest) -> StatusState:
             open_questions=(),
             unresolved_anchors=(),
             low_reliability_findings=(),
-            validation=ValidationSummary(counts={}, ran=()),
+            # Zero-filled, not {}: rule predicates index counts["error"] directly
+            # and must stay correct without the bootstrap rule short-circuiting first.
+            validation=ValidationSummary(counts={level.value: 0 for level in Severity}, ran=()),
         )
 
     outcome = build_project_graph(root, manifest)  # refreshes bible/graph.ttl (D1)
