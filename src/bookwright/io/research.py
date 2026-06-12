@@ -73,6 +73,38 @@ class ResearchWarning:
 
 
 @dataclass(frozen=True)
+class FindingIdentity:
+    """One finding's corpus-stable identity (020 research D2).
+
+    ``id`` is the authored YAML ``id`` (required, uniqueness-checked per file);
+    ``uri`` is the minted entity URI — an **in-process join key** from graph
+    projections back to authored identity, never serialized (it changes every
+    build).
+    """
+
+    id: str
+    relpath: str
+    uri: str
+
+
+@dataclass(frozen=True)
+class AnchorIdentity:
+    """One anchor's corpus-stable identity (020 research D2).
+
+    ``promotes_id`` is the authored ``id`` of the promoted finding;
+    ``constrains`` is the authored target name, ``"timeline"``, or ``None``
+    when the anchor declared no target *or* its link was dropped as unresolved
+    (D12 — the graph carries no ``bw:constrains`` triple either way). ``uri``
+    is the minted in-process join key, never serialized.
+    """
+
+    promotes_id: str
+    constrains: str | None
+    relpath: str
+    uri: str
+
+
+@dataclass(frozen=True)
 class ResearchResult:
     """The outcome of mapping a project's ``bible/research/`` to provenance entities."""
 
@@ -81,6 +113,8 @@ class ResearchResult:
     anchors: tuple[Anchor, ...] = ()
     files_processed: int = 0
     warnings: tuple[ResearchWarning, ...] = ()
+    finding_identities: tuple[FindingIdentity, ...] = ()
+    anchor_identities: tuple[AnchorIdentity, ...] = ()
 
     @property
     def entities(self) -> tuple[GolemEntity, ...]:
@@ -102,6 +136,8 @@ class _Accumulator:
     warnings: list[ResearchWarning] = field(default_factory=list)
     files_processed: int = 0
     source_index: dict[str, URIRef] = field(default_factory=dict)
+    finding_identities: list[FindingIdentity] = field(default_factory=list)
+    anchor_identities: list[AnchorIdentity] = field(default_factory=list)
 
     def result(self) -> ResearchResult:
         return ResearchResult(
@@ -110,6 +146,8 @@ class _Accumulator:
             anchors=tuple(self.anchors),
             files_processed=self.files_processed,
             warnings=tuple(self.warnings),
+            finding_identities=tuple(self.finding_identities),
+            anchor_identities=tuple(self.anchor_identities),
         )
 
 
@@ -268,6 +306,9 @@ def _map_findings(
             )
         finding_ids[identifier] = finding.uri
         acc.findings.append(finding)
+        acc.finding_identities.append(
+            FindingIdentity(id=identifier, relpath=relpath, uri=str(finding.uri))
+        )
     return finding_ids
 
 
@@ -341,15 +382,39 @@ def _build_anchor(
         )
     if "constrains" not in raw:
         raise ResearchError(relpath, f"anchor is missing required `constrains` in {relpath}")
-    constrains = _resolve_constrains(acc, raw.get("constrains"), relpath)
+    raw_constrains = raw.get("constrains")
+    constrains = _resolve_constrains(acc, raw_constrains, relpath)
     begin, end = _resolve_span(raw, relpath)
-    return Anchor(
+    anchor = Anchor(
         uri_base=acc.uri_base,
         promotes=finding_ids[promotes_id],
         constrains=constrains,
         begin=begin,
         end=end,
     )
+    acc.anchor_identities.append(
+        AnchorIdentity(
+            promotes_id=promotes_id,
+            constrains=_constrains_identity(raw_constrains, constrains),
+            relpath=relpath,
+            uri=str(anchor.uri),
+        )
+    )
+    return anchor
+
+
+def _constrains_identity(raw: Any, resolved: URIRef | None) -> str | None:
+    """The authored ``constrains`` for an :class:`AnchorIdentity` (020 research D2).
+
+    ``None`` both for an authored ``constrains: null`` and for a dropped link
+    (the unresolved-target soft miss, D12) — in either case the graph carries no
+    ``bw:constrains`` triple, so the identity mirrors what the anchor actually
+    asserts. ``"timeline"`` is normalized from its stripped spelling.
+    """
+    if raw is None or resolved is None:
+        return None
+    name = str(raw)
+    return "timeline" if name.strip() == "timeline" else name
 
 
 def _resolve_constrains(acc: _Accumulator, raw: Any, relpath: str) -> URIRef | None:

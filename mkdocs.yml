@@ -29,6 +29,7 @@ nav:
       - bookwright focus set: commands/focus-set.md
       - bookwright focus show: commands/focus-show.md
       - bookwright focus clear: commands/focus-clear.md
+      - bookwright status: commands/status.md
   - Validación: validation.md
   - Investigación: research.md
   - Extender: extending.md

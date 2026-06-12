@@ -14,21 +14,18 @@ from rich.console import Console
 
 from bookwright.core.errors import ManifestError
 from bookwright.core.manifest import Manifest
-from bookwright.golem.namespaces import timeline_uri
-from bookwright.indexers import UnknownIndexerError, resolve_indexer
-from bookwright.io.bible import build_provenance, map_bible
+from bookwright.indexers import UnknownIndexerError
 from bookwright.io.errors import (
     MissingDirectoryError,
     ProjectNotFoundError,
     ResearchError,
     SlugCollisionError,
 )
-from bookwright.io.manuscript import manuscript_present
 from bookwright.io.project import find_project_root
-from bookwright.io.report import BuildReport, ResearchTargetWarning
-from bookwright.io.research import map_research
+from bookwright.io.report import BuildReport
 
 from .._envelope import EXIT_CONFIG, emit_error, emit_json, invalid_manifest_payload
+from .._graph import build_project_graph
 from . import app
 
 EXIT_COLLISION = 3
@@ -70,64 +67,15 @@ def run(
 
 
 def _build() -> BuildReport:
-    """Run the build, returning the report. Raises the fault-model exceptions."""
+    """Run the build, returning the report. Raises the fault-model exceptions.
+
+    The pipeline body lives in :func:`bookwright.commands._graph.build_project_graph`
+    (shared with ``bookwright status``, 020 research D1); this wrapper owns only
+    project/manifest resolution.
+    """
     project_root = find_project_root()
     manifest = Manifest.load(project_root / "manifest.toml")
-
-    bible_dir = project_root / manifest.paths.bible
-    manuscript_dir = project_root / manifest.paths.manuscript
-    if not bible_dir.is_dir():
-        raise MissingDirectoryError("bible", str(bible_dir))
-    if not manuscript_present(manuscript_dir):
-        raise MissingDirectoryError("manuscript", str(manuscript_dir))
-
-    engine_cls = resolve_indexer(manifest.bookwright.indexer)
-    engine = engine_cls()
-
-    uri_base = manifest.bookwright.uri_base
-    result = map_bible(project_root, bible_dir, uri_base)
-
-    for mapped in result.mapped:
-        for triple in mapped.entity.to_triples():
-            engine.add_triple(*triple)
-        for assignment in build_provenance(mapped, uri_base):
-            for triple in assignment.to_triples():
-                engine.add_triple(*triple)
-
-    # Research pass: map bible/research/ and feed its triples into the same engine
-    # (one graph, one save — research D8). Research entities are already E13
-    # reifications, so they are NOT routed through build_provenance.
-    research = map_research(
-        project_root,
-        bible_dir / "research",
-        uri_base,
-        manifest.book.language,
-        result.entity_index,
-        timeline_uri(uri_base),
-    )
-    for entity in research.entities:
-        for triple in entity.to_triples():
-            engine.add_triple(*triple)
-
-    graph_rel = manifest.paths.graph
-    engine.save(project_root / graph_rel)
-
-    return BuildReport(
-        files_processed=result.files_processed + research.files_processed,
-        entities=len(result.entities) + len(research.entities),
-        triples=engine.count(),
-        graph_path=graph_rel,
-        skipped=tuple(result.skipped),
-        unknown_keys=tuple(result.unknown_keys),
-        unresolved_participants=tuple(result.unresolved_participants),
-        sources=len(research.sources),
-        findings=len(research.findings),
-        anchors=len(research.anchors),
-        research_warnings=tuple(
-            ResearchTargetWarning(path=w.relpath, field=w.field, name=w.name)
-            for w in research.warnings
-        ),
-    )
+    return build_project_graph(project_root, manifest).report
 
 
 def _print_summary(console: Console, report: BuildReport) -> None:

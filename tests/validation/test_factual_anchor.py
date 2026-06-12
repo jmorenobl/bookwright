@@ -11,15 +11,27 @@ from __future__ import annotations
 import datetime
 from pathlib import Path
 
+import pytest
+
 from bookwright.core.manifest import Manifest
 from bookwright.golem.modules.provenance import Source
 from bookwright.golem.namespaces import RELIABILITY_IRI, timeline_uri
 from bookwright.indexers import RdflibIndexer
-from bookwright.validation.anchor_queries import FACETS
+from bookwright.validation.anchor_queries import (
+    FACETS,
+    entity_present,
+    load_anchors,
+    load_sources_by_anchor,
+)
 from bookwright.validation.base import Severity, ValidationContext, Violation
 from bookwright.validation.registry import discover_validators, resolve_active
 from bookwright.validation.report import ScopeFilter, ValidationReport
-from bookwright.validation.validators.factual_anchor import _RELIABILITY_RANK, FactualAnchor
+from bookwright.validation.validators.factual_anchor import (
+    RELIABILITY_RANK,
+    FactualAnchor,
+    anchor_under_reliable,
+    anchor_unsourced,
+)
 from tests.validation.conftest import (
     CORE_FACETS,
     URI_BASE,
@@ -28,6 +40,7 @@ from tests.validation.conftest import (
     add_anchor,
     add_event,
     add_present_entity,
+    graph_uri,
     load_context,
     research_context,
     research_graph,
@@ -270,7 +283,71 @@ def test_reliability_scale_matches_vocabulary() -> None:
     # rating is added/renamed in RELIABILITY_IRI this fails and forces the scale to
     # follow (parity with the facet drift guard above, and -O-safe unlike the inline
     # module assert, which python -O strips).
-    assert set(_RELIABILITY_RANK) == set(RELIABILITY_IRI)
+    assert set(RELIABILITY_RANK) == set(RELIABILITY_IRI)
+
+
+# --- Parity guards: extracted predicates ↔ validator (020 research D3) -------
+#
+# The R1/R3/R4 decisions were extracted as pure predicates so `status` reuses
+# the exact detection logic. These guards pin the behavior-preserving refactor:
+# for every case in the matrix, the predicates' verdicts over the same
+# projections must agree with whether the validator emitted that rule's
+# violation. If either side drifts, the parity breaks loudly.
+
+_ANA = graph_uri("characters/ana")
+_NO_RATING = tuple(f for f in CORE_FACETS if f != "reliability")
+
+_PARITY_MATRIX: dict[str, AnchorSpec] = {
+    "unsourced": AnchorSpec(constrains=_ANA, sources=()),
+    "well_formed": AnchorSpec(constrains=_ANA, sources=(SourceSpec(reliability="alta"),)),
+    "under_reliable": AnchorSpec(constrains=_ANA, sources=(SourceSpec(reliability="baja"),)),
+    "unrated": AnchorSpec(
+        constrains=_ANA, sources=(SourceSpec(facets=_NO_RATING, reliability=None),)
+    ),
+    "mixed_best_wins": AnchorSpec(
+        constrains=_ANA,
+        sources=(
+            SourceSpec(suffix="source/low", reliability="baja"),
+            SourceSpec(suffix="source/high", reliability="alta"),
+        ),
+    ),
+    "missing_finding": AnchorSpec(constrains=_ANA, finding_present=False),
+    "dropped_constrains": AnchorSpec(constrains=None, sources=(SourceSpec(),)),
+}
+
+
+@pytest.mark.parametrize("case", sorted(_PARITY_MATRIX))
+def test_extracted_predicates_agree_with_validator(project_root: Path, case: str) -> None:
+    engine = research_graph()
+    add_present_entity(engine, "characters/ana")
+    add_anchor(engine, _PARITY_MATRIX[case])
+    ctx = _ctx(project_root)
+    messages = [v.message for v in _run(ctx, engine)]
+
+    [anchor] = load_anchors(engine)
+    sources = load_sources_by_anchor(engine).get(anchor.uri, [])
+    finding_present = entity_present(engine, anchor.promotes, ctx.uri_base)
+    minimum = ctx.manifest.research.min_reliability_for_anchor
+    verdict = anchor_under_reliable(sources, minimum)
+    target_present = anchor.constrains is not None and entity_present(
+        engine, anchor.constrains, ctx.uri_base
+    )
+
+    assert anchor_unsourced(sources, finding_present) == any(
+        "no supporting source" in m for m in messages
+    )  # R1
+    assert (verdict == "under_reliable") == any(
+        "below the minimum reliability" in m for m in messages
+    )  # R3, rated-but-low
+    assert (verdict == "unrated") == any(
+        "none carries a reliability rating" in m for m in messages
+    )  # R3, unrated
+    assert (not finding_present) == any(
+        "promotes a finding not present" in m for m in messages
+    )  # R4, finding
+    assert (not target_present) == any(
+        "constrains a narrative entity" in m for m in messages
+    )  # R4, target
 
 
 # --- R5 anachronism ---------------------------------------------------------

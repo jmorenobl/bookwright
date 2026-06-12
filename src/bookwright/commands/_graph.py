@@ -1,0 +1,110 @@
+"""The shared graph-build pipeline (`graph build` + `status`, 020 research D1).
+
+The pipeline body extracted from ``commands/graph/build.py``: map the bible to
+GOLEM entities (with CIDOC provenance), map ``bible/research/``, feed every
+triple into one manifest-selected engine, and refresh the derived
+``bible/graph.ttl`` cache. Both verbs consume this one implementation so the
+graph they reason over can never diverge.
+
+The fault model is the pipeline's own — :class:`MissingDirectoryError` for
+absent prerequisites, ``UnknownIndexerError`` from engine resolution,
+``SlugCollisionError`` / ``ResearchError`` from the mappers. Callers own
+project/manifest resolution and the exit-code mapping (`graph build` per
+cli-graph.md R7; `status` per 020 research D4/D5).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+from bookwright.golem.namespaces import timeline_uri
+from bookwright.indexers import Indexer, resolve_indexer
+from bookwright.io.bible import build_provenance, map_bible
+from bookwright.io.errors import MissingDirectoryError
+from bookwright.io.manuscript import manuscript_present
+from bookwright.io.report import BuildReport, ResearchTargetWarning
+from bookwright.io.research import ResearchResult, map_research
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from bookwright.core.manifest import Manifest
+
+
+@dataclass(frozen=True)
+class BuildOutcome:
+    """Everything one pipeline run yields (data-model 020 § 5).
+
+    ``report`` is what `graph build` emits; ``engine`` (already populated and
+    saved) and ``research`` (carrying the authored identities, research D2) are
+    what ``status`` aggregates over.
+    """
+
+    engine: Indexer
+    report: BuildReport
+    research: ResearchResult
+
+
+def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
+    """Build the project graph from the bible and write ``manifest.paths.graph``.
+
+    Raises the fault-model exceptions documented in the module docstring; on
+    success the returned engine holds the full graph and the Turtle cache on
+    disk matches it.
+    """
+    bible_dir = root / manifest.paths.bible
+    manuscript_dir = root / manifest.paths.manuscript
+    if not bible_dir.is_dir():
+        raise MissingDirectoryError("bible", str(bible_dir))
+    if not manuscript_present(manuscript_dir):
+        raise MissingDirectoryError("manuscript", str(manuscript_dir))
+
+    engine_cls = resolve_indexer(manifest.bookwright.indexer)
+    engine = engine_cls()
+
+    uri_base = manifest.bookwright.uri_base
+    result = map_bible(root, bible_dir, uri_base)
+
+    for mapped in result.mapped:
+        for triple in mapped.entity.to_triples():
+            engine.add_triple(*triple)
+        for assignment in build_provenance(mapped, uri_base):
+            for triple in assignment.to_triples():
+                engine.add_triple(*triple)
+
+    # Research pass: map bible/research/ and feed its triples into the same engine
+    # (one graph, one save — research D8). Research entities are already E13
+    # reifications, so they are NOT routed through build_provenance.
+    research = map_research(
+        root,
+        bible_dir / "research",
+        uri_base,
+        manifest.book.language,
+        result.entity_index,
+        timeline_uri(uri_base),
+    )
+    for entity in research.entities:
+        for triple in entity.to_triples():
+            engine.add_triple(*triple)
+
+    graph_rel = manifest.paths.graph
+    engine.save(root / graph_rel)
+
+    report = BuildReport(
+        files_processed=result.files_processed + research.files_processed,
+        entities=len(result.entities) + len(research.entities),
+        triples=engine.count(),
+        graph_path=graph_rel,
+        skipped=tuple(result.skipped),
+        unknown_keys=tuple(result.unknown_keys),
+        unresolved_participants=tuple(result.unresolved_participants),
+        sources=len(research.sources),
+        findings=len(research.findings),
+        anchors=len(research.anchors),
+        research_warnings=tuple(
+            ResearchTargetWarning(path=w.relpath, field=w.field, name=w.name)
+            for w in research.warnings
+        ),
+    )
+    return BuildOutcome(engine=engine, report=report, research=research)

@@ -29,6 +29,17 @@ from bookwright.errors import BookwrightError
 EXIT_CONFIG = 2
 
 
+def ok_payload(**fields: Any) -> dict[str, Any]:
+    """The success-envelope skeleton: ``{"status": "ok", **fields}`` (Principle IX).
+
+    The success-side complement of ``BookwrightError.to_json()`` — the one place
+    the ``"status": "ok"`` literal lives for new success documents (020 research
+    D6). Existing ``check``/``focus``/``graph`` call sites keep their hand-built
+    dicts for now; migrating them is out of 020's scope.
+    """
+    return {"status": "ok", **fields}
+
+
 def emit_json(payload: dict[str, Any]) -> None:
     """Write exactly one JSON document to stdout (the only thing on stdout)."""
     sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
