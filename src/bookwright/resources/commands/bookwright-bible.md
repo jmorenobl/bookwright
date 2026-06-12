@@ -60,7 +60,7 @@ constitución y el brief; trabajas sobre el proyecto inicializado.
 9. **Transición de fase**: Al terminar de poblar la biblia y si no quedan
    marcadores `[PENDING]` bloqueantes, actualiza el foco del proyecto para
    avanzar a la fase de outline ejecutando:
-   `bookwright focus set "Estructurar el outline narrativo"`
+   `bookwright focus set --target "Estructurar el outline narrativo"`
 
 ## Output
 

@@ -1,5 +1,5 @@
 # Quality Audit Checklist
 
-Source: review.md (1e78132)
+Source: review.md (218e866)
 
-- [ ] R1 — mypy --strict fails on MockIntegration (property override + setup signature) (tests/integrations/test_status_injection.py:18,25)
+- [ ] R1 — Phase-transition command uses a positional arg; `focus set` requires `--target` (bookwright-bible.md:63, bookwright-outline.md:47)

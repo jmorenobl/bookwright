@@ -44,7 +44,7 @@ estructural concreto). La base es la constitución y la biblia.
 7. **Transición de fase**: Al terminar de trazar la estructura y si no quedan
    marcadores `[PENDING]` bloqueantes, actualiza el foco del proyecto para
    avanzar al desglose de escenas ejecutando:
-   `bookwright focus set "Desglose de escenas a partir del outline"`
+   `bookwright focus set --target "Desglose de escenas a partir del outline"`
 
 ## Output
 
