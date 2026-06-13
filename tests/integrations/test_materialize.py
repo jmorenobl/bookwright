@@ -171,6 +171,30 @@ def test_cited_references_are_copied_per_skill(tmp_path: Path) -> None:
     }
 
 
+def test_bible_skill_teaches_location_frontmatter(tmp_path: Path) -> None:
+    """FR-010 — the materialized bookwright-bible skill prescribes location `name:`/`setting:`.
+
+    The SKILL.md is generated from the packaged source command, so the iteration-025
+    edit (locations get `name:` + optional `setting:`, retiring the v0 "no se indexa"
+    shortcut) must flow through into the rendered skill body, with its YAML
+    front-matter and bilingual author triggers intact.
+    """
+    integration = ClaudeIntegration()
+    source = next(s for s in iter_command_sources() if Path(s.name).stem == "bookwright-bible")
+    written = generate_skill_md(source, tmp_path, integration, ledger=NullLedger())
+    assert written is not None
+    body = written.read_text(encoding="utf-8")
+    assert "bible/locations/<slug>.md" in body
+    assert "`setting:`" in body
+    # The retired v0 shortcut wording is gone.
+    assert "no se\n   indexa en v0" not in body and "no se indexa en v0" not in body
+    # Front-matter + bilingual triggers survive (the lint gate enforces the YAML shape).
+    assert body.startswith("---\n")
+    assert "name: bookwright-bible" in body
+    assert "location sheets" in body  # EN trigger
+    assert "localizaciones" in body  # ES trigger
+
+
 def test_dangling_reference_aborts_pre_write(tmp_path: Path) -> None:
     src = _write_source(
         tmp_path / "bookwright-x.md",

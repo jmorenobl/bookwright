@@ -39,10 +39,11 @@ constitución y el brief; trabajas sobre el proyecto inicializado.
    `bible/settings/<slug>.md`: frontmatter con **solo** la clave `name` (cadena
    obligatoria) y secciones en prosa *Cultura*, *Sistema / era* y *Geografía
    amplia* — es el universo narrativo amplio (región, era, cultura), no un lugar
-   concreto. Por cada lugar concreto, crea `bible/locations/<slug>.md`: **no se
-   indexa en v0**, así que va sin frontmatter ingerido; ánclalo en los cinco
-   sentidos con secciones *Qué se ve / oye / huele / toca* y *Atmósfera
-   dominante*.
+   concreto. Por cada lugar concreto, crea `bible/locations/<slug>.md`: frontmatter
+   con `name:` (cadena obligatoria; el *slug* deriva de él) y `setting:` opcional —
+   el `name` de un `bible/settings/` hermano, que enlaza la localización a su
+   universo vía `dlp:generic-location`. Ánclalo además en los cinco sentidos con
+   secciones en prosa *Qué se ve / oye / huele / toca* y *Atmósfera dominante*.
 5. Puebla los contenedores indexados respetando su contrato de clave única:
    `bible/timeline.md` (clave `events:`, ver
    `references/golem-events-timeline.md`) y `bible/relationships.md` (clave

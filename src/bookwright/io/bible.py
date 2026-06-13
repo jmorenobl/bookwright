@@ -5,12 +5,19 @@ frontmatter values straight to the iteration-5 constructors — it never builds
 feature/role/dimension nodes itself (data-model § 0/§ 3). It collects soft
 warnings (``unknown_keys``, ``unresolved_participants``), skips files whose
 frontmatter is unusable (FR-013), and raises on a slug collision (FR-014).
+
+This module owns the orchestration: discovering files, wiring the per-concept
+passes, and emitting provenance. The leaf builders, coercers, and the
+context/result records live in the sibling :mod:`._bible_builders` (a one-way
+dependency — this module imports from it, never the reverse). The public surface
+(``map_bible``, ``build_provenance``, ``MapResult``, ``MappedEntity``) is
+re-exported here so existing imports keep resolving.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -19,100 +26,79 @@ from rdflib.term import URIRef
 
 from bookwright.golem import (
     AttributeAssignment,
-    Character,
     EmptySlugError,
-    NarrativeEvent,
     Setting,
     SocialRelationship,
 )
 from bookwright.golem.base import GolemEntity
-from bookwright.golem.namespaces import TEMPORAL_RELATIONS
 from bookwright.golem.slug import make_slug
 
-from .errors import InvalidFrontmatterError, SlugCollisionError
+from ._bible_builders import (
+    RELATION_KEYS,
+    MappedEntity,
+    MapResult,
+    _build_character,
+    _build_event,
+    _build_location,
+    _Builder,
+    _coerce_str_list,
+    _coerce_year,
+    _Collisions,
+    _ItemBuilder,
+    _ItemContext,
+    _MapContext,
+    _require_name,
+    _resolve_interval,
+    _resolve_refs,
+    _resolve_setting,
+)
+from .errors import InvalidFrontmatterError
 from .frontmatter import Frontmatter, parse_frontmatter
-from .report import SkippedFile, UnknownKey, UnresolvedParticipant
+from .report import SkippedFile, UnknownKey
+
+__all__ = [
+    "CHARACTER_KEYS",
+    "EVENT_ITEM_KEYS",
+    "ITEM_KEYS",
+    "LOCATION_KEYS",
+    "RELATIONSHIPS_TOP_KEYS",
+    "RELATION_KEYS",
+    "SETTING_KEYS",
+    "TIMELINE_TOP_KEYS",
+    "MapResult",
+    "MappedEntity",
+    "_Collisions",
+    "_ItemContext",
+    # Re-exported from ._bible_builders so ``from bookwright.io.bible import …`` keeps working.
+    "_MapContext",
+    "_build_character",
+    "_build_event",
+    "_build_location",
+    "_coerce_str_list",
+    "_coerce_year",
+    "_require_name",
+    "_resolve_interval",
+    "_resolve_refs",
+    "_resolve_setting",
+    "build_provenance",
+    "map_bible",
+]
 
 CHARACTER_KEYS = frozenset({"name", "born", "died", "features", "narrative_roles"})
 SETTING_KEYS = frozenset({"name"})
+LOCATION_KEYS = frozenset({"name", "setting"})
 ITEM_KEYS = frozenset({"name", "participants"})
-# The five qualitative temporal relations an event may declare (each a list of
-# event names resolved against the timeline's own event index — research D11).
-# Derived from the single source of truth so the keys never drift from the model.
-RELATION_KEYS: tuple[str, ...] = tuple(rel.name for rel in TEMPORAL_RELATIONS)
 # Events additionally accept an interval (``begin`` / ``end`` years, or the
-# ``date`` single-year shorthand) plus the relation keys.
+# ``date`` single-year shorthand) plus the relation keys (defined in
+# ``._bible_builders`` alongside ``_build_event``).
 EVENT_ITEM_KEYS = frozenset({"name", "participants", "begin", "end", "date", *RELATION_KEYS})
 TIMELINE_TOP_KEYS = frozenset({"events"})
 RELATIONSHIPS_TOP_KEYS = frozenset({"relationships"})
 
-# A directory builder maps ``(frontmatter, relpath) → entity``; a collection
-# builder maps an ``_ItemContext`` (name, resolved participants, the raw item, and
-# the collection's own name→URI index) → entity. Typed so ``mypy --strict`` checks
-# every call site (rather than the previous ``Any`` escape hatch).
-_Builder = Callable[[dict[str, Any], str], GolemEntity]
-_ItemBuilder = Callable[["_ItemContext"], GolemEntity]
-
-
-@dataclass(frozen=True)
-class MappedEntity:
-    """One constructed entity paired with the source needed for provenance (R6)."""
-
-    entity: GolemEntity
-    relpath: str
-    key_lines: dict[str, int]
-
-
-@dataclass
-class MapResult:
-    """The outcome of mapping a project's bible to GOLEM entities."""
-
-    mapped: list[MappedEntity] = field(default_factory=list)
-    files_processed: int = 0
-    skipped: list[SkippedFile] = field(default_factory=list)
-    unknown_keys: list[UnknownKey] = field(default_factory=list)
-    unresolved_participants: list[UnresolvedParticipant] = field(default_factory=list)
-    # ``make_slug(name) → URI`` for every character, setting and event — the research
-    # ``bears_on``/``constrains`` targets (D11), distinct from participant ``slug_index``.
-    entity_index: dict[str, URIRef] = field(default_factory=dict)
-
-    @property
-    def entities(self) -> list[GolemEntity]:
-        return [m.entity for m in self.mapped]
-
-
-class _Collisions:
-    """Tracks ``(concept, slug) → relpath`` to detect identifier collisions (FR-014)."""
-
-    def __init__(self) -> None:
-        self._seen: dict[tuple[str, str], str] = {}
-
-    def record(self, concept: str, slug: str, relpath: str) -> None:
-        prior = self._seen.get((concept, slug))
-        if prior is not None and prior != relpath:
-            raise SlugCollisionError(slug, prior, relpath)
-        self._seen[(concept, slug)] = relpath
-
-
-@dataclass
-class _MapContext:
-    """The mutable state every mapping helper shares (R3).
-
-    Bundling ``project_root``, the accumulating ``result``, the collision
-    tracker, and the ``slug → URI`` index into one object keeps each helper's
-    signature small — the four used to be threaded positionally through every
-    function.
-    """
-
-    project_root: Path
-    result: MapResult
-    collisions: _Collisions
-    slug_index: dict[str, URIRef]
-
 
 @dataclass(frozen=True)
 class _DirSpec:
-    """Per-concept config for a one-entity-per-file directory (characters/settings)."""
+    """Per-concept config for a one-entity-per-file directory (characters/settings/locations)."""
 
     directory: Path
     concept: str
@@ -122,6 +108,9 @@ class _DirSpec:
     # Whether built entities feed the research ``entity_index`` (D11) — separate from
     # ``index`` so a setting joins it without changing participant resolution.
     into_entity_index: bool = False
+    # Whether built entities feed the settings-scoped ``settings_index`` a location's
+    # ``setting:`` resolves against (iteration 025) — only the settings pass sets it.
+    into_settings_index: bool = False
 
 
 @dataclass(frozen=True)
@@ -142,25 +131,14 @@ class _CollectionSpec:
     into_entity_index: bool = False
 
 
-@dataclass(frozen=True)
-class _ItemContext:
-    """Everything a collection builder needs for one item (R3)."""
-
-    ctx: _MapContext
-    item: dict[str, Any]
-    name: str
-    participants: tuple[URIRef, ...]
-    relpath: str
-    item_index: dict[str, URIRef]
-
-
 def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
     """Map every recognised bible file under ``bible_dir`` to GOLEM entities.
 
-    Characters and settings are one-entity-per-file; ``timeline.md`` /
+    Characters, settings and locations are one-entity-per-file; ``timeline.md`` /
     ``relationships.md`` are single collection files. Characters are constructed
     first so ``events:`` / ``relationships:`` participants resolve against a
-    ``slug → URI`` index in a single pass.
+    ``slug → URI`` index in a single pass; settings are mapped **before** locations
+    so a location's ``setting:`` resolves against the settings-scoped index.
     """
     ctx = _MapContext(
         project_root=project_root,
@@ -187,6 +165,18 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             concept="Setting",
             builder=lambda meta, rp: Setting(uri_base=uri_base, name=_require_name(meta)),
             allowed_keys=SETTING_KEYS,
+            index=False,
+            into_entity_index=True,
+            into_settings_index=True,
+        ),
+    )
+    _map_single_dir(
+        ctx,
+        _DirSpec(
+            directory=bible_dir / "locations",
+            concept="NarrativeLocation",
+            builder=lambda meta, rp: _build_location(uri_base, ctx, meta, rp),
+            allowed_keys=LOCATION_KEYS,
             index=False,
             into_entity_index=True,
         ),
@@ -244,51 +234,12 @@ def _relpath(path: Path, project_root: Path) -> str:
     return path.relative_to(project_root).as_posix()
 
 
-def _require_name(metadata: dict[str, Any]) -> str:
-    name = metadata.get("name")
-    if not isinstance(name, str) or not name.strip():
-        raise InvalidFrontmatterError("", "missing or empty `name`")
-    return name
-
-
 def _record_unknown_keys(
     ctx: _MapContext, metadata: dict[str, Any], allowed: frozenset[str], relpath: str
 ) -> None:
     for key in metadata:
         if key not in allowed:
             ctx.result.unknown_keys.append(UnknownKey(path=relpath, key=key))
-
-
-def _build_character(uri_base: str, metadata: dict[str, Any]) -> Character:
-    name = _require_name(metadata)
-    born = _coerce_year(metadata.get("born"), "born")
-    died = _coerce_year(metadata.get("died"), "died")
-    features = _coerce_str_list(metadata.get("features"), "features")
-    roles = _coerce_str_list(metadata.get("narrative_roles"), "narrative_roles")
-    return Character(
-        uri_base=uri_base,
-        name=name,
-        born=born,
-        died=died,
-        features=features,
-        narrative_roles=roles,
-    )
-
-
-def _coerce_year(value: Any, field_name: str) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise InvalidFrontmatterError("", f"`{field_name}` must be an integer year")
-    return value
-
-
-def _coerce_str_list(value: Any, field_name: str) -> tuple[str, ...]:
-    if value is None:
-        return ()
-    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
-        raise InvalidFrontmatterError("", f"`{field_name}` must be a list of strings")
-    return tuple(value)
 
 
 def _map_single_dir(ctx: _MapContext, spec: _DirSpec) -> None:
@@ -317,6 +268,8 @@ def _map_single_dir(ctx: _MapContext, spec: _DirSpec) -> None:
             ctx.slug_index[_slug_of(entity)] = entity.uri
         if spec.into_entity_index:
             ctx.result.entity_index[_slug_of(entity)] = entity.uri
+        if spec.into_settings_index:
+            ctx.settings_index[_slug_of(entity)] = entity.uri
         ctx.result.mapped.append(
             MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
         )
@@ -407,75 +360,6 @@ def _map_collection_item(
     ctx.result.mapped.append(
         MappedEntity(entity=entity, relpath=relpath, key_lines=frontmatter.key_lines)
     )
-
-
-def _build_event(uri_base: str, ic: _ItemContext) -> NarrativeEvent:
-    """Construct a ``NarrativeEvent`` from a timeline item: interval + relations."""
-    begin, end = _resolve_interval(ic)
-    relations = {
-        key: _resolve_refs(ic.ctx, ic.item.get(key), ic.item_index, ic.name, ic.relpath)
-        for key in RELATION_KEYS
-    }
-    return NarrativeEvent(
-        uri_base=uri_base,
-        name=ic.name,
-        participants=ic.participants,
-        begin=begin,
-        end=end,
-        **relations,
-    )
-
-
-def _resolve_interval(ic: _ItemContext) -> tuple[int | None, int | None]:
-    """Coerce ``begin`` / ``end`` / ``date`` to int years, enforcing exclusivity.
-
-    ``date`` is a single-year shorthand (``begin == end``). Supplying ``date``
-    alongside ``begin``/``end`` is a soft warning (``date`` ignored), like an
-    unknown key — never an abort.
-    """
-    begin = _coerce_year(ic.item.get("begin"), "begin")
-    end = _coerce_year(ic.item.get("end"), "end")
-    date = _coerce_year(ic.item.get("date"), "date")
-    if date is not None:
-        if begin is not None or end is not None:
-            # Mutually exclusive: keep begin/end, drop date, flag it softly.
-            ic.ctx.result.unknown_keys.append(UnknownKey(path=ic.relpath, key="date"))
-        else:
-            return date, date
-    return begin, end
-
-
-def _resolve_refs(
-    ctx: _MapContext,
-    raw: Any,
-    index: dict[str, URIRef],
-    entity_name: str,
-    relpath: str,
-) -> tuple[URIRef, ...]:
-    """Resolve a list of names against ``index`` (characters or sibling events).
-
-    A non-list value, or a name absent from the index, is surfaced as an
-    ``UnresolvedParticipant`` soft warning (no abort); the owning entity is built.
-    """
-    if raw is None:
-        return ()
-    if not isinstance(raw, list):
-        ctx.result.unresolved_participants.append(
-            UnresolvedParticipant(path=relpath, entity=entity_name, name=str(raw))
-        )
-        return ()
-    resolved: list[URIRef] = []
-    for ref in raw:
-        if not isinstance(ref, str):
-            continue
-        uri = index.get(make_slug(ref))
-        if uri is None:
-            ctx.result.unresolved_participants.append(
-                UnresolvedParticipant(path=relpath, entity=entity_name, name=ref)
-            )
-            continue
-        resolved.append(uri)
-    return tuple(resolved)
 
 
 def _safe_parse(ctx: _MapContext, path: Path, relpath: str) -> Frontmatter | None:

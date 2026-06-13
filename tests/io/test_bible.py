@@ -7,8 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from bookwright.golem import Character, NarrativeEvent, Setting, SocialRelationship
-from bookwright.io.bible import map_bible
+from bookwright.golem import (
+    Character,
+    NarrativeEvent,
+    NarrativeLocation,
+    Setting,
+    SocialRelationship,
+)
+from bookwright.io.bible import build_provenance, map_bible
 from bookwright.io.errors import SlugCollisionError
 
 URI_BASE = "https://example.org/my-novel/"
@@ -275,3 +281,132 @@ def test_slug_collision_is_fatal(tmp_path: Path) -> None:
         "bible/characters/a.md",
         "bible/characters/b.md",
     }
+
+
+# --- locations indexed as G13 (iteration 025) ------------------------------
+
+
+def _location(result: object, slug: str | None = None) -> NarrativeLocation:
+    locs = [e for e in result.entities if isinstance(e, NarrativeLocation)]  # type: ignore[attr-defined]
+    return next(e for e in locs if slug is None or e.slug == slug)
+
+
+def test_location_name_only_builds_g13_node(tmp_path: Path) -> None:
+    """`name`-only → one G13 node, slug from name, no setting edge (FR-001, SC-001)."""
+    bible = _bible(tmp_path)
+    _write(bible / "locations" / "harbor.md", '---\nname: "The Harbor"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    locs = [e for e in result.entities if isinstance(e, NarrativeLocation)]
+    assert len(locs) == 1
+    assert locs[0].slug == "the-harbor"
+    assert locs[0].setting is None
+    # File-level identity provenance: the only derived assertion is identity (source_field None).
+    mapped = next(m for m in result.mapped if isinstance(m.entity, NarrativeLocation))
+    assert [a.source_field for a in mapped.entity.derived_assertions()] == [None]
+
+
+def test_location_resolvable_setting_emits_edge(tmp_path: Path) -> None:
+    """`name` + resolvable `setting` → node + dlp:generic-location edge + prov (FR-003, SC-002)."""
+    bible = _bible(tmp_path)
+    _write(bible / "settings" / "old-crossing.md", '---\nname: "The Old Crossing"\n---\n')
+    _write(
+        bible / "locations" / "harbor.md",
+        '---\nname: "The Harbor"\nsetting: "The Old Crossing"\n---\n',
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    setting = next(e for e in result.entities if isinstance(e, Setting))
+    loc = _location(result, "the-harbor")
+    assert loc.setting == setting.uri  # the dlp:generic-location target
+    assert result.unresolved_participants == []
+    # The setting cross-ref carries `setting:`-line provenance (relpath:line).
+    mapped = next(m for m in result.mapped if isinstance(m.entity, NarrativeLocation))
+    assert [a.source_field for a in loc.derived_assertions()] == [None, "setting"]
+    sources = {a.source for a in build_provenance(mapped, URI_BASE)}
+    assert any(s.startswith("bible/locations/harbor.md:") for s in sources)
+
+
+def test_location_absent_or_blank_setting_no_edge_no_warning(tmp_path: Path) -> None:
+    """`name` + absent/blank `setting` → node, no edge, no soft warning (FR-002)."""
+    bible = _bible(tmp_path)
+    _write(bible / "locations" / "absent.md", '---\nname: "No Setting Place"\n---\n')
+    _write(bible / "locations" / "blank.md", '---\nname: "Blank Place"\nsetting: "   "\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert _location(result, "no-setting-place").setting is None
+    assert _location(result, "blank-place").setting is None
+    assert result.unresolved_participants == []
+    assert result.unknown_keys == []
+
+
+def test_location_unresolved_setting_is_soft_miss(tmp_path: Path) -> None:
+    """`setting` naming no built setting → node built, no edge, one soft miss (FR-004, SC-002)."""
+    bible = _bible(tmp_path)
+    _write(
+        bible / "locations" / "harbor.md",
+        '---\nname: "The Harbor"\nsetting: "Nowhere At All"\n---\n',
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    loc = _location(result, "the-harbor")
+    assert loc.setting is None  # the build was not aborted; only the edge is omitted
+    assert [(u.path, u.entity, u.name) for u in result.unresolved_participants] == [
+        ("bible/locations/harbor.md", "The Harbor", "Nowhere At All")
+    ]
+
+
+def test_location_slug_collision_is_fatal(tmp_path: Path) -> None:
+    """Two locations with the same slug raise SlugCollisionError (FR-006)."""
+    bible = _bible(tmp_path)
+    _write(bible / "locations" / "a.md", '---\nname: "The Harbor"\n---\n')
+    _write(bible / "locations" / "b.md", '---\nname: "The Harbor"\n---\n')
+    with pytest.raises(SlugCollisionError) as excinfo:
+        map_bible(tmp_path, bible, URI_BASE)
+    assert excinfo.value.identifier == "the-harbor"
+    assert set(excinfo.value.to_json()["details"]["sources"]) == {
+        "bible/locations/a.md",
+        "bible/locations/b.md",
+    }
+
+
+def test_location_enters_entity_index_for_research_resolution(tmp_path: Path) -> None:
+    """Each built location enters `entity_index` by slug so research resolves (FR-005, SC-003)."""
+    bible = _bible(tmp_path)
+    _write(bible / "locations" / "harbor.md", '---\nname: "The Harbor"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    loc = _location(result, "the-harbor")
+    assert result.entity_index.get("the-harbor") == loc.uri
+
+
+# --- backward compatibility (skip unusable, absent dir) --------------------
+
+
+def test_location_frontmatterless_or_invalid_is_skipped(tmp_path: Path) -> None:
+    """Unusable location front-matter is skipped (no node, no crash) (FR-007/009, SC-005)."""
+    bible = _bible(tmp_path)
+    # A v0-style prose location with no ingestible front-matter at all.
+    _write(bible / "locations" / "prose.md", "# The Harbor\n\nPure sensory prose.\n")
+    _write(bible / "locations" / "noname.md", '---\nsetting: "Somewhere"\n---\n')
+    _write(bible / "locations" / "empty.md", '---\nname: "   "\n---\n')
+    _write(bible / "locations" / "intname.md", "---\nname: 42\n---\n")
+    _write(bible / "locations" / "badsetting.md", '---\nname: "The Quay"\nsetting: 42\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert [e for e in result.entities if isinstance(e, NarrativeLocation)] == []
+    assert {s.path for s in result.skipped} == {
+        "bible/locations/prose.md",
+        "bible/locations/noname.md",
+        "bible/locations/empty.md",
+        "bible/locations/intname.md",
+        "bible/locations/badsetting.md",
+    }
+    # A skipped file contributes no soft warnings (report stays consistent).
+    assert result.unknown_keys == []
+    assert result.unresolved_participants == []
+
+
+def test_no_locations_directory_builds_identically(tmp_path: Path) -> None:
+    """No `bible/locations/` directory → build is clean, no location nodes (FR-008, SC-005)."""
+    bible = _bible(tmp_path)  # creates characters/ and settings/ only — no locations/
+    _write(bible / "characters" / "aparici.md", '---\nname: "Aparici"\n---\n')
+    _write(bible / "settings" / "ayelo.md", '---\nname: "Ayelo"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert [e for e in result.entities if isinstance(e, NarrativeLocation)] == []
+    assert result.skipped == []
+    assert {type(e) for e in result.entities} == {Character, Setting}
