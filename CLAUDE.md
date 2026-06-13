@@ -277,8 +277,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the implementation plan
-for the current milestone: `bookwright-implementation-plan.md` (v0.3.x hardening,
-iterations 024–027). The next `/speckit-specify` run repoints this to the active
-iteration's `specs/NNN-<name>/plan.md`.
+shell commands, and other important information, read the active iteration's
+plan: `specs/024-ingestion-parity-guard/plan.md` (iteration 024 — ingestion-parity
+guard + deferral registry, v0.3.x). The milestone overview lives in
+`bookwright-implementation-plan.md` (iterations 024–027).
 <!-- SPECKIT END -->
