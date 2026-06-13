@@ -40,6 +40,8 @@ iteration: realistic fixture + E2E flow + docs + release).
 - Q: How should the orchestration fixture be created (dedicated new fixture vs. extend an existing one)? → A: Extend `tiny-historical` — it already carries research/anchor scaffolding (including an under-sourced anchor `status` surfaces); add a populated `[focus]` block and one open research question. Additions stay additive and inert to the M4 `factual_anchor` exact-count test (FR-006), and the loop's resolve step mutates only a `tmp_path` copy, never the committed fixture.
 - Q: How should the "resolve one open item" step be materialized in the E2E test? → A: An overlay file — the fixture ships an extra pre-baked research file the test copies into `bible/research/` (on the `tmp_path` copy) to supply the answering Finding, closing exactly one **open question**. No LLM step; additive; the resolved next action is the open-question action.
 - Q: Does this iteration bump the package version to 0.3.0, or only add the CHANGELOG entry? → A: Bump the package version to 0.3.0 **and** add the CHANGELOG v0.3.0 entry, leaving the milestone "release ready" (matching the iteration 011/016 release-prep precedent). Actually tagging/publishing the release remains a separate manual step (Out of Scope).
+- Q: The merged `status` engine aggregates `next_actions` per rule-category (one `research_queue` action bundles **all** open questions **and** all anchor gaps), so the action list cannot shrink when one open question is resolved while any other open question or anchor gap remains. How is the loop's "progress" guarantee made real and faithful? → A: **Replace the "next_actions length N → N−1" assertion with a deterministic *state-convergence* assertion.** The engine recommends *workstreams* (skills), not per-item entries: `research_queue` keeps firing while any open question OR anchor gap remains, and the extended `tiny-historical` permanently carries the `el-almacen-viejo` under-reliable anchor (which FR-006 forbids removing, since the M4 test pins `factual_anchor` at `{error:1, warning:1}`). The E2E therefore asserts that the resolved open question leaves `state.open_questions` (count K → K−1) and the `research_queue` action's prompt, while **every other `state` fact and every other action is byte-for-byte identical** across the two runs, and the whole asserted output is deterministic across repeated runs. (Rejected: forcing a literal action-count drop would require either a redundant second fixture or mutating the committed `tiny-historical` anchor set — both worse for quality/technical-debt.)
+- Q: `tiny-historical` already declares open questions in `_index.md`, and "closing" one is not expressible by pure file-addition — how is the resolve step materialized? → A: The pre-baked resolution is applied to the `tmp_path` **copy** as a deterministic two-part edit: (1) author the answering finding (a real finding with a `claim` and sufficiently-reliable `sources`) in a new `bible/research/` topic file, and (2) drop the resolved question's id from `_index.md`'s `open_questions` on the copy. No LLM step; the committed fixture stays pristine; exactly one open question closes. FR-005's "overlay file" is generalized to this "pre-baked resolution applied to the working copy".
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -87,12 +89,13 @@ focus → status → resolve → status actually composes on a real project and 
 true as the code evolves. An automated regression walks the example through the
 loop: initialize the project, set focus, build the graph, run `status` and
 assert its deterministic facts and `next_actions`; then apply a **pre-baked
-resolution** for exactly one open item (content authored into the fixture, so no
-LLM judgment is exercised), rebuild, run `status` again, and assert the report
-now shows progress — exactly one fewer recommended action — with the resolved
-item gone and the others unchanged. All assertions are on the deterministic
-`status` output (facts and `next_actions`); the LLM/judgment steps the loop
-normally involves are represented by the fixed pre-baked content, never invoked.
+resolution** for exactly one open question (content authored into the fixture,
+so no LLM judgment is exercised), rebuild, run `status` again, and assert the
+report now shows progress — the resolved question gone from `state.open_questions`
+and from the `research_queue` prompt, with **every other state fact and action
+byte-for-byte unchanged**. All assertions are on the deterministic `status`
+output (facts and `next_actions`); the LLM/judgment steps the loop normally
+involves are represented by the fixed pre-baked content, never invoked.
 
 **Why this priority**: A worked example that isn't guarded by a test rots
 silently. This regression is what lets the team claim "the orchestration loop
@@ -100,9 +103,10 @@ works" at release and keep claiming it; it is co-equal P1 with the fixture it
 depends on.
 
 **Independent Test**: Running the workflow test against the fixture exercises
-init → focus set → build → status → resolve → status and asserts the action
-count drops by exactly one, delivering a green-or-red signal on the whole
-deterministic loop in one run.
+init → focus set → build → status → resolve → status and asserts the resolved
+open question deterministically leaves `state.open_questions` and the
+`research_queue` prompt while everything else is byte-for-byte unchanged,
+delivering a green-or-red signal on the whole deterministic loop in one run.
 
 **Acceptance Scenarios**:
 
@@ -113,16 +117,23 @@ deterministic loop in one run.
 2. **Given** the project after `graph build`, **When** `status --json` runs,
    **Then** the test can assert specific deterministic facts (focus defined,
    graph available with entity/triple counts present, the expected
-   open-question/anchor-gap items) and a `next_actions` list of a known length
-   N (N ≥ 1).
-3. **Given** the first `status`, **When** the pre-baked resolution for one open
-   item is applied to the working copy and the graph is rebuilt, **Then** a
-   second `status --json` returns a `next_actions` list of length N − 1, the
-   action that targeted the resolved item is absent, and the remaining actions
-   are unchanged.
+   open-question / anchor-gap / low-reliability-finding items) and the exact,
+   enumerated `next_actions` set the fixture's state produces (each entry
+   carrying a skill, a reason, and a prompt), recorded in a co-located oracle
+   rather than hard-coded.
+3. **Given** the first `status`, **When** the pre-baked resolution for exactly
+   one open question is applied to the working copy and the graph is rebuilt,
+   **Then** a second `status --json` shows that one open question resolved: the
+   resolved question is absent from `state.open_questions` (count K → K − 1) and
+   from the `research_queue` action's prompt, while every other `state` fact and
+   every other `next_actions` entry is **byte-for-byte identical** to the first
+   run. (The `next_actions` *list length* is unchanged: `research_queue` still
+   fires for the remaining open question / anchor gap — the engine recommends
+   workstreams, not per-item entries.)
 4. **Given** both `status` runs, **When** their JSON documents are compared,
    **Then** every asserted field is byte-for-byte deterministic across repeated
-   runs (no timestamps or ordering nondeterminism in the asserted fields).
+   runs (no timestamps or minted-URI / ordering nondeterminism in the asserted
+   fields).
 
 ---
 
@@ -206,20 +217,26 @@ docs (`mkdocs build --strict`) and reading them.
 
 - **A fixture that is both "realistic/coherent" and produces an *exact*,
   unambiguous open state.** The example must read as a genuine documented
-  project while the set of open questions and anchor gaps it produces is exactly
-  what the test asserts — so the test can assert an exact `next_actions` count
-  (N before, N − 1 after), not a lower bound. The open state must be unambiguous
-  under the fixture's own `min_reliability_for_anchor`.
-- **Resolving exactly one item must remove exactly one action.** The pre-baked
-  resolution must close precisely one open item (one open question *or* one
-  anchor gap) without incidentally closing or opening any other, and without
-  changing the focus or narrative facts the other actions depend on — otherwise
-  the count would not drop by exactly one.
+  project while the set of open questions, anchor gaps, and low-reliability
+  findings it produces is exactly what the test asserts — so the test asserts
+  exact `state` facts and the exact `next_actions` set, not lower bounds. The
+  open state must be unambiguous under the fixture's own
+  `min_reliability_for_anchor`.
+- **Resolving exactly one open question must change exactly one `state` fact.**
+  The pre-baked resolution must close precisely one open question without
+  incidentally closing or opening any other open question, anchor gap, or
+  low-reliability finding, and without changing the focus, validation counts, or
+  narrative facts the other actions depend on — so that exactly one item leaves
+  `state.open_questions` and the `research_queue` prompt while everything else is
+  byte-identical. (The `next_actions` *list length* does not change: the engine
+  aggregates per workstream, so `research_queue` keeps firing while any open
+  question or anchor gap remains.)
 - **The resolution is pre-baked content, not an LLM step.** The "resolve an open
-  question" step is materialized by fixed content shipped in the fixture and
-  applied by the test (e.g. an additional/overlaid research file supplying the
-  missing Finding or sufficiently-reliable Source); no agent/LLM judgment runs
-  in CI. The assertions are only on the deterministic `status` output.
+  question" step is materialized by fixed content shipped beside the fixture and
+  applied by the test to the working copy (a pre-authored answering-Finding file
+  copied into `bible/research/` **plus** dropping the resolved id from
+  `_index.md`'s `open_questions`); no agent/LLM judgment runs in CI. The
+  assertions are only on the deterministic `status` output.
 - **Inert: absent vs present-but-empty.** A project with no `[focus]` and no
   `bible/research/` must yield an empty `next_actions`; a project with a bible
   but no research must also yield no research-derived actions. Both are inert,
@@ -248,23 +265,32 @@ docs (`mkdocs build --strict`) and reading them.
   `[focus]` block — a focus target plus the fields `bookwright focus set`
   records — so `status` reports a defined focus.
 - **FR-003**: The fixture MUST contain open work that `status` surfaces as
-  derived state: at least one **open research question** (a Finding flagged open,
-  added by this iteration) and at least one **anchor without sufficiently-reliable
-  support** (reusing `tiny-historical`'s existing under-sourced anchor) under the
-  fixture's own configured `min_reliability_for_anchor`, so `status` produces a
-  non-empty `next_actions`.
+  derived state, so `status` produces a non-empty `next_actions`: at least one
+  **open research question** (a Finding flagged open in `_index.md` —
+  `tiny-historical` already declares two; this iteration MUST pin the exact set,
+  not assume it adds the only one) and at least one **anchor without
+  sufficiently-reliable support** (the existing `el-almacen-viejo` under-reliable
+  anchor) under the fixture's own configured `min_reliability_for_anchor`. The
+  open question and the under-reliable anchor both feed the single aggregating
+  `research_queue` rule; the existing under-reliable anchor is **permanent**
+  (FR-006 forbids removing it), so `research_queue` fires throughout the loop.
 - **FR-004**: The fixture's open state MUST be **exact and unambiguous**: the set
-  of open questions and anchor gaps it produces MUST be exactly enumerable, so a
-  test can assert a precise `next_actions` count rather than a lower bound, and
-  no other unexpected open items appear.
-- **FR-005**: The fixture MUST ship a **pre-baked resolution** as an **overlay
-  file** — an extra, pre-authored research file (no LLM step) that the test
-  copies into `bible/research/` on the working copy. Rebuilding the graph after
-  the overlay MUST supply the answering Finding that closes precisely the one
-  **open question**, and no other item, leaving the focus, the under-sourced
-  anchor, and the remaining open items unchanged. The overlay file MUST live
-  beside the fixture and MUST NOT be present in the corpus the first `status`
-  reads.
+  of open questions, anchor gaps, and low-reliability findings it produces MUST
+  be exactly enumerable (recorded in a co-located oracle, per the
+  `tiny-historical/expected-findings.md` precedent), so the test asserts the
+  precise `state` facts and the precise `next_actions` set rather than lower
+  bounds, and no other unexpected open items appear.
+- **FR-005**: The fixture MUST ship a **pre-baked resolution** (no LLM step) that
+  the test applies to the `tmp_path` working copy as a deterministic two-part
+  edit: (1) a pre-authored research file supplying the **answering Finding** (a
+  real finding with a `claim` and sufficiently-reliable `sources`), copied into
+  `bible/research/`, and (2) dropping the resolved question's id from
+  `_index.md`'s `open_questions` on the copy. Rebuilding the graph afterward MUST
+  close precisely the one targeted **open question**, and no other item, leaving
+  the focus, the under-reliable anchor, the low-reliability finding, the
+  validation counts, and every remaining open question unchanged. The pre-baked
+  resolution material MUST live beside the fixture and MUST NOT be present in the
+  corpus the first `status` reads.
 - **FR-006**: Any new fixture or fixture extension MUST NOT break the existing
   fixtures' tests; in particular it MUST NOT alter the exact-count assertions of
   the M4 research workflow test (if `tiny-historical` is extended rather than a
@@ -280,12 +306,18 @@ docs (`mkdocs build --strict`) and reading them.
   resolution for one open item, rebuild, and run `bookwright status` again.
 - **FR-008**: The test MUST assert the **first** `status` reports deterministic
   facts — focus defined, graph available (entity/triple counts present), and the
-  expected open question(s) / anchor gap(s) — and a `next_actions` list of a
-  known length N (N ≥ 1) whose entries each carry a skill, a reason, and a
-  prompt.
-- **FR-009**: The test MUST assert the **second** `status` shows progress: a
-  `next_actions` list of length exactly N − 1, with the action that targeted the
-  resolved item absent and the remaining actions unchanged.
+  expected open question(s) / anchor gap(s) / low-reliability finding(s) — and
+  the exact, enumerated `next_actions` set (each entry carrying a skill, a
+  reason, and a prompt), with the expected counts/identifiers sourced from the
+  co-located oracle (FR-004), not hard-coded.
+- **FR-009**: The test MUST assert the **second** `status` shows deterministic
+  progress: the resolved open question is absent from `state.open_questions`
+  (count K → K − 1) and from the `research_queue` action's prompt, while **every
+  other `state` fact and every other `next_actions` entry is byte-for-byte
+  identical** to the first run. The `next_actions` list length is unchanged
+  because `research_queue` still fires for the remaining open question / anchor
+  gap; asserting a shorter list would contradict the merged engine's
+  per-category aggregation and is explicitly NOT required.
 - **FR-010**: All E2E assertions MUST be on the **deterministic** `status` output
   (the JSON facts and `next_actions`); the test MUST NOT depend on any LLM /
   judgment step — those are represented by the fixture's pre-baked content.
@@ -338,18 +370,23 @@ docs (`mkdocs build --strict`) and reading them.
 ### Key Entities *(include if data involved)*
 
 - **Orchestration example fixture**: The **extended `tiny-historical`** project —
-  its existing research/anchor scaffolding plus a filled `[focus]` block and one
-  added open research question, giving a deliberately open state (one open
-  question + the existing under-sourced anchor). The shared input for the E2E
-  test and the documentation.
-- **Pre-baked resolution overlay**: A fixed, pre-authored research file shipped
-  beside the fixture that, copied into `bible/research/` on a working copy,
-  supplies the answering Finding and closes exactly the one open question — the
-  deterministic stand-in for the LLM "resolve a question" step.
+  its existing research/anchor scaffolding plus a filled `[focus]` block, giving
+  a deliberately open state (its declared open questions, the existing
+  `el-almacen-viejo` under-reliable anchor, and the `rumor-incendio`
+  low-reliability finding) with an exact, oracle-recorded enumeration. The
+  shared input for the E2E test and the documentation.
+- **Pre-baked resolution**: Fixed, pre-authored content shipped beside the
+  fixture — an answering-Finding research file (with a `claim` and reliable
+  `sources`) the test copies into `bible/research/` on the working copy, plus the
+  `_index.md` edit dropping the resolved question's id — closing exactly the one
+  open question. The deterministic stand-in for the LLM "resolve a question"
+  step.
 - **Orchestration workflow test**: The automated regression
   (`test_orchestration_workflow.py`) walking focus → status → resolve → status
-  and asserting `next_actions` drops by exactly one, plus the inertness/degraded
-  assertions for focus-free, research-free, and unbuildable projects.
+  and asserting the resolved open question leaves `state.open_questions` and the
+  `research_queue` prompt while everything else stays byte-identical, plus the
+  inertness/degraded assertions for focus-free, research-free, and unbuildable
+  projects.
 - **`status` report**: The deterministic `{status, focus, state, next_actions}`
   document the test asserts on — `state` carrying focus-defined, graph facts,
   open questions, unresolved anchors, low-reliability findings, and validation;
@@ -366,10 +403,12 @@ docs (`mkdocs build --strict`) and reading them.
   built graph, and a non-empty `next_actions` list — a standalone demonstration
   of the loop having something concrete to recommend.
 - **SC-002**: The orchestration E2E test passes, asserting the deterministic
-  outcomes: the first `status` reports the expected facts and N next actions
-  (N ≥ 1); after the pre-baked resolution of one item the second `status`
-  reports exactly N − 1 next actions, with the resolved action gone and the
-  others unchanged.
+  outcomes: the first `status` reports the expected facts and the exact
+  enumerated `next_actions` set (each with skill/reason/prompt); after the
+  pre-baked resolution of one open question the second `status` shows the
+  resolved question gone from `state.open_questions` (K → K − 1) and from the
+  `research_queue` prompt, with every other state fact and action byte-for-byte
+  unchanged.
 - **SC-003**: Running `status`/`build`/`validate` on a focus-free, research-free
   project produces results identical to pre-M5 behavior — `status` exits 0 with
   no focus and an empty `next_actions`; the unbuildable-corpus case degrades to a
@@ -405,11 +444,18 @@ docs (`mkdocs build --strict`) and reading them.
   clarification, the fixture is the **extended `tiny-historical`** (not a new
   fixture); FR-006's non-regression constraint against the M4 research-workflow
   test holds.
-- The "resolve an open question" step is materialized as a **pre-baked overlay
-  research file** shipped beside the fixture and copied into `bible/research/` on
-  the `tmp_path` copy, supplying the answering Finding so exactly one open
-  question closes — mirroring iteration 16's fixture-as-input + `tmp_path`-copy
-  approach. No LLM judgment runs in CI.
+- The "resolve an open question" step is materialized as **pre-baked content
+  applied to the `tmp_path` copy**: an answering-Finding research file copied
+  into `bible/research/` plus dropping the resolved id from `_index.md`'s
+  `open_questions`, so exactly one open question closes — mirroring iteration
+  16's fixture-as-input + `tmp_path`-copy approach. No LLM judgment runs in CI.
+- The merged `bookwright status` engine (iteration 020) recommends *workstreams*
+  per rule-category, not per open item: a single `research_queue` action bundles
+  all open questions **and** all anchor gaps, so `len(next_actions)` is the count
+  of applicable rule categories, never the count of open items. Progress from
+  resolving one open question therefore shows in the deterministic `state` facts
+  and the action's prompt, not in the list length — which is what the E2E test
+  asserts. This is the engine's intended contract, not a workaround.
 - `docs/commands/status.md` and `docs/commands/focus-*.md` already exist (added
   in iterations 019–020) and are wired into the mkdocs nav; FR-015 is therefore
   verify-and-finalize for those pages, while `docs/orchestration.md` is genuinely
