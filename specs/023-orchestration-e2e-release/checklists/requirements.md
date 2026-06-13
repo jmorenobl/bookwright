@@ -32,12 +32,11 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
-- One open design decision is deliberately deferred to `/speckit-plan` (not a
-  blocking clarification): whether to author a dedicated new orchestration
-  fixture or extend `tiny-historical`. The spec captures the behavior either
-  approach must satisfy (FR-001..FR-006) and records the trade-off in
-  Assumptions; the mandatory `/speckit-clarify` step can surface it if the user
-  wants to fix it now.
+- The fixture-strategy decision was resolved in the Session 2026-06-13
+  clarification: **extend `tiny-historical`** (FR-001), with FR-006 guarding the
+  M4 research-workflow non-regression. The resolution mechanism (overlay file
+  closing one open question, FR-005) and the version bump to 0.3.0 (FR-022) were
+  fixed in the same session.
 - `bookwright status` / `bookwright focus` command-reference pages already exist
   (iterations 019–020); FR-015 is intentionally scoped as verify-and-finalize,
   not re-author, to avoid duplicating the CLI-gated `docs/commands/` set.

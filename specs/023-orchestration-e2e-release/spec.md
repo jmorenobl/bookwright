@@ -33,6 +33,14 @@ This follows the precedent of iterations 12 (the `tiny-historical` fixture) and
 17 (consolidation/non-regression), and especially iteration 16 (the M4 closing
 iteration: realistic fixture + E2E flow + docs + release).
 
+## Clarifications
+
+### Session 2026-06-13
+
+- Q: How should the orchestration fixture be created (dedicated new fixture vs. extend an existing one)? → A: Extend `tiny-historical` — it already carries research/anchor scaffolding (including an under-sourced anchor `status` surfaces); add a populated `[focus]` block and one open research question. Additions stay additive and inert to the M4 `factual_anchor` exact-count test (FR-006), and the loop's resolve step mutates only a `tmp_path` copy, never the committed fixture.
+- Q: How should the "resolve one open item" step be materialized in the E2E test? → A: An overlay file — the fixture ships an extra pre-baked research file the test copies into `bible/research/` (on the `tmp_path` copy) to supply the answering Finding, closing exactly one **open question**. No LLM step; additive; the resolved next action is the open-question action.
+- Q: Does this iteration bump the package version to 0.3.0, or only add the CHANGELOG entry? → A: Bump the package version to 0.3.0 **and** add the CHANGELOG v0.3.0 entry, leaving the milestone "release ready" (matching the iteration 011/016 release-prep precedent). Actually tagging/publishing the release remains a separate manual step (Out of Scope).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A worked example the orchestration loop can reason over (Priority: P1)
@@ -230,28 +238,33 @@ docs (`mkdocs build --strict`) and reading them.
 
 **Fixture**
 
-- **FR-001**: The project MUST ship an orchestration example fixture: a short,
+- **FR-001**: The orchestration example fixture MUST be created by **extending
+  the existing `tiny-historical` fixture** (under `tests/fixtures/`): a short,
   coherent narrative that is a valid Bookwright project (initializable/loadable,
-  with the standard bible/outline/manuscript skeleton), authored by extending an
-  existing fixture convention (e.g. building on `tiny-historical` / `tiny-novel`
-  style) so it reads consistently with the other `tests/fixtures/tiny-*`
-  examples.
+  with the standard bible/outline/manuscript skeleton). The extension reuses
+  `tiny-historical`'s existing research/anchor scaffolding and adds only the
+  orchestration inputs (FR-002, FR-003) plus the pre-baked resolution (FR-005).
 - **FR-002**: The fixture's `manifest.toml` MUST contain a fully-populated
   `[focus]` block — a focus target plus the fields `bookwright focus set`
   records — so `status` reports a defined focus.
 - **FR-003**: The fixture MUST contain open work that `status` surfaces as
-  derived state: at least one **open research question** and at least one
-  **anchor without sufficiently-reliable support** (an unresolved anchor and/or
-  a low-reliability finding) under the fixture's own configured
-  `min_reliability_for_anchor`, so `status` produces a non-empty `next_actions`.
+  derived state: at least one **open research question** (a Finding flagged open,
+  added by this iteration) and at least one **anchor without sufficiently-reliable
+  support** (reusing `tiny-historical`'s existing under-sourced anchor) under the
+  fixture's own configured `min_reliability_for_anchor`, so `status` produces a
+  non-empty `next_actions`.
 - **FR-004**: The fixture's open state MUST be **exact and unambiguous**: the set
   of open questions and anchor gaps it produces MUST be exactly enumerable, so a
   test can assert a precise `next_actions` count rather than a lower bound, and
   no other unexpected open items appear.
-- **FR-005**: The fixture MUST ship a **pre-baked resolution** for exactly one
-  open item — fixed, pre-authored content (no LLM step) that, when applied to a
-  working copy and the graph rebuilt, closes precisely that one open item and
-  no other, leaving the focus and the remaining open items unchanged.
+- **FR-005**: The fixture MUST ship a **pre-baked resolution** as an **overlay
+  file** — an extra, pre-authored research file (no LLM step) that the test
+  copies into `bible/research/` on the working copy. Rebuilding the graph after
+  the overlay MUST supply the answering Finding that closes precisely the one
+  **open question**, and no other item, leaving the focus, the under-sourced
+  anchor, and the remaining open items unchanged. The overlay file MUST live
+  beside the fixture and MUST NOT be present in the corpus the first `status`
+  reads.
 - **FR-006**: Any new fixture or fixture extension MUST NOT break the existing
   fixtures' tests; in particular it MUST NOT alter the exact-count assertions of
   the M4 research workflow test (if `tiny-historical` is extended rather than a
@@ -286,7 +299,7 @@ docs (`mkdocs build --strict`) and reading them.
   whose build prerequisites are absent yields a successful exit-0 `status` report
   stating the graph is unavailable, not a failure.
 
-**Documentation**
+**Documentation & release**
 
 - **FR-013**: The documentation site MUST gain an orchestration page
   (`docs/orchestration.md`) covering: the "hilo conductor" three-layer model
@@ -301,6 +314,9 @@ docs (`mkdocs build --strict`) and reading them.
   brought current for the release rather than duplicated.
 - **FR-016**: The changelog MUST gain a v0.3.0 entry describing the
   context-orchestration system, consolidating iterations 019–023.
+- **FR-022**: The package version MUST be bumped to `0.3.0` (the single
+  authoritative version source), leaving the milestone "release ready". Actually
+  tagging/publishing the release is a separate manual step (Out of Scope).
 
 **Quality gates**
 
@@ -321,12 +337,14 @@ docs (`mkdocs build --strict`) and reading them.
 
 ### Key Entities *(include if data involved)*
 
-- **Orchestration example fixture**: A self-contained example Bookwright project
-  with a filled `[focus]` block and a deliberately open research state (at least
-  one open question and one under-sourced anchor). The shared input for the E2E
+- **Orchestration example fixture**: The **extended `tiny-historical`** project —
+  its existing research/anchor scaffolding plus a filled `[focus]` block and one
+  added open research question, giving a deliberately open state (one open
+  question + the existing under-sourced anchor). The shared input for the E2E
   test and the documentation.
-- **Pre-baked resolution**: Fixed, pre-authored content shipped in the fixture
-  that, applied to a working copy, closes exactly one open item — the
+- **Pre-baked resolution overlay**: A fixed, pre-authored research file shipped
+  beside the fixture that, copied into `bible/research/` on a working copy,
+  supplies the answering Finding and closes exactly the one open question — the
   deterministic stand-in for the LLM "resolve a question" step.
 - **Orchestration workflow test**: The automated regression
   (`test_orchestration_workflow.py`) walking focus → status → resolve → status
@@ -359,7 +377,8 @@ docs (`mkdocs build --strict`) and reading them.
 - **SC-004**: A reader can reach the orchestration page from the site navigation
   and it covers the three-layer model, `status`/`next_actions`, the work loop,
   and skill consumption; `bookwright status` and `bookwright focus` are
-  documented in the command reference; the changelog has a v0.3.0 entry.
+  documented in the command reference; the changelog has a v0.3.0 entry; and the
+  package version reads `0.3.0`.
 - **SC-005**: Overall test coverage stays ≥ 80 % (the single enforced CI gate)
   and new M5 code is ≥ 85 % (report-only, verified at review — not a second CI
   gate; see FR-017).
@@ -382,15 +401,15 @@ docs (`mkdocs build --strict`) and reading them.
 - The fixture follows the existing `tests/fixtures/tiny-*` conventions
   (short-but-coherent, Spanish narrative prose, English identifiers/structure)
   and the existing E2E test conventions (`tests/e2e/`, fixtures-as-input,
-  `tmp_path` where a project is mutated). The decision to author a dedicated new
-  fixture vs. extend `tiny-historical` (which already carries research/anchor
-  scaffolding) is left to planning; either way, FR-006's non-regression
-  constraint holds.
-- The "resolve an open question" step is materialized as pre-baked fixture
-  content (e.g. an additional/overlaid research file supplying the missing
-  Finding or a sufficiently-reliable Source) applied to a `tmp_path` copy, so
-  resolving exactly one item is deterministic — mirroring iteration 16's
-  fixture-as-input + `tmp_path`-copy approach.
+  `tmp_path` where a project is mutated). Per the Session 2026-06-13
+  clarification, the fixture is the **extended `tiny-historical`** (not a new
+  fixture); FR-006's non-regression constraint against the M4 research-workflow
+  test holds.
+- The "resolve an open question" step is materialized as a **pre-baked overlay
+  research file** shipped beside the fixture and copied into `bible/research/` on
+  the `tmp_path` copy, supplying the answering Finding so exactly one open
+  question closes — mirroring iteration 16's fixture-as-input + `tmp_path`-copy
+  approach. No LLM judgment runs in CI.
 - `docs/commands/status.md` and `docs/commands/focus-*.md` already exist (added
   in iterations 019–020) and are wired into the mkdocs nav; FR-015 is therefore
   verify-and-finalize for those pages, while `docs/orchestration.md` is genuinely
