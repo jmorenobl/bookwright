@@ -100,7 +100,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-There is no active iteration branch; 024–027 are planned (v0.3.x hardening).
+024 is merged (v0.3.1); 025–027 are planned (v0.3.x hardening).
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -127,7 +127,7 @@ There is no active iteration branch; 024–027 are planned (v0.3.x hardening).
 | 021 | `bookwright-research` consumes anchors / open questions | M5 | ✅ merged |
 | 022 | Skills read `status` at start + "Next steps" block | M5 | ✅ merged |
 | 023 | Orchestration E2E fixture, workflow test, docs, v0.3.0 | M5 | ✅ merged |
-| 024 | Ingestion-parity guard + deferral registry | v0.3.x | ⏳ planned |
+| 024 | Ingestion-parity guard + deferral registry | v0.3.x | ✅ merged |
 | 025 | Index locations (G13) + `bible.py` split | v0.3.x | ⏳ planned |
 | 026 | Index objects (G16) + `bible/objects/` scaffold + skill | v0.3.x | ⏳ planned |
 | 027 | JSON-envelope cleanup + G6/G3 decision | v0.3.x | ⏳ planned |
@@ -135,10 +135,11 @@ There is no active iteration branch; 024–027 are planned (v0.3.x hardening).
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the
 status-consuming skills (021–022), and the orchestration E2E fixture/tests/docs
-(023) all merged. The next milestone is the **v0.3.x hardening track** (iterations
-024–027, released as patches `v0.3.1`…`v0.3.4`): make ingestion-parity explicit
-(024), then wire the orphaned GOLEM concepts that are cheap mirrors of `settings/`
-— locations G13 (025), objects G16 (026) — and a cleanup/decision pass (027). The
+(023) all merged. The current milestone is the **v0.3.x hardening track** (iterations
+024–027, released as patches `v0.3.1`…`v0.3.4`): ingestion-parity is now explicit
+(024, `v0.3.1`, merged). Next, wire the orphaned GOLEM concepts that are cheap
+mirrors of `settings/` — locations G13 (025), objects G16 (026) — and a
+cleanup/decision pass (027). The
 heavier Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/`
 ingestion move to **v0.4** alongside vector search; export is **v1.0**. See
 `bookwright-roadmap.md`.

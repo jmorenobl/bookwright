@@ -4,6 +4,37 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.3.1] — 2026-06-13
+
+First patch of the **v0.3.x hardening track** (iteration 024). It makes
+*ingestion parity* — the gap between GOLEM concepts that are **modelled** (a
+frozen class with a `CLASS_IRI` entry) and those actually **fed** from authored
+`bible/*.md` — an explicit, tested contract instead of tribal knowledge. Of the
+thirteen `CONCEPTS`, seven have no ingestion path today; this release names them
+and guards the set so it can only shrink deliberately. No new CLI surface, no new
+runtime dependency, no ontology change — pure hardening.
+
+### Added
+
+- **Deferral registry** (`src/bookwright/golem/deferrals.py`): `DEFERRED_CONCEPTS`,
+  a pure-data map of the seven orphaned concepts (`NarrativeLocation`, `Object`,
+  `NarrativeUnit`, `NarrativeFunction`, `NarrativeSequence`, `RelationshipRole`,
+  `PsychologicalState`) to a `DeferralNote` recording *why* each is unfed and its
+  `target_version` (`v0.3.x`, `v0.4`, or `undecided`). The module imports only
+  `typing` — no I/O, no `CONCEPTS` import — so the gap is recorded independently of
+  the code that fills it.
+- **Ingestion-parity guard** (`tests/golem/test_ingestion_parity.py`): derives the
+  orphan set from a *real* pipeline build over the new `parity-exercise` fixture and
+  asserts it equals exactly `DEFERRED_CONCEPTS`'s keys. Wiring a concept later
+  (iteration 025+) means **removing its registry entry**; the test stays green only
+  if the registry no longer claims it deferred. Backed by the
+  `parity-exercise` bible/manuscript fixture exercising every fed concept.
+
+### Changed
+
+- Documented the parity contract in `docs/authoring.md`; the `manuscript.py`
+  reader gained a clarifying docstring (no behavior change).
+
 ## [0.3.0] — 2026-06-13
 
 Context-orchestration milestone (M5, design § 21). This release adds the
