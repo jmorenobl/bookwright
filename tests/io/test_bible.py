@@ -352,6 +352,21 @@ def test_location_unresolved_setting_is_soft_miss(tmp_path: Path) -> None:
     ]
 
 
+def test_location_unslugifiable_setting_is_soft_miss(tmp_path: Path) -> None:
+    """A non-blank `setting` that slugs to nothing → node built, no edge, one soft miss (FR-004)."""
+    bible = _bible(tmp_path)
+    _write(
+        bible / "locations" / "odd.md",
+        '---\nname: "The Quay"\nsetting: "!!!"\n---\n',
+    )
+    result = map_bible(tmp_path, bible, URI_BASE)
+    loc = _location(result, "the-quay")
+    assert loc.setting is None  # EmptySlugError → soft miss, not a crash or an edge
+    assert [(u.path, u.entity, u.name) for u in result.unresolved_participants] == [
+        ("bible/locations/odd.md", "The Quay", "!!!")
+    ]
+
+
 def test_location_slug_collision_is_fatal(tmp_path: Path) -> None:
     """Two locations with the same slug raise SlugCollisionError (FR-006)."""
     bible = _bible(tmp_path)
