@@ -130,11 +130,15 @@ def _apply_resolution(project: Path, oracle: dict[str, Any]) -> None:
 
     index = project / INDEX
     resolved_line = f"- id: {resolution['resolved_id']}"
-    kept = [
-        line
-        for line in index.read_text(encoding="utf-8").splitlines(keepends=True)
-        if line.strip() != resolved_line
-    ]
+    lines = index.read_text(encoding="utf-8").splitlines(keepends=True)
+    kept = [line for line in lines if line.strip() != resolved_line]
+    # Fail loudly on format drift: if the open_questions line shape ever changes, a
+    # silent no-op here would leave the question open and surface as a baffling count
+    # mismatch downstream. Pin that exactly one line was dropped.
+    assert len(kept) == len(lines) - 1, (
+        f"expected to drop exactly one {resolved_line!r} line from {INDEX}; "
+        "the open_questions format may have drifted"
+    )
     index.write_text("".join(kept), encoding="utf-8")
 
 
@@ -275,7 +279,12 @@ def test_second_status_converges(cli: CliRunner, historical: Path, oracle: dict[
     assert resolved not in research_after["prompt"]
     assert remaining in research_after["prompt"]
     assert research_before["reason"] != research_after["reason"]
-    assert "1 open research question" in research_after["reason"]
+    # The count is oracle-derived (FR-008), not a hard-coded literal: resolving one of
+    # the oracle's questions leaves len(ids) - 1 open, and the reason reflects that.
+    before_count = len(oracle["open_questions"]["ids"])
+    after_count = before_count - 1
+    assert f"{before_count} open research question" in research_before["reason"]
+    assert f"{after_count} open research question" in research_after["reason"]
 
     # Invariant: everything else byte-identical; the list length is unchanged (NOT N-1).
     assert len(after["next_actions"]) == 3
