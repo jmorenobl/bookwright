@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Agent Skills (agentskills.io) compliance constants for the integrations layer.
 
 Single source of truth for the numeric caps, the inherited default license,
@@ -36,3 +37,50 @@ INJECTION_READ_COMMANDS: Final[frozenset[str]] = frozenset({"cat", "head", "tail
 #: ``SKILL.md`` files. Retained only so the deprecated symbol stays importable
 #: for the legacy-cleanup tests; do not write this file in new code.
 SKILL_PLACEHOLDER_MARKER_NAME: Final[str] = ".bookwright-skills-placeholder"
+
+#: Stable headings prefixing the two injected blocks. Idempotency gates on these
+#: sentinel markers — not the full prose — so a re-run never double-injects even if the
+#: surrounding copy is later reworded (R1). The block bodies below interpolate them, so
+#: the literal heading text lives here exactly once.
+STATUS_INJECTION_HEADING: Final[str] = "## Orientación inicial"
+NEXT_STEPS_HEADING: Final[str] = "## Próximos pasos"
+
+#: Shared shape of the status-orientation block. Only the lead sentence and the
+#: status-command rendering differ between integrations, so they are the sole
+#: ``{lead}``/``{invocation}`` slots — the heading and the halt/empty-state bullets
+#: live here once, keeping the Claude and Generic variants in sync by construction.
+_STATUS_INJECTION_TEMPLATE: Final[str] = (
+    STATUS_INJECTION_HEADING
+    + """
+
+{lead}
+
+{invocation}
+
+- Si el comando falla o devuelve un JSON inválido, **DETENTE INMEDIATAMENTE (halt)** y pide al usuario que corrija el error.
+- Si el estado está vacío (no hay foco ni siguientes acciones), simplemente ignóralo y continúa normalmente.
+"""
+)
+
+#: Status injection pattern for Claude integration (dynamic context)
+STATUS_INJECTION_CLAUDE: Final[str] = _STATUS_INJECTION_TEMPLATE.format(
+    lead="Antes de empezar, debes entender el estado actual del proyecto. Analiza el siguiente estado:",
+    invocation="!`bookwright status --json`",
+)
+
+#: Status injection pattern for Generic integration (explicit step)
+STATUS_INJECTION_GENERIC: Final[str] = _STATUS_INJECTION_TEMPLATE.format(
+    lead="Antes de empezar, ejecuta el siguiente comando para entender el estado actual del proyecto:",
+    invocation="```bash\nbookwright status --json\n```",
+)
+
+#: Next steps boilerplate appended at the end of skills.
+NEXT_STEPS_BOILERPLATE: Final[str] = (
+    "\n"
+    + NEXT_STEPS_HEADING
+    + """
+
+- Revisa las acciones pendientes (`next_actions`) que obtuviste en la orientación inicial.
+- Propón al usuario los comandos listos para copiar y pegar para continuar con la siguiente acción lógica.
+"""
+)

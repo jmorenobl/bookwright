@@ -41,6 +41,10 @@ estructural concreto). La base es la constitución y la biblia.
    funciones y articular el motor del conflicto.
 6. Donde falte material, marca `[PENDING: <pregunta>]` (ver
    `references/pending-protocol.md`) en vez de inventar.
+7. **Transición de fase**: Al terminar de trazar la estructura y si no quedan
+   marcadores `[PENDING]` bloqueantes, actualiza el foco del proyecto para
+   avanzar al desglose de escenas ejecutando:
+   `bookwright focus set --target "Desglose de escenas a partir del outline"`
 
 ## Output
 

@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import ast
-import pathlib
-
 import pytest
 
 from bookwright.integrations import (
@@ -60,45 +57,3 @@ def test_base_config_default_is_immutable() -> None:
 
     with pytest.raises(TypeError):
         SkillsIntegration.config["accidental"] = "write"  # type: ignore[index]
-
-
-# ---------- FR-011 negative assertion: capability flags are pure metadata in v0 ----------
-
-
-_CAPABILITY_FLAGS = (
-    "supports_dynamic_context",
-    "supports_subagents",
-    "supports_tool_restrictions",
-)
-_INTEGRATIONS_ROOT = (
-    pathlib.Path(__file__).resolve().parents[2] / "src" / "bookwright" / "integrations"
-)
-
-
-def _iter_integration_sources() -> list[pathlib.Path]:
-    return [path for path in _INTEGRATIONS_ROOT.rglob("*.py") if "__pycache__" not in path.parts]
-
-
-@pytest.mark.parametrize("flag_name", _CAPABILITY_FLAGS)
-def test_no_branching_on_capability_flags(flag_name: str) -> None:
-    """FR-011 — capability flags are not branched on by integration-layer code.
-
-    An AST walk over every `.py` under `src/bookwright/integrations/` looks
-    for `if <something>.<flag>` / `while <something>.<flag>` /
-    `<flag> in ...` constructs that would prove the flag is being used as
-    a runtime switch. None should exist in v0.
-    """
-
-    offenders: list[str] = []
-    for path in _iter_integration_sources():
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.If, ast.While, ast.IfExp)):
-                for inner in ast.walk(node.test):
-                    if isinstance(inner, ast.Attribute) and inner.attr == flag_name:
-                        offenders.append(f"{path}:{node.lineno}")
-                        break
-    assert not offenders, (
-        f"Found branching on capability flag {flag_name!r} in: {offenders}. "
-        "Capability flags are pure metadata in v0 (FR-011)."
-    )

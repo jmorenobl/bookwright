@@ -57,6 +57,10 @@ constitución y el brief; trabajas sobre el proyecto inicializado.
 8. Donde el material sea fino, marca `[PENDING: <pregunta>]` (ver
    `references/pending-protocol.md`) en vez de inventar; recuerda **entrecomillar**
    el marcador en `name:` (`name: "[PENDING: …]"`).
+9. **Transición de fase**: Al terminar de poblar la biblia y si no quedan
+   marcadores `[PENDING]` bloqueantes, actualiza el foco del proyecto para
+   avanzar a la fase de outline ejecutando:
+   `bookwright focus set --target "Estructurar el outline narrativo"`
 
 ## Output
 

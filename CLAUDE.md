@@ -249,7 +249,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 ## Spec Kit specifics
 
-- Pinned at `v0.10.1` (upgraded from `v0.8.16` on 2026-06-11). Don't upgrade
+- Pinned at `v0.10.2` (upgraded from `v0.10.1` on 2026-06-12, a patch release
+  picked up alongside the `agy`→`claude` integration switch). Don't upgrade
   without a reason worth chasing template churn.
 - Don't modify Spec Kit *core* (templates, scripts, manifests). Per-project
   *copies* (`.specify/extensions.yml`, `git-config.yml`) are editable.
@@ -259,3 +260,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 - `auto_execute_hooks: true`. Mandatory hooks (`before_constitution`,
   `before_specify`) execute without prompting; optional commit hooks ask
   first.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
