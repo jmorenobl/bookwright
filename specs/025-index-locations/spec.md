@@ -8,6 +8,12 @@
 
 **Input**: User description: "Necesidad: hoy bible/locations/*.md no se procesa en absoluto (atajo de v0)… Queremos que las localizaciones entren al grafo como entidades de primera clase… y sacar G13 del registro de diferidos de la iteración 024. (+ refactor que baja io/bible.py por debajo de 500 líneas, sin cambio de comportamiento)."
 
+## Clarifications
+
+### Session 2026-06-14
+
+- Q: When a location's `setting:` is present but resolves to no sibling setting, how should the mapper surface that soft-miss? → A: Reuse the existing `unresolved_participants` / `UnresolvedParticipant` channel (`path` = location file, `entity` = location name, `name` = the unresolved setting). Rationale: `UnresolvedParticipant` already models *any* unresolved name reference — the mapper's temporal-relation targets (sibling events, not participants) already ride it via `_resolve_refs`, so reusing it keeps one consistent "unresolved reference" contract and avoids a parallel report category. The only blemish, the type's `Participant`-flavored name, is left untouched; a neutral rename (`UnresolvedReference`) is deferred to the iteration-027 JSON-envelope cleanup, since renaming touches the public `--json` envelope and other commands' tests (out of scope here).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Locations become first-class graph entities (Priority: P1)
@@ -135,7 +141,7 @@ bible mapper tests pass unchanged.
   be a string).
 - A location's `setting:` naming a real **character** or **event** rather than a
   setting does not resolve (resolution is scoped to the sibling settings index),
-  surfacing the same unresolved soft warning as a non-existent name.
+  surfacing the same `unresolved_participants` warning as a non-existent name.
 - A location file carrying extra unknown front-matter keys produces the existing
   `unknown_keys` soft warning, not an abort — but only once it has produced an
   entity (consistent with the current single-dir contract).
@@ -154,9 +160,11 @@ bible mapper tests pass unchanged.
   the mapper MUST emit the `dlp:generic-location` cross-ref from the location to
   that setting's node.
 - **FR-004**: When `setting` is present but does not resolve to a sibling setting,
-  the mapper MUST surface a soft warning consistent with its existing
-  unresolved-reference contract and still build the location node — never abort
-  the build.
+  the mapper MUST surface it through the existing `unresolved_participants`
+  channel — one `UnresolvedParticipant` with `path` = the location file, `entity` =
+  the location name, and `name` = the unresolved setting — and still build the
+  location node, never aborting the build. No new soft-warning category is
+  introduced.
 - **FR-005**: Built `NarrativeLocation` entities MUST feed the research target
   index (the same index characters, settings, and events feed) so that a research
   `bears_on:` / `constrains:` link to a location resolves instead of producing a
@@ -240,9 +248,11 @@ bible mapper tests pass unchanged.
   events resolve participants against already-built characters.
 - Resolution of `setting:` is scoped to the **settings** index only (a location's
   setting is a `G12_Setting`), not the participant index or the general research
-  index; an unresolved `setting:` reuses the mapper's existing unresolved-reference
-  soft-warning channel rather than introducing a new warning category. The exact
-  field/representation is left to the plan phase.
+  index. An unresolved `setting:` reuses the existing `unresolved_participants` /
+  `UnresolvedParticipant` channel (see Clarifications) — already the generic
+  "unresolved name reference" mechanism that temporal relations ride — rather than
+  introducing a new warning category. A neutral rename of that type is deferred to
+  iteration 027.
 - `NarrativeLocation` does **not** feed the participant-resolution index (locations
   are not event/relationship participants in v0); it feeds only the research target
   index, mirroring how `Setting` participates today.
