@@ -2,20 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.2.0 shipped, v0.3 / M5 in progress
+## Repository state: v0.3.0 shipped, v0.3.x hardening planned
 
-Both released milestones are **fully implemented**: `v0.1.0` (2026-06-03,
-the v0 toolkit, iterations 1–11) and `v0.2.0` (2026-06-05, the M4 research &
-verification system, iterations 12–18). All of it is on `main` with a real
-`src/bookwright/` package, ~200 Python files, the full test suite, docs, and CI
-gates green. Current work is **v0.3 / M5 — context orchestration**
-(design § 21), iterations 019–023 in `bookwright-implementation-plan.md`:
-iteration 019 — authored focus (the `[focus]` manifest block +
-`bookwright focus show|set|clear`) — and iteration 020 — `bookwright status`
-(deterministic derived state + `next_actions`) — are both **merged on `main`**
-(unreleased). The next planned iterations are the skills consuming status
-(021–022) and the v0.3.0 release (023). No iteration branch is currently
-active. Vector search (ChromaDB over rdflib) moved to v0.4.
+Three milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
+the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
+verification system, iterations 12–18) and `v0.3.0` (2026-06-13, the M5 context
+orchestration system, iterations 19–23). All of it is on `main` (tagged) with a
+real `src/bookwright/` package, ~200 Python files, the full test suite, docs, and
+CI gates green. There is **no active iteration branch**. The next work is the
+**v0.3.x hardening track** (cancel tech debt, robustness, close v0 shortcuts) in
+`bookwright-implementation-plan.md`: iterations 024–027, released as successive
+patches (`v0.3.1`…`v0.3.4`). Vector search (ChromaDB over rdflib) and the
+narrative-structure layer (Propp/Greimas) are v0.4; export is v1.0 — see
+`bookwright-roadmap.md`.
 
 The canonical references:
 
@@ -23,10 +22,15 @@ The canonical references:
   numbering is load-bearing; specs and iteration prompts cite it as
   `bookwright-design.md § N.M`. Section 16 lists axiomatic decisions that
   MUST NOT be reopened. § 20 covers the research system (shipped in v0.2);
-  § 21 the context orchestration now being built.
-- `bookwright-implementation-plan.md` (Spanish, ~45 KB) — ordered iteration
-  plan. § 2 has the dependency map; § 3+ have one ready-to-paste
-  `/speckit-specify` prompt per iteration.
+  § 21 the context orchestration (shipped in v0.3).
+- `bookwright-roadmap.md` (Spanish) — the **durable** intent across versions
+  (the *what* and *why*): the version line (v0.3.x → v0.4 → v1.0), the
+  ingestion-parity north star, the cancelled list. Unlike the plan, it is **not**
+  emptied each milestone. A guide, not a commitment.
+- `bookwright-implementation-plan.md` (Spanish) — ordered iteration plan for the
+  **current milestone only** (now the v0.3.x hardening track); emptied of
+  delivered work each milestone. § 2 has the dependency map; § 3+ have one
+  ready-to-paste `/speckit-specify` prompt per iteration.
 - `.specify/memory/constitution.md` — ratified, currently **v1.4.0**.
   **Binding** on every PR. Three principles are explicitly NON-NEGOTIABLE:
   plain-text source of truth (I), Agent Skills only — no legacy `commands/`
@@ -95,8 +99,8 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 ## Iterations (shipped + planned)
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
-012–018 are merged (v0.2.0), and 019–020 are merged on `main` (M5, unreleased).
-There is no active iteration branch.
+012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
+There is no active iteration branch; 024–027 are planned (v0.3.x hardening).
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -120,17 +124,24 @@ There is no active iteration branch.
 | 018 | Unified `--json` error envelope | — | ✅ merged |
 | 019 | Authored focus state: `[focus]` block + `bookwright focus` | M5 | ✅ merged |
 | 020 | `bookwright status` (derived state + `next_actions`) | M5 | ✅ merged |
+| 021 | `bookwright-research` consumes anchors / open questions | M5 | ✅ merged |
+| 022 | Skills read `status` at start + "Next steps" block | M5 | ✅ merged |
+| 023 | Orchestration E2E fixture, workflow test, docs, v0.3.0 | M5 | ✅ merged |
+| 024 | Ingestion-parity guard + deferral registry | v0.3.x | ⏳ planned |
+| 025 | Index locations (G13) + `bible.py` split | v0.3.x | ⏳ planned |
+| 026 | Index objects (G16) + `bible/objects/` scaffold + skill | v0.3.x | ⏳ planned |
+| 027 | JSON-envelope cleanup + G6/G3 decision | v0.3.x | ⏳ planned |
 
-M4/v0.2 is **complete and released** (`v0.2.0`, 2026-06-05): the provenance
-model (012), the `bookwright-research` skill + `[research]` manifest block (013),
-the `factual_anchor` validator (014), the `bookwright-verify` LLM check (015),
-and the research E2E fixture/tests/docs (016) all merged, plus two maintenance
-iterations — traceability-tag cleanup (017) and the unified error envelope
-(018). v0.3 / M5 — context orchestration (design § 21) — is underway: 019
-(authored focus) and 020 (`bookwright status` — deterministic derived state +
-`next_actions`) are merged; the next planned iterations are the status-consuming
-skills (021–022) and the v0.3.0 release (023). Vector search (ChromaDB over
-rdflib) moved to v0.4.
+M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
+(019), `bookwright status` with deterministic `next_actions` (020), the
+status-consuming skills (021–022), and the orchestration E2E fixture/tests/docs
+(023) all merged. The next milestone is the **v0.3.x hardening track** (iterations
+024–027, released as patches `v0.3.1`…`v0.3.4`): make ingestion-parity explicit
+(024), then wire the orphaned GOLEM concepts that are cheap mirrors of `settings/`
+— locations G13 (025), objects G16 (026) — and a cleanup/decision pass (027). The
+heavier Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/`
+ingestion move to **v0.4** alongside vector search; export is **v1.0**. See
+`bookwright-roadmap.md`.
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
@@ -224,13 +235,16 @@ source of truth (Constitution I).
 A PR that adds plumbing whose only justification is "future X" MUST be
 rejected (Constitution "Scope & Release Discipline").
 
-- v0.2 / M4 (design § 20) — research & verification: shipped in `v0.2.0`
-  (iterations 012–016). Don't pull v0.3+ work below into it.
-- v0.3 / M5 — context orchestration (design § 21), iterations 019–023:
-  `[focus]` block + `bookwright focus` (019, ✅ merged); `bookwright status`
-  (deterministic derived state + `next_actions`, 020, ✅ merged); skills
-  consuming it (021–022 — next); v0.3.0 release (023).
-- v0.4 — vector search (ChromaDB over rdflib, decoupled from Grafeo).
+- v0.2 / M4 (design § 20) — research & verification: shipped in `v0.2.0`.
+- v0.3 / M5 — context orchestration (design § 21): shipped in `v0.3.0`.
+- **v0.3.x hardening (current, iterations 024–027) — cancel tech debt / close v0
+  shortcuts:** ingestion-parity guard + deferral registry (024); index locations
+  G13 + `bible.py` split (025); index objects G16 (026); JSON-envelope cleanup +
+  G6/G3 decision (027). Each is a patch with one observable delta; internal
+  plumbing rides inside the patch it enables (e.g. the `bible.py` split ships
+  with locations, not as a zero-change release). Don't pull v0.4 work below into it.
+- v0.4 — vector search (ChromaDB over rdflib, decoupled from Grafeo) + the
+  Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/` ingestion.
 - v1.0 — export to EPUB / PDF / print via pandoc.
 
 **Cancelled — never implement (owner decision):** preset / genre-package
@@ -263,6 +277,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan:
-`specs/023-orchestration-e2e-release/plan.md`
+shell commands, and other important information, read the implementation plan
+for the current milestone: `bookwright-implementation-plan.md` (v0.3.x hardening,
+iterations 024–027). The next `/speckit-specify` run repoints this to the active
+iteration's `specs/NNN-<name>/plan.md`.
 <!-- SPECKIT END -->
