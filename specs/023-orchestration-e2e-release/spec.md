@@ -1,0 +1,417 @@
+# Feature Specification: Orchestration loop fixture, E2E flow, docs, and v0.3.0 release
+
+**Feature Branch**: `023-orchestration-e2e-release`
+
+**Created**: 2026-06-13
+
+**Status**: Draft
+
+**Input**: User description: "Necesidad: antes de release v0.3.0 necesitamos una fixture que ejercite el bucle de orquestación, tests E2E del flujo foco→status→siguiente paso, y documentación del nuevo sistema."
+
+## Overview
+
+This is the closing iteration of milestone **M5 / v0.3.0** — context
+orchestration (design § 21). The mechanism is already built and merged across
+the prior iterations: authored focus (the `[focus]` manifest block +
+`bookwright focus show|set|clear`, iteration 019), `bookwright status` (the
+deterministic derived-state engine + `next_actions`, iteration 020), the
+`bookwright-research` skill consuming open questions / unsourced anchors
+(iteration 021), and the whole skill suite reading `status` at start and
+emitting a "Próximos pasos" block (iteration 022).
+
+What is missing before the release can ship is **proof and explanation**: a
+worked example that gives `bookwright status` something concrete to report and
+recommend, an automated regression that walks the orchestration loop
+(focus → status → resolve → status) and asserts the *deterministic* `status`
+output shrinks by exactly one action, a non-regression guarantee that a project
+which never opts into orchestration behaves exactly as before, and a
+documentation set that teaches the "hilo conductor" model. This iteration is
+consolidation and validation — it adds **no new product mechanism** (no new
+CLI verb, no new manifest field, no validator or skill behavior change).
+
+This follows the precedent of iterations 12 (the `tiny-historical` fixture) and
+17 (consolidation/non-regression), and especially iteration 16 (the M4 closing
+iteration: realistic fixture + E2E flow + docs + release).
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - A worked example the orchestration loop can reason over (Priority: P1)
+
+A novelist (or a maintainer evaluating Bookwright) needs to *see* the
+orchestration loop working on something realistic: a project with an authored
+focus and genuine open work, so that `bookwright status` has something concrete
+to report (facts) and recommend (`next_actions`). They open a packaged example
+whose `manifest.toml` carries a filled-in `[focus]` block and whose
+`bible/research/` holds at least one open research question and at least one
+anchor without sufficiently-reliable support — exactly the derived-state inputs
+that drive `status`'s `open_questions`, `unresolved_anchors`, and
+`low_reliability_findings`, and therefore its recommended next actions.
+
+**Why this priority**: Everything else in this iteration consumes this fixture —
+the E2E test runs against it and the documentation references it. Without a
+coherent example that produces a non-empty, *deterministic* `status` report
+there is nothing to test or teach, so it is the foundational deliverable.
+
+**Independent Test**: The fixture can be initialized/loaded as a valid
+Bookwright project; `bookwright status` against it succeeds (exit 0) and emits a
+report with a defined focus, a built graph, and a non-empty `next_actions` list
+— verifiable as a standalone demonstration before any test or doc is written.
+
+**Acceptance Scenarios**:
+
+1. **Given** the orchestration example project, **When** a reader inspects its
+   `manifest.toml`, **Then** it contains a fully-populated `[focus]` block (a
+   target and the fields `bookwright focus set` records).
+2. **Given** the same project, **When** `bookwright graph build` runs, **Then**
+   the build succeeds and the research entities (Findings, Anchors) are emitted
+   into the derived graph alongside the narrative entities.
+3. **Given** the built project, **When** `bookwright status --json` runs,
+   **Then** it exits 0 and reports a defined focus, an available graph, at least
+   one open question and/or one unresolved/under-sourced anchor, and a non-empty
+   `next_actions` list whose entries each name a skill, a reason, and a prompt.
+
+---
+
+### User Story 2 - The orchestration loop proven end to end (Priority: P1)
+
+A maintainer preparing the release needs confidence that the loop
+focus → status → resolve → status actually composes on a real project and stays
+true as the code evolves. An automated regression walks the example through the
+loop: initialize the project, set focus, build the graph, run `status` and
+assert its deterministic facts and `next_actions`; then apply a **pre-baked
+resolution** for exactly one open item (content authored into the fixture, so no
+LLM judgment is exercised), rebuild, run `status` again, and assert the report
+now shows progress — exactly one fewer recommended action — with the resolved
+item gone and the others unchanged. All assertions are on the deterministic
+`status` output (facts and `next_actions`); the LLM/judgment steps the loop
+normally involves are represented by the fixed pre-baked content, never invoked.
+
+**Why this priority**: A worked example that isn't guarded by a test rots
+silently. This regression is what lets the team claim "the orchestration loop
+works" at release and keep claiming it; it is co-equal P1 with the fixture it
+depends on.
+
+**Independent Test**: Running the workflow test against the fixture exercises
+init → focus set → build → status → resolve → status and asserts the action
+count drops by exactly one, delivering a green-or-red signal on the whole
+deterministic loop in one run.
+
+**Acceptance Scenarios**:
+
+1. **Given** the example project initialized in a working copy, **When**
+   `bookwright focus set` is run with the fixture's focus, **Then** the
+   `[focus]` block is recorded and a subsequent `status` reports
+   `focus` as defined.
+2. **Given** the project after `graph build`, **When** `status --json` runs,
+   **Then** the test can assert specific deterministic facts (focus defined,
+   graph available with entity/triple counts present, the expected
+   open-question/anchor-gap items) and a `next_actions` list of a known length
+   N (N ≥ 1).
+3. **Given** the first `status`, **When** the pre-baked resolution for one open
+   item is applied to the working copy and the graph is rebuilt, **Then** a
+   second `status --json` returns a `next_actions` list of length N − 1, the
+   action that targeted the resolved item is absent, and the remaining actions
+   are unchanged.
+4. **Given** both `status` runs, **When** their JSON documents are compared,
+   **Then** every asserted field is byte-for-byte deterministic across repeated
+   runs (no timestamps or ordering nondeterminism in the asserted fields).
+
+---
+
+### User Story 3 - The system is inert when orchestration is unused (Priority: P2)
+
+An author who never opts into orchestration — no `[focus]` block and no
+`bible/research/` directory — must be able to run the project exactly as before
+the orchestration system existed. `bookwright status` must still succeed,
+degrading gracefully to a "nothing here yet / nothing to recommend" report, and
+`build`/`validate` must behave identically to a pre-M5 project. Orchestration
+imposes zero cost, zero new required files, and zero behavioral change on
+projects that never use it.
+
+**Why this priority**: This is the non-regression guarantee for the existing
+user base and the milestone's core promise (design § 21: the thread is opt-in
+and inert when unused). It is high-value but ranks just below the
+worked-example/E2E pair because it guards existing behavior rather than
+demonstrating the new one.
+
+**Independent Test**: Running `status`, `build`, and `validate` against an
+existing focus-free, research-free fixture (e.g. `tiny-novel`) yields a
+successful, unchanged result — `status` exits 0 with `focus` undefined and an
+empty `next_actions`, and `build`/`validate` match pre-M5 behavior — provable on
+its own.
+
+**Acceptance Scenarios**:
+
+1. **Given** a project with no `[focus]` block and no `bible/research/`
+   directory, **When** `bookwright status --json` runs, **Then** it exits 0 and
+   reports `focus` as undefined, no open questions / unresolved anchors /
+   low-reliability findings, and an empty `next_actions` list — no error or
+   warning about the missing focus or research.
+2. **Given** the same project, **When** `build` and `validate` run, **Then**
+   their outcomes are unchanged from pre-M5 behavior (no new required inputs, no
+   altered exit behavior, no orchestration-related output).
+3. **Given** a project whose corpus prerequisites are absent (no bible to build
+   from), **When** `status` runs, **Then** it degrades to a successful exit-0
+   report stating the graph is unavailable, rather than failing.
+
+---
+
+### User Story 4 - The orchestration system is documented for release (Priority: P2)
+
+A reader of the documentation site needs to understand the orchestration system
+well enough to use it: the "hilo conductor" model that distinguishes **authored
+focus** (what the author declares) from **derived state** (what `status`
+computes from the corpus) from **judgment** (the LLM steps the skills perform);
+what `bookwright status` reports and how `next_actions` are derived; the work
+loop (focus → status → act → repeat); and how the skills consume `status` at
+start. The command reference must cover `bookwright status` and
+`bookwright focus`, and the changelog must record the v0.3.0 release.
+
+**Why this priority**: A shipped system nobody can learn is half-shipped, but the
+mechanism and its tests must exist first; documentation is the final layer over a
+proven system, hence P2 alongside inertness.
+
+**Independent Test**: Building the documentation site produces a navigable
+orchestration page, complete command-reference coverage for `status`/`focus`,
+and a v0.3.0 changelog entry, with no build warnings — verifiable by building the
+docs (`mkdocs build --strict`) and reading them.
+
+**Acceptance Scenarios**:
+
+1. **Given** the documentation site, **When** a reader opens the orchestration
+   page (`orchestration.md`), **Then** it explains the three-layer model
+   (authored focus vs derived state vs judgment), `bookwright status` and how
+   `next_actions` are derived, the work loop, and how the skills use `status`;
+   and it is reachable from the site navigation.
+2. **Given** the command reference, **When** a reader looks for the new CLI
+   surface, **Then** `bookwright status` and the `bookwright focus`
+   sub-commands are documented there and accurate against the live CLI.
+3. **Given** the changelog, **When** a reader looks for the latest release,
+   **Then** there is a v0.3.0 entry describing the context-orchestration system
+   (consolidating iterations 019–023).
+4. **Given** the documentation sources, **When** the site is built with the
+   project's strict settings, **Then** the build completes with no warnings.
+
+---
+
+### Edge Cases
+
+- **A fixture that is both "realistic/coherent" and produces an *exact*,
+  unambiguous open state.** The example must read as a genuine documented
+  project while the set of open questions and anchor gaps it produces is exactly
+  what the test asserts — so the test can assert an exact `next_actions` count
+  (N before, N − 1 after), not a lower bound. The open state must be unambiguous
+  under the fixture's own `min_reliability_for_anchor`.
+- **Resolving exactly one item must remove exactly one action.** The pre-baked
+  resolution must close precisely one open item (one open question *or* one
+  anchor gap) without incidentally closing or opening any other, and without
+  changing the focus or narrative facts the other actions depend on — otherwise
+  the count would not drop by exactly one.
+- **The resolution is pre-baked content, not an LLM step.** The "resolve an open
+  question" step is materialized by fixed content shipped in the fixture and
+  applied by the test (e.g. an additional/overlaid research file supplying the
+  missing Finding or sufficiently-reliable Source); no agent/LLM judgment runs
+  in CI. The assertions are only on the deterministic `status` output.
+- **Inert: absent vs present-but-empty.** A project with no `[focus]` and no
+  `bible/research/` must yield an empty `next_actions`; a project with a bible
+  but no research must also yield no research-derived actions. Both are inert,
+  successful exits — not errors.
+- **`status` over an unbuildable corpus.** When build prerequisites are absent,
+  `status` degrades to a successful "graph unavailable" report (it must not be
+  asserted to fail); a genuinely corrupt corpus fails exactly as `graph build`
+  would, per the existing `status` fault model.
+- **Mutating a packaged fixture in tests.** The loop's resolve step mutates the
+  project; the test must operate on a `tmp_path` copy so the committed fixture
+  stays pristine and the run is repeatable.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+**Fixture**
+
+- **FR-001**: The project MUST ship an orchestration example fixture: a short,
+  coherent narrative that is a valid Bookwright project (initializable/loadable,
+  with the standard bible/outline/manuscript skeleton), authored by extending an
+  existing fixture convention (e.g. building on `tiny-historical` / `tiny-novel`
+  style) so it reads consistently with the other `tests/fixtures/tiny-*`
+  examples.
+- **FR-002**: The fixture's `manifest.toml` MUST contain a fully-populated
+  `[focus]` block — a focus target plus the fields `bookwright focus set`
+  records — so `status` reports a defined focus.
+- **FR-003**: The fixture MUST contain open work that `status` surfaces as
+  derived state: at least one **open research question** and at least one
+  **anchor without sufficiently-reliable support** (an unresolved anchor and/or
+  a low-reliability finding) under the fixture's own configured
+  `min_reliability_for_anchor`, so `status` produces a non-empty `next_actions`.
+- **FR-004**: The fixture's open state MUST be **exact and unambiguous**: the set
+  of open questions and anchor gaps it produces MUST be exactly enumerable, so a
+  test can assert a precise `next_actions` count rather than a lower bound, and
+  no other unexpected open items appear.
+- **FR-005**: The fixture MUST ship a **pre-baked resolution** for exactly one
+  open item — fixed, pre-authored content (no LLM step) that, when applied to a
+  working copy and the graph rebuilt, closes precisely that one open item and
+  no other, leaving the focus and the remaining open items unchanged.
+- **FR-006**: Any new fixture or fixture extension MUST NOT break the existing
+  fixtures' tests; in particular it MUST NOT alter the exact-count assertions of
+  the M4 research workflow test (if `tiny-historical` is extended rather than a
+  new fixture authored, the extension must be additive and inert to those
+  assertions).
+
+**E2E tests**
+
+- **FR-007**: An automated end-to-end test (`test_orchestration_workflow.py`)
+  MUST walk the orchestration loop against the fixture (on a `tmp_path` copy):
+  initialize/load the project, run `bookwright focus set`, run
+  `bookwright graph build`, run `bookwright status`, apply the pre-baked
+  resolution for one open item, rebuild, and run `bookwright status` again.
+- **FR-008**: The test MUST assert the **first** `status` reports deterministic
+  facts — focus defined, graph available (entity/triple counts present), and the
+  expected open question(s) / anchor gap(s) — and a `next_actions` list of a
+  known length N (N ≥ 1) whose entries each carry a skill, a reason, and a
+  prompt.
+- **FR-009**: The test MUST assert the **second** `status` shows progress: a
+  `next_actions` list of length exactly N − 1, with the action that targeted the
+  resolved item absent and the remaining actions unchanged.
+- **FR-010**: All E2E assertions MUST be on the **deterministic** `status` output
+  (the JSON facts and `next_actions`); the test MUST NOT depend on any LLM /
+  judgment step — those are represented by the fixture's pre-baked content.
+- **FR-011**: An automated test MUST prove **inertness** for a project with no
+  `[focus]` block and no `bible/research/` (reusing an existing focus-free,
+  research-free fixture such as `tiny-novel`): `bookwright status` exits 0 with
+  `focus` undefined and an empty `next_actions`, and `build`/`validate` behave
+  identically to pre-M5 behavior. No new permanent fixture is authored for this
+  case.
+- **FR-012**: The inertness test MUST also cover the **degraded** path: a project
+  whose build prerequisites are absent yields a successful exit-0 `status` report
+  stating the graph is unavailable, not a failure.
+
+**Documentation**
+
+- **FR-013**: The documentation site MUST gain an orchestration page
+  (`docs/orchestration.md`) covering: the "hilo conductor" three-layer model
+  (authored focus vs derived state vs judgment); `bookwright status` and how
+  `next_actions` are derived; the work loop (focus → status → act → repeat); and
+  how the skills consume `status` at start.
+- **FR-014**: The orchestration page MUST be reachable from the documentation
+  site navigation.
+- **FR-015**: The command reference MUST document `bookwright status` and the
+  `bookwright focus` sub-commands (`set`/`show`/`clear`), accurate against the
+  live CLI; where these reference pages already exist they MUST be verified and
+  brought current for the release rather than duplicated.
+- **FR-016**: The changelog MUST gain a v0.3.0 entry describing the
+  context-orchestration system, consolidating iterations 019–023.
+
+**Quality gates**
+
+- **FR-017**: The full test suite MUST keep overall coverage above the project
+  threshold (≥ 80 %), which remains the **single enforced** gate (one source, no
+  drift — see CLAUDE.md / Constitution VIII). New M5 code being covered above
+  85 % is a **verified-at-review** quality target — measured and reported, but
+  NOT a second enforced per-package `fail_under` in CI.
+- **FR-018**: Lint (`ruff check`), format (`ruff format --check`), type-check
+  (`mypy --strict`), pre-commit, and CI MUST all pass.
+- **FR-019**: The documentation site MUST build with no warnings
+  (`mkdocs build` under the existing `strict: true` setting).
+- **FR-020**: This iteration MUST introduce no new product mechanism: no new CLI
+  verb, manifest field, validator, or skill behavior change — only a fixture,
+  tests, documentation, and the release entry.
+- **FR-021**: The fixture and tests MUST NOT introduce vector search (v0.4) or
+  export (v1.0) or any other post-v0.3 mechanism.
+
+### Key Entities *(include if data involved)*
+
+- **Orchestration example fixture**: A self-contained example Bookwright project
+  with a filled `[focus]` block and a deliberately open research state (at least
+  one open question and one under-sourced anchor). The shared input for the E2E
+  test and the documentation.
+- **Pre-baked resolution**: Fixed, pre-authored content shipped in the fixture
+  that, applied to a working copy, closes exactly one open item — the
+  deterministic stand-in for the LLM "resolve a question" step.
+- **Orchestration workflow test**: The automated regression
+  (`test_orchestration_workflow.py`) walking focus → status → resolve → status
+  and asserting `next_actions` drops by exactly one, plus the inertness/degraded
+  assertions for focus-free, research-free, and unbuildable projects.
+- **`status` report**: The deterministic `{status, focus, state, next_actions}`
+  document the test asserts on — `state` carrying focus-defined, graph facts,
+  open questions, unresolved anchors, low-reliability findings, and validation;
+  `next_actions` carrying `{skill, reason, prompt}` entries.
+- **Orchestration documentation set**: The new `docs/orchestration.md` page, the
+  verified `status`/`focus` command reference, and the v0.3.0 changelog entry.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: A reader can open the orchestration fixture and run
+  `bookwright status` on it to get a successful report with a defined focus, a
+  built graph, and a non-empty `next_actions` list — a standalone demonstration
+  of the loop having something concrete to recommend.
+- **SC-002**: The orchestration E2E test passes, asserting the deterministic
+  outcomes: the first `status` reports the expected facts and N next actions
+  (N ≥ 1); after the pre-baked resolution of one item the second `status`
+  reports exactly N − 1 next actions, with the resolved action gone and the
+  others unchanged.
+- **SC-003**: Running `status`/`build`/`validate` on a focus-free, research-free
+  project produces results identical to pre-M5 behavior — `status` exits 0 with
+  no focus and an empty `next_actions`; the unbuildable-corpus case degrades to a
+  successful "graph unavailable" report rather than failing.
+- **SC-004**: A reader can reach the orchestration page from the site navigation
+  and it covers the three-layer model, `status`/`next_actions`, the work loop,
+  and skill consumption; `bookwright status` and `bookwright focus` are
+  documented in the command reference; the changelog has a v0.3.0 entry.
+- **SC-005**: Overall test coverage stays ≥ 80 % (the single enforced CI gate)
+  and new M5 code is ≥ 85 % (report-only, verified at review — not a second CI
+  gate; see FR-017).
+- **SC-006**: Lint, format, strict type-check, pre-commit, and CI are green, and
+  the documentation site builds with zero warnings.
+- **SC-007**: No vector-search, export, or other post-v0.3 capability is
+  introduced by this iteration, and no new product mechanism is added.
+
+## Assumptions
+
+- This is plan iteration 023 (spec directory `023`), the final iteration of
+  M5 / v0.3.0. It assumes iterations 019–022 (authored focus, `bookwright
+  status`, `bookwright-research` consuming open items, skills reading `status`)
+  are already merged on `main`. This iteration adds fixtures, tests, and docs —
+  not new `src/` mechanism.
+- "E2E" here means the deterministic CLI stages (focus set → build → status →
+  resolve → status) are automated; the LLM/judgment steps the loop normally
+  involves are represented by fixed pre-baked fixture content and are NOT invoked
+  in CI. The assertions are on the deterministic `status` JSON output only.
+- The fixture follows the existing `tests/fixtures/tiny-*` conventions
+  (short-but-coherent, Spanish narrative prose, English identifiers/structure)
+  and the existing E2E test conventions (`tests/e2e/`, fixtures-as-input,
+  `tmp_path` where a project is mutated). The decision to author a dedicated new
+  fixture vs. extend `tiny-historical` (which already carries research/anchor
+  scaffolding) is left to planning; either way, FR-006's non-regression
+  constraint holds.
+- The "resolve an open question" step is materialized as pre-baked fixture
+  content (e.g. an additional/overlaid research file supplying the missing
+  Finding or a sufficiently-reliable Source) applied to a `tmp_path` copy, so
+  resolving exactly one item is deterministic — mirroring iteration 16's
+  fixture-as-input + `tmp_path`-copy approach.
+- `docs/commands/status.md` and `docs/commands/focus-*.md` already exist (added
+  in iterations 019–020) and are wired into the mkdocs nav; FR-015 is therefore
+  verify-and-finalize for those pages, while `docs/orchestration.md` is genuinely
+  new (a top-level page like `research.md`, not under the CLI-gated
+  `docs/commands/` directory).
+- Documentation prose (the orchestration page, narrative parts of the changelog)
+  is written in Spanish to match the existing docs site and design documents;
+  identifiers and command names stay as-is.
+- "New M5 code" for the ≥ 85 % coverage target refers to the source added across
+  M5 (focus, `status`, status-consuming skill plumbing) as it stands at release,
+  measured by the existing coverage tooling; this iteration mostly adds
+  fixtures/tests/docs rather than new `src/` code.
+
+## Out of Scope
+
+- Vector search over the corpus (ChromaDB / semantic retrieval) — that is v0.4.
+- Export to EPUB / PDF / print — that is v1.0.
+- Any new product mechanism: this iteration adds a fixture, tests, and docs only;
+  it changes no CLI verb, manifest field, validator, or skill behavior.
+- Automating any LLM/judgment step in CI; those remain represented by the
+  fixture's pre-baked content. The deterministic `status` output is what the
+  test asserts.
+- Actually publishing/tagging the v0.3.0 release (this iteration makes it
+  *ready*; the release/tag action itself is a separate step).
