@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.2.0-6f42c1" alt="Version 0.2.0"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.3.0-6f42c1" alt="Version 0.3.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache-2.0"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Coverage ≥80%">
@@ -24,8 +24,11 @@ outline, scenes) and let an AI agent write from *them*, not from a free-form
 chat. Your book lives in plain text, versioned in git, fully auditable, and
 outlives the toolkit.
 
-> **Status: v0.2.0.** The v0.1.0 toolkit (iterations 1–11) and the M4
-> research & verification milestone (iterations 12–18) are both on `main`.
+> **Status: v0.3.0.** The v0.1.0 toolkit (iterations 1–11), the M4
+> research & verification milestone (iterations 12–18), and the M5 context
+> orchestration milestone (authored `[focus]` + `bookwright focus`, derived
+> `bookwright status` with `next_actions`, and the skills that consume it;
+> iterations 19–23) are all on `main`.
 
 The canonical README and the full documentation are in Spanish (the language of
 the design corpus). The English-facing surface is the code, the CLI, and the

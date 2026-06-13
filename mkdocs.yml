@@ -32,6 +32,7 @@ nav:
       - bookwright status: commands/status.md
   - Validación: validation.md
   - Investigación: research.md
+  - Orquestación: orchestration.md
   - Extender: extending.md
   - FAQ: faq.md
   - Cambios: changelog.md

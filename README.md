@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.2.0-6f42c1" alt="Versión 0.2.0"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.3.0-6f42c1" alt="Versión 0.3.0"></a>
   <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Licencia: Apache-2.0"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Cobertura ≥80%">
@@ -28,17 +28,21 @@ IA escriba a partir de *ellos*, no de un chat libre. Tu libro vive en
 texto plano, versionado en git, completamente auditable, y sobrevive al
 toolkit.
 
-> ### Estado: v0.2.0
+> ### Estado: v0.3.0
 >
-> Dos hitos están en `main`. **v0.1.0** (el toolkit base, iteraciones
+> Tres hitos están en `main`. **v0.1.0** (el toolkit base, iteraciones
 > 1–11): scaffolding del proyecto (`bookwright init`), el modelo de
 > dominio GOLEM, el indexer y los comandos `bookwright graph`, las skills
 > de autoría materializadas como Agent Skills, y el sistema de validación
 > de continuidad. **v0.2.0 / M4** (investigación y verificación,
 > iteraciones 12–18): el modelo de procedencia `Source` / `Finding` /
 > `Anchor`, las skills `/bookwright-research` y `/bookwright-verify`, el
-> validador `factual_anchor` y la envoltura `--json` unificada. La
-> documentación de usuario completa vive en el
+> validador `factual_anchor` y la envoltura `--json` unificada.
+> **v0.3.0 / M5** (orquestación de contexto, iteraciones 19–23): el foco
+> autoral (`[focus]` + `bookwright focus`), el estado derivado
+> `bookwright status` con sus `next_actions`, y las skills que lo
+> consumen para guiar el siguiente paso. La documentación de usuario
+> completa vive en el
 > [sitio de documentación](https://github.com/jmorenobl/bookwright/blob/main/docs/index.md).
 
 ## El loop del escritor
@@ -148,6 +152,14 @@ bookwright graph query "SELECT ?c WHERE { ?c a golem:G1_Character }" --json
 bookwright validate                               # exit 0 si no hay errores
 ```
 
+Para mantener el hilo conductor entre sesiones, fija tu foco autoral y deja que
+Bookwright derive el estado y el siguiente paso:
+
+```bash
+bookwright focus set --target "Cerrar la investigación del libro de jornales"
+bookwright status --json                          # estado derivado + next_actions
+```
+
 ¿Quieres cambiar de integración (p. ej. de `claude` a `generic`)?
 
 ```bash
@@ -176,9 +188,11 @@ El recorrido completo está en
 ## Roadmap y fuera de scope
 
 Hecho: **v0.2 / M4** — investigación y verificación (modelo de procedencia,
-skills `research`/`verify`, validador `factual_anchor`). Planificado:
-**v0.3** — búsqueda vectorial (ChromaDB sobre rdflib, desacoplada); **v1.0** —
-export a EPUB / PDF / impresión vía pandoc.
+skills `research`/`verify`, validador `factual_anchor`); **v0.3 / M5** —
+orquestación de contexto (foco autoral `[focus]` + `bookwright focus`, estado
+derivado `bookwright status` con `next_actions`, y las skills que lo consumen).
+Planificado: **v0.4** — búsqueda vectorial (ChromaDB sobre rdflib, desacoplada);
+**v1.0** — export a EPUB / PDF / impresión vía pandoc.
 
 **Cancelado (decisión del owner), no lo pidas:** presets de género / paquetes
 de plantilla (la resolución es de 2 capas, overrides → core); el motor

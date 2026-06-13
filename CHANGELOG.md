@@ -4,6 +4,47 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.3.0] — 2026-06-13
+
+Context-orchestration milestone (M5, design § 21). This release adds the
+**hilo conductor** — a three-layer work thread that answers "what am I working on
+and what should I do next?" without a hand-written TODO that rots. The layers never
+overlap: an **authored** `[focus]` block (your declared intent), a **derived**
+`bookwright status` (the project state recomputed from the corpus, with
+deterministic `next_actions`), and the **judgment** of the Agent Skills each action
+invokes. Like the rest of Bookwright, the plan is a *function* of the plain text:
+delete the graph, rebuild, get the same state. The system is **inert** for projects
+that don't use it: no `[focus]` and no `bible/research/` means identical v0.2.0
+behavior. This entry consolidates iterations 19–23.
+
+### Added
+
+- **Authored focus** (iteration 19): the optional `[focus]` manifest block
+  (`target`, `notes`, CLI-stamped `updated_at`) and the `bookwright focus
+  set`/`show`/`clear` commands. Plain-text authored state (Principle I); `focus
+  set` preserves the rest of the manifest byte-for-byte (comments and order
+  included).
+- **`bookwright status`** (iteration 20): the derived-state command. Rebuilds the
+  graph from the corpus on every run (recomputation *is* the freshness mechanism),
+  aggregates the facts (phase, focus, open research questions, under-supported
+  anchors, low-reliability findings, validation summary), and maps them through a
+  pure, ordered rule table into `next_actions` — each carrying the skill to invoke,
+  a paste-ready prompt, and the reason it fired. No LLM, no network: the same corpus
+  yields byte-identical output. The rules recommend **per workstream, not per item**,
+  so resolving one open question does not shorten the list — only its prompt/reason
+  converge.
+- **Status-consuming skills** (iterations 21–22): the authoring skills now read
+  `bookwright status` at start, anchoring the judgment layer in the derived state
+  rather than asking the author to restate it.
+- **Orchestration fixture, E2E & docs** (iteration 23): the `tiny-historical`
+  fixture extended into a worked orchestration example (a populated `[focus]`, a
+  co-located `expected-status.md` oracle, and a pre-baked `_resolution/` answering
+  finding outside the corpus dirs); `tests/e2e/test_orchestration_workflow.py`,
+  which walks `focus → build → status → resolve → build → status` and asserts
+  deterministic **state convergence** plus the inertness/degraded paths; and the
+  Spanish `docs/orchestration.md` page wired into the nav. The M4
+  `factual_anchor` expectations stay byte-stable (FR-006).
+
 ## [0.2.0] — 2026-06-05
 
 Research & verification milestone (M4). This release adds a provenance-backed

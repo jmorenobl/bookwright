@@ -150,11 +150,12 @@ def test_known_state_yields_the_exact_next_actions(
 ) -> None:
     _, payload = _status_json(runner)
     actions = payload["next_actions"]
+    # The fixture carries an authored [focus] block (iteration 023), so rule ⑤
+    # (define_focus) does NOT fire — exactly three research-derived workstreams remain.
     assert [a["skill"] for a in actions] == [
         "bookwright-research",
         "bookwright-verify",
         "bookwright-continuity",
-        "bookwright focus set",
     ]
     research = actions[0]
     # The prompt lists the queue; the reason cites the count (FR-009).
@@ -162,8 +163,8 @@ def test_known_state_yields_the_exact_next_actions(
     assert "q-libro-de-jornales" in research["prompt"]
     assert "q-origen-telares" in research["prompt"]
     assert "rumor-incendio" in research["prompt"]
-    # The focus-less fixture gets the define-focus recommendation (FR-009).
-    assert actions[-1]["reason"] == "no authored focus is defined"
+    # With a focus defined, the define-focus recommendation is absent.
+    assert all(a["skill"] != "bookwright focus set" for a in actions)
     # SC-004: each action carries all three non-empty components.
     assert all(a["skill"] and a["prompt"] and a["reason"] for a in actions)
 

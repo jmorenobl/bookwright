@@ -263,5 +263,6 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+`specs/023-orchestration-e2e-release/plan.md`
 <!-- SPECKIT END -->
