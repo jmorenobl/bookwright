@@ -3,6 +3,40 @@
 Registro de versiones de Bookwright. Sigue el espíritu de
 [Keep a Changelog](https://keepachangelog.com/es/) y el versionado semántico.
 
+## v0.3.0 — Orquestación de contexto (M5)
+
+Añade el **hilo conductor** (diseño § 21): un plan de trabajo en tres capas que no se
+pisan —**autorada** (el bloque `[focus]`), **derivada** (`bookwright status`) y de
+**juicio** (las skills)— que responde *en qué trabajo y qué hago a continuación* sin un
+TODO escrito a mano que envejece. El plan es una **función** del texto plano: borra el
+grafo, reconstruye y obtienes el mismo estado. Opcional y aditivo: un proyecto que no lo
+usa se comporta como en v0.2. Ver [Orquestación](orchestration.md).
+
+### Añadido
+
+- **Foco autorado** (iteración 19): el bloque opcional `[focus]` del manifiesto
+  (`target`, `notes`, `updated_at` sellado por la CLI) y los comandos
+  [`bookwright focus set`](commands/focus-set.md) / [`show`](commands/focus-show.md) /
+  [`clear`](commands/focus-clear.md). Estado autorado en texto plano; `focus set`
+  preserva el resto del manifiesto byte a byte.
+- **`bookwright status`** (iteración 20): el [comando de estado derivado](commands/status.md).
+  Reconstruye el grafo en cada ejecución (la recomputación *es* la frescura), agrega los
+  hechos —fase, foco, preguntas abiertas, anclas sin soporte, hallazgos de baja
+  fiabilidad, resumen de validación— y los pasa por una tabla de reglas pura y ordenada
+  que produce `next_actions` (skill + prompt + razón). Sin LLM ni red: bytes idénticos
+  para el mismo corpus. Las reglas recomiendan **por workstream, no por elemento**, de
+  modo que cerrar una pregunta no acorta la lista: solo convergen su prompt y su razón.
+- **Skills que consumen `status`** (iteraciones 21–22): las skills de autoría leen
+  `bookwright status` al arrancar, anclando la capa de juicio en el estado derivado.
+- **Ejemplo, E2E y docs de orquestación** (iteración 23): el *fixture* `tiny-historical`
+  ampliado a ejemplo de trabajo (un `[focus]` poblado, un oráculo co-localizado
+  `expected-status.md` y una resolución pre-cocinada en `_resolution/`, fuera del
+  corpus), el test E2E `test_orchestration_workflow.py` que recorre
+  `focus → build → status → resolver → build → status` y asevera la **convergencia de
+  estado** más las rutas de inercia y degradación, y la página
+  [Orquestación](orchestration.md). Las expectativas de `factual_anchor` (M4) quedan
+  byte-estables.
+
 ## v0.2.0 — Investigación y procedencia (M4)
 
 Añade el sistema de **investigación con procedencia**, opcional y aditivo: una obra

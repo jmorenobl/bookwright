@@ -22,6 +22,17 @@ language = "es"
 authors = ["Equipo Bookwright"]
 status = "drafting"
 
+# The authored working focus (M5 / iteration 019). A populated [focus] block makes
+# this fixture a worked orchestration example: `bookwright status` reports a defined
+# focus and `next_actions` reason over the open research questions below. The E2E
+# re-stamps `target` via `bookwright focus set` (so `updated_at` becomes the run date,
+# identical across both status runs). Touching this block does NOT touch
+# [research]/[validators], so the M4 factual_anchor expectations stay byte-stable.
+[focus]
+target = "Cerrar la investigación del libro de jornales para datar la huelga"
+notes = "Pendiente: confirmar si se conserva el libro de jornales (q-libro-de-jornales)."
+updated_at = 2026-06-13
+
 [research]
 enabled = true
 # The foreign source languages used in bible/research/sources.md (ISO 639-1). Each
