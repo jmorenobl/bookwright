@@ -1,0 +1,72 @@
+name: Release
+
+# Publishing is "push a tag". Pushing a tag like `v0.3.2` builds the wheel +
+# sdist, publishes them to PyPI via trusted publishing (OIDC — no token stored
+# anywhere), and cuts the matching GitHub Release from the CHANGELOG section.
+#
+# One-time PyPI setup (existing project `bookwright-cli`):
+#   pypi.org → Your projects → bookwright-cli → Manage → Publishing →
+#   "Add a new publisher" (GitHub):
+#     Owner: jmorenobl   Repository: bookwright
+#     Workflow name: release.yml   Environment: pypi
+# `scripts/publish.sh` stays as the manual/TestPyPI fallback.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/bookwright-cli
+    permissions:
+      id-token: write # PyPI trusted publishing (OIDC)
+      contents: write # create the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Assert tag matches package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/bookwright/__init__.py)"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag does not match package version $pkg"
+            exit 1
+          fi
+          echo "Releasing $GITHUB_REF_NAME (package version $pkg)"
+
+      - name: Build distribution (wheel + sdist)
+        run: uv build
+
+      - name: Assert wheel bundles packaged resources
+        run: python -m zipfile -l dist/bookwright_cli-*.whl | grep -q 'bookwright/resources/'
+
+      - name: Publish to PyPI (trusted publishing)
+        run: uv publish --trusted-publishing always
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          awk -v ver="$ver" '
+            /^## \[/ { if (inblk) exit; if (index($0, "["ver"]")) { inblk=1; next } }
+            inblk { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "::error::no CHANGELOG section found for [$ver]"
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Bookwright $GITHUB_REF_NAME" \
+            --notes-file RELEASE_NOTES.md \
+            --verify-tag --latest
