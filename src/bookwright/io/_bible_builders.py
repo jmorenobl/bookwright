@@ -259,5 +259,10 @@ def _build_location(
 ) -> NarrativeLocation:
     """Build a ``NarrativeLocation`` (G13) from ``name`` + optional ``setting`` (FR-001/002)."""
     name = _require_name(metadata)
+    # Validate the name slugs *before* resolving ``setting:``, so an unsluggable name
+    # aborts (→ the file is skipped) without ``_resolve_setting`` first recording a
+    # stray unresolved-participant warning for a file that produces no entity. Keeps
+    # the invariant that a skipped file appears only under ``skipped``.
+    make_slug(name)
     setting = _resolve_setting(ctx, metadata, name, relpath)
     return NarrativeLocation(uri_base=uri_base, name=name, setting=setting)
