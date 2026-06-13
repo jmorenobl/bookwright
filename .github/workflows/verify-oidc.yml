@@ -1,0 +1,35 @@
+name: Verify PyPI OIDC
+
+# Non-destructive trusted-publishing check: mint a GitHub OIDC token (audience
+# pypi) and exchange it at PyPI's mint-token endpoint. A returned ephemeral
+# token proves the trusted publisher (owner/repo/workflow/environment) matches —
+# nothing is uploaded. Run via: gh workflow run verify-oidc.yml
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Exchange OIDC token with PyPI
+        run: |
+          oidc="$(curl -sS \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi" \
+            | python3 -c 'import sys,json; print(json.load(sys.stdin)["value"])')"
+          resp="$(curl -sS -X POST https://pypi.org/_/oidc/mint-token \
+            -d "{\"token\":\"$oidc\"}")"
+          echo "$resp" | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+if d.get("token"):
+    print("OIDC OK — PyPI minted an ephemeral token; trusted publishing is configured correctly.")
+else:
+    print("OIDC FAILED — PyPI rejected the exchange:")
+    print(json.dumps(d, indent=2))
+    sys.exit(1)
+'
