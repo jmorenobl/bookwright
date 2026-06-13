@@ -58,6 +58,10 @@ El orden importa: cada paso se funda en el anterior. La constitución fija las
 reglas; la biblia puebla las entidades; el outline las estructura; las escenas
 las desglosan; el draft redacta.
 
+> **Nota (v0.3):** `outline/` y `manuscript/` son **solo para el autor**: el
+> scaffold los crea, pero el motor no ingiere su contenido (solo la biblia
+> alimenta el grafo). Su prosa estructura tu trabajo, no el grafo derivado.
+
 ### Planificación (pre-draft)
 
 | Skill | Qué hace |

@@ -1,0 +1,36 @@
+# Bookwright project manifest — fixture `parity-exercise`.
+#
+# A single-purpose corpus whose only reason to exist is the ingestion-parity
+# guard (tests/golem/test_ingestion_parity.py, iteration 024). It drives exactly
+# the six reachable authored-text ingestion paths — Character, NarrativeRole and
+# the CharacterFeature/AttributeAssignment carriers (a character with
+# narrative_roles + born/features), Setting, NarrativeEvent (timeline.md) and
+# SocialRelationship (relationships.md, the one path no other committed fixture
+# exercises). Shipped source-only; bible/graph.ttl is rebuilt in a tmp copy.
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.1"
+manifest_version = "1"
+uri_base = "https://example.org/parity-exercise/"
+indexer = "rdflib"
+
+[book]
+title = "Parity Exercise"
+type = "novel"
+language = "en"
+authors = ["Bookwright Test Suite"]
+status = "drafting"
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"
