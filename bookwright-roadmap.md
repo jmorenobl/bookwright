@@ -46,14 +46,33 @@ Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 
 ```
 v0.3.x  ──  endurecimiento: cancelar deuda, robustez, cerrar atajos de v0   ← AQUÍ
-v0.4    ──  búsqueda vectorial (ChromaDB sobre rdflib, desacoplada)
-            + la capa estructural narrativa (Propp/Greimas) e ingesta de outline/
-v1.0    ──  export a EPUB / PDF / print (vía pandoc)
+v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)
+            + ingesta de outline/  — cierra la paridad de ingesta
+──── horizonte sin versión asignada (demand-pulled, con condición de activación) ────
+vectores  ─  ChromaDB sobre rdflib, tras el Indexer Protocol. Activar SI:
+             corpus multi-libro/serie, O recall estructural medido como
+             insuficiente en una skill concreta. Hasta entonces: no se implementa.
+export    ─  EPUB / PDF / print vía pandoc. Activar cuando el flujo completo se
+             haya probado en un libro real y el cuello de botella sea sacarlo.
 ```
 
+**Por qué v0.4 es solo la capa narrativa.** v0.4 completa la **tesis estructural**
+del proyecto —los conceptos narrativos modelados-sin-alimentar que quedan
+(G7/G9/G10)— y la ingesta de `outline/`. Es determinista, citable por SPARQL,
+núcleo. Lo que **no** entra es la búsqueda vectorial: es un subsistema blando
+(embeddings, recall sobre prosa) sin un consumidor que hoy sufra por su ausencia,
+y mezclarlo con la capa estructural trataría como pares dos cosas de naturaleza
+opuesta. Por eso pasa al **horizonte demand-pulled** (§ 4): buena idea sin
+disparador presente, con condición de activación explícita en vez de número de
+versión. El export sale del mismo molde —su `v1.0` estaba **pre-asignado** sin
+haberse ganado; el número 1.0 se gana cuando el flujo de punta a punta esté
+probado, no se reparte por adelantado—. Es el mismo espíritu del registro de
+diferidos de la iteración 024, llevado del nivel de *concepto de ontología* al de
+*subsistema*.
+
 **Por qué un tramo de endurecimiento antes de v0.4.** Antes de añadir
-funcionalidad nueva (vectores) conviene **solidificar la base**: saldar la deuda
-técnica acumulada como atajos de v0, hacer explícito lo que hoy está implícito, y
+funcionalidad nueva conviene **solidificar la base**: saldar la deuda técnica
+acumulada como atajos de v0, hacer explícito lo que hoy está implícito, y
 robustecer el sistema actual. Cada versión `v0.3.x` es un **patch**: una
 iteración Spec Kit que deja la herramienta funcional y entrega **un delta
 observable** (no se libera un patch sin cambio visible; el plumbing interno viaja
