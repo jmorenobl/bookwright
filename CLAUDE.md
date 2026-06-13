@@ -102,7 +102,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1); 025–027 are planned (v0.3.x hardening).
+024 is merged (v0.3.1) and 025 is merged (v0.3.2); 026–027 are planned (v0.3.x hardening).
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -130,7 +130,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 | 022 | Skills read `status` at start + "Next steps" block | M5 | ✅ merged |
 | 023 | Orchestration E2E fixture, workflow test, docs, v0.3.0 | M5 | ✅ merged |
 | 024 | Ingestion-parity guard + deferral registry | v0.3.x | ✅ merged |
-| 025 | Index locations (G13) + `bible.py` split | v0.3.x | ⏳ planned |
+| 025 | Index locations (G13) + `bible.py` split | v0.3.x | ✅ merged |
 | 026 | Index objects (G16) + `bible/objects/` scaffold + skill | v0.3.x | ⏳ planned |
 | 027 | JSON-envelope cleanup + G6/G3 decision | v0.3.x | ⏳ planned |
 
@@ -139,9 +139,9 @@ M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 status-consuming skills (021–022), and the orchestration E2E fixture/tests/docs
 (023) all merged. The current milestone is the **v0.3.x hardening track** (iterations
 024–027, released as patches `v0.3.1`…`v0.3.4`): ingestion-parity is now explicit
-(024, `v0.3.1`, merged). Next, wire the orphaned GOLEM concepts that are cheap
-mirrors of `settings/` — locations G13 (025), objects G16 (026) — and a
-cleanup/decision pass (027). The
+(024, `v0.3.1`, merged) and locations G13 are wired (025, `v0.3.2`, merged). Next,
+wire the remaining orphaned GOLEM concept that is a cheap mirror of `settings/` —
+objects G16 (026) — and a cleanup/decision pass (027). The
 heavier Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/`
 ingestion are **v0.4**. Vector search and export are deferred to an unversioned,
 demand-pulled horizon (activate on a concrete trigger, not a pre-assigned

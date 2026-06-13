@@ -4,6 +4,49 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.3.2] — 2026-06-14
+
+Second patch of the **v0.3.x hardening track** (iteration 025). It wires the
+first orphaned GOLEM concept into the ingestion pipeline: `bible/locations/*.md`
+files — ignored entirely in v0 — now become first-class
+`G13_Narrative_Location` nodes, mirroring how `bible/settings/` already feeds
+`G12_Setting`. This shrinks the deferral registry from seven orphans to six and
+turns the ingestion-parity guard's reachable set from six fed concepts to seven.
+No new CLI surface, no new runtime dependency, no ontology change (G13 and
+`dlp:generic-location` already exist in the frozen closure) — pure hardening.
+
+### Added
+
+- **Location ingestion** (`src/bookwright/io/_bible_builders.py`,
+  `src/bookwright/io/bible.py`): the bible mapper now processes
+  `bible/locations/*.md` as a one-entity-per-file directory. Each file builds a
+  `NarrativeLocation` (G13) from `name:` front-matter (identity source) plus an
+  optional `setting:` that resolves against the sibling settings index and emits
+  the already-modelled `dlp:generic-location` cross-ref. An unresolvable
+  `setting:` is surfaced through the existing `unresolved_participants` channel
+  (no new warning category); the node is still built, the build never aborts.
+  Built locations feed the research target index, so a `bears_on:` / `constrains:`
+  link to a location now resolves instead of degrading to a soft-miss.
+
+### Changed
+
+- **`io/bible.py` split** (behavior-preserving): the concrete builders, coercers,
+  resolution helpers, and the context/result dataclasses moved to the new sibling
+  module `src/bookwright/io/_bible_builders.py`, bringing `bible.py` back under the
+  500-line Principle IV ceiling (it was exactly at 500). `bible.py` re-exports the
+  moved public names, so every `from bookwright.io.bible import …` keeps resolving;
+  the existing mapper tests pass unchanged.
+- **`NarrativeLocation` removed from the deferral registry**
+  (`src/bookwright/golem/deferrals.py`, 7 → 6 entries); the ingestion-parity test
+  (`tests/golem/test_ingestion_parity.py`) now pins seven reachable concepts.
+- **`/bookwright-bible` source command** teaches authoring each concrete location
+  as `bible/locations/<slug>.md` with `name:` (required) and `setting:` (optional)
+  front-matter; the "no se indexa en v0" shortcut wording is retired. The skill
+  re-materializes for both `claude` and `generic` integrations with its bilingual
+  (ES/EN) triggers preserved.
+- Recorded G13 as wired in `bookwright-design.md` § 7.2 (the v0 shortcut text is
+  retired; no axiom reopened).
+
 ## [0.3.1] — 2026-06-13
 
 First patch of the **v0.3.x hardening track** (iteration 024). It makes
