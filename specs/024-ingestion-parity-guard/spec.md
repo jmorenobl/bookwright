@@ -168,10 +168,14 @@ behavior changed (the existing presence-check semantics are unchanged).
   reachable from authored text today. Each entry MUST carry a short reason and a
   target version.
 - **FR-002**: The deferral registry MUST contain exactly these seven concepts
-  with these target versions: `NarrativeLocation` (G13) → `v0.3.x`; `Object`
-  (G16) → `v0.3.x`; `NarrativeUnit` (G9), `NarrativeFunction` (G10),
-  `NarrativeSequence` (G7) → `v0.4`; `RelationshipRole` (G6) and
-  `PsychologicalState` (G3) → "undecided" / "to be decided".
+  with these exact target versions, and a test MUST pin the full
+  concept→version mapping (not merely non-emptiness): `NarrativeLocation` (G13)
+  → `v0.3.x`; `Object` (G16) → `v0.3.x`; `NarrativeUnit` (G9),
+  `NarrativeFunction` (G10), `NarrativeSequence` (G7) → `v0.4`;
+  `RelationshipRole` (G6) and `PsychologicalState` (G3) → `undecided` (the
+  single canonical literal for "target version not yet chosen"; the wire-or-
+  defer decision itself is iteration 027's, but the *target version* stays
+  `undecided` until then).
 - **FR-003**: The system MUST determine the set of *reachable* concepts by
   **building the GOLEM graph from an exercise fixture** and observing which
   concept-level `rdf:type` IRIs (drawn from the closure) actually appear — never
@@ -241,7 +245,9 @@ behavior changed (the existing presence-check semantics are unchanged).
   present in the deferral registry — with zero concepts in both states and zero
   in neither.
 - **SC-002**: The deferral registry has exactly seven entries, each with a
-  non-empty reason and a target version, matching the roadmap §3 parity table.
+  non-empty reason, and the full concept→target-version mapping is pinned by a
+  test to exactly the values in FR-002 (`v0.3.x` for G13/G16, `v0.4` for
+  G7/G9/G10, `undecided` for G6/G3), matching the roadmap §3 parity table.
 - **SC-003**: The ingestion-parity test passes on the current `main`-equivalent
   code and fails under each of the three drift conditions (newly-fed-but-still-
   deferred; declared-deferred-but-actually-fed; undeclared-orphan), with a
@@ -269,9 +275,11 @@ behavior changed (the existing presence-check semantics are unchanged).
 - **The parity contract is scoped to `CONCEPTS`**, not the full `CLASS_IRI`
   closure; the carrier IRIs (`CharacterFeature`, `Dimension`, `Type`,
   `TimeInterval`) are deliberately outside it.
-- **`RelationshipRole` (G6) and `PsychologicalState` (G3)** are deferred with an
-  "undecided / to be decided" target version (the wire-or-formally-defer call is
-  iteration 027's, per the plan), not a concrete version.
+- **`RelationshipRole` (G6) and `PsychologicalState` (G3)** are deferred with the
+  single canonical `undecided` target version (the wire-or-formally-defer call is
+  iteration 027's, per the plan), not a concrete version. The roadmap §3 phrasing
+  "decidir en v0.3.x" refers to the *timing of that decision*, not the target
+  version, which stays `undecided` in the registry until 027 resolves it.
 - **The exercise fixture may reuse or extend an existing test fixture** rather
   than introduce a wholly new corpus, as long as it provably exercises every
   current ingestion path; the graph is a derived cache, reconstructible from the

@@ -11,7 +11,7 @@ it is expected to be.
 | Field | Type | Rule |
 |---|---|---|
 | `reason` | `str` | Non-empty. Short prose (one clause) on why the concept has no authored-text builder today. |
-| `target_version` | `str` | Non-empty. One of `v0.3.x`, `v0.4`, or the literal `undecided` / `to be decided` (FR-002). Free-text; not validated against a version grammar. |
+| `target_version` | `str` | Non-empty. Exactly one of `v0.3.x`, `v0.4`, or the single canonical literal `undecided` (FR-002). Free-text type, but the concept→version mapping is pinned by a test, so the value is a contract, not a comment. |
 
 Realized as `class DeferralNote(NamedTuple)` (research D4) — immutable, hashable,
 `mypy --strict` clean.

@@ -80,9 +80,10 @@ unit-testable, and reads as plain data — no runtime state, no I/O (Key Entitie
 module inside `golem/` honors "su propio módulo, junto a `golem/__init__.py`" and "no
 toques `golem/` salvo el registro nuevo" (only addition, no edit to `__init__.py` or
 `namespaces.py`). Keys are validated against `CONCEPTS` by the parity test, so a typo in
-a key fails loudly. Target versions are free-text per FR-002 (`v0.3.x`, `v0.4`, and the
-literal "undecided" / "to be decided" for G6/G3, whose wire-or-defer call is iteration
-027's).
+a key fails loudly. Target versions are a pinned contract per FR-002 (`v0.3.x` for G13/G16, `v0.4`
+for G7/G9/G10, and the single canonical literal `undecided` for G6/G3, whose
+wire-or-defer call is iteration 027's). The `str` type is free-text, but the
+parity test pins the full concept→version mapping, so a wrong value fails.
 
 **Alternatives considered**: a `@dataclass(frozen=True)` (equivalent; `NamedTuple` is
 lighter for a 2-field record); an `Enum` (over-modelled for free-text values); putting

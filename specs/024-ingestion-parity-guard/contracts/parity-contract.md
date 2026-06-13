@@ -11,7 +11,7 @@ from typing import NamedTuple
 
 class DeferralNote(NamedTuple):
     reason: str          # non-empty, short
-    target_version: str  # non-empty; "v0.3.x" | "v0.4" | "undecided"/"to be decided"
+    target_version: str  # non-empty; exactly "v0.3.x" | "v0.4" | "undecided"
 
 DEFERRED_CONCEPTS: dict[str, DeferralNote]
 ```
@@ -22,9 +22,13 @@ DEFERRED_CONCEPTS: dict[str, DeferralNote]
 - `len(DEFERRED_CONCEPTS) == 7` and the key set is exactly
   `{NarrativeLocation, Object, NarrativeUnit, NarrativeFunction, NarrativeSequence,
   RelationshipRole, PsychologicalState}` (FR-002, SC-002).
+- The full concept→`target_version` mapping is pinned exactly:
+  `NarrativeLocation`/`Object` → `v0.3.x`; `NarrativeUnit`/`NarrativeFunction`/
+  `NarrativeSequence` → `v0.4`; `RelationshipRole`/`PsychologicalState` →
+  `undecided` (FR-002, SC-002). A wrong version fails the test.
 - No carrier name (`CharacterFeature`, `Dimension`, `Type`, `TimeInterval`) appears
   (FR-010).
-- Every `reason` and `target_version` is non-empty (SC-002).
+- Every `reason` is non-empty (SC-002).
 
 **Import side effects**: none. Pure data; imports only `typing` (and optionally
 `CONCEPTS` is *not* imported here to keep the module dependency-free — the test imports
