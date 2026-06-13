@@ -12,9 +12,10 @@ real `src/bookwright/` package, ~200 Python files, the full test suite, docs, an
 CI gates green. There is **no active iteration branch**. The next work is the
 **v0.3.x hardening track** (cancel tech debt, robustness, close v0 shortcuts) in
 `bookwright-implementation-plan.md`: iterations 024–027, released as successive
-patches (`v0.3.1`…`v0.3.4`). Vector search (ChromaDB over rdflib) and the
-narrative-structure layer (Propp/Greimas) are v0.4; export is v1.0 — see
-`bookwright-roadmap.md`.
+patches (`v0.3.1`…`v0.3.4`). The narrative-structure layer (Propp/Greimas) is
+v0.4. Vector search (ChromaDB over rdflib) and export are deferred to an
+unversioned, demand-pulled horizon — each ships only when its activation
+condition is met, not on a pre-assigned version — see `bookwright-roadmap.md`.
 
 The canonical references:
 
@@ -24,7 +25,8 @@ The canonical references:
   MUST NOT be reopened. § 20 covers the research system (shipped in v0.2);
   § 21 the context orchestration (shipped in v0.3).
 - `bookwright-roadmap.md` (Spanish) — the **durable** intent across versions
-  (the *what* and *why*): the version line (v0.3.x → v0.4 → v1.0), the
+  (the *what* and *why*): the version line (v0.3.x → v0.4 → demand-pulled
+  horizon), the
   ingestion-parity north star, the cancelled list. Unlike the plan, it is **not**
   emptied each milestone. A guide, not a commitment.
 - `bookwright-implementation-plan.md` (Spanish) — ordered iteration plan for the
@@ -141,8 +143,9 @@ status-consuming skills (021–022), and the orchestration E2E fixture/tests/doc
 mirrors of `settings/` — locations G13 (025), objects G16 (026) — and a
 cleanup/decision pass (027). The
 heavier Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/`
-ingestion move to **v0.4** alongside vector search; export is **v1.0**. See
-`bookwright-roadmap.md`.
+ingestion are **v0.4**. Vector search and export are deferred to an unversioned,
+demand-pulled horizon (activate on a concrete trigger, not a pre-assigned
+version). See `bookwright-roadmap.md`.
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
@@ -244,9 +247,15 @@ rejected (Constitution "Scope & Release Discipline").
   G6/G3 decision (027). Each is a patch with one observable delta; internal
   plumbing rides inside the patch it enables (e.g. the `bible.py` split ships
   with locations, not as a zero-change release). Don't pull v0.4 work below into it.
-- v0.4 — vector search (ChromaDB over rdflib, decoupled from Grafeo) + the
-  Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/` ingestion.
-- v1.0 — export to EPUB / PDF / print via pandoc.
+- v0.4 — the Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/`
+  ingestion (closes ingestion parity).
+- **Demand-pulled horizon (no version assigned)** — ships only when an explicit
+  activation condition is met, never as speculative plumbing: **vector search**
+  (ChromaDB over rdflib, decoupled from Grafeo — activate on a real
+  multi-book/series corpus, or measured structural-recall failure in a skill);
+  **export** to EPUB / PDF / print via pandoc (activate once the end-to-end flow
+  is proven on a real book). The `1.0` label is earned by that proven flow, not
+  pre-assigned to export.
 
 **Cancelled — never implement (owner decision):** preset / genre-package
 system (template resolution is 2 layers, overrides → core); `GrafeoIndexer` /

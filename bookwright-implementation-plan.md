@@ -70,8 +70,8 @@ secuencia. Cada iteración es un branch `NNN-<short-name>` con su propio `specs/
 
 ### 1.1 El problema
 
-Antes de avanzar a funcionalidad nueva (la búsqueda vectorial de v0.4) conviene
-**solidificar la base**: saldar la deuda técnica que quedó como atajos de v0,
+Antes de avanzar a funcionalidad nueva (la capa estructural narrativa de v0.4)
+conviene **solidificar la base**: saldar la deuda técnica que quedó como atajos de v0,
 hacer **explícito** lo que hoy está implícito, y robustecer el sistema actual.
 Construir sobre cimientos firmes en vez de sobre atajos no documentados.
 
@@ -112,7 +112,9 @@ Principio I (texto plano fuente de verdad), Principio IX (`--json`), Principio I
 Este tramo **toma la línea `v0.3.x`** (patches sucesivos). Lo que **no** entra
 aquí y pasa a **v0.4**: la capa estructural narrativa Propp/Greimas (G7/G9/G10) y
 la ingesta de `outline/`, porque son un subsistema con modelo e ingesta nuevos, no
-un fix. La búsqueda vectorial sigue en **v0.4** y el export en **v1.0**. Siguen
+un fix. La búsqueda vectorial y el export pasan al **horizonte demand-pulled** (sin
+versión asignada; se activan por condición concreta, no por número de versión —
+ver `bookwright-roadmap.md` § 4). Siguen
 descartados (decisión de owner): presets, GrafeoIndexer/Grafeo, multi-integración
 más allá de `claude`/`generic`, extension system. Ver `bookwright-roadmap.md`.
 
@@ -400,10 +402,12 @@ o intervén manualmente; redirige al doc de diseño / roadmap.
 
 ### 4.5 Después de v0.3.x
 
-Tras cerrar este tramo, el roadmap que se mantiene es **v0.4 — búsqueda
-vectorial** (ChromaDB sobre rdflib, desacoplada) junto con **la capa estructural
-narrativa** (Propp/Greimas: G9/G10/G7) y la **ingesta de `outline/`**; y **v1.0 —
-export** (EPUB/PDF/print vía pandoc). Cuando llegue el momento, vaciar este plan
+Tras cerrar este tramo, el roadmap que se mantiene es **v0.4 — la capa estructural
+narrativa** (Propp/Greimas: G9/G10/G7) y la **ingesta de `outline/`**, que cierran
+la paridad de ingesta. La **búsqueda vectorial** (ChromaDB sobre rdflib,
+desacoplada) y el **export** (EPUB/PDF/print vía pandoc) pasan al **horizonte
+demand-pulled**: sin versión asignada, se activan por condición concreta (ver
+`bookwright-roadmap.md` § 4). Cuando llegue el momento, vaciar este plan
 de lo entregado y redactarlo para el siguiente hito, manteniendo
 `bookwright-roadmap.md` como la intención durable. Quedan descartados: presets,
 GrafeoIndexer/Grafeo, multi-integración y extension system; ver

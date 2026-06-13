@@ -134,14 +134,32 @@ no documentada como tal).
 
 ---
 
-## 4. Más allá: v0.4 y v1.0
+## 4. Más allá: v0.4 y el horizonte demand-pulled
 
-- **v0.4 — búsqueda vectorial.** ChromaDB (o equivalente) **sobre `rdflib`**,
-  desacoplada del grafo, detrás del `Indexer` Protocol. Sin Grafeo (cancelado).
-  Comparte hito con la **capa estructural narrativa** (G7/G9/G10) y la ingesta de
-  `outline/`, que son el otro gran trozo de "paridad de ingesta" pendiente.
-- **v1.0 — export.** EPUB / PDF / print vía `pandoc`. El texto plano canónico ya
-  es la fuente; el export es una proyección más, como el grafo.
+**v0.4 — capa estructural narrativa.** El último gran trozo de "paridad de
+ingesta": cablear los conceptos Propp/Greimas modelados-sin-alimentar
+(NarrativeUnit G9, NarrativeFunction G10, NarrativeSequence G7) con su modelo e
+ingesta de `outline/` nuevos. Es un subsistema, no un fix: no cabe en un patch
+v0.3.x. Determinista y citable por SPARQL, encaja como núcleo del proyecto.
+
+**Horizonte sin versión asignada (demand-pulled).** Buenas ideas sin disparador
+presente. No se cancelan, pero **no se implementan hasta que su condición se
+cumpla** — y entonces se les asigna número de versión. Es el patrón del registro
+de diferidos (iteración 024) a escala de subsistema:
+
+- **Búsqueda vectorial.** ChromaDB (o equivalente) **sobre `rdflib`**, desacoplada
+  del grafo, detrás del `Indexer` Protocol. Sin Grafeo (cancelado). Su valor real
+  es la capa RAG (lo que las skills recuperan como contexto) y la detección
+  *sugerida* de incoherencias de prosa que SPARQL no ve por estructurales — no
+  "mejor búsqueda" en abstracto. **Condición de activación:** existe un corpus real
+  multi-libro/serie, **o** se mide que la recuperación estructural falla en recall
+  en una skill concreta. Hasta entonces no hay consumidor que sufra su ausencia, y
+  añadirla sería plumbing especulativo (disciplina de scope, § 5).
+- **Export.** EPUB / PDF / print vía `pandoc`. El texto plano canónico ya es la
+  fuente; el export es una proyección más, como el grafo. **Condición de
+  activación:** el flujo de punta a punta se ha probado en un libro real y el
+  cuello de botella pasa a ser sacarlo. El número `1.0` se **gana** cuando ese
+  flujo completo está probado; no se pre-asigna al export por adelantado.
 
 ---
 
