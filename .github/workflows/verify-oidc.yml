@@ -19,17 +19,13 @@ jobs:
         run: |
           oidc="$(curl -sS \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi" \
-            | python3 -c 'import sys,json; print(json.load(sys.stdin)["value"])')"
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi" | jq -r '.value')"
           resp="$(curl -sS -X POST https://pypi.org/_/oidc/mint-token \
             -d "{\"token\":\"$oidc\"}")"
-          echo "$resp" | python3 -c '
-import sys, json
-d = json.load(sys.stdin)
-if d.get("token"):
-    print("OIDC OK — PyPI minted an ephemeral token; trusted publishing is configured correctly.")
-else:
-    print("OIDC FAILED — PyPI rejected the exchange:")
-    print(json.dumps(d, indent=2))
-    sys.exit(1)
-'
+          if echo "$resp" | jq -e '.token' >/dev/null 2>&1; then
+            echo "OIDC OK — PyPI minted an ephemeral token; trusted publishing is configured correctly."
+          else
+            echo "OIDC FAILED — PyPI rejected the exchange:"
+            echo "$resp" | jq . 2>/dev/null || echo "$resp"
+            exit 1
+          fi
