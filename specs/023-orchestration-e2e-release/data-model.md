@@ -66,6 +66,7 @@ New co-located oracle, front-matter loaded once. Illustrative schema:
 ```yaml
 focus:
   target: "Cerrar la investigación del libro de jornales para datar la huelga"
+phase: drafting                                  # == manifest [book].status; FR-008 fact, oracle-sourced
 open_questions:
   ids: [q-libro-de-jornales, q-origen-telares]   # exact set, sorted (file,id)
   file: bible/research/_index.md
