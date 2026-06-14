@@ -2,17 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.3.0 shipped, v0.3.x hardening planned
+## Repository state: v0.3.x hardening complete, v0.4 next
 
 Three milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
 verification system, iterations 12–18) and `v0.3.0` (2026-06-13, the M5 context
 orchestration system, iterations 19–23). All of it is on `main` (tagged) with a
 real `src/bookwright/` package, ~200 Python files, the full test suite, docs, and
-CI gates green. There is **no active iteration branch**. The next work is the
-**v0.3.x hardening track** (cancel tech debt, robustness, close v0 shortcuts) in
-`bookwright-implementation-plan.md`: iterations 024–027, released as successive
-patches (`v0.3.1`…`v0.3.4`). The narrative-structure layer (Propp/Greimas) is
+CI gates green. The **v0.3.x hardening track** (cancel tech debt, robustness,
+close v0 shortcuts) is now also **fully released**: iterations 024–027 shipped as
+successive patches (`v0.3.1`…`v0.3.4`, the last on 2026-06-15), all on `main`
+(tagged). There is **no active iteration branch**. The next work is the
+narrative-structure layer (Propp/Greimas), which is
 v0.4. Vector search (ChromaDB over rdflib) and export are deferred to an
 unversioned, demand-pulled horizon — each ships only when its activation
 condition is met, not on a pre-assigned version — see `bookwright-roadmap.md`.
@@ -102,7 +103,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2) and 026 is merged (v0.3.3); 027 is planned (v0.3.x hardening).
+024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -132,16 +133,20 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 | 024 | Ingestion-parity guard + deferral registry | v0.3.x | ✅ merged |
 | 025 | Index locations (G13) + `bible.py` split | v0.3.x | ✅ merged |
 | 026 | Index objects (G16) + `bible/objects/` scaffold + skill | v0.3.x | ✅ merged |
-| 027 | JSON-envelope cleanup + G6/G3 decision | v0.3.x | ⏳ planned |
+| 027 | JSON-envelope cleanup + G6/G3 decision | v0.3.x | ✅ merged |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the
 status-consuming skills (021–022), and the orchestration E2E fixture/tests/docs
 (023) all merged. The current milestone is the **v0.3.x hardening track** (iterations
 024–027, released as patches `v0.3.1`…`v0.3.4`): ingestion-parity is now explicit
-(024, `v0.3.1`, merged), locations G13 are wired (025, `v0.3.2`, merged) and
+(024, `v0.3.1`, merged), locations G13 are wired (025, `v0.3.2`, merged),
 objects G16 are wired (026, `v0.3.3`, merged) — the second cheap mirror of
-`settings/`. Next, a cleanup/decision pass (027). The
+`settings/` — and the closing cleanup/decision pass landed (027, `v0.3.4`,
+merged): the `focus`/`graph` success envelopes are single-sourced byte-for-byte,
+the last two `"undecided"` orphan verdicts (G6/G3) are firmly deferred to v0.4,
+and the `UnresolvedParticipant` misnomer is renamed to `UnresolvedReference`. The
+v0.3.x hardening track is **complete**. Next, the
 heavier Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/`
 ingestion are **v0.4**. Vector search and export are deferred to an unversioned,
 demand-pulled horizon (activate on a concrete trigger, not a pre-assigned

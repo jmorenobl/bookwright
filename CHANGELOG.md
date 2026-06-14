@@ -4,7 +4,58 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
-## [0.3.3] — 2026-06-14
+## [0.3.4] — 2026-06-15
+
+Fourth and **closing** patch of the **v0.3.x hardening track** (iteration 027).
+It ties off the three loose ends the track left behind: the success-envelope
+single-sourcing deferred "out of 020's scope", the two "undecided" orphan
+verdicts the iteration-024 deferral registry still carried, and the
+`UnresolvedParticipant` misnomer iteration 025 explicitly deferred to here.
+After this patch the deferral registry holds **zero** `"undecided"` entries,
+no `focus`/`graph` command hand-builds a `{"status": "ok", …}` literal, and no
+`UnresolvedParticipant` symbol survives in `src/` or `docs/`. No new CLI
+surface, no new runtime dependency, no ontology change — pure hardening, with
+one **deliberate** public-contract byte change (see *Changed*).
+
+### Added
+
+- **Success-envelope regression suite**
+  (`tests/commands/test_success_envelopes.py`): pins the exact stdout bytes of
+  every command in the cleanup's scope (`check`, `focus` show/set/clear, `graph
+  query`, `graph build`) so any future single-byte drift in a success document
+  fails CI.
+
+### Changed
+
+- **Success documents single-sourced** (`src/bookwright/commands/focus/{show,set_,clear}.py`,
+  `src/bookwright/commands/graph/query.py`, `src/bookwright/commands/_envelope.py`):
+  the `focus` and `graph query` commands now build their success envelope through
+  the shared `ok_payload()` helper + `emit_json` instead of a hand-rolled
+  `{"status": "ok", …}` dict. Output is **byte-identical** to before — same keys,
+  order, compact separators, and trailing newline. `check`'s intentional
+  `{"ok": <bool>, "checks": […]}` envelope (no top-level `status`) is left exactly
+  as-is.
+- **G6/G3 deferral confirmed** (`src/bookwright/golem/deferrals.py`):
+  `RelationshipRole` (G6) and `PsychologicalState` (G3), previously stamped
+  `"undecided"`, are now firmly deferred to **`v0.4`** with the reason "requires a
+  typed roles/states model with attributes and an authoring surface". Neither is
+  wired (each carries a mandatory cross-ref and has no `bible/` authoring surface,
+  so an identity-only node would be semantically degenerate); both stay observed as
+  orphans by the ingestion-parity build. The registry now contains **no**
+  `"undecided"` verdict — every remaining entry names a firm reason and a concrete
+  target version.
+- **`UnresolvedParticipant` → `UnresolvedReference`** (`src/bookwright/io/report.py`,
+  `src/bookwright/commands/graph/build.py`, `docs/commands/graph-build.md`): the
+  `graph build` soft-warning type — reused since iteration 025 to also surface an
+  unresolvable location `setting:`, not just an unmatched `participants:` member —
+  is renamed to describe what it actually reports. **This renames the public
+  `graph build --json` key `unresolved_participants` → `unresolved_references`** (a
+  deliberate `0.x` maintainer-facing contract change): the key's position, its
+  `{path, entity, name}` item shape, and every other byte of the envelope are
+  unchanged; only that one key string and a new pinned golden baseline differ. The
+  stderr summary now reads "N unresolved reference(s)".
+
+
 
 Third patch of the **v0.3.x hardening track** (iteration 026). It wires the
 second orphaned GOLEM concept into the ingestion pipeline: `bible/objects/*.md`
