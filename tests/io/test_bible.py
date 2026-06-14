@@ -85,7 +85,7 @@ def test_unknown_keys_recorded(tmp_path: Path) -> None:
     ]
 
 
-def test_unresolved_participant_omits_edge_but_keeps_event(tmp_path: Path) -> None:
+def test_unresolved_reference_omits_edge_but_keeps_event(tmp_path: Path) -> None:
     bible = _bible(tmp_path)
     _write(
         bible / "timeline.md",
