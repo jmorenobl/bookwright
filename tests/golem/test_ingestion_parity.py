@@ -57,8 +57,8 @@ EXPECTED_VERSIONS: dict[str, str] = {
     "NarrativeUnit": "v0.4",
     "NarrativeFunction": "v0.4",
     "NarrativeSequence": "v0.4",
-    "RelationshipRole": "undecided",
-    "PsychologicalState": "undecided",
+    "RelationshipRole": "v0.4",
+    "PsychologicalState": "v0.4",
 }
 
 #: Carrier IRIs in ``CLASS_IRI`` but deliberately outside ``CONCEPTS`` (FR-010).
@@ -141,6 +141,9 @@ def test_registry_well_formed() -> None:
     assert {
         name: note.target_version for name, note in DEFERRED_CONCEPTS.items()
     } == EXPECTED_VERSIONS
+    # No entry may carry the eliminated "undecided" verdict (FR-011, SC-003) — so
+    # the literal can never silently return to the registry.
+    assert all(note.target_version != "undecided" for note in DEFERRED_CONCEPTS.values())
 
 
 # --- the live guard (FR-005, SC-001) ----------------------------------------

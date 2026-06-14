@@ -12,7 +12,7 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
-from .._envelope import emit_json
+from .._envelope import emit_json, ok_payload
 from .._project import load_manifest_or_exit
 from . import app
 
@@ -34,7 +34,7 @@ def run(
         manifest.dump(path, overwrite=True)
 
     if json_output:
-        emit_json({"status": "ok", "cleared": had_focus})
+        emit_json(ok_payload(cleared=had_focus))
     else:
         message = "focus cleared" if had_focus else "no focus to clear"
         Console(stderr=True, highlight=False).print(message)

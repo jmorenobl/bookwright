@@ -26,7 +26,7 @@ from bookwright.golem.namespaces import TEMPORAL_RELATIONS
 from bookwright.golem.slug import make_slug
 
 from .errors import InvalidFrontmatterError, SlugCollisionError
-from .report import SkippedFile, UnknownKey, UnresolvedParticipant
+from .report import SkippedFile, UnknownKey, UnresolvedReference
 
 # The five qualitative temporal relations an event may declare (each a list of
 # event names resolved against the timeline's own event index — research D11).
@@ -59,7 +59,7 @@ class MapResult:
     files_processed: int = 0
     skipped: list[SkippedFile] = field(default_factory=list)
     unknown_keys: list[UnknownKey] = field(default_factory=list)
-    unresolved_participants: list[UnresolvedParticipant] = field(default_factory=list)
+    unresolved_references: list[UnresolvedReference] = field(default_factory=list)
     # ``make_slug(name) → URI`` for every character, setting, event and location — the
     # research ``bears_on``/``constrains`` targets (D11), distinct from participant
     # ``slug_index``.
@@ -199,13 +199,13 @@ def _resolve_refs(
     """Resolve a list of names against ``index`` (characters or sibling events).
 
     A non-list value, or a name absent from the index, is surfaced as an
-    ``UnresolvedParticipant`` soft warning (no abort); the owning entity is built.
+    ``UnresolvedReference`` soft warning (no abort); the owning entity is built.
     """
     if raw is None:
         return ()
     if not isinstance(raw, list):
-        ctx.result.unresolved_participants.append(
-            UnresolvedParticipant(path=relpath, entity=entity_name, name=str(raw))
+        ctx.result.unresolved_references.append(
+            UnresolvedReference(path=relpath, entity=entity_name, name=str(raw))
         )
         return ()
     resolved: list[URIRef] = []
@@ -214,8 +214,8 @@ def _resolve_refs(
             continue
         uri = index.get(make_slug(ref))
         if uri is None:
-            ctx.result.unresolved_participants.append(
-                UnresolvedParticipant(path=relpath, entity=entity_name, name=ref)
+            ctx.result.unresolved_references.append(
+                UnresolvedReference(path=relpath, entity=entity_name, name=ref)
             )
             continue
         resolved.append(uri)
@@ -231,7 +231,7 @@ def _resolve_setting(
     frontmatter (``InvalidFrontmatterError`` → the file is skipped). A present name
     that resolves yields the setting's URI (the ``dlp:generic-location`` target); a
     present name that does not resolve — including one that slugs to nothing — is a
-    soft miss recorded as an ``UnresolvedParticipant`` (the location is still built,
+    soft miss recorded as an ``UnresolvedReference`` (the location is still built,
     no edge, no abort).
     """
     value = metadata.get("setting")
@@ -247,8 +247,8 @@ def _resolve_setting(
         slug = None
     uri = ctx.settings_index.get(slug) if slug is not None else None
     if uri is None:
-        ctx.result.unresolved_participants.append(
-            UnresolvedParticipant(path=relpath, entity=entity_name, name=value)
+        ctx.result.unresolved_references.append(
+            UnresolvedReference(path=relpath, entity=entity_name, name=value)
         )
         return None
     return uri

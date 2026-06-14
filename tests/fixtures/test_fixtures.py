@@ -63,7 +63,7 @@ def test_fixture_builds_clean(fixture_project: tuple[str, Path], cli: CliRunner)
     assert payload["status"] == "ok"
     assert payload["skipped"] == []
     assert payload["unknown_keys"] == []
-    assert payload["unresolved_participants"] == []
+    assert payload["unresolved_references"] == []
 
 
 def test_fixture_entity_counts(fixture_project: tuple[str, Path], cli: CliRunner) -> None:

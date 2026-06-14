@@ -84,8 +84,8 @@ def _print_summary(console: Console, report: BuildReport) -> None:
             console.print(f"  - {item.path}: {item.reason}")
     if report.unknown_keys:
         console.print(f"{len(report.unknown_keys)} unknown frontmatter key(s) ignored")
-    if report.unresolved_participants:
-        console.print(f"{len(report.unresolved_participants)} unresolved participant reference(s)")
+    if report.unresolved_references:
+        console.print(f"{len(report.unresolved_references)} unresolved reference(s)")
     if report.sources or report.findings or report.anchors:
         console.print(
             f"research: {report.sources} source(s), "

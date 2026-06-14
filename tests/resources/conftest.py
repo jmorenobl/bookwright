@@ -46,7 +46,7 @@ def map_stamped_bible(stamped_project: Path) -> Callable[[], MapResult]:
 
     Reads the stamped manifest for the same ``uri_base`` and bible path the real
     ``graph build`` uses, so callers can inspect ``skipped`` / ``unknown_keys`` /
-    ``unresolved_participants`` from the live mapper.
+    ``unresolved_references`` from the live mapper.
     """
 
     def _run() -> MapResult:

@@ -16,7 +16,7 @@ from rich.console import Console
 
 from bookwright.core.manifest import Manifest
 
-from .._envelope import EXIT_CONFIG, emit_error, emit_json
+from .._envelope import EXIT_CONFIG, emit_error, emit_json, ok_payload
 from .._project import load_manifest_or_exit
 from . import app
 from .errors import FocusTargetEmptyError
@@ -51,7 +51,7 @@ def run(
     manifest.dump(path, overwrite=True)
 
     if json_output:
-        emit_json({"status": "ok", "focus": block.model_dump()})
+        emit_json(ok_payload(focus=block.model_dump()))
     else:
         # markup=False: `target` is author text — bracketed words must echo
         # literally, not be parsed (or crash) as rich markup tags.

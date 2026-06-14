@@ -32,7 +32,7 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (Constituti
 
 **Purpose**: Confirm a clean working tree on `main`-derived behavior before pinning baselines.
 
-- [ ] T001 Run `uv sync` and confirm all four gates are green on the branch tip before any edit (`uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest`), so the byte baselines pinned in US1 reflect known-good current behavior.
+- [X] T001 Run `uv sync` and confirm all four gates are green on the branch tip before any edit (`uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest`), so the byte baselines pinned in US1 reflect known-good current behavior.
 
 ---
 
@@ -61,16 +61,16 @@ query`, `graph build` all match their baselines; `grep` finds zero hand-built
 
 ### Implementation for User Story 1
 
-- [ ] T002 [P] [US1] Migrate `focus show` success to the single source in `src/bookwright/commands/focus/show.py`: replace the hand-built `{"status":"ok","focus":…}` literal with `emit_json(ok_payload(focus=…))` (set case → `focus=focus.model_dump()`; none case → `focus=None`), importing `ok_payload`/`emit_json` from `.._envelope` (mirror `commands/status.py`, research D1/D2). Bytes unchanged.
-- [ ] T003 [P] [US1] Migrate `focus set` success in `src/bookwright/commands/focus/set_.py`: `{"status":"ok","focus":block.model_dump()}` → `emit_json(ok_payload(focus=block.model_dump()))`. Bytes unchanged.
-- [ ] T004 [P] [US1] Migrate `focus clear` success in `src/bookwright/commands/focus/clear.py`: `{"status":"ok","cleared":had_focus}` → `emit_json(ok_payload(cleared=had_focus))`. Bytes unchanged.
-- [ ] T005 [P] [US1] Migrate `graph query` success in `src/bookwright/commands/graph/query.py`: `{"status":"ok","results":rows,"count":len(rows)}` → `emit_json(ok_payload(results=rows, count=len(rows)))` (kwarg order preserves key order, research D2). Bytes unchanged.
-- [ ] T006 [US1] Confirm-only (no edit) `src/bookwright/commands/check.py`: verify its `{"ok":<bool>,"checks":[…]}` envelope is built as a plain dict and emitted via `emit_json`, and is left exactly as-is (routing it through `ok_payload` would inject a `status` key and change bytes — research D3, FR-003). Record the confirmation in the task notes / PR description.
-- [ ] T007 [US1] Confirm-only (no edit) `src/bookwright/commands/graph/build.py`: verify success is emitted via `emit_json(report.to_json())` (the report serializer is its single source, not a hand-built literal — research D4, FR-004). No structural change here.
+- [X] T002 [P] [US1] Migrate `focus show` success to the single source in `src/bookwright/commands/focus/show.py`: replace the hand-built `{"status":"ok","focus":…}` literal with `emit_json(ok_payload(focus=…))` (set case → `focus=focus.model_dump()`; none case → `focus=None`), importing `ok_payload`/`emit_json` from `.._envelope` (mirror `commands/status.py`, research D1/D2). Bytes unchanged.
+- [X] T003 [P] [US1] Migrate `focus set` success in `src/bookwright/commands/focus/set_.py`: `{"status":"ok","focus":block.model_dump()}` → `emit_json(ok_payload(focus=block.model_dump()))`. Bytes unchanged.
+- [X] T004 [P] [US1] Migrate `focus clear` success in `src/bookwright/commands/focus/clear.py`: `{"status":"ok","cleared":had_focus}` → `emit_json(ok_payload(cleared=had_focus))`. Bytes unchanged.
+- [X] T005 [P] [US1] Migrate `graph query` success in `src/bookwright/commands/graph/query.py`: `{"status":"ok","results":rows,"count":len(rows)}` → `emit_json(ok_payload(results=rows, count=len(rows)))` (kwarg order preserves key order, research D2). Bytes unchanged.
+- [X] T006 [US1] Confirm-only (no edit) `src/bookwright/commands/check.py`: verify its `{"ok":<bool>,"checks":[…]}` envelope is built as a plain dict and emitted via `emit_json`, and is left exactly as-is (routing it through `ok_payload` would inject a `status` key and change bytes — research D3, FR-003). Record the confirmation in the task notes / PR description.
+- [X] T007 [US1] Confirm-only (no edit) `src/bookwright/commands/graph/build.py`: verify success is emitted via `emit_json(report.to_json())` (the report serializer is its single source, not a hand-built literal — research D4, FR-004). No structural change here.
 
 ### Test for User Story 1
 
-- [ ] T008 [US1] Create `tests/commands/test_success_envelopes.py` (FR-005): invoke `check`, `focus show/set/clear`, `graph query`, and `graph build` in-process via the project's established CLI-invocation pattern (mirror `tests/commands/focus/test_*` and `tests/commands/graph/test_*`), capture **stdout bytes**, and assert each equals a pinned literal baseline; assert `check` carries no top-level `status` key; assert exit codes per contract (`check` 0/1, `focus *` 0, `graph query` 0, `graph build` 0/4) — research D5, contracts/success-envelope.md. The `graph build` golden uses the post-rename `unresolved_references` key (finalized by T015).
+- [X] T008 [US1] Create `tests/commands/test_success_envelopes.py` (FR-005): invoke `check`, `focus show/set/clear`, `graph query`, and `graph build` in-process via the project's established CLI-invocation pattern (mirror `tests/commands/focus/test_*` and `tests/commands/graph/test_*`), capture **stdout bytes**, and assert each equals a pinned literal baseline; assert `check` carries no top-level `status` key; assert exit codes per contract (`check` 0/1, `focus *` 0, `graph query` 0, `graph build` 0/4) — research D5, contracts/success-envelope.md. The `graph build` golden uses the post-rename `unresolved_references` key (finalized by T015).
 
 **Checkpoint**: US1 closes the success-envelope debt; focus/graph query success is single-sourced and byte-pinned. (`graph build` golden value is settled once US3 lands — T015.)
 
@@ -89,11 +89,11 @@ src/bookwright/golem/deferrals.py` returns nothing.
 
 ### Implementation for User Story 2
 
-- [ ] T009 [US2] Edit `src/bookwright/golem/deferrals.py` (FR-008/FR-009/FR-011, research D6, contracts/deferral-registry.md): set the `RelationshipRole` and `PsychologicalState` entries from `target_version="undecided"` to `target_version="v0.4"`, each with `reason="requires a typed roles/states model with attributes and an authoring surface"`; remove `"undecided"` from the enumerated `target_version` values in the `DeferralNote` docstring contract (leaving only concrete versions). Do **not** wire either concept; do **not** touch `CLASS_IRI`/`golem.ttl` (FR-013). Leave the three narrative-structure entries (G9/G10/G7 → `v0.4`) unchanged (FR-014).
+- [X] T009 [US2] Edit `src/bookwright/golem/deferrals.py` (FR-008/FR-009/FR-011, research D6, contracts/deferral-registry.md): set the `RelationshipRole` and `PsychologicalState` entries from `target_version="undecided"` to `target_version="v0.4"`, each with `reason="requires a typed roles/states model with attributes and an authoring surface"`; remove `"undecided"` from the enumerated `target_version` values in the `DeferralNote` docstring contract (leaving only concrete versions). Do **not** wire either concept; do **not** touch `CLASS_IRI`/`golem.ttl` (FR-013). Leave the three narrative-structure entries (G9/G10/G7 → `v0.4`) unchanged (FR-014).
 
 ### Test for User Story 2
 
-- [ ] T010 [US2] Edit `tests/golem/test_ingestion_parity.py` (FR-012, research D7): change `RelationshipRole` and `PsychologicalState` in `EXPECTED_VERSIONS` from `"undecided"` to `"v0.4"`; leave `EXPECTED_REACHABLE` (8) and `ORPHAN_NAMES` (5) unchanged; add an assertion in `test_registry_well_formed` that **no** registry entry has `target_version == "undecided"` (FR-011/SC-003), so the literal can never silently return.
+- [X] T010 [US2] Edit `tests/golem/test_ingestion_parity.py` (FR-012, research D7): change `RelationshipRole` and `PsychologicalState` in `EXPECTED_VERSIONS` from `"undecided"` to `"v0.4"`; leave `EXPECTED_REACHABLE` (8) and `ORPHAN_NAMES` (5) unchanged; add an assertion in `test_registry_well_formed` that **no** registry entry has `target_version == "undecided"` (FR-011/SC-003), so the literal can never silently return.
 
 **Checkpoint**: US2 closes the deferral-decision debt; the registry contains zero `"undecided"` verdicts and the parity contract is honest end-to-end.
 
@@ -114,17 +114,17 @@ with `unresolved_references` at its position; `grep -rn
 
 ### Implementation for User Story 3
 
-- [ ] T011 [US3] Rename in `src/bookwright/io/report.py` (FR-015/FR-016, research D8/D9, data-model §3): class `UnresolvedParticipant` → `UnresolvedReference` (fields `{path, entity, name}` intact), generalize its docstring and the module docstring to cover any unresolved name reference (`participants:` member **or** a location `setting:`); rename `BuildReport.unresolved_participants` field → `unresolved_references`; rename the `to_json()` key `"unresolved_participants"` → `"unresolved_references"` **keeping its exact slot** between `"unknown_keys"` and `"sources"`. No other byte of `to_json()` changes.
-- [ ] T012 [US3] Rename in `src/bookwright/io/_bible_builders.py` (research D8, data-model §3): update the import of the renamed type; rename `BuildResult.unresolved_participants` field → `unresolved_references`; update the 3 `…unresolved_participants.append(UnresolvedParticipant(...))` sites to the new field + type; update the 2 docstrings.
-- [ ] T013 [P] [US3] Update the module-docstring mention in `src/bookwright/io/bible.py` to the renamed type (research D8).
-- [ ] T014 [US3] Update `src/bookwright/commands/_graph.py` mapping `unresolved_participants=tuple(result.unresolved_participants)` → `unresolved_references=tuple(result.unresolved_references)` (both sides), and `src/bookwright/commands/graph/build.py`: `report.unresolved_participants` access → `report.unresolved_references`, and the stderr summary `f"{…} unresolved participant reference(s)"` → `f"{len(report.unresolved_references)} unresolved reference(s)"` (FR-018, data-model §3).
-- [ ] T015 [US3] Finalize the `graph build` golden in `tests/commands/test_success_envelopes.py` (from T008) so the pinned baseline carries the `unresolved_references` key at its position; assert every other byte of the `graph build` document is unchanged vs. the pre-rename order/separators/trailing newline (FR-017, research D9). *(Depends on T008 + T011/T012/T014.)*
+- [X] T011 [US3] Rename in `src/bookwright/io/report.py` (FR-015/FR-016, research D8/D9, data-model §3): class `UnresolvedParticipant` → `UnresolvedReference` (fields `{path, entity, name}` intact), generalize its docstring and the module docstring to cover any unresolved name reference (`participants:` member **or** a location `setting:`); rename `BuildReport.unresolved_participants` field → `unresolved_references`; rename the `to_json()` key `"unresolved_participants"` → `"unresolved_references"` **keeping its exact slot** between `"unknown_keys"` and `"sources"`. No other byte of `to_json()` changes.
+- [X] T012 [US3] Rename in `src/bookwright/io/_bible_builders.py` (research D8, data-model §3): update the import of the renamed type; rename `BuildResult.unresolved_participants` field → `unresolved_references`; update the 3 `…unresolved_participants.append(UnresolvedParticipant(...))` sites to the new field + type; update the 2 docstrings.
+- [X] T013 [P] [US3] Update the module-docstring mention in `src/bookwright/io/bible.py` to the renamed type (research D8).
+- [X] T014 [US3] Update `src/bookwright/commands/_graph.py` mapping `unresolved_participants=tuple(result.unresolved_participants)` → `unresolved_references=tuple(result.unresolved_references)` (both sides), and `src/bookwright/commands/graph/build.py`: `report.unresolved_participants` access → `report.unresolved_references`, and the stderr summary `f"{…} unresolved participant reference(s)"` → `f"{len(report.unresolved_references)} unresolved reference(s)"` (FR-018, data-model §3).
+- [X] T015 [US3] Finalize the `graph build` golden in `tests/commands/test_success_envelopes.py` (from T008) so the pinned baseline carries the `unresolved_references` key at its position; assert every other byte of the `graph build` document is unchanged vs. the pre-rename order/separators/trailing newline (FR-017, research D9). *(Depends on T008 + T011/T012/T014.)*
 
 ### Test + docs for User Story 3
 
-- [ ] T016 [US3] Update `tests/commands/graph/test_build.py` to assert the `--json` envelope carries `unresolved_references` (not `unresolved_participants`) at the same position with the `{path, entity, name}` item shape, and replace the relevant golden baseline for that one key only (FR-016/FR-017, contracts/graph-build-json.md).
-- [ ] T017 [P] [US3] Update remaining test references to the renamed type/field/key in `tests/io/test_bible.py`, `tests/fixtures/test_fixtures.py`, and `tests/resources/conftest.py` + `tests/resources/test_frontmatter_contract.py` so the suite stays green (research D8). (Tests are outside the FR-019 `src/`+`docs/` grep but must pass.)
-- [ ] T018 [P] [US3] Update `docs/commands/graph-build.md` to name the `unresolved_references` key in its list of soft warnings, noting it now also covers unresolvable `setting:` locations (FR-019, contracts/graph-build-json.md).
+- [X] T016 [US3] Update `tests/commands/graph/test_build.py` to assert the `--json` envelope carries `unresolved_references` (not `unresolved_participants`) at the same position with the `{path, entity, name}` item shape, and replace the relevant golden baseline for that one key only (FR-016/FR-017, contracts/graph-build-json.md).
+- [X] T017 [P] [US3] Update remaining test references to the renamed type/field/key in `tests/io/test_bible.py`, `tests/fixtures/test_fixtures.py`, and `tests/resources/conftest.py` + `tests/resources/test_frontmatter_contract.py` so the suite stays green (research D8). (Tests are outside the FR-019 `src/`+`docs/` grep but must pass.)
+- [X] T018 [P] [US3] Update `docs/commands/graph-build.md` to name the `unresolved_references` key in its list of soft warnings, noting it now also covers unresolvable `setting:` locations (FR-019, contracts/graph-build-json.md).
 
 **Checkpoint**: US3 closes the 025→027 naming deferral; model, wire, and prose all say "reference".
 
@@ -134,10 +134,10 @@ with `unresolved_references` at its position; `grep -rn
 
 **Purpose**: Prove the closing patch via the quickstart checks and all four gates.
 
-- [ ] T019 Run `grep -rn '"status": *"ok"\|"status":"ok"' src/bookwright/commands/focus src/bookwright/commands/graph/query.py` and confirm **no** matches (SC-002) — the only `{"status":"ok"}` sources are `_envelope.ok_payload` and `BuildReport.to_json()`.
-- [ ] T020 Run `grep -rn "UnresolvedParticipant\|unresolved_participants" src/ docs/` and confirm **zero** matches (FR-019/SC-007); spot-check `uv run bookwright graph build --json | python -m json.tool | grep unresolved` shows `unresolved_references` only.
-- [ ] T021 Run the full merge bar (quickstart §1): `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` — coverage ≥ 80 % overall and > 85 % on the new test module (SC-005); every pre-existing test passes with unchanged expected output (except the US2/US3 pin edits).
-- [ ] T022 Run the targeted quickstart suites (`tests/commands/test_success_envelopes.py`, `tests/golem/test_ingestion_parity.py`, `tests/commands/graph/test_build.py`) and confirm SC-001/SC-003/SC-004/SC-006/SC-007 hold; record the CHANGELOG obligation for the `unresolved_participants`→`unresolved_references` key rename for the `v0.3.4` release (research D10 — release mechanics handled by the `bookwright-release` skill, out of this iteration's edits).
+- [X] T019 Run `grep -rn '"status": *"ok"\|"status":"ok"' src/bookwright/commands/focus src/bookwright/commands/graph/query.py` and confirm **no** matches (SC-002) — the only `{"status":"ok"}` sources are `_envelope.ok_payload` and `BuildReport.to_json()`.
+- [X] T020 Run `grep -rn "UnresolvedParticipant\|unresolved_participants" src/ docs/` and confirm **zero** matches (FR-019/SC-007); spot-check `uv run bookwright graph build --json | python -m json.tool | grep unresolved` shows `unresolved_references` only.
+- [X] T021 Run the full merge bar (quickstart §1): `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` — coverage ≥ 80 % overall and > 85 % on the new test module (SC-005); every pre-existing test passes with unchanged expected output (except the US2/US3 pin edits).
+- [X] T022 Run the targeted quickstart suites (`tests/commands/test_success_envelopes.py`, `tests/golem/test_ingestion_parity.py`, `tests/commands/graph/test_build.py`) and confirm SC-001/SC-003/SC-004/SC-006/SC-007 hold; record the CHANGELOG obligation for the `unresolved_participants`→`unresolved_references` key rename for the `v0.3.4` release (research D10 — release mechanics handled by the `bookwright-release` skill, out of this iteration's edits).
 
 ---
 

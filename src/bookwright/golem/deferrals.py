@@ -24,9 +24,10 @@ from typing import NamedTuple
 class DeferralNote(NamedTuple):
     """Why a modelled concept is not yet fed, and when it is expected to be.
 
-    ``target_version`` is one of ``"v0.3.x"``, ``"v0.4"``, or the single
-    canonical literal ``"undecided"``; the concept→version mapping is pinned by
-    the parity test, so the value is a contract, not a comment (FR-002).
+    ``target_version`` is always a concrete version label such as ``"v0.3.x"`` or
+    ``"v0.4"`` — every deferred concept carries a firm target version, never a
+    deferred-decision placeholder. The concept→version mapping is pinned by the
+    parity test, so the value is a contract, not a comment (FR-002, FR-011).
     """
 
     reason: str
@@ -47,12 +48,12 @@ DEFERRED_CONCEPTS: dict[str, DeferralNote] = {
         target_version="v0.4",
     ),
     "RelationshipRole": DeferralNote(
-        reason="relationships are identity + participants, no typed roles (G6)",
-        target_version="undecided",
+        reason="requires a typed roles/states model with attributes and an authoring surface (G6)",
+        target_version="v0.4",
     ),
     "PsychologicalState": DeferralNote(
-        reason="no builder (G3)",
-        target_version="undecided",
+        reason="requires a typed roles/states model with attributes and an authoring surface (G3)",
+        target_version="v0.4",
     ),
 }
 """Concept name → deferral note. Exactly five entries, each key a ``CONCEPTS``

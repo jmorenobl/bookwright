@@ -100,7 +100,7 @@ def test_unresolved_participant_omits_edge_but_keeps_event(tmp_path: Path) -> No
     result = map_bible(tmp_path, bible, URI_BASE)
     event = next(e for e in result.entities if isinstance(e, NarrativeEvent))
     assert event.participants == ()  # the dlp:participant edge was omitted
-    assert [(u.entity, u.name) for u in result.unresolved_participants] == [
+    assert [(u.entity, u.name) for u in result.unresolved_references] == [
         ("Duelo", "Nadie Conocido")
     ]
 
@@ -122,7 +122,7 @@ def test_participant_resolves_to_built_character(tmp_path: Path) -> None:
     character = next(e for e in result.entities if isinstance(e, Character))
     event = next(e for e in result.entities if isinstance(e, NarrativeEvent))
     assert event.participants == (character.uri,)
-    assert result.unresolved_participants == []
+    assert result.unresolved_references == []
 
 
 # --- FR-013: fault tolerance (skip malformed) -------------------------------
@@ -184,7 +184,7 @@ def test_non_list_participants_recorded_as_unresolved(tmp_path: Path) -> None:
     result = map_bible(tmp_path, bible, URI_BASE)
     event = next(e for e in result.entities if isinstance(e, NarrativeEvent))
     assert event.participants == ()
-    assert [(u.entity, u.name) for u in result.unresolved_participants] == [("Duelo", "Nadie")]
+    assert [(u.entity, u.name) for u in result.unresolved_references] == [("Duelo", "Nadie")]
 
 
 def test_skip_on_non_integer_born(tmp_path: Path) -> None:
@@ -257,9 +257,7 @@ def test_timeline_unresolved_relation_is_soft_warning(tmp_path: Path) -> None:
     result = map_bible(tmp_path, bible, URI_BASE)
     event = next(e for e in result.entities if isinstance(e, NarrativeEvent))
     assert event.follows == ()
-    assert [(u.entity, u.name) for u in result.unresolved_participants] == [
-        ("Quiebra", "No Existe")
-    ]
+    assert [(u.entity, u.name) for u in result.unresolved_references] == [("Quiebra", "No Existe")]
 
 
 def test_timeline_non_integer_begin_skips_item(tmp_path: Path) -> None:
@@ -321,7 +319,7 @@ def test_location_resolvable_setting_emits_edge(tmp_path: Path) -> None:
     setting = next(e for e in result.entities if isinstance(e, Setting))
     loc = _location(result, "the-harbor")
     assert loc.setting == setting.uri  # the dlp:generic-location target
-    assert result.unresolved_participants == []
+    assert result.unresolved_references == []
     # The setting cross-ref carries `setting:`-line provenance (relpath:line).
     mapped = next(m for m in result.mapped if isinstance(m.entity, NarrativeLocation))
     assert [a.source_field for a in loc.derived_assertions()] == [None, "setting"]
@@ -337,7 +335,7 @@ def test_location_absent_or_blank_setting_no_edge_no_warning(tmp_path: Path) -> 
     result = map_bible(tmp_path, bible, URI_BASE)
     assert _location(result, "no-setting-place").setting is None
     assert _location(result, "blank-place").setting is None
-    assert result.unresolved_participants == []
+    assert result.unresolved_references == []
     assert result.unknown_keys == []
 
 
@@ -351,7 +349,7 @@ def test_location_unresolved_setting_is_soft_miss(tmp_path: Path) -> None:
     result = map_bible(tmp_path, bible, URI_BASE)
     loc = _location(result, "the-harbor")
     assert loc.setting is None  # the build was not aborted; only the edge is omitted
-    assert [(u.path, u.entity, u.name) for u in result.unresolved_participants] == [
+    assert [(u.path, u.entity, u.name) for u in result.unresolved_references] == [
         ("bible/locations/harbor.md", "The Harbor", "Nowhere At All")
     ]
 
@@ -366,7 +364,7 @@ def test_location_unslugifiable_setting_is_soft_miss(tmp_path: Path) -> None:
     result = map_bible(tmp_path, bible, URI_BASE)
     loc = _location(result, "the-quay")
     assert loc.setting is None  # EmptySlugError → soft miss, not a crash or an edge
-    assert [(u.path, u.entity, u.name) for u in result.unresolved_participants] == [
+    assert [(u.path, u.entity, u.name) for u in result.unresolved_references] == [
         ("bible/locations/odd.md", "The Quay", "!!!")
     ]
 
@@ -417,7 +415,7 @@ def test_location_frontmatterless_or_invalid_is_skipped(tmp_path: Path) -> None:
     }
     # A skipped file contributes no soft warnings (report stays consistent).
     assert result.unknown_keys == []
-    assert result.unresolved_participants == []
+    assert result.unresolved_references == []
 
 
 def test_no_locations_directory_builds_identically(tmp_path: Path) -> None:

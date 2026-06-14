@@ -48,7 +48,28 @@ def test_build_report_shape(tiny_novel: Path, runner: CliRunner) -> None:
     assert payload["graph_path"] == "bible/graph.ttl"
     assert payload["skipped"] == []
     assert payload["unknown_keys"] == []
-    assert payload["unresolved_participants"] == []
+    assert payload["unresolved_references"] == []
+
+
+def test_unresolved_reference_key_and_shape(
+    project_factory: Callable[..., Path], runner: CliRunner
+) -> None:
+    """An unmatched ``participants:`` member surfaces under ``unresolved_references``
+    at its envelope slot with the ``{path, entity, name}`` shape (FR-016/FR-017)."""
+    root: Path = project_factory()
+    (root / "bible" / "timeline.md").write_text(
+        '---\nevents:\n  - name: "Duelo"\n    participants: ["Nadie Conocido"]\n---\n',
+        encoding="utf-8",
+    )
+    exit_code, payload = _build_json(runner)
+    assert exit_code == 0  # soft warning never changes the exit code
+    assert payload["unresolved_references"] == [
+        {"path": "bible/timeline.md", "entity": "Duelo", "name": "Nadie Conocido"}
+    ]
+    # The key keeps its exact slot between "unknown_keys" and "sources" (FR-017).
+    keys = list(payload)
+    assert keys[keys.index("unknown_keys") + 1] == "unresolved_references"
+    assert keys[keys.index("unresolved_references") + 1] == "sources"
 
 
 def test_build_summary_on_stderr(tiny_novel: Path, runner: CliRunner) -> None:
