@@ -28,8 +28,8 @@ constitución y el brief; trabajas sobre el proyecto inicializado.
 
 1. Lee `bible/constitution.md` y el brief. De ahí salen las entidades a fundar.
 2. Asegúrate de que existen los directorios de entidad `bible/characters/`,
-   `bible/settings/` y `bible/locations/`; **crea el que falte** antes de estampar
-   (un proyecto de un esqueleto antiguo podría no tenerlos todos).
+   `bible/settings/`, `bible/locations/` y `bible/objects/`; **crea el que falte**
+   antes de estampar (un proyecto de un esqueleto antiguo podría no tenerlos todos).
 3. Trabaja en **orden fijo**: primero las entidades derivadas de la constitución
    (personajes y escenarios nombrados allí), luego el resto. Escribe cada archivo
    a medida que avanzas, no al final.
@@ -43,7 +43,11 @@ constitución y el brief; trabajas sobre el proyecto inicializado.
    con `name:` (cadena obligatoria; el *slug* deriva de él) y `setting:` opcional —
    el `name` de un `bible/settings/` hermano, que enlaza la localización a su
    universo vía `dlp:generic-location`. Ánclalo además en los cinco sentidos con
-   secciones en prosa *Qué se ve / oye / huele / toca* y *Atmósfera dominante*.
+   secciones en prosa *Qué se ve / oye / huele / toca* y *Atmósfera dominante*. Por
+   cada objeto narrativo relevante (un artefacto, una reliquia, un arma con peso en
+   la trama), crea `bible/objects/<slug>.md`: frontmatter con **solo** la clave
+   `name` (cadena obligatoria; el *slug* deriva de él) y secciones en prosa que
+   describan el objeto y su papel.
 5. Puebla los contenedores indexados respetando su contrato de clave única:
    `bible/timeline.md` (clave `events:`, ver
    `references/golem-events-timeline.md`) y `bible/relationships.md` (clave
@@ -78,7 +82,8 @@ creaste, qué quedó `[PENDING: …]` y qué conviene aclarar a continuación.
 
 ## Archivos a escribir
 
-- `bible/characters/*.md`, `bible/settings/*.md`, `bible/locations/*.md`.
+- `bible/characters/*.md`, `bible/settings/*.md`, `bible/locations/*.md`,
+  `bible/objects/*.md`.
 - `bible/timeline.md`, `bible/relationships.md`, `bible/themes.md`,
   `bible/glossary.md`, `bible/research/_index.md`, `bible/subplots.md`.
 - `bible/pov-structure.md` (solo si multi-POV; si no, la nota "POV único").

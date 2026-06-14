@@ -27,6 +27,7 @@ from rdflib.term import URIRef
 from bookwright.golem import (
     AttributeAssignment,
     EmptySlugError,
+    Object,
     Setting,
     SocialRelationship,
 )
@@ -61,6 +62,7 @@ __all__ = [
     "EVENT_ITEM_KEYS",
     "ITEM_KEYS",
     "LOCATION_KEYS",
+    "OBJECT_KEYS",
     "RELATIONSHIPS_TOP_KEYS",
     "RELATION_KEYS",
     "SETTING_KEYS",
@@ -87,6 +89,7 @@ __all__ = [
 CHARACTER_KEYS = frozenset({"name", "born", "died", "features", "narrative_roles"})
 SETTING_KEYS = frozenset({"name"})
 LOCATION_KEYS = frozenset({"name", "setting"})
+OBJECT_KEYS = frozenset({"name"})
 ITEM_KEYS = frozenset({"name", "participants"})
 # Events additionally accept an interval (``begin`` / ``end`` years, or the
 # ``date`` single-year shorthand) plus the relation keys (defined in
@@ -177,6 +180,17 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             concept="NarrativeLocation",
             builder=lambda meta, rp: _build_location(uri_base, ctx, meta, rp),
             allowed_keys=LOCATION_KEYS,
+            index=False,
+            into_entity_index=True,
+        ),
+    )
+    _map_single_dir(
+        ctx,
+        _DirSpec(
+            directory=bible_dir / "objects",
+            concept="Object",
+            builder=lambda meta, rp: Object(uri_base=uri_base, name=_require_name(meta)),
+            allowed_keys=OBJECT_KEYS,
             index=False,
             into_entity_index=True,
         ),

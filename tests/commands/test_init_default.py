@@ -42,6 +42,7 @@ def test_default_scaffold_named_mode(
     assert (project_root / "manifest.toml").is_file()
     assert (project_root / "README.md").is_file()
     assert (project_root / "bible" / "constitution.md").is_file()
+    assert (project_root / "bible" / "objects" / ".gitkeep").is_file()
     assert (project_root / "outline" / "scenes.md").is_file()
     assert (project_root / "manuscript" / ".gitkeep").is_file()
     assert (project_root / ".bookwright" / "vocabularies" / "propp.ttl").is_file()

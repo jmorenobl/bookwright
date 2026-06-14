@@ -28,7 +28,7 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (Constituti
 
 **Purpose**: Confirm the working environment; no structural change (module split already shipped in iteration 025).
 
-- [ ] T001 Verify the dev environment on branch `026-index-objects`: run `uv sync`, then confirm the baseline is green with `uv run pytest tests/io/test_bible.py tests/golem/test_ingestion_parity.py -q` (these are the files this iteration edits — capture the pre-change pass).
+- [X] T001 Verify the dev environment on branch `026-index-objects`: run `uv sync`, then confirm the baseline is green with `uv run pytest tests/io/test_bible.py tests/golem/test_ingestion_parity.py -q` (these are the files this iteration edits — capture the pre-change pass).
 
 ---
 
@@ -38,8 +38,8 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (Constituti
 
 **⚠️ CRITICAL**: US1 and US3 cannot be verified until this phase is complete. (US2 is independent and may proceed in parallel.)
 
-- [ ] T002 In [src/bookwright/io/bible.py](../../src/bookwright/io/bible.py): add `Object` to the existing `from bookwright.golem import (...)` block (line ~27, alongside `Setting`); add the constant `OBJECT_KEYS = frozenset({"name"})` beside `SETTING_KEYS`/`LOCATION_KEYS` (line ~88–89); and add `"OBJECT_KEYS"` to `__all__` (line ~59–66, keeping it sorted).
-- [ ] T003 In [src/bookwright/io/bible.py](../../src/bookwright/io/bible.py) `map_bible`: add an objects `_DirSpec` after the locations pass (line ~175+) — `directory=bible_dir / "objects"`, `concept="Object"`, `builder=lambda meta, rp: Object(uri_base=uri_base, name=_require_name(meta))`, `allowed_keys=OBJECT_KEYS`, `index=False`, `into_entity_index=True` (leave `into_settings_index` at default `False`). No edit to `_bible_builders.py`. (Depends on T002)
+- [X] T002 In [src/bookwright/io/bible.py](../../src/bookwright/io/bible.py): add `Object` to the existing `from bookwright.golem import (...)` block (line ~27, alongside `Setting`); add the constant `OBJECT_KEYS = frozenset({"name"})` beside `SETTING_KEYS`/`LOCATION_KEYS` (line ~88–89); and add `"OBJECT_KEYS"` to `__all__` (line ~59–66, keeping it sorted).
+- [X] T003 In [src/bookwright/io/bible.py](../../src/bookwright/io/bible.py) `map_bible`: add an objects `_DirSpec` after the locations pass (line ~175+) — `directory=bible_dir / "objects"`, `concept="Object"`, `builder=lambda meta, rp: Object(uri_base=uri_base, name=_require_name(meta))`, `allowed_keys=OBJECT_KEYS`, `index=False`, `into_entity_index=True` (leave `into_settings_index` at default `False`). No edit to `_bible_builders.py`. (Depends on T002)
 
 **Checkpoint**: `bible/objects/*.md` now maps to `G16_Object` nodes; the path is concept-agnostic for skip/absent/collision via `_map_single_dir`.
 
@@ -53,14 +53,14 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (Constituti
 
 ### Tests for User Story 1
 
-- [ ] T004 [US1] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add an object round-trip + provenance test (mirror `test_location_name_only_builds_g13_node`) — `bible/objects/excalibur.md` with `name: "Excalibur"` yields exactly one `Object` with URI `…/object/excalibur` and `file:line` provenance starting `bible/objects/excalibur.md:` on identity (FR-001/002, SC-001, contract C1).
-- [ ] T005 [US1] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add an entity-index + research-resolution test (mirror the iteration-025 `test_location_enters_entity_index_for_research_resolution`) — the object slug enters `result.entity_index`, and a `map_research` pass whose `bears_on:` names the object records **zero** soft-misses for that target (FR-003, SC-002, contract C2). (Same file as T004 — sequential.)
+- [X] T004 [US1] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add an object round-trip + provenance test (mirror `test_location_name_only_builds_g13_node`) — `bible/objects/excalibur.md` with `name: "Excalibur"` yields exactly one `Object` with URI `…/object/excalibur` and `file:line` provenance starting `bible/objects/excalibur.md:` on identity (FR-001/002, SC-001, contract C1).
+- [X] T005 [US1] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add an entity-index + research-resolution test (mirror the iteration-025 `test_location_enters_entity_index_for_research_resolution`) — the object slug enters `result.entity_index`, and a `map_research` pass whose `bears_on:` names the object records **zero** soft-misses for that target (FR-003, SC-002, contract C2). (Same file as T004 — sequential.)
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] In [src/bookwright/golem/deferrals.py](../../src/bookwright/golem/deferrals.py): remove the `"Object"` entry from `DEFERRED_CONCEPTS` (6 → 5); update the module docstring counts "Six … six" → "Five … five" (keep the "(iteration 025+)" wire-later note).
-- [ ] T007 [P] [US1] Add `tests/fixtures/parity-exercise/bible/objects/<slug>.md` — one well-formed object file (`name:`) so a real build observes `G16_Object` as a reachable `rdf:type` (FR-010, SC-003).
-- [ ] T008 [US1] In [tests/golem/test_ingestion_parity.py](../../tests/golem/test_ingestion_parity.py): add `"Object"` to `EXPECTED_REACHABLE` (7 → 8); remove `"Object"` from `ORPHAN_NAMES` (6 → 5) and `EXPECTED_VERSIONS` (6 → 5); change `len(DEFERRED_CONCEPTS) == 6` → `== 5`; repoint `test_drift_undeclared_orphan` from `"Object"` to a still-deferred concept (`"PsychologicalState"`); update module/test docstrings "Seven … six" → "Eight … five" (FR-010, SC-003). (Depends on T006, T007)
+- [X] T006 [US1] In [src/bookwright/golem/deferrals.py](../../src/bookwright/golem/deferrals.py): remove the `"Object"` entry from `DEFERRED_CONCEPTS` (6 → 5); update the module docstring counts "Six … six" → "Five … five" (keep the "(iteration 025+)" wire-later note).
+- [X] T007 [P] [US1] Add `tests/fixtures/parity-exercise/bible/objects/<slug>.md` — one well-formed object file (`name:`) so a real build observes `G16_Object` as a reachable `rdf:type` (FR-010, SC-003).
+- [X] T008 [US1] In [tests/golem/test_ingestion_parity.py](../../tests/golem/test_ingestion_parity.py): add `"Object"` to `EXPECTED_REACHABLE` (7 → 8); remove `"Object"` from `ORPHAN_NAMES` (6 → 5) and `EXPECTED_VERSIONS` (6 → 5); change `len(DEFERRED_CONCEPTS) == 6` → `== 5`; repoint `test_drift_undeclared_orphan` from `"Object"` to a still-deferred concept (`"PsychologicalState"`); update module/test docstrings "Seven … six" → "Eight … five" (FR-010, SC-003). (Depends on T006, T007)
 
 **Checkpoint**: Run `uv run pytest tests/io/test_bible.py -k object tests/golem/test_ingestion_parity.py -q` — US1 fully functional and independently testable (MVP).
 
@@ -74,8 +74,8 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (Constituti
 
 ### Implementation for User Story 2
 
-- [ ] T009 [US2] In [src/bookwright/resources/commands/bookwright-bible.md](../../src/bookwright/resources/commands/bookwright-bible.md): add `bible/objects/` to the entity directories to ensure/create (line ~31, beside `settings/`/`locations/`); add a procedure step prescribing each concrete object as `bible/objects/<slug>.md` with a required `name:` front-matter field (after the locations step, line ~42–44); add `bible/objects/*.md` to the files-to-write list (line ~81). Keep prose Spanish; preserve bilingual triggers (FR-008).
-- [ ] T010 [US2] Verify re-materialization: `uv run pytest tests/integrations/ -q` and `uv run pytest tests/resources/test_command_frontmatter.py tests/resources/test_command_activation.py -q` — the `bookwright-bible` `SKILL.md` regenerates and lints for `claude` and `generic`, front-matter valid, ES/EN triggers unchanged (FR-009, SC-005). If a resources test asserts command body content, extend it to cover the `bible/objects/` mention.
+- [X] T009 [US2] In [src/bookwright/resources/commands/bookwright-bible.md](../../src/bookwright/resources/commands/bookwright-bible.md): add `bible/objects/` to the entity directories to ensure/create (line ~31, beside `settings/`/`locations/`); add a procedure step prescribing each concrete object as `bible/objects/<slug>.md` with a required `name:` front-matter field (after the locations step, line ~42–44); add `bible/objects/*.md` to the files-to-write list (line ~81). Keep prose Spanish; preserve bilingual triggers (FR-008).
+- [X] T010 [US2] Verify re-materialization: `uv run pytest tests/integrations/ -q` and `uv run pytest tests/resources/test_command_frontmatter.py tests/resources/test_command_activation.py -q` — the `bookwright-bible` `SKILL.md` regenerates and lints for `claude` and `generic`, front-matter valid, ES/EN triggers unchanged (FR-009, SC-005). If a resources test asserts command body content, extend it to cover the `bible/objects/` mention.
 
 **Checkpoint**: US1 and US2 both work independently.
 
@@ -89,14 +89,14 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (Constituti
 
 ### Tests for User Story 3
 
-- [ ] T011 [US3] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add a skip test — `bible/objects/blank.md` with missing/empty/whitespace/non-string `name` is recorded under `result.skipped`, no `Object` node, build completes (FR-005, SC-004, contract C3). (Same file as T004/T005 — sequential.)
-- [ ] T012 [US3] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add an absent-directory test — a project with no `bible/objects/` directory yields zero object nodes and output identical to today (FR-006, SC-004, contract C4). (Same file — sequential.)
-- [ ] T013 [US3] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add a collision test — two object files slugging to the same identity raise `SlugCollisionError` with per-concept scope `("Object", slug)` (FR-004, contract C5). (Same file — sequential.)
+- [X] T011 [US3] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add a skip test — `bible/objects/blank.md` with missing/empty/whitespace/non-string `name` is recorded under `result.skipped`, no `Object` node, build completes (FR-005, SC-004, contract C3). (Same file as T004/T005 — sequential.)
+- [X] T012 [US3] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add an absent-directory test — a project with no `bible/objects/` directory yields zero object nodes and output identical to today (FR-006, SC-004, contract C4). (Same file — sequential.)
+- [X] T013 [US3] In [tests/io/test_bible.py](../../tests/io/test_bible.py): add a collision test — two object files slugging to the same identity raise `SlugCollisionError` with per-concept scope `("Object", slug)` (FR-004, contract C5). (Same file — sequential.)
 
 ### Implementation for User Story 3
 
-- [ ] T014 [P] [US3] Add `src/bookwright/resources/project/bible/objects/.gitkeep` — one empty placeholder mirroring `bible/settings/.gitkeep` and `bible/locations/.gitkeep` (no `.tmpl`, no sample object) (FR-007).
-- [ ] T015 [US3] In [tests/commands/test_init_default.py](../../tests/commands/test_init_default.py): assert a freshly scaffolded project contains `bible/objects/.gitkeep`, mirroring the existing `settings/`/`locations/` assertions (FR-007, SC-005). (Depends on T014)
+- [X] T014 [P] [US3] Add `src/bookwright/resources/project/bible/objects/.gitkeep` — one empty placeholder mirroring `bible/settings/.gitkeep` and `bible/locations/.gitkeep` (no `.tmpl`, no sample object) (FR-007).
+- [X] T015 [US3] In [tests/commands/test_init_default.py](../../tests/commands/test_init_default.py): assert a freshly scaffolded project contains `bible/objects/.gitkeep`, mirroring the existing `settings/`/`locations/` assertions (FR-007, SC-005). (Depends on T014)
 
 **Checkpoint**: All three user stories independently functional.
 
@@ -106,8 +106,8 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (Constituti
 
 **Purpose**: Final validation across the whole change.
 
-- [ ] T016 Run the quickstart scenarios end-to-end ([quickstart.md](quickstart.md) Scenarios 1–6) and confirm each expectation.
-- [ ] T017 Run all four CI gates: `uv run ruff check && uv run ruff format --check`, `uv run mypy --strict`, `uv run pytest` (coverage ≥ 80 %). Confirm every pre-existing bible test passes with unchanged expected output (SC-005).
+- [X] T016 Run the quickstart scenarios end-to-end ([quickstart.md](quickstart.md) Scenarios 1–6) and confirm each expectation.
+- [X] T017 Run all four CI gates: `uv run ruff check && uv run ruff format --check`, `uv run mypy --strict`, `uv run pytest` (coverage ≥ 80 %). Confirm every pre-existing bible test passes with unchanged expected output (SC-005).
 
 ---
 

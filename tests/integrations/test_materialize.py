@@ -195,6 +195,28 @@ def test_bible_skill_teaches_location_frontmatter(tmp_path: Path) -> None:
     assert "localizaciones" in body  # ES trigger
 
 
+def test_bible_skill_teaches_object_frontmatter(tmp_path: Path) -> None:
+    """FR-008/FR-009 — the materialized bookwright-bible skill prescribes object `name:`.
+
+    The iteration-026 edit (objects get `bible/objects/<slug>.md` with a required
+    `name:`, retiring the G16 orphan) must flow through into the rendered skill body,
+    with `bible/objects/` listed among the entity directories and files-to-write and
+    the bilingual triggers intact.
+    """
+    integration = ClaudeIntegration()
+    source = next(s for s in iter_command_sources() if Path(s.name).stem == "bookwright-bible")
+    written = generate_skill_md(source, tmp_path, integration, ledger=NullLedger())
+    assert written is not None
+    body = written.read_text(encoding="utf-8")
+    assert "bible/objects/<slug>.md" in body
+    assert "bible/objects/*.md" in body  # files-to-write listing
+    assert "`bible/objects/`" in body  # entity-directory listing
+    # Front-matter + bilingual triggers survive.
+    assert body.startswith("---\n")
+    assert "location sheets" in body  # EN trigger
+    assert "localizaciones" in body  # ES trigger
+
+
 def test_dangling_reference_aborts_pre_write(tmp_path: Path) -> None:
     src = _write_source(
         tmp_path / "bookwright-x.md",
