@@ -288,7 +288,7 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the active iteration's
-plan: `specs/025-index-locations/plan.md` (iteration 025 — index locations G13 +
-`bible.py` split, v0.3.x). The milestone overview lives in
+plan: `specs/026-index-objects/plan.md` (iteration 026 — index objects G16 +
+`bible/objects/` scaffold + skill, v0.3.x). The milestone overview lives in
 `bookwright-implementation-plan.md` (iterations 024–027).
 <!-- SPECKIT END -->
