@@ -24,8 +24,8 @@ from typing import NamedTuple
 class DeferralNote(NamedTuple):
     """Why a modelled concept is not yet fed, and when it is expected to be.
 
-    ``target_version`` is always a concrete version label such as ``"v0.3.x"`` or
-    ``"v0.4"`` — every deferred concept carries a firm target version, never a
+    ``target_version`` is always a concrete version label such as ``"v0.4"`` —
+    every deferred concept carries a firm target version, never a
     deferred-decision placeholder. The concept→version mapping is pinned by the
     parity test, so the value is a contract, not a comment (FR-002, FR-011).
     """

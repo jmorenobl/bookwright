@@ -41,9 +41,10 @@ def ok_payload(**fields: Any) -> dict[str, Any]:
     """The success-envelope skeleton: ``{"status": "ok", **fields}`` (Principle IX).
 
     The success-side complement of ``BookwrightError.to_json()`` — the one place
-    the ``"status": "ok"`` literal lives for new success documents (020 research
-    D6). Existing ``check``/``focus``/``graph`` call sites keep their hand-built
-    dicts for now; migrating them is out of 020's scope.
+    the ``"status": "ok"`` literal lives for the ``focus`` and ``graph query``
+    success documents (020 research D6; routed here in iteration 027). ``check``
+    keeps its deliberate ``{"ok", "checks"}`` shape (no top-level ``status``) and
+    ``graph build`` serializes through ``BuildReport.to_json()``.
     """
     return {"status": "ok", **fields}
 

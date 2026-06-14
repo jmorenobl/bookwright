@@ -261,7 +261,7 @@ def _build_location(
     name = _require_name(metadata)
     # Validate the name slugs *before* resolving ``setting:``, so an unsluggable name
     # aborts (→ the file is skipped) without ``_resolve_setting`` first recording a
-    # stray unresolved-participant warning for a file that produces no entity. Keeps
+    # stray unresolved-reference warning for a file that produces no entity. Keeps
     # the invariant that a skipped file appears only under ``skipped``.
     make_slug(name)
     setting = _resolve_setting(ctx, metadata, name, relpath)
