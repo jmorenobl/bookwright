@@ -26,7 +26,7 @@ from bookwright.indexers import (
 from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.project import find_project_root
 
-from .._envelope import EXIT_CONFIG, emit_error, emit_json, invalid_manifest_payload
+from .._envelope import EXIT_CONFIG, emit_error, emit_json, invalid_manifest_payload, ok_payload
 from . import app
 
 EXIT_INVALID_QUERY = 3
@@ -58,7 +58,7 @@ def run(
         raise typer.Exit(EXIT_INVALID_QUERY) from exc
 
     if json_output:
-        emit_json({"status": "ok", "results": rows, "count": len(rows)})
+        emit_json(ok_payload(results=rows, count=len(rows)))
     else:
         _render_table(rows)
 

@@ -2,7 +2,7 @@
 
 (1) Every shipped template parses through ``parse_frontmatter`` without raising.
 (2) A freshly-``init``-ed project round-trips through ``map_bible`` with zero
-    skips, zero ``unknown_keys`` and zero ``unresolved_participants`` (SC-002).
+    skips, zero ``unknown_keys`` and zero ``unresolved_references`` (SC-002).
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ def test_fresh_project_round_trips_clean(
     result = map_stamped_bible()
     assert result.skipped == [], f"unexpected skips: {result.skipped}"
     assert result.unknown_keys == [], f"unexpected unknown keys: {result.unknown_keys}"
-    assert result.unresolved_participants == [], (
-        f"unexpected unresolved participants: {result.unresolved_participants}"
+    assert result.unresolved_references == [], (
+        f"unexpected unresolved references: {result.unresolved_references}"
     )
 
 

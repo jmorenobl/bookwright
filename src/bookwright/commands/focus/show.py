@@ -12,7 +12,7 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
-from .._envelope import emit_json
+from .._envelope import emit_json, ok_payload
 from .._project import load_manifest_or_exit
 from . import app
 
@@ -29,13 +29,13 @@ def run(
 
     if focus is None:
         if json_output:
-            emit_json({"status": "ok", "focus": None})
+            emit_json(ok_payload(focus=None))
         else:
             Console(stderr=True, highlight=False).print("no focus defined")
         return
 
     if json_output:
-        emit_json({"status": "ok", "focus": focus.model_dump()})
+        emit_json(ok_payload(focus=focus.model_dump()))
     else:
         # markup=False: `target`/`notes` are author text — bracketed words must
         # echo literally, not be parsed (or crash) as rich markup tags.

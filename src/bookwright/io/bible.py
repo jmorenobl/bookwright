@@ -3,7 +3,7 @@
 Type is determined by **location** (R2 / bible-format.md). The mapper passes
 frontmatter values straight to the iteration-5 constructors — it never builds
 feature/role/dimension nodes itself (data-model § 0/§ 3). It collects soft
-warnings (``unknown_keys``, ``unresolved_participants``), skips files whose
+warnings (``unknown_keys``, ``unresolved_references``), skips files whose
 frontmatter is unusable (FR-013), and raises on a slug collision (FR-014).
 
 This module owns the orchestration: discovering files, wiring the per-concept

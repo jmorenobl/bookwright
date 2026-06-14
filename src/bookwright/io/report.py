@@ -2,7 +2,7 @@
 
 ``BuildReport`` and its three soft-warning collections are frozen Pydantic
 models. ``skipped`` drives the exit code (≥ 1 skip → exit 4); ``unknown_keys``
-and ``unresolved_participants`` are soft warnings that never change it.
+and ``unresolved_references`` are soft warnings that never change it.
 """
 
 from __future__ import annotations
@@ -33,11 +33,12 @@ class UnknownKey(BaseModel):
     key: str
 
 
-class UnresolvedParticipant(BaseModel):
-    """A ``participants:`` reference matching no built character (FR-019).
+class UnresolvedReference(BaseModel):
+    """A name reference matching no built entity (FR-019).
 
-    The owning event/relationship is still constructed; only that participation
-    edge is omitted.
+    Covers a ``participants:`` member that names no built character **or** a
+    location's ``setting:`` that names no built setting. The owning entity is
+    still constructed; only that single edge is omitted.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -72,7 +73,7 @@ class BuildReport(BaseModel):
     graph_path: str
     skipped: tuple[SkippedFile, ...] = ()
     unknown_keys: tuple[UnknownKey, ...] = ()
-    unresolved_participants: tuple[UnresolvedParticipant, ...] = ()
+    unresolved_references: tuple[UnresolvedReference, ...] = ()
     # Optional research metrics (iteration 012). Absent/zero on a research-free build
     # so existing build/`--json` output is byte-stable (research D8). Research warnings
     # never change the exit code (D12).
@@ -98,7 +99,7 @@ class BuildReport(BaseModel):
             "triples": self.triples,
             "skipped": [s.model_dump() for s in self.skipped],
             "unknown_keys": [u.model_dump() for u in self.unknown_keys],
-            "unresolved_participants": [u.model_dump() for u in self.unresolved_participants],
+            "unresolved_references": [u.model_dump() for u in self.unresolved_references],
             "sources": self.sources,
             "findings": self.findings,
             "anchors": self.anchors,

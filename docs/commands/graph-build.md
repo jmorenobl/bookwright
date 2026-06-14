@@ -27,4 +27,6 @@ bookwright graph build --json
 | 4 | Al menos un archivo omitido (el grafo se escribe igualmente). |
 
 El informe incluye `files_processed`, `entities`, `triples`, y las listas
-`skipped`, `unknown_keys` y `unresolved_participants`.
+`skipped`, `unknown_keys` y `unresolved_references` (referencias `participants:`
+o ubicaciones `setting:` que no resuelven a ninguna entidad construida; son
+avisos blandos que no cambian el código de salida).

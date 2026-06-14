@@ -123,7 +123,7 @@ def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
         graph_path=graph_rel,
         skipped=tuple(result.skipped),
         unknown_keys=tuple(result.unknown_keys),
-        unresolved_participants=tuple(result.unresolved_participants),
+        unresolved_references=tuple(result.unresolved_references),
         sources=len(research.sources),
         findings=len(research.findings),
         anchors=len(research.anchors),
