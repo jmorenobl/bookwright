@@ -6,16 +6,20 @@ import textwrap
 from pathlib import Path
 
 import pytest
+from rdflib.term import URIRef
 
 from bookwright.golem import (
     Character,
     NarrativeEvent,
     NarrativeLocation,
+    Object,
     Setting,
     SocialRelationship,
 )
+from bookwright.golem.namespaces import timeline_uri
 from bookwright.io.bible import build_provenance, map_bible
 from bookwright.io.errors import SlugCollisionError
+from bookwright.io.research import map_research
 
 URI_BASE = "https://example.org/my-novel/"
 
@@ -425,3 +429,119 @@ def test_no_locations_directory_builds_identically(tmp_path: Path) -> None:
     assert [e for e in result.entities if isinstance(e, NarrativeLocation)] == []
     assert result.skipped == []
     assert {type(e) for e in result.entities} == {Character, Setting}
+
+
+# --- objects indexed as G16 (iteration 026) --------------------------------
+
+
+def _objects(result: object) -> list[Object]:
+    return [e for e in result.entities if isinstance(e, Object)]  # type: ignore[attr-defined]
+
+
+def test_object_name_only_builds_g16_node(tmp_path: Path) -> None:
+    """`name`-only → one G16 node, slug from name, file-level prov (FR-001/002, C1)."""
+    bible = _bible(tmp_path)
+    _write(bible / "objects" / "excalibur.md", '---\nname: "Excalibur"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    objs = _objects(result)
+    assert len(objs) == 1
+    assert objs[0].slug == "excalibur"
+    assert objs[0].uri == URIRef(f"{URI_BASE}object/excalibur")
+    # File-level identity provenance: the only derived assertion is identity
+    # (source_field None → file-level `bible/objects/excalibur.md` source).
+    mapped = next(m for m in result.mapped if isinstance(m.entity, Object))
+    assert [a.source_field for a in mapped.entity.derived_assertions()] == [None]
+    sources = {a.source for a in build_provenance(mapped, URI_BASE)}
+    assert sources == {"bible/objects/excalibur.md"}
+
+
+def test_object_enters_entity_index_for_research_resolution(tmp_path: Path) -> None:
+    """Object enters `entity_index`; research `bears_on:` to it has no soft-miss (FR-003, C2)."""
+    bible = _bible(tmp_path)
+    _write(bible / "objects" / "excalibur.md", '---\nname: "Excalibur"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    obj = _objects(result)[0]
+    assert result.entity_index.get("excalibur") == obj.uri
+
+    # A research finding whose `bears_on:` names the object resolves with no soft-miss.
+    research = tmp_path / "bible" / "research"
+    _write(
+        research / "sources.md",
+        textwrap.dedent(
+            """\
+            ---
+            sources:
+              - name: "Registro TIP"
+                reference: "https://www.interior.gob.es/tip"
+                author: "Ministerio del Interior"
+                original_language: es
+                type: oficial
+                reliability: alta
+                reliability_justification: "Fuente oficial primaria."
+                access_date: 2026-05-30
+                original_quote: "El detective privado requiere la TIP."
+            ---
+            """
+        ),
+    )
+    _write(
+        research / "espada.md",
+        textwrap.dedent(
+            """\
+            ---
+            findings:
+              - id: espada-magica
+                claim: "La espada es mágica."
+                asserted_by: agent
+                bears_on: "Excalibur"
+                sources: ["Registro TIP"]
+            ---
+            """
+        ),
+    )
+    rresult = map_research(
+        tmp_path, research, URI_BASE, "es", dict(result.entity_index), timeline_uri(URI_BASE)
+    )
+    assert rresult.findings[0].bears_on == obj.uri
+    assert [w for w in rresult.warnings if w.field == "bears_on"] == []
+
+
+def test_object_frontmatterless_or_invalid_is_skipped(tmp_path: Path) -> None:
+    """Unusable object front-matter is skipped (no node, no crash) (FR-005, SC-004, C3)."""
+    bible = _bible(tmp_path)
+    _write(bible / "objects" / "prose.md", "# Excalibur\n\nPure prose, no front-matter.\n")
+    _write(bible / "objects" / "empty.md", '---\nname: "   "\n---\n')
+    _write(bible / "objects" / "intname.md", "---\nname: 42\n---\n")
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert _objects(result) == []
+    assert {s.path for s in result.skipped} == {
+        "bible/objects/prose.md",
+        "bible/objects/empty.md",
+        "bible/objects/intname.md",
+    }
+    assert result.unknown_keys == []
+
+
+def test_no_objects_directory_builds_identically(tmp_path: Path) -> None:
+    """No `bible/objects/` directory → build is clean, no object nodes (FR-006, SC-004, C4)."""
+    bible = _bible(tmp_path)  # characters/ and settings/ only — no objects/
+    _write(bible / "characters" / "aparici.md", '---\nname: "Aparici"\n---\n')
+    _write(bible / "settings" / "ayelo.md", '---\nname: "Ayelo"\n---\n')
+    result = map_bible(tmp_path, bible, URI_BASE)
+    assert _objects(result) == []
+    assert result.skipped == []
+    assert {type(e) for e in result.entities} == {Character, Setting}
+
+
+def test_object_slug_collision_is_fatal(tmp_path: Path) -> None:
+    """Two objects slugging to the same identity raise SlugCollisionError (FR-004, C5)."""
+    bible = _bible(tmp_path)
+    _write(bible / "objects" / "a.md", '---\nname: "Excalibur"\n---\n')
+    _write(bible / "objects" / "b.md", '---\nname: "Excalibur"\n---\n')
+    with pytest.raises(SlugCollisionError) as excinfo:
+        map_bible(tmp_path, bible, URI_BASE)
+    assert excinfo.value.identifier == "excalibur"
+    assert set(excinfo.value.to_json()["details"]["sources"]) == {
+        "bible/objects/a.md",
+        "bible/objects/b.md",
+    }

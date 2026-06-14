@@ -1,0 +1,142 @@
+# Phase 0 — Research: Index objects (G16)
+
+All unknowns are resolved; this iteration is the narrowest possible mirror of the
+iteration-025 settings/locations ingestion path. No `NEEDS CLARIFICATION` remains.
+
+## D1 — Builder shape: inline, no dedicated builder
+
+**Decision**: The objects `_DirSpec` uses an inline builder identical in shape to
+the settings one:
+
+```python
+builder=lambda meta, rp: Object(uri_base=uri_base, name=_require_name(meta)),
+```
+
+`_require_name` is reused from `_bible_builders`; `Object` is imported from
+`bookwright.golem`. **No** `_build_object` is added to `_bible_builders.py`.
+
+**Rationale**: `Object` is identity-only (a `SluggedEntity` whose sole attribute
+is its slug-from-`name`). There is no coercion, no optional field, no cross-ref —
+nothing for a dedicated builder to host beyond a one-line passthrough. Settings,
+the precedent for an identity-only concept, are already built inline in
+`map_bible`; objects follow exactly.
+
+**Alternatives rejected**: a dedicated `_build_object` (would duplicate the
+settings precedent for zero added logic and grow `_bible_builders.py` needlessly);
+extending `Object` with attributes now (FR-012 fences this out as future work).
+
+## D2 — Index wiring: research index yes, participant index no
+
+**Decision**: `index=False`, `into_entity_index=True`,
+`into_settings_index=False` (default).
+
+**Rationale**: This is the `Setting` profile exactly. `into_entity_index=True`
+puts each object's `slug → URI` into `result.entity_index`, which
+`commands/_graph.py` hands to `map_research`, so a research `bears_on:` /
+`constrains:` link naming an object **resolves** rather than producing a soft-miss
+(FR-003, SC-002). `index=False` keeps objects out of the participant `slug_index`,
+so an event/relationship `participants:` cannot resolve to an object — objects are
+not participants in v0 (FR-003). `into_settings_index` is the locations-only flag
+(a `setting:` resolution target); objects are not settings, so it stays `False`.
+
+**Alternatives rejected**: feeding `slug_index` (would silently make objects
+event participants, out of scope); feeding `settings_index` (objects are not a
+`setting:` target).
+
+## D3 — Mapping order is immaterial
+
+**Decision**: Add the objects pass after the locations pass in `map_bible`
+(source order: characters → settings → locations → objects).
+
+**Rationale**: Cross-ref-bearing passes must be ordered (characters before events
+so participants resolve; settings before locations so `setting:` resolves). Objects
+carry **no** cross-ref to another concept (FR-012), so their position is free; last
+among the entity dirs reads naturally and keeps the diff local.
+
+## D4 — Skip / absent / collision reuse the shared contract
+
+**Decision**: No object-specific error handling. The shared `_map_single_dir`
+already delivers every required behavior:
+
+- missing / empty / non-string `name` → `_require_name` raises
+  `InvalidFrontmatterError` → recorded under `result.skipped`, build continues
+  (FR-005, US3 AS1, Edge Cases).
+- no `bible/objects/` directory → the `spec.directory.is_dir()` guard returns
+  early; identical output to today (FR-006, US3 AS2).
+- two files slugging to the same identity → `ctx.collisions.record("Object", …)`
+  raises the existing `SlugCollisionError` (FR-004, US3 AS3) — per-concept scope,
+  so an object and a character may share a slug without colliding.
+- an object file with an extra unknown key, **after** it has produced an entity →
+  the existing `unknown_keys` soft warning (Edge Cases).
+
+**Rationale**: `Object` joining `OBJECT_KEYS = frozenset({"name"})` and the inline
+`_require_name` builder means every case above is already covered by the
+concept-agnostic single-dir machinery. Adding code would be redundant.
+
+## D5 — Scaffold placeholder, not a mold
+
+**Decision**: Add `resources/project/bible/objects/.gitkeep` — one empty
+keep-file, mirroring `bible/settings/.gitkeep` and `bible/locations/.gitkeep`. No
+`.tmpl` mold, no example object sheet.
+
+**Rationale**: FR-007 and the Assumptions require the scaffold to mirror whatever
+`settings/` and `locations/` ship — which is exactly a `.gitkeep` that keeps an
+otherwise-empty entity directory present. `init` copies `.gitkeep` files (the
+`manuscript/.gitkeep` assertion in `test_init_default.py` proves it). No `.j2` is
+added, so `test_skeleton_renders.py` (strict-undefined render guard) is unaffected.
+
+**Alternatives rejected**: an example `excalibur.md` sheet (would seed every new
+project with fictional canon — settings/locations ship empty); a `.tmpl` mold
+(objects are identity-only; there is no mold for settings either).
+
+## D6 — Materialization through the existing pipeline
+
+**Decision**: Edit only `resources/commands/bookwright-bible.md` (step 2: dirs to
+ensure; step 4: prescribe `bible/objects/<slug>.md` with required `name:`;
+files-to-write list). The `SKILL.md` for both `claude` and `generic` is
+regenerated by the existing `generate_skill_md` pipeline; the integration tests
+(`tests/integrations/test_materialize.py`, `test_skill_lint.py`) regenerate and
+re-lint. Bilingual (ES/EN) triggers in the front-matter `description` are
+preserved unchanged.
+
+**Rationale**: Iteration 9 made the source command the single authoring surface;
+there is no committed `SKILL.md` to hand-edit (FR-009). Objects stay inline in the
+command body, mirroring settings/locations (no new `references/` file).
+
+## D7 — Deferral registry + parity test pins
+
+**Decision**: Remove the `"Object"` entry from `DEFERRED_CONCEPTS` (6 → 5 entries;
+docstring "Six"/"six" → "Five"/"five"). In `test_ingestion_parity.py`: add
+`"Object"` to `EXPECTED_REACHABLE` (7 → 8), remove it from `ORPHAN_NAMES` (6 → 5)
+and `EXPECTED_VERSIONS`, change the `len(DEFERRED_CONCEPTS) == 6` pin to `== 5`,
+and repoint `test_drift_undeclared_orphan` from `"Object"` to a still-deferred
+concept (`"PsychologicalState"`). Update the module docstrings' "Seven … six"
+counts to "Eight … five".
+
+**Rationale**: The parity guard (iteration 024) asserts
+`(CONCEPTS − reachable) == set(DEFERRED_CONCEPTS)` against a real build. Once the
+objects pass feeds `G16_Object` (observed reachable in the `parity-exercise`
+build), the test stays green **only** if `Object` is simultaneously removed from
+the registry — the single intended edit that wires a concept (FR-010, SC-003).
+`test_drift_undeclared_orphan` simulates "a real orphan dropped from the deferred
+copy"; it must name a concept that is still an orphan after this iteration, so it
+moves from `Object` to `PsychologicalState`.
+
+**Alternatives rejected**: leaving `Object` deferred (the parity test would fail —
+fed-but-still-deferred); repointing the drift test to a *fed* concept (it tests
+the `undeclared_orphans` branch, which only triggers for a genuine orphan).
+
+## D8 — Parity fixture gains one object
+
+**Decision**: Add one well-formed object file under
+`tests/fixtures/parity-exercise/bible/objects/` (e.g. `excalibur.md` with
+`name: "Excalibur"`) so the real `build_project_graph` over the fixture observes
+`G16_Object` as a reachable `rdf:type`.
+
+**Rationale**: The parity guard reads reachability from the graph, never a
+hand-list (FR-010). Without an authored object file the build produces no
+`G16_Object` triple and the new `EXPECTED_REACHABLE` pin would fail. The
+research-`bears_on`-resolves assertion is covered as a focused `test_bible.py`
+unit (object enters `entity_index`; `map_research` over that index records no
+soft-miss for the object target), mirroring 025 — keeping the parity fixture
+minimal (no research file added there).
