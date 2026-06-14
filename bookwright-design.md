@@ -528,6 +528,8 @@ my-book/
 │   │   └── *.md
 │   ├── locations/                       # Localizaciones G13 (name:/setting:) + anclas sensoriales (opcional)
 │   │   └── *.md
+│   ├── objects/                         # Objetos narrativos G16 (name:)
+│   │   └── *.md
 │   ├── timeline.md
 │   ├── relationships.md
 │   ├── pov-structure.md                 # Sólo si multi-POV
@@ -622,6 +624,32 @@ No tocó la ontología congelada (Principio X a salvo: clase y cross-ref ya
 reservados) ni requirió enmienda constitucional. El command `/bookwright-bible`
 pasó a dar a cada localización frontmatter `name:` (+ `setting:` opcional),
 retirando el atajo de v0 ("no se indexa en v0 / sin frontmatter").
+
+### 7.3 Ingesta de objetos (G16) — wired en iteración 026 (v0.3.3)
+
+`bible/objects/*.md` **se indexa**: cada archivo produce un nodo `G16_Object` de
+primera clase, espejo directo de `bible/settings/*.md`. La identidad sale del
+frontmatter `name:` (obligatorio; el *slug* deriva de él) y la clase es
+*identity-only* en v0, igual que `Setting`. La clase ya era de primera clase en
+este documento (tabla de clases § 4.2, generación de URIs § 4.2 con
+`path_segment` `object`) y existía en el código —modelo `Object` en
+`golem/modules/character.py`, en el cierre congelado `CLASS_IRI`, registrada en
+`CONCEPTS`; la iteración 026 añadió **solo la ruta de ingesta**: un sexto
+`_DirSpec` en el *builder* uno-entidad-por-fichero de `io/_bible_builders.py`, la
+alimentación del `entity_index` de research y la baja de `Object` del registro de
+aplazamientos (iteración 024).
+
+**Compatibilidad:** ausencia de `bible/objects/` no afecta a nada; un archivo sin
+frontmatter se omite como inservible; una colisión de *slug* se rechaza como en
+characters/settings. Los objetos entran al `entity_index`, así que una
+investigación con `bears_on:`/`constrains:` apuntando a un objeto **ahora
+resuelve** contra su nodo G16.
+
+No tocó la ontología congelada (Principio X a salvo: la clase ya estaba
+reservada) ni requirió enmienda constitucional. Quedan fuera de este patch los
+atributos de objeto más allá de la identidad y los cross-refs de objeto (p. ej.
+objeto → personaje portador). El command `/bookwright-bible` pasó a instruir la
+creación de fichas de objeto con frontmatter `name:`.
 
 ---
 

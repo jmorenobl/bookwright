@@ -4,6 +4,44 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.3.3] — 2026-06-14
+
+Third patch of the **v0.3.x hardening track** (iteration 026). It wires the
+second orphaned GOLEM concept into the ingestion pipeline: `bible/objects/*.md`
+files — narrative-world objects (a weapon, a relic, a document), ignored
+entirely in v0 — now become first-class `G16_Object` nodes, a faithful mirror of
+how `bible/settings/` already feeds `G12_Setting`. This shrinks the deferral
+registry from six orphans to five and turns the ingestion-parity guard's
+reachable set from seven fed concepts to eight. No new CLI surface, no new
+runtime dependency, no ontology change (G16 already exists in the frozen
+closure, identity-only) — pure hardening.
+
+### Added
+
+- **Object ingestion** (`src/bookwright/io/_bible_builders.py`,
+  `src/bookwright/io/bible.py`): the bible mapper now processes
+  `bible/objects/*.md` as a one-entity-per-file directory (a sixth `_DirSpec` in
+  the existing data-driven loop). Each file builds an `Object` (G16) from `name:`
+  front-matter — the identity source, required — exactly as `Setting` does. The
+  v0 class is identity-only. Absence of `bible/objects/` changes nothing; a file
+  without front-matter is skipped without crashing; a slug collision is rejected
+  as in characters/settings.
+- **Project scaffold** (`src/bookwright/resources/project/bible/objects/`): the
+  `bookwright init` tree now includes `bible/objects/` alongside `settings/` and
+  `locations/`.
+
+### Changed
+
+- **`Object` removed from the deferral registry**
+  (`src/bookwright/golem/deferrals.py`, 6 → 5 entries); the ingestion-parity test
+  (`tests/golem/test_ingestion_parity.py`) now pins eight reachable concepts.
+- **`/bookwright-bible` source command** teaches authoring each object as
+  `bible/objects/<slug>.md` with `name:` (required) front-matter. The skill
+  re-materializes for both `claude` and `generic` integrations with its bilingual
+  (ES/EN) triggers preserved.
+- Recorded G16 as wired in `bookwright-design.md` § 7.3 and added `bible/objects/`
+  to the project-tree diagram (no axiom reopened).
+
 ## [0.3.2] — 2026-06-14
 
 Second patch of the **v0.3.x hardening track** (iteration 025). It wires the
