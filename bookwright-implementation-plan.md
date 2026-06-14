@@ -136,7 +136,7 @@ implementation".
 | 024 | Honestidad del cierre: guarda de paridad de ingesta + notas de diferimiento | v0.3.1 | — | Robustez / contrato |
 | 025 | Indexar localizaciones (`G13_Narrative_Location`) + split de `bible.py` | v0.3.2 | 024 | Cablear concepto |
 | 026 | Indexar objetos (`G16_Object`): builder + scaffold `bible/objects/` + skill | v0.3.3 | 024, 025 | Cablear concepto |
-| 027 | Limpieza: sobre JSON único + decisión G6/G3 (cablear o diferir) | v0.3.4 | 024 | Limpieza / decisión |
+| 027 | Limpieza: sobre JSON único + G6/G3 diferidos a v0.4 + rename unresolved-reference | v0.3.4 | 024 | Limpieza / decisión |
 
 Las iteraciones se ejecutan en orden. **024 va primero a propósito**, aunque
 locations sea lo que más pica: establece el *contrato* (qué está vivo, qué está
@@ -325,12 +325,18 @@ cobertura > 85 % en el código nuevo.
 
 ---
 
-### Iteración 027 — Limpieza: sobre JSON único + decisión G6/G3
+### Iteración 027 — Limpieza: sobre JSON único + decisión G6/G3 + rename unresolved-reference
 
 **Objetivo:** saldar la deuda menor de consistencia del sobre JSON de éxito y
 **tomar una decisión explícita** sobre los dos conceptos huérfanos "medios"
-(RelationshipRole G6, PsychologicalState G3): cablearlos si son baratos, o
-diferirlos formalmente con razón y versión.
+(RelationshipRole G6, PsychologicalState G3). **Decisión tomada en `/speckit-clarify`:
+ambos se confirman diferidos a `v0.4`** (razón: "requires a typed roles/states model
+with attributes and an authoring surface"); ninguno se cablea, porque cada uno tiene
+un cross-ref obligatorio y sin superficie autoral un nodo identity-only sería
+degenerado. Se suma un tercer cabo, **deferido explícitamente por la iteración 025**:
+renombrar el tipo de aviso `UnresolvedParticipant` → `UnresolvedReference` (tipo +
+clave `--json` + prosa stderr), eliminando el desajuste modelo↔wire. Con esto el tramo
+v0.3.x cierra en 027.
 
 **Prompt:**
 
@@ -353,22 +359,43 @@ Fuera de scope:
 Referencia: ver bookwright-roadmap.md § 3, _envelope.py (ok_payload, nota "out of 020's scope"), el registro de diferidos de la iteración 024, bookwright-design.md § 4.2 (G6/G3). Principio IX (--json).
 ```
 
-**Pista para `/speckit-plan`:** *"Para el sobre JSON: en
-`commands/check.py`, `commands/focus/*`, `commands/graph/*`, reemplaza los dicts
-`{"status":"ok",...}` por `ok_payload(**fields)` + `emit_json`, exactamente como
-ya hace `status`. Un test de regresión captura la salida actual y asevera bytes
-idénticos tras el cambio. Para G6/G3: evalúa el coste — RelationshipRole es
-identity-only emitible como sub-nodo de SocialRelationship, PsychologicalState
-es identity-only con cross-ref `bearer` ya definido; si cualquiera entra sin
-tocar la ontología ni inflar bible.py, cablearlo (espejo de los anteriores) y
-sacarlo de diferidos; si no, registrar diferimiento firme a v0.4. Actualiza el
-registro de la 024 para que no queden entradas 'por decidir'."*
+**Pista para `/speckit-plan`:** *"Sobre JSON de éxito: en `commands/focus/*` y
+`commands/graph/query.py` reemplaza los dicts `{"status":"ok",...}` por
+`ok_payload(**fields)` + `emit_json`, exactamente como ya hace `status`
+(iteración 020). `check.py` **no** se envuelve en `ok_payload`: su sobre es
+`{"ok": <bool>, "checks": [...]}` sin clave top-level `status` — single-sourcear
+solo donde no cambie ningún byte; los dicts por-check `{"name",...,"status"}` son
+sub-objetos de dominio, no el sobre. `graph build` **ya** serializa por el
+`to_json()` de su report object: confirmar, no tocar. Un test de regresión
+captura los bytes actuales de `check` / `focus` show·set·clear / `graph query` /
+`graph build` y asevera idénticos tras el cambio. Para G6/G3 **la decisión ya
+está tomada (clarify): confirmar diferimiento de ambos, NO cablear** — edita
+`golem/deferrals.py` cambiando las entradas de `RelationshipRole` (G6) y
+`PsychologicalState` (G3) de `"undecided"` a `target_version` `"v0.4"` con razón
+'requires a typed roles/states model with attributes and an authoring surface';
+ambos siguen observados como huérfanos. Actualiza `EXPECTED_VERSIONS` (y, si
+aplica, los pines reachable-set/orphan-set) en
+`tests/golem/test_ingestion_parity.py`; el set de huérfanos NO cambia, solo el
+mapping de versión. Elimina el literal `"undecided"` del contrato del registro.
+Rename unresolved-reference (User Story 3, deferido por la 025): en
+`io/report.py` renombra el tipo `UnresolvedParticipant` → `UnresolvedReference`
+(campos `{path,entity,name}` intactos, docstring generalizado a cualquier
+referencia sin resolver: `participants:` o `setting:`). Renombra la clave `--json`
+`unresolved_participants` → `unresolved_references` en `graph build` conservando
+su POSICIÓN en el sobre; nuevo golden baseline solo para esa clave (todo lo demás
+byte-idéntico). En `commands/graph/build.py` el resumen stderr pasa a 'N
+unresolved reference(s)'. Actualiza `docs/commands/graph-build.md`. Grep final:
+ningún `UnresolvedParticipant` ni `unresolved_participants` en `src/` ni `docs/`."*
 
-**Criterio de aceptación:** `check`/`focus`/`graph` emiten su éxito vía
-`ok_payload`/`emit_json` con salida byte-idéntica (test de regresión verde); G6 y
-G3 quedan o cableados (fuera de diferidos, con su test de paridad verde) o
-diferidos con razón y versión firmes; el registro de diferidos no tiene entradas
-"por decidir"; gates verdes; cobertura > 85 % en el código nuevo.
+**Criterio de aceptación:** `focus`/`graph query` emiten su éxito vía
+`ok_payload`/`emit_json` y `check`/`graph build` quedan confirmados single-sourced,
+todos con salida byte-idéntica salvo la única clave renombrada `unresolved_references`
+(test de regresión verde con nuevo golden para esa clave); G6 y G3 quedan **diferidos a
+v0.4** con razón firme (fuera de "por decidir", siguen huérfanos, test de paridad
+verde); el registro de diferidos no tiene entradas "undecided"; no queda ningún
+`UnresolvedParticipant`/`unresolved_participants` en `src/` ni `docs/` y
+`docs/commands/graph-build.md` nombra la clave nueva; gates verdes; cobertura > 85 %
+en el código nuevo.
 
 ---
 
