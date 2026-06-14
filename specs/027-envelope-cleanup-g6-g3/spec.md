@@ -26,6 +26,16 @@
   renamed key, so FR-004's byte-identical guarantee is relaxed for that key only
   (new pinned baseline); every other byte — key order, position, separators,
   trailing newline — stays identical, and no other command's bytes change.
+- Q: For G6 (`RelationshipRole`) and G3 (`PsychologicalState`), what terminal
+  decision does this iteration record — wire identity-only, or confirm deferral —
+  and at what concrete target version? → A: **Confirm deferral for both**, target
+  version **`v0.4`**, reason "requires a typed roles/states model with attributes
+  and an authoring surface". Neither is wired (each carries a mandatory cross-ref
+  and has no `bible/` authoring surface, so an identity-only node would be
+  semantically degenerate); both stay observed as orphans by the parity build.
+  This keeps iteration 027 the **closing** iteration of the v0.3.x track (SC-006,
+  CLAUDE.md, and `bookwright-roadmap.md` stand unchanged); the wire/defer branch
+  is now decided here, not left open to `/speckit-plan`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -215,8 +225,10 @@ name}` shape, the stderr summary reads "unresolved reference(s)", and no symbol 
 #### G6/G3 deferral decision
 
 - **FR-008**: For each of `RelationshipRole` (G6) and `PsychologicalState` (G3), the
-  iteration MUST record an explicit decision — either **wire** a minimal
-  identity-only builder, or **confirm deferral** — and document the rationale.
+  iteration records the explicit decision **confirm deferral** (neither is wired) and
+  documents the rationale — "requires a typed roles/states model with attributes and
+  an authoring surface". Both therefore follow FR-009 (registry entry updated from
+  `"undecided"` to a concrete target version with a non-empty reason), not FR-010.
 - **FR-009**: A concept decided **deferred** MUST have its deferral-registry entry
   updated from `"undecided"` to a concrete target version (e.g. `"v0.4"`) with a
   non-empty, specific reason, and MUST remain observed as an orphan by the
@@ -323,16 +335,16 @@ name}` shape, the stderr summary reads "unresolved reference(s)", and no symbol 
   changing any byte**, not forcing those documents into the `ok_payload()` shape.
   The prompt names `check`, but its envelope intentionally has no `status` key, so
   `check`'s migration is limited to whatever preserves its exact bytes.
-- **Expected G6/G3 outcome is deferral to v0.4.** Both concepts carry a *mandatory*
-  cross-ref (`RelationshipRole.relationship`, `PsychologicalState.bearer`) and have
-  no `bible/` authoring surface; a bare identity-only node would be semantically
-  degenerate, and making them useful requires a roles/states model with attributes
-  plus an authoring path — that is v0.4 work. The informed default is therefore to
-  **confirm deferral with reason "requires a typed roles/states model with
-  attributes and an authoring surface" → v0.4** for both. The wire/defer evaluation
-  is finalized in `/speckit-plan` against the "fits without touching the ontology
-  and without inflating `bible.py`, and is meaningful" test; this spec's hard
-  invariant (no `"undecided"`, parity green) holds under either branch.
+- **G6/G3 outcome is confirmed deferral to v0.4 (decided — see Clarifications).**
+  Both concepts carry a *mandatory* cross-ref (`RelationshipRole.relationship`,
+  `PsychologicalState.bearer`) and have no `bible/` authoring surface; a bare
+  identity-only node would be semantically degenerate, and making them useful
+  requires a roles/states model with attributes plus an authoring path — that is
+  v0.4 work. Both are therefore **confirmed deferred with reason "requires a typed
+  roles/states model with attributes and an authoring surface" → `v0.4`**; neither
+  is wired. This is the recorded decision, not a default left for `/speckit-plan`,
+  and it keeps 027 the closing iteration of the v0.3.x track. The spec's hard
+  invariant (no `"undecided"`, parity green) holds as a matter of course.
 - The existing regression-capture approach (golden stdout bytes) is the test
   mechanism for the envelope cleanup; no new framework is introduced.
 - The deferral registry and parity test already pin a full concept→version mapping
