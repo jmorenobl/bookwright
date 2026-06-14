@@ -8,6 +8,25 @@
 
 **Input**: User description: "Necesidad: quedan dos cabos del tramo de endurecimiento. (1) El sobre JSON de éxito se single-sourcea en ok_payload() (iteración 020), pero check/focus/graph siguen construyendo el dict {\"status\":\"ok\",...} a mano — deuda de consistencia documentada como \"out of 020's scope\". (2) Dos conceptos huérfanos \"medios\" siguen sin decisión: RelationshipRole (G6) y PsychologicalState (G3); el registro de diferidos (024) los marca \"por decidir\". Hay que resolver ambos cabos para cerrar el tramo con el contrato de paridad limpio."
 
+## Clarifications
+
+### Session 2026-06-14
+
+- Q: Iteration 025 reused the `UnresolvedParticipant` report type for an
+  unresolvable location `setting:` and recorded across its spec/plan/research/tasks
+  that "the neutral rename is deferred to iteration 027". Should this iteration
+  include that rename? → A: Yes — add it as a third work item (User Story 3): the
+  type, its public `--json` key, and the human stderr text all become neutral
+  (`UnresolvedReference` / `unresolved_references` / "unresolved reference(s)").
+- Q: Must the rename change the public `--json` key `unresolved_participants` of
+  `graph build`, or only the internal Python symbols? → A: Full rename (class +
+  `--json` key + stderr prose) — the zero-tech-debt choice; a class-only rename
+  would leave a permanent model↔wire mismatch (type says `Reference`, key says
+  `participants`). This deliberately changes the bytes of `graph build`'s one
+  renamed key, so FR-004's byte-identical guarantee is relaxed for that key only
+  (new pinned baseline); every other byte — key order, position, separators,
+  trailing newline — stays identical, and no other command's bytes change.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Success envelopes route through the single source, byte-for-byte (Priority: P1)
@@ -95,6 +114,47 @@ target version. The full parity suite stays green.
 
 ---
 
+### User Story 3 - The unresolved-reference warning is named for what it is (Priority: P2)
+
+The `graph build` report's soft-warning type `UnresolvedParticipant` was, since
+iteration 025, reused to surface *any* unresolved name reference — including a
+location's unresolvable `setting:`, which is not a "participant". Iteration 025
+recorded the neutral rename as explicitly deferred to this iteration. The maintainer
+wants the type, its public `--json` key, and the human stderr summary all renamed to
+a neutral `UnresolvedReference` / `unresolved_references` / "unresolved reference(s)",
+so the model, the wire contract, and the prose describe the same general concept —
+**eliminating** the model↔wire naming mismatch rather than relocating it.
+
+**Why this priority**: It is the smallest tail of the closing patch and the one that
+*deliberately* changes an observable byte (the renamed JSON key), so it is segregated
+from User Story 1's byte-identical guarantee. Closing it fulfils the explicit
+025→027 deferral and leaves zero naming debt behind the v0.3.x track.
+
+**Independent Test**: Build the graph over a fixture that produces an unresolved
+`setting:` (a location) and an unmatched `participants:` reference; assert the
+`--json` envelope carries the key `unresolved_references` (not
+`unresolved_participants`) in the same position, each item keeps its `{path, entity,
+name}` shape, the stderr summary reads "unresolved reference(s)", and no symbol named
+`UnresolvedParticipant` remains anywhere in `src/`.
+
+**Acceptance Scenarios**:
+
+1. **Given** a `graph build --json` over a build with an unresolved `setting:` and/or
+   an unmatched `participants:` reference, **When** the report serializes, **Then**
+   the envelope key is `unresolved_references` and the type is `UnresolvedReference`,
+   with the `{path, entity, name}` item shape and the key's position unchanged.
+2. **Given** FR-004's byte-identical guarantee for `graph build`, **When** the rename
+   lands, **Then** that guarantee is relaxed for the renamed key only: a new pinned
+   baseline replaces the old, and every other byte (key order, separators, trailing
+   newline, all other field values) is unchanged.
+3. **Given** a build with ≥ 1 unresolved reference, **When** the human summary prints
+   to stderr, **Then** it reads "N unresolved reference(s)" (no "participant").
+4. **Given** a search of `src/` and `docs/` after the iteration, **When** it runs,
+   **Then** no `UnresolvedParticipant` identifier and no `unresolved_participants`
+   key/attribute remains, and `docs/commands/graph-build.md` names the new key.
+
+---
+
 ### Edge Cases
 
 - The envelope cleanup must not silently alter key **order** within any success
@@ -106,8 +166,10 @@ target version. The full parity suite stays green.
   dicts (`{"name": …, "status": "ok"|"fail", …}`) are domain sub-objects, not the
   Principle-IX envelope, and are left untouched.
 - `graph build --json` already serializes through its report object's `to_json()`
-  (not a hand-built `{"status": "ok"}` literal); the cleanup confirms it is already
-  single-sourced and leaves its bytes unchanged.
+  (not a hand-built `{"status": "ok"}` literal); the success-envelope cleanup
+  confirms it is already single-sourced. Its bytes change in exactly one place — the
+  `unresolved_participants` → `unresolved_references` key rename (User Story 3,
+  FR-016) — which keeps the key's position and every other byte intact.
 - Error paths (manifest/config/collision faults) already route through
   `BookwrightError.to_json()` / `emit_error` and are out of this iteration's scope;
   only the success documents are touched.
@@ -134,9 +196,13 @@ target version. The full parity suite stays green.
   cleanup MUST NOT introduce a `status` key into it; `check`'s construction is
   single-sourced only insofar as that preserves every byte. The per-check result
   dicts are not the envelope and are left as-is.
-- **FR-004**: `graph build`'s success document MUST stay byte-identical; it already
-  routes through its report object's serializer rather than a hand-built literal,
-  so the cleanup confirms (and does not regress) that path.
+- **FR-004**: `graph build`'s success document MUST stay byte-identical **except for
+  the single key renamed by FR-016** (`unresolved_participants` →
+  `unresolved_references`): it already routes through its report object's serializer
+  rather than a hand-built literal, so the success-envelope cleanup confirms (and
+  does not regress) that path. The rename changes only that key's string — its
+  position, the surrounding key order, the compact separators, and the trailing
+  newline are all preserved — and a new golden baseline replaces the old.
 - **FR-005**: A regression test MUST pin the current stdout of every command in the
   cleanup's scope (`check`, `focus` show/set/clear, `graph query`, `graph build`)
   and assert byte-identical output after the change, failing if any byte drifts.
@@ -174,6 +240,32 @@ target version. The full parity suite stays green.
   deferral to v0.4 unchanged; this iteration only confirms them, it does not wire
   them or alter their entries.
 
+#### Unresolved-reference rename
+
+- **FR-015**: The `graph build` report type `UnresolvedParticipant` (`io/report.py`)
+  MUST be renamed to `UnresolvedReference`, with its `{path, entity, name}` fields
+  unchanged and its docstring generalized to cover *any* unresolved name reference
+  (an unmatched `participants:` member **or** an unresolvable `setting:`, the reuse
+  introduced in iteration 025) — closing the rename iteration 025 explicitly deferred
+  to this one.
+- **FR-016**: The `graph build --json` envelope key `unresolved_participants` MUST be
+  renamed to `unresolved_references`; the per-item shape (`path`, `entity`, `name`)
+  and the key's position in the envelope are unchanged. This is a deliberate,
+  documented public-contract change (recorded in the CHANGELOG).
+- **FR-017**: FR-004's byte-identical guarantee for `graph build` is relaxed
+  **solely** for the FR-016 key rename: a new golden baseline replaces the old, and
+  every other byte of the envelope (key order, separators, trailing newline, all
+  other field values) stays identical. No other command's bytes change.
+- **FR-018**: The human stderr summary in `graph build` MUST read "N unresolved
+  reference(s)" (replacing "N unresolved participant reference(s)" in
+  `commands/graph/build.py`); stderr prose is not the `--json` envelope and is not
+  byte-pinned.
+- **FR-019**: After the rename, no identifier `UnresolvedParticipant` and no
+  key/attribute `unresolved_participants` may remain in `src/`, and
+  `docs/commands/graph-build.md` MUST name the `unresolved_references` key. The
+  `{path, entity, name}` contract and the soft-warning semantics (it never changes
+  the exit code) are preserved.
+
 ### Key Entities *(include if feature involves data)*
 
 - **Success envelope**: The single JSON document a `--json` command emits on
@@ -189,6 +281,11 @@ target version. The full parity suite stays green.
 - **PsychologicalState (G3)**: A character's mental/stative state. Modelled with a
   mandatory `bearer` cross-ref (`dlp:generically-dependent-on`); not identity-only
   in any useful sense.
+- **Unresolved reference** (formerly `UnresolvedParticipant`): the `graph build`
+  soft-warning that a name (a `participants:` member or a location's `setting:`)
+  matched no built entity; the owning node is still built and the exit code is
+  unchanged. Renamed to `UnresolvedReference` with the `--json` key
+  `unresolved_references`; its `{path, entity, name}` shape is unchanged.
 
 ## Success Criteria *(mandatory)*
 
@@ -196,7 +293,9 @@ target version. The full parity suite stays green.
 
 - **SC-001**: For every command in the cleanup's scope, the JSON emitted on stdout
   after the change is byte-identical to the captured pre-change baseline for the
-  same inputs — verified by a regression test that fails on any single-byte drift.
+  same inputs — verified by a regression test that fails on any single-byte drift —
+  with the **sole** exception of `graph build`'s `unresolved_references` key (FR-016),
+  whose new baseline is pinned in place of the old `unresolved_participants` one.
 - **SC-002**: Zero hand-built `{"status": "ok", …}` literals remain in the `focus`
   and `graph` command modules; their success documents are produced via
   `ok_payload()` + `emit_json`.
@@ -208,8 +307,13 @@ target version. The full parity suite stays green.
 - **SC-005**: All four CI gates (`ruff check`, `ruff format --check`, `mypy
   --strict`, `pytest` at ≥ 80 % coverage) pass, with > 85 % coverage on any new
   code; every pre-existing test passes with unchanged expected output.
-- **SC-006**: The v0.3.x hardening track closes: no `"undecided"` verdict and no
-  hand-rolled success-envelope literal remain across the touched surface.
+- **SC-006**: The v0.3.x hardening track closes: no `"undecided"` verdict, no
+  hand-rolled success-envelope literal, and no `UnresolvedParticipant` misnomer
+  remain across the touched surface.
+- **SC-007**: No symbol `UnresolvedParticipant` and no key/attribute
+  `unresolved_participants` remains in `src/` or `docs/`; `graph build --json` emits
+  `unresolved_references` with the unchanged `{path, entity, name}` item shape and in
+  the same envelope position, and its stderr summary reads "unresolved reference(s)".
 
 ## Assumptions
 
@@ -233,6 +337,15 @@ target version. The full parity suite stays green.
   mechanism for the envelope cleanup; no new framework is introduced.
 - The deferral registry and parity test already pin a full concept→version mapping
   (iteration 024); this iteration edits those pins rather than restructuring them.
+- **The neutral rename is the zero-debt resolution of the 025 deferral.** Iteration
+  025 reused `UnresolvedParticipant` for an unresolvable `setting:` and recorded
+  (its spec/plan/research/tasks) that the neutral rename belongs to iteration 027. A
+  class-only rename would leave a permanent model↔wire mismatch (type says
+  `Reference`, key says `participants`), so the full rename — class, `--json` key,
+  and stderr prose — is taken. A maintainer/agent-facing JSON key rename is
+  acceptable inside a `0.x` patch and is recorded in the CHANGELOG; no skill reads
+  the key from `graph build --json`, so the blast radius is `src/`, the tests, and
+  one doc page.
 
 ## Out of Scope
 
@@ -246,10 +359,19 @@ target version. The full parity suite stays green.
 - Any change to the frozen GOLEM ontology (Principle X) — no new class or property.
 - Object/relationship/character cross-refs or attributes beyond what already exists
   — if G6/G3 are wired, it is identity-only with no new ontology.
+- The `bible.py` `__all__` re-export shim trim (iteration 025 review R2) — a
+  separate behavior-preserving cleanup; not required here and carries no acceptance
+  criterion (it may be done opportunistically).
+- Any change to the renamed warning's item shape (`path`, `entity`, `name`) or its
+  soft-warning semantics — User Story 3 is a name-only rename.
 
 **Reference**: `bookwright-roadmap.md § 3`; `_envelope.py` (`ok_payload`, the "out
 of 020's scope" note); the iteration-024 deferral registry
 (`golem/deferrals.py`) and ingestion-parity test
 (`tests/golem/test_ingestion_parity.py`); `bookwright-design.md § 4.2` (G6/G3 as
-concepts and their URIs). Principle IX (`--json` single JSON document), Principle X
-(frozen ontology).
+concepts and their URIs); the iteration-025 deferral of the neutral rename
+(`specs/025-index-locations/{spec,plan,research,tasks}.md` — "the neutral rename is
+deferred to iteration 027") and the report type and key it targets (`io/report.py`
+`UnresolvedParticipant` / `unresolved_participants`, `commands/graph/build.py` stderr
+summary, `docs/commands/graph-build.md`). Principle IX (`--json` single JSON
+document), Principle X (frozen ontology).
