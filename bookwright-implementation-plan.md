@@ -3,17 +3,18 @@
 > **Documento complementario a:** `bookwright-design.md` (el *cómo* técnico) y
 > `bookwright-roadmap.md` (el *qué* y *por qué* a lo largo de versiones).
 > **Propósito:** secuencia de iteraciones para el **hito en curso** de Bookwright,
-> el tramo de **endurecimiento v0.3.x** (cancelar deuda técnica, robustez, cerrar
-> atajos de v0). Cada iteración tiene un prompt listo para invocar
-> `/speckit-specify`.
+> **v0.4 — la capa estructural narrativa** (Propp/Greimas: G9/G10/G7) y la
+> **ingesta de `outline/`**, que cierran la paridad de ingesta. Cada iteración
+> tiene un prompt listo para invocar `/speckit-specify`.
 > **Audiencia:** Jorge (o cualquier desarrollador con Spec Kit instalado y
 > `bookwright-design.md` en el root del repo).
 
-> **Nota sobre versiones anteriores de este plan:** las iteraciones 1–23
-> (hitos M0–M5, releases `v0.1.0`, `v0.2.0` y `v0.3.0`) ya están **completadas y
-> mergeadas en `main`**. Su detalle vive ahora en el historial git, en
-> `specs/001-…` … `specs/023-…` y en el `CHANGELOG`. Este documento se ha vaciado
-> de ellas a propósito: solo describe el trabajo **por hacer**. El registro de lo
+> **Nota sobre versiones anteriores de este plan:** las iteraciones 1–27
+> (hitos M0–M5, releases `v0.1.0`, `v0.2.0`, `v0.3.0` y el tramo de
+> endurecimiento `v0.3.1`…`v0.3.4`) ya están **completadas y mergeadas en
+> `main`**. Su detalle vive ahora en el historial git, en `specs/001-…` …
+> `specs/027-…` y en el `CHANGELOG`. Este documento se ha vaciado de ellas a
+> propósito: solo describe el trabajo **por hacer** (v0.4). El registro de lo
 > hecho es `CLAUDE.md` (tabla de iteraciones) y los `specs/` por iteración; la
 > intención de largo plazo es `bookwright-roadmap.md`.
 
@@ -23,14 +24,22 @@
 
 ### 0.1 Punto de partida
 
-- `v0.1.0` (M0–M3, iter. 1–11), `v0.2.0` (M4, iter. 12–18) y `v0.3.0` (M5,
-  iter. 19–23) están en `main`: paquete real en `src/bookwright/`, suite de
-  tests, docs y gates verdes. `v0.3.0` está tageada (2026-06-13).
+- `v0.1.0` (M0–M3, iter. 1–11), `v0.2.0` (M4, iter. 12–18), `v0.3.0` (M5,
+  iter. 19–23) y el tramo de endurecimiento `v0.3.1`…`v0.3.4` (iter. 24–27)
+  están en `main`: paquete real en `src/bookwright/`, suite de tests, docs y
+  gates verdes. `v0.3.4` está tageada (2026-06-15). **El tramo v0.3.x está
+  cerrado.**
 - El repo ya está inicializado con Spec Kit (`.specify/`, `.claude/skills/speckit-*`)
-  y tiene su constitución ratificada (`.specify/memory/constitution.md`).
-- **No hay que re-bootstrapear ni recrear la constitución.** Este tramo construye
+  y tiene su constitución ratificada (`.specify/memory/constitution.md`, v1.4.0).
+- **No hay que re-bootstrapear ni recrear la constitución.** Este hito construye
   sobre el código existente y **no reabre ningún axioma** de `bookwright-design.md`
   § 16.
+- El **registro de diferidos** (`src/bookwright/golem/deferrals.py`, iteración 024)
+  y su **test de paridad de ingesta** (`tests/golem/test_ingestion_parity.py`) ya
+  existen y son el **contrato** de este hito: hoy declaran cinco conceptos
+  huérfanos — `NarrativeUnit` (G9), `NarrativeFunction` (G10), `NarrativeSequence`
+  (G7), `RelationshipRole` (G6) y `PsychologicalState` (G3). v0.4 saca los **tres
+  primeros** del registro; G6/G3 siguen diferidos.
 
 ### 0.2 Convenciones de iteración (siguen vigentes)
 
@@ -54,348 +63,415 @@ Cada iteración sigue el flujo fijo de Spec Kit, sin saltarse pasos:
 - **Cada iteración es autocontenida y deja la herramienta funcionando.** Ningún
   branch puede dejar `bookwright` roto a mitad: lo ya mergeado debe seguir pasando
   todos los gates.
-- **Cada iteración entrega un delta observable** y se libera como un **patch**
-  (`v0.3.1`, `v0.3.2`, …). El plumbing interno (p. ej. un refactor que habilita
-  una feature) **viaja dentro del patch que habilita**, nunca como release de
-  cero cambios visibles (disciplina de scope de la constitución).
+- **Cada iteración entrega un delta observable.** A diferencia del tramo v0.3.x
+  (donde cada iteración se liberaba como un patch), v0.4 es un **hito minor**: las
+  iteraciones 028–032 se acumulan en `main` y se libera **una sola vez** como
+  `v0.4.0` en la iteración de cierre (032), igual que M4→`v0.2.0` y M5→`v0.3.0`.
+  Aun así cada iteración mantiene la herramienta funcional y aporta un delta
+  observable por sí misma.
 
 ### 0.3 Numeración
 
-Los `specs/` van por `001`…`023`. Este tramo **arranca en 024** y continúa la
+Los `specs/` van por `001`…`027`. Este hito **arranca en 028** y continúa la
 secuencia. Cada iteración es un branch `NNN-<short-name>` con su propio `specs/`.
 
 ---
 
-## 1. El hito: endurecimiento v0.3.x
+## 1. El hito: v0.4 — capa estructural narrativa
 
 ### 1.1 El problema
 
-Antes de avanzar a funcionalidad nueva (la capa estructural narrativa de v0.4)
-conviene **solidificar la base**: saldar la deuda técnica que quedó como atajos de v0,
-hacer **explícito** lo que hoy está implícito, y robustecer el sistema actual.
-Construir sobre cimientos firmes en vez de sobre atajos no documentados.
+La paridad de ingesta del tramo v0.3.x cerró los conceptos "baratos" (G13
+localizaciones, G16 objetos) y dejó por escrito el contrato de diferimiento. Lo
+que queda para **cerrar la paridad de ingesta del todo** es el último gran trozo:
+la **capa estructural narrativa** de GOLEM, modelada pero sin alimentar.
 
-La deuda dominante: **la ontología congelada modela 13 conceptos narrativos, pero
-solo ~6 son alcanzables desde texto autoral.** El resto está modelado, registrado
-en `CONCEPTS`, cubierto por el test de clausura (SC-003)… y **muerto de cara al
-autor** porque ningún builder lo alimenta (`io/bible.py` solo construye Character,
-Setting, NarrativeEvent y SocialRelationship, más NarrativeRole/CharacterFeature
-inline bajo personaje). Síntoma observado en uso real: una investigación con
-`bears_on:`/`constrains:` a una localización queda como *soft-miss*
-(`ResearchWarning`) porque `bible/locations/` **no se procesa en absoluto**.
+Tres clases del cierre congelado siguen muertas de cara al autor:
 
-Siete conceptos huérfanos: **NarrativeLocation (G13), Object (G16),
-PsychologicalState (G3), RelationshipRole (G6), NarrativeUnit (G9),
-NarrativeFunction (G10), NarrativeSequence (G7)**. Locations es solo el primero
-que duele.
+| Concepto | Clase | Modelo (ya existe) | Por qué está huérfana |
+|---|---|---|---|
+| **NarrativeUnit** | G9 | `golem/modules/narrative.py` (cross-refs a functions y roles vía `crm:P67_refers_to`) | ningún builder; `outline/` no se ingiere |
+| **NarrativeFunction** | G10 | `golem/modules/narrative.py` (identity-only) | ningún builder |
+| **NarrativeSequence** | G7 | `golem/modules/narrative.py` (`dlp:proper-part` ordenado por unidad) | ningún builder |
 
-### 1.2 El principio rector del tramo
+Los modelos Pydantic, sus URIs (`narrative-unit`, `narrative-function`,
+`narrative-sequence`, design § 4.5) y sus cross-refs **ya están en el código**;
+falta el **camino desde texto autoral**. El `NarrativeRole` (G11) hermano **sí**
+está vivo (se materializa inline desde `narrative_roles:` de personaje), así que
+las unidades lo referencian por nombre, igual que una localización referencia su
+setting.
 
-> **Ningún concepto modelado sin un camino desde texto autoral o una nota de
-> diferimiento explícita; ningún directorio del scaffold que el motor ignore sin
-> decirlo.**
+A esto se suma la deuda de fondo: `outline/` existe en el scaffold (`arcs.md`,
+`structure.md`, `synopsis.md`, `scenes.md`), la skill `bookwright-outline` lo
+escribe, **pero el motor no ingiere nada de él** (declarado author-only en la
+iteración 024). v0.4 abre la primera vía de ingesta de `outline/`.
 
-Es decir: eliminar el **silencio** entre "modelado" y "alimentado". Para cada
-clase del cierre, o hay builder, o hay una nota de diferimiento (razón + versión
-objetivo) respaldada por un **test que asevera que el conjunto de clases huérfanas
-es exactamente el conjunto intencionadamente diferido**. Cada patch que cablea una
-clase la **saca** del set diferido y el test obliga a actualizar el contrato — la
-deuda deja de pudrirse en silencio.
+### 1.2 El principio rector del hito
 
-Esto respeta las restricciones duras: cablear un concepto **no toca la ontología**
-(la clase ya existe en `CLASS_IRI`; falta el builder — Constitución X a salvo),
-Principio I (texto plano fuente de verdad), Principio IX (`--json`), Principio IV
-(≤ 500 líneas, un subcomando por módulo), Principio VIII (cobertura ≥ 80 %).
+> **La capa estructural narrativa entra al grafo de forma determinista, citable
+> por SPARQL, desde una superficie autoral estructurada — sin LLM en el
+> indexador (Principio I) y sin tocar la ontología congelada (Principio X).**
 
-### 1.3 Encaje en el roadmap
+Decisiones de diseño tomadas para este hito (owner, antes de specificar):
 
-Este tramo **toma la línea `v0.3.x`** (patches sucesivos). Lo que **no** entra
-aquí y pasa a **v0.4**: la capa estructural narrativa Propp/Greimas (G7/G9/G10) y
-la ingesta de `outline/`, porque son un subsistema con modelo e ingesta nuevos, no
-un fix. La búsqueda vectorial y el export pasan al **horizonte demand-pulled** (sin
-versión asignada; se activan por condición concreta, no por número de versión —
-ver `bookwright-roadmap.md` § 4). Siguen
-descartados (decisión de owner): presets, GrafeoIndexer/Grafeo, multi-integración
-más allá de `claude`/`generic`, extension system. Ver `bookwright-roadmap.md`.
+- **Superficie autoral: `outline/units/*.md`, una entidad por fichero**, espejo
+  exacto del patrón ya probado en `bible/settings/`, `bible/locations/` (iter. 025)
+  y `bible/objects/` (iter. 026). Reutiliza `io/_bible_builders.py`, la maquinaria
+  `_DirSpec` y el guard de paridad. Es el camino de menor riesgo y máxima
+  consistencia. El frontmatter de una unidad lleva `name` (obligatorio),
+  `functions` (lista opcional), `roles` (lista opcional) y, para secuencias,
+  `sequence` + `order`. El cuerpo en prosa (la descripción del *beat*) queda para
+  el humano. `arcs.md`/`structure.md`/`synopsis.md` siguen siendo prosa
+  author-only; **solo `outline/units/` se ingiere**.
+- **Funciones (G10) inline desde la unidad**, igual que `narrative_roles:` de
+  personaje materializa `NarrativeRole`: cada nombre en `functions:` materializa
+  un `NarrativeFunction` identity-only (dedupe por slug entre unidades) y el
+  cross-ref `unit → function` (`crm:P67_refers_to`, ya en el modelo).
+- **Roles (G11) por resolución de nombre** contra el índice de roles existente
+  (los creados inline por personajes); si un nombre no resuelve es un *soft-miss*
+  coherente con el contrato del mapper (`UnresolvedReference`, iter. 027), nunca
+  un crash.
+- **Secuencias (G7) unit-driven**: una unidad declara su `sequence:` y su
+  `order:`; cada secuencia se ensambla a partir de las unidades que la referencian,
+  ordenadas por `order:`, emitiendo `dlp:proper-part` por miembro en orden (ya en
+  el modelo). (Alternativa considerada y descartada por más verbosa: un directorio
+  `outline/sequences/` que liste miembros.)
+
+Esto respeta las restricciones duras: cablear estos conceptos **no toca la
+ontología** (las clases ya existen en `CLASS_IRI`; faltan los builders —
+Constitución X a salvo), Principio I (texto plano fuente de verdad), Principio IX
+(`--json`), Principio IV (≤ 500 líneas, un subcomando por módulo), Principio VIII
+(cobertura ≥ 80 %).
+
+### 1.3 Qué NO entra en v0.4
+
+- **RelationshipRole (G6) y PsychologicalState (G3)** siguen diferidos. El
+  registro (`deferrals.py`) los marca "requieren un modelo tipado de roles/estados
+  con atributos y una superficie autoral" — un subsistema distinto de la capa
+  estructural narrativa, no un fix que quepa aquí. v0.4 los deja en el registro;
+  la iteración de cierre (032) **re-apunta su `target_version` de `"v0.4"` a un
+  hito posterior** para que el contrato no afirme que se entregan en este hito.
+- **Búsqueda vectorial y export** quedan en el **horizonte demand-pulled** (sin
+  versión asignada, se activan por condición concreta — `bookwright-roadmap.md`
+  § 4). No se implementa plumbing especulativo para ellos.
+- Siguen descartados (decisión de owner): presets, GrafeoIndexer/Grafeo,
+  multi-integración más allá de `claude`/`generic`, extension system. Ver
+  `bookwright-roadmap.md` § 5.
 
 ### 1.4 El doc de diseño
 
 El diseño canónico de los conceptos vive en `bookwright-design.md` § 4.2
-(conceptos GOLEM y sus URI) y § 7.2 (decisión de ingesta de localizaciones G13).
-Si durante la implementación algo del diseño no encaja con la realidad técnica,
-actualiza `bookwright-design.md` **antes** de divergir el código (nota 4.3), y
-registra el cambio en `CHANGELOG` bajo "Design decisions revised during
-implementation".
+(módulo Narrative y sus clases), § 4.4 (vocabularios controlados Propp/Greimas
+vía `E55_Type`), § 4.5 (segmentos de URI de G9/G10/G7) y § 7 (estructura de
+`outline/`). La iteración 024 documentó `outline/` como author-only; v0.4 **abre
+ese punto** y debe **enmendar esa nota** (queda parcialmente ingerido: `units/`
+sí, el resto prosa). Si durante la implementación algo del diseño no encaja con la
+realidad técnica, actualiza `bookwright-design.md` **antes** de divergir el código
+(nota 4.3) y registra el cambio en `CHANGELOG` bajo "Design decisions revised
+during implementation".
 
 ---
 
 ## 2. Mapa de iteraciones
 
-| # | Título | Release | Depende de | Tipo |
-|---|---|---|---|---|
-| 024 | Honestidad del cierre: guarda de paridad de ingesta + notas de diferimiento | v0.3.1 | — | Robustez / contrato |
-| 025 | Indexar localizaciones (`G13_Narrative_Location`) + split de `bible.py` | v0.3.2 | 024 | Cablear concepto |
-| 026 | Indexar objetos (`G16_Object`): builder + scaffold `bible/objects/` + skill | v0.3.3 | 024, 025 | Cablear concepto |
-| 027 | Limpieza: sobre JSON único + G6/G3 diferidos a v0.4 + rename unresolved-reference | v0.3.4 | 024 | Limpieza / decisión |
+| # | Título | Depende de | Tipo |
+|---|---|---|---|
+| 028 | Ingestar unidades (G9) + funciones (G10) desde `outline/units/` | — | Cablear concepto |
+| 029 | Ingestar secuencias narrativas (G7) | 028 | Cablear concepto |
+| 030 | Vocabularios Propp/Greimas como `E55_Type` + referencias | 028, 029 | Semántica controlada |
+| 031 | Validador de continuidad estructural narrativa | 028, 029 | Validación / consumidor SPARQL |
+| 032 | Cierre v0.4: E2E + docs + re-target G6/G3 + `v0.4.0` | 028–031 | Release prep |
 
-Las iteraciones se ejecutan en orden. **024 va primero a propósito**, aunque
-locations sea lo que más pica: establece el *contrato* (qué está vivo, qué está
-diferido y por qué) contra el que se miden 025–027. Cada vez que 025/026 cablean
-una clase, esta sale del set diferido de 024 y el test lo obliga a registrar.
+Las iteraciones se ejecutan en orden. **028 va primero** porque establece la
+superficie de ingesta (`outline/units/`) y el builder base que reutilizan 029–031;
+cada vez que 028/029 cablean una clase, esta sale del set diferido del registro
+(024) y el test de paridad obliga a actualizar el contrato.
 
-Estimación: medio día a dos días de agente + revisión humana por iteración.
+Estimación: medio día a dos días de agente + revisión humana por iteración. La
+release va al final, una sola vez (`v0.4.0`).
 
-> **Nota:** 027 es la iteración de cierre "blanda". Si durante `/speckit-tasks`
-> crece, divide la limpieza del sobre JSON (mecánica) de la decisión G6/G3
-> (diseño) en dos specs/patches.
+> **Nota:** 030 y 031 son las candidatas a crecer. Si `/speckit-tasks` infla 030,
+> separa el flesh-out de `propp.ttl`/`greimas.ttl` del cableado del tagging
+> `E55_Type`. Si 031 crece, el validador puede partirse por tipo de incoherencia.
 
 ---
 
 ## 3. Iteraciones detalladas
 
-### Iteración 024 — Honestidad del cierre: guarda de paridad de ingesta + notas de diferimiento
+### Iteración 028 — Ingestar unidades (G9) + funciones (G10) desde `outline/units/`
 
-**Objetivo:** hacer **visible y congelada** la deuda de conceptos huérfanos, sin
-cablear ninguno todavía. Establecer el contrato "qué concepto está vivo, qué está
-diferido y por qué" con un test que impida que se pudra en silencio.
+**Objetivo:** abrir la ingesta de `outline/` cableando las clases G9 y G10 ya
+existentes a un builder de `outline/units/`, espejo de los directorios de la
+biblia, y sacarlas del registro de diferidos.
 
 **Prompt:**
 
 ````
 /speckit-specify
 
-Necesidad: la ontología congelada modela 13 conceptos narrativos (registrados en CONCEPTS y cubiertos por el test de clausura), pero solo ~6 son alcanzables desde texto autoral; los otros 7 están modelados pero ningún builder los alimenta — están "muertos de cara al autor" sin que nada lo declare. Ese silencio entre "modelado" y "alimentado" es la deuda. Antes de cablear conceptos uno a uno, queremos un contrato explícito: para cada concepto del cierre, o hay un camino desde texto autoral, o hay una nota de diferimiento (razón + versión objetivo), respaldada por un test que asevere que el conjunto de huérfanos es exactamente el conjunto intencionadamente diferido.
+Necesidad: la ontología congelada modela una capa estructural narrativa (NarrativeUnit G9, NarrativeFunction G10, NarrativeSequence G7) cuyos modelos Pydantic, URIs y cross-refs ya existen en golem/modules/narrative.py, pero ningún builder los alimenta: outline/ no se ingiere en absoluto (declarado author-only en la iteración 024). Queremos abrir la ingesta de outline cableando las unidades narrativas y sus funciones como entidades de primera clase, de modo que la estructura de la trama sea citable por SPARQL, y sacar G9 y G10 del registro de diferidos.
 
 Comportamiento esperado:
 
-- Se introduce un registro estático de DIFERIMIENTO: para cada concepto de CONCEPTS hoy no alcanzable desde texto autoral (NarrativeLocation G13, Object G16, PsychologicalState G3, RelationshipRole G6, NarrativeUnit G9, NarrativeFunction G10, NarrativeSequence G7), una entrada con su razón breve y su versión objetivo (p. ej. G13/G16 → v0.3.x; G9/G10/G7 → v0.4; G6/G3 → "por decidir"). El registro es texto/código plano, unit-testeable.
-- Un test de paridad de ingesta asevera, de forma determinista, que el conjunto de conceptos que NO se materializan desde una fixture de ejercicio (los huérfanos reales) es EXACTAMENTE el conjunto declarado como diferido. Si alguien añade un builder (un concepto deja de ser huérfano) sin sacarlo del registro de diferidos, el test falla y obliga a actualizar el contrato. Y al revés: declarar diferido algo que sí se ingiere también falla.
-- El "está vivo" se comprueba contra la realidad, no contra una lista a mano: construir el grafo de una fixture que ejerza todos los caminos de ingesta vigentes y observar qué rdf:type de CLASS_IRI aparecen.
-- Se documenta explícitamente, por escrito, que outline/ y manuscript/ son author-only en v0.3: el scaffold los crea pero el motor no los ingiere (decisión legítima de v0, hoy no declarada). Una nota en el código del lector de manuscrito y/o en docs, no un cambio de comportamiento.
+- map_bible (o su análogo de outline) procesa outline/units/*.md como directorio uno-entidad-por-fichero (espejo de bible/settings|locations|objects), construyendo entidades NarrativeUnit a partir de su frontmatter.
+- El frontmatter de una unidad admite `name` (cadena obligatoria), `functions` (lista de cadenas, opcional) y `roles` (lista de cadenas, opcional). El cuerpo en prosa (descripción del beat) no se ingiere: es para el humano.
+- Cada nombre en `functions:` materializa una entidad NarrativeFunction identity-only, deduplicada por slug entre todas las unidades (igual que `narrative_roles:` de personaje materializa NarrativeRole inline). Se emite el cross-ref unit → function (crm:P67_refers_to, ya en el modelo NarrativeUnit).
+- Cada nombre en `roles:` se resuelve contra el índice de NarrativeRole existente (los creados inline por personajes); si resuelve, se emite el cross-ref unit → role (crm:P67_refers_to). Si no resuelve, es un soft-miss coherente con el contrato del mapper (UnresolvedReference), nunca un crash.
+- El command source bookwright-outline se actualiza: además de la prosa de arcs/structure/synopsis, instruye crear una ficha por unidad narrativa en outline/units/ con frontmatter name/functions/roles. Se re-materializa como SKILL.md por el pipeline existente, en claude y generic, con triggers bilingües preservados.
+- El scaffold de proyecto (resources/project/outline/) incluye outline/units/ con su material de arranque, igual que bible/settings/.
+- Compatibilidad: una unidad sin frontmatter se trata como fichero no ingerible (skip elegante, como hoy con frontmatter inservible), nunca un crash. Un proyecto sin outline/units/ sigue funcionando igual.
+- El registro de diferidos (deferrals.py, iteración 024) deja de incluir NarrativeUnit y NarrativeFunction; el test de paridad de ingesta sigue verde con G9 y G10 ahora "vivos".
+- Se enmienda la nota author-only de la iteración 024: outline/ pasa a estar parcialmente ingerido (units/ sí; arcs/structure/synopsis siguen siendo prosa author-only).
 
-Determinismo:
+Validaciones:
 
-- El test de paridad es una función pura del corpus de la fixture y del registro de diferidos: misma entrada, mismo veredicto.
+- name es cadena obligatoria; functions y roles, si están, son listas de cadenas.
+- Colisión de slug entre unidades se rechaza igual que en characters/settings.
 
 Fuera de scope:
 
-- Cablear cualquier concepto huérfano (iteraciones 025+).
-- Tocar la ontología congelada o añadir clases/propiedades (Principio X): no se añade nada al cierre.
-- Cualquier ingesta nueva de outline/ o manuscript/ (eso es v0.4): aquí solo se DOCUMENTA que hoy no se ingieren.
+- Secuencias narrativas (G7): iteración 029.
+- Tagging E55_Type a vocabularios Propp/Greimas: iteración 030.
+- Validadores nuevos sobre la estructura narrativa: iteración 031.
+- Cualquier clase o propiedad nueva en la ontología (Principio X): G9/G10 ya existen.
+- Atributos de unidad más allá de name/functions/roles; ingesta de arcs/structure/synopsis.
 
-Referencia: ver bookwright-roadmap.md § 3 (paridad de ingesta), bookwright-design.md § 4.2 (conceptos GOLEM y URI). Principio I (texto plano), Principio X (ontología congelada), Principio VIII (testeable). Precedente de test de clausura: el SC-003 de la iteración 5 (test_namespaces).
+Referencia: ver bookwright-design.md § 4.2 (módulo Narrative), § 4.5 (URIs narrative-unit/narrative-function), § 7 (estructura de outline/). Principio I (texto plano), Principio X (ontología congelada), Principio IV (≤ 500 líneas). Precedente directo: los builders de settings/locations/objects en io/_bible_builders.py (iter. 025–026) y la materialización inline de NarrativeRole desde personaje.
 ````
 
-**Pista para `/speckit-plan`:** *"Modela el registro de diferimiento como una
-estructura estática (un dict `concept -> (reason, target_version)`) en su propio
-módulo, junto a `golem/__init__.py` (donde vive `CONCEPTS`) o en
-`golem/namespaces.py`. El test de paridad va en `tests/golem/`: usa una fixture
-existente que ejerza todos los caminos (characters/settings/timeline/relationships
-+ narrative_roles/features), construye el grafo con `RdflibIndexer`, recoge los
-`rdf:type` ∈ `CLASS_IRI.values()` presentes, y deriva `huérfanos = CONCEPTS −
-observados − {inline-only}`; asevera `huérfanos == set(registro_diferidos)`. La
-nota author-only de outline/manuscript va como docstring en `io/manuscript.py`
-(que ya dice 'v0 does no prose mining') extendido a outline, y/o una línea en
-`docs/`. No toques `golem/` salvo el registro nuevo."*
+**Pista para `/speckit-plan`:** *"Reutiliza la maquinaria `_DirSpec` y los
+builders de `io/_bible_builders.py` (extraídos en iter. 025). Añade una `_DirSpec`
+para `outline/units/` espejando la de `settings/`, con un builder que construya
+`NarrativeUnit`: `name` obligatorio; por cada nombre en `functions:` crea/dedup un
+`NarrativeFunction` identity-only por slug y enlaza el cross-ref `functions`; por
+cada nombre en `roles:` resuelve contra el índice de `NarrativeRole` (mismo patrón
+de resolución de nombres que location→setting) y enlaza el cross-ref `roles`, con
+soft-miss `UnresolvedReference` si no resuelve. Decide dónde vive el cableado de
+outline: si `map_bible` ya recorre directorios genéricos, añade `outline/units/`
+como otra `_DirSpec`; si no, un módulo hermano `io/outline.py` análogo a
+`bible.py`, manteniendo ambos < 500 líneas. No toques `golem/`: clases, cross-refs
+y registro en `CONCEPTS` ya existen. Edita `resources/commands/bookwright-outline.md`
+y re-materializa vía el pipeline de la iteración 9. Añade `outline/units/` al
+scaffold en `resources/project/outline/`. Quita `NarrativeUnit` y
+`NarrativeFunction` de `deferrals.py` y actualiza `EXPECTED_VERSIONS`/los pines de
+huérfanos en `tests/golem/test_ingestion_parity.py`. Enmienda la nota author-only
+(docstring de outline / docs). Tests: round-trip de una unidad con functions y
+roles, dedupe de funciones entre unidades, resolución de roles contra personajes,
+soft-miss cuando un rol no existe, fichero sin frontmatter omitido, colisión de
+slug, ausencia del directorio; el test de paridad verde con G9/G10 vivos; el test
+del scaffold incluye outline/units/."*
 
-**Criterio de aceptación:** existe un registro de diferimiento con razón y versión
-para los 7 conceptos huérfanos; el test de paridad pasa y falla si se añade un
-builder sin actualizar el registro (verificado invirtiéndolo en el propio test o
-con un caso negativo); `outline/`/`manuscript/` documentados como author-only; el
-cierre de la ontología no cambia (test de clausura verde); `ruff`,
+**Criterio de aceptación:** una `outline/units/<slug>.md` con `name:`,
+`functions:` y `roles:` se materializa en el grafo como `G9_Narrative_Unit` con sus
+`NarrativeFunction` (G10) y sus cross-refs `crm:P67_refers_to`; un rol no resuelto
+queda como soft-miss (sin crash); una unidad sin frontmatter se omite; el scaffold
+de `bookwright init` incluye `outline/units/`; el cierre congelado no cambia (test
+de clausura verde); el registro de diferidos pierde G9 y G10 y el test de paridad
+sigue verde; la nota author-only de outline queda enmendada; `ruff`,
 `mypy --strict` y `pytest` verdes; cobertura > 85 % en el código nuevo.
 
 ---
 
-### Iteración 025 — Indexar localizaciones (`G13_Narrative_Location`) + split de `bible.py`
+### Iteración 029 — Ingestar secuencias narrativas (G7)
 
-**Objetivo:** cerrar el atajo de v0 cableando la clase G13 ya existente a un
-*builder* de `bible/locations/`, sacándola del registro de diferidos. Como
-`io/bible.py` está en el límite de 500 líneas, **el split del módulo viaja dentro
-de este patch** (es el plumbing que habilita la feature, no una release aparte).
-
-**Prompt:**
-
-```
-/speckit-specify
-
-Necesidad: hoy bible/locations/*.md no se procesa en absoluto (atajo de v0): el command bookwright-bible instruye escribir cada localización sin frontmatter ingerido y el mapper no tiene builder para locations/. La clase G13_Narrative_Location ya está reservada y modelada en el código (modelo NarrativeLocation en golem/modules/setting.py, en el cierre congelado CLASS_IRI, registrada en CONCEPTS, con cross-ref `setting` vía dlp:generic-location). Queremos que las localizaciones entren al grafo como entidades de primera clase, de modo que una investigación con bears_on:/constrains: a una localización resuelva en vez de quedar como soft-miss; y sacar G13 del registro de diferidos de la iteración 024.
-
-Comportamiento esperado:
-
-- map_bible procesa bible/locations/*.md como directorio uno-entidad-por-fichero (espejo de settings/), construyendo entidades NarrativeLocation a partir de su frontmatter.
-- El frontmatter de una localización admite `name` (cadena obligatoria) y `setting` (opcional, nombre de un setting hermano). Cuando `setting` está presente, se resuelve contra el índice de settings y emite el cross-ref dlp:generic-location (location → su setting); si no resuelve, es un soft-miss coherente con el contrato existente del mapper (no un crash).
-- El command source bookwright-bible se actualiza: las localizaciones pasan a llevar frontmatter `name:` (+ `setting:` opcional) además de sus secciones sensoriales en prosa. Se re-materializa como SKILL.md por el pipeline existente, en claude y generic, con triggers bilingües preservados.
-- Compatibilidad: una localización antigua sin frontmatter (estilo v0) se trata como fichero no ingerible (skip elegante, como hoy hace el mapper con frontmatter inservible), nunca un crash. Un proyecto sin bible/locations/ sigue funcionando igual.
-- El registro de diferidos de la iteración 024 deja de incluir G13; el test de paridad de ingesta sigue verde con G13 ahora "vivo".
-
-Validaciones:
-
-- name es cadena obligatoria; setting, si está, es cadena.
-- Colisión de slug entre localizaciones se rechaza igual que en characters/settings.
-
-Refactor que acompaña (mismo patch, sin cambio de comportamiento):
-
-- io/bible.py está en el límite de 500 líneas (Principio IV). Antes o junto con el builder de locations, extrae parte del módulo (p. ej. los builders concretos y/o la maquinaria de DirectorySpec) a un módulo hermano, dejando map_bible legible y por debajo del límite. El refactor no cambia ninguna salida observable; los tests existentes de bible lo cubren.
-
-Fuera de scope:
-
-- Cualquier clase o propiedad nueva en la ontología (Principio X): G13 ya existe, no se añade nada.
-- Cambiar el validador factual_anchor o el comportamiento de research más allá de que los enlaces a localizaciones ahora resuelvan.
-- Atributos de localización más allá de identidad + setting (v0 de la clase es identity-only, igual que Setting).
-
-Referencia: ver bookwright-design.md § 7.2 (decisión de ingesta G13), § 4.2 y § 4.5 (G13 como concepto y su URI), § 20 (research / soft-miss). Principio I (texto plano), Principio X (ontología congelada), Principio IV (≤ 500 líneas). Precedente de builder: el de settings/ en io/bible.py.
-```
-
-**Pista para `/speckit-plan`:** *"Primero el split: extrae de `io/bible.py` los
-builders concretos (`_build_character`, `_build_event`, los coercers) y/o las
-dataclasses `_DirSpec`/`_CollectionSpec` a un módulo hermano (p. ej.
-`io/_bible_builders.py`), dejando `map_bible` y el cableado de specs en
-`bible.py` < 500 líneas; los tests existentes garantizan que no cambia nada.
-Luego añade una `_DirSpec` para `locations/` espejando la de `settings/`, con un
-builder que construya `NarrativeLocation` y resuelva el cross-ref `setting`
-contra el índice de settings (mismo patrón de resolución de nombres). No toques
-`golem/`: la clase, el cross-ref y el registro en `CONCEPTS` ya existen. Edita
-`resources/commands/bookwright-bible.md` para dar frontmatter a las
-localizaciones y re-materializa vía el pipeline de la iteración 9. Saca G13 del
-registro de diferidos de la 024. Actualiza `bookwright-design.md` § 7.2 retirando
-el atajo. Tests: round-trip con y sin `setting`, resolución del cross-ref,
-soft-miss cuando el setting no existe, fichero sin frontmatter tratado como skip,
-colisión de slug; el test de paridad de la 024 sigue verde con G13 vivo."*
-
-**Criterio de aceptación:** una `bible/locations/<slug>.md` con `name:` (y
-`setting:`) se materializa en el grafo como `G13_Narrative_Location` con su triple
-`dlp:generic-location`; una investigación con `bears_on:` a esa localización
-resuelve (sin `ResearchWarning`); una localización sin frontmatter se omite sin
-crash; `io/bible.py` queda por debajo de 500 líneas; el cierre congelado no cambia
-(test de clausura verde); el test de paridad (024) sigue verde con G13 fuera de
-diferidos; `ruff`, `mypy --strict` y `pytest` verdes; cobertura > 85 % en el
-código nuevo.
-
----
-
-### Iteración 026 — Indexar objetos (`G16_Object`): builder + scaffold + skill
-
-**Objetivo:** cablear la clase G16 (identity-only, espejo de settings/), que hoy
-ni siquiera tiene directorio en el scaffold ni mención en la skill de biblia.
+**Objetivo:** cablear la clase G7 ensamblando secuencias ordenadas a partir de las
+unidades que las referencian, sacándola del registro de diferidos. Con esto la
+capa estructural narrativa queda completa (solo G6/G3 siguen diferidos).
 
 **Prompt:**
 
 ```
 /speckit-specify
 
-Necesidad: la clase G16_Object está modelada (modelo Object en golem/modules/character.py, identity-only, en CLASS_IRI y CONCEPTS) pero es huérfana: no hay builder, no existe bible/objects/ en el scaffold, y bookwright-bible no menciona objetos. Los objetos del mundo narrativo (un arma, una reliquia, un documento) no pueden ser blanco de investigación ni de cross-refs. Queremos cablearlos como entidades de primera clase, espejo de settings/, y sacar G16 del registro de diferidos.
+Necesidad: tras cablear unidades (G9) y funciones (G10) desde outline/units/, falta la última clase de la capa estructural narrativa: NarrativeSequence (G7). Su modelo ya existe (golem/modules/narrative.py: emite dlp:proper-part por unidad miembro en el orden declarado). Queremos que las secuencias narrativas (fabula/syuzhet, líneas de trama) entren al grafo, de modo que el orden de los beats sea citable por SPARQL, y sacar G7 del registro de diferidos. Tras esto la capa estructural narrativa queda completa.
 
 Comportamiento esperado:
 
-- map_bible procesa bible/objects/*.md como directorio uno-entidad-por-fichero (espejo de settings/), construyendo entidades Object a partir de su frontmatter `name` (cadena obligatoria). v0 de la clase es identity-only, igual que Setting.
-- El scaffold de proyecto (resources/project/) incluye bible/objects/ con su material de arranque, igual que bible/settings/ y bible/locations/.
-- El command source bookwright-bible se actualiza para instruir la creación de fichas de objeto con frontmatter `name:`. Se re-materializa como SKILL.md por el pipeline existente, en claude y generic, triggers bilingües preservados.
-- Compatibilidad: ausencia de bible/objects/ no afecta a nada; fichero sin frontmatter se omite sin crash; colisión de slug se rechaza como en characters/settings.
-- El registro de diferidos (024) deja de incluir G16; el test de paridad sigue verde con G16 vivo.
+- El frontmatter de una unidad (outline/units/*.md) admite, además de name/functions/roles, dos claves opcionales: `sequence` (cadena, nombre de la secuencia a la que pertenece la unidad) y `order` (entero, su posición en esa secuencia).
+- Cada secuencia se ensambla a partir de las unidades que la referencian por nombre: se materializa una entidad NarrativeSequence identity-only (dedup por slug), y se emiten sus triples dlp:proper-part hacia las unidades miembro, en el orden dado por `order:` (ascendente). El orden es la tupla del builder; RDF es desordenado (igual que el contrato existente de NarrativeSequence).
+- Una unidad con `sequence:` pero sin `order:` se ubica al final de forma determinista (p. ej. tras las que sí tienen order, en orden de slug) — o se rechaza con un mensaje claro; decidir en clarify. Una unidad sin `sequence:` simplemente no pertenece a ninguna secuencia.
+- El command source bookwright-outline se actualiza para instruir las claves sequence/order al crear unidades. Se re-materializa como SKILL.md por el pipeline existente, en claude y generic, triggers bilingües preservados.
+- Compatibilidad: un proyecto sin ninguna unidad con `sequence:` no produce secuencias y sigue funcionando igual.
+- El registro de diferidos deja de incluir NarrativeSequence; el test de paridad sigue verde con G7 vivo. Tras esta iteración el registro solo contiene G6 (RelationshipRole) y G3 (PsychologicalState).
 
 Validaciones:
 
-- name es cadena obligatoria; colisión de slug rechazada.
+- sequence, si está, es cadena; order, si está, es entero.
+- order duplicado dentro de una misma secuencia: decidir en clarify (rechazo vs. desempate determinista por slug). Slug de secuencia colisionando con otra entidad de tipo distinto no colapsa (segmento de URI distinto, design § 4.5).
 
 Fuera de scope:
 
-- Atributos de objeto más allá de identidad (identity-only en v0).
-- Clases o propiedades nuevas en la ontología (Principio X): G16 ya existe.
-- Cross-refs de objeto (p. ej. objeto → personaje portador): fuera de este patch.
+- Un directorio outline/sequences/ separado (se descartó la opción dir-driven a favor de unit-driven).
+- Tagging E55_Type a Propp/Greimas (iteración 030) y validadores (iteración 031).
+- Clases o propiedades nuevas en la ontología (Principio X): G7 ya existe.
 
-Referencia: ver bookwright-design.md § 4.2 (G16 como concepto y su URI). Principio I, Principio X. Precedente directo: el builder de settings/ en io/bible.py y, recién hecho, el de locations/ (iteración 025).
+Referencia: ver bookwright-design.md § 4.2 (módulo Narrative, fabula/syuzhet), § 4.5 (URI narrative-sequence). Principio I, Principio X, Principio IV. Precedente: el builder de unidades de la iteración 028 y el contrato dlp:proper-part del modelo NarrativeSequence.
 ```
 
-**Pista para `/speckit-plan`:** *"Añade una `_DirSpec` para `objects/`
-espejando la de `settings/` (identity-only, `SETTING_KEYS`-equivalente con solo
-`name`). Reutiliza el módulo de builders ya extraído en 025. Añade
-`bible/objects/` al scaffold en `resources/project/` con su `.tmpl`/material
-mínimo, y edita `resources/commands/bookwright-bible.md` para instruir objetos.
-Re-materializa vía el pipeline de la iteración 9. Saca G16 del registro de
-diferidos. Tests: round-trip de un objeto, ausencia del directorio, fichero sin
-frontmatter omitido, colisión de slug; el test de paridad (024) verde con G16
-vivo; el test del scaffold incluye bible/objects/."*
+**Pista para `/speckit-plan`:** *"Extiende el builder de unidades (iter. 028) para
+leer `sequence:` y `order:`. Tras construir todas las unidades, agrupa por nombre
+de `sequence:`, ordena cada grupo por `order:` ascendente (con la regla de
+desempate confirmada en clarify), y por cada grupo materializa un
+`NarrativeSequence` (dedup por slug) con su cross-ref `units` (`dlp:proper-part`)
+en orden. El ensamblaje de secuencias es un segundo paso sobre el conjunto de
+unidades ya construido, no por-fichero. No toques `golem/`: `NarrativeSequence` y
+su cross-ref `units` ya existen. Quita `NarrativeSequence` de `deferrals.py` y
+actualiza el test de paridad (ahora solo G6/G3 huérfanos). Edita
+`resources/commands/bookwright-outline.md` y re-materializa. Tests: una secuencia
+con tres unidades ordenadas (verificar el orden de los `proper-part`), order
+duplicado según la regla decidida, unidad sin sequence, secuencia con un solo
+miembro, ausencia de secuencias; el test de paridad verde con G7 vivo."*
 
-**Criterio de aceptación:** una `bible/objects/<slug>.md` con `name:` se
-materializa como `G16_Object`; el scaffold de `bookwright init` incluye
-`bible/objects/`; un objeto sin frontmatter se omite sin crash; el cierre no
-cambia; el test de paridad (024) verde con G16 fuera de diferidos; gates verdes;
+**Criterio de aceptación:** unidades que declaran `sequence:`/`order:` producen un
+`G7_Narrative_Sequence` con sus `dlp:proper-part` en el orden correcto; el registro
+de diferidos pierde G7 y queda solo con G6/G3; el cierre no cambia; gates verdes;
 cobertura > 85 % en el código nuevo.
 
 ---
 
-### Iteración 027 — Limpieza: sobre JSON único + decisión G6/G3 + rename unresolved-reference
+### Iteración 030 — Vocabularios Propp/Greimas como `E55_Type` + referencias
 
-**Objetivo:** saldar la deuda menor de consistencia del sobre JSON de éxito y
-**tomar una decisión explícita** sobre los dos conceptos huérfanos "medios"
-(RelationshipRole G6, PsychologicalState G3). **Decisión tomada en `/speckit-clarify`:
-ambos se confirman diferidos a `v0.4`** (razón: "requires a typed roles/states model
-with attributes and an authoring surface"); ninguno se cablea, porque cada uno tiene
-un cross-ref obligatorio y sin superficie autoral un nodo identity-only sería
-degenerado. Se suma un tercer cabo, **deferido explícitamente por la iteración 025**:
-renombrar el tipo de aviso `UnresolvedParticipant` → `UnresolvedReference` (tipo +
-clave `--json` + prosa stderr), eliminando el desajuste modelo↔wire. Con esto el tramo
-v0.3.x cierra en 027.
+**Objetivo:** dar a la capa estructural su **semántica Propp/Greimas** real (no
+solo unidades genéricas): poblar `propp.ttl`/`greimas.ttl` y enlazar funciones y
+roles a sus términos de vocabulario controlado vía `E55_Type`, cuando la
+constitución del proyecto los active.
 
 **Prompt:**
 
 ```
 /speckit-specify
 
-Necesidad: quedan dos cabos del tramo de endurecimiento. (1) El sobre JSON de éxito se single-sourcea en ok_payload() (iteración 020), pero check/focus/graph siguen construyendo el dict {"status":"ok",...} a mano — deuda de consistencia documentada como "out of 020's scope". (2) Dos conceptos huérfanos "medios" siguen sin decisión: RelationshipRole (G6) y PsychologicalState (G3); el registro de diferidos (024) los marca "por decidir". Hay que resolver ambos cabos para cerrar el tramo con el contrato de paridad limpio.
+Necesidad: la capa estructural narrativa ya entra al grafo (G9/G10/G7), pero sus funciones y roles son entidades identity-only sin semántica: una función llamada "departure" no se reconoce como la función Proppiana correspondiente. GOLEM provee el patrón E55_Type para enchufar vocabularios controlados sin extender el esquema (design § 4.4). Los TTL propp.ttl y greimas.ttl existen como stubs (una sola clase cada uno). Queremos poblarlos y enlazar funciones/roles a sus términos cuando la constitución del proyecto active Propp o Greimas, dando a v0.4 su payoff "Propp/Greimas" real.
 
 Comportamiento esperado:
 
-- Sobre JSON: check, focus y graph enrutan su documento de éxito por ok_payload()/emit_json en vez de construir el dict a mano, sin cambiar la salida observable (mismos bytes). Un test asevera que ninguna salida cambia.
-- Decisión G6/G3: para cada uno, o (a) se cablea un builder mínimo identity-only si encaja sin tocar la ontología y sin inflar bible.py, sacándolo de diferidos; o (b) se confirma su diferimiento con una razón concreta y una versión objetivo en el registro de la 024 (p. ej. "requiere modelo de roles/estados con atributos → v0.4"). La decisión se documenta; el registro queda sin entradas "por decidir".
-- Tras esta iteración, el registro de diferidos solo contiene conceptos con razón y versión objetivo firmes (sin "por decidir"), y el tramo v0.3.x cierra.
+- propp.ttl se puebla con las funciones Proppianas como términos E55_Type (su conjunto canónico) y greimas.ttl con los actantes del modelo actancial, como vocabularios controlados — vocabulario nuevo en .ttl separados, NUNCA en la ontología congelada golem.ttl (Constitución X).
+- Cuando el proyecto tiene Propp y/o Greimas activos (según la constitución / vocabularios activos del proyecto), una NarrativeFunction o NarrativeRole cuyo nombre (o un campo `type:` explícito) coincide con un término del vocabulario recibe un triple crm:P2_has_type hacia ese término. Si no coincide ningún término, la entidad queda sin tipar (no es error).
+- La activación de un vocabulario se lee de donde el proyecto ya la declara (constitución / manifiesto / .bookwright/vocabularies/); no se inventa un mecanismo nuevo si ya existe uno. Determinar en plan/clarify la fuente de activación exacta.
+- Las referencias references/propp-functions.md y references/greimas-actants.md (ya citadas por la skill bookwright-outline) se proveen/actualizan para que el autor sepa qué nombres usar.
+- Compatibilidad: un proyecto sin Propp/Greimas activos produce funciones/roles sin tipar, exactamente como en la iteración 028 (sin regresión).
 
 Fuera de scope:
 
-- La capa estructural narrativa (G9/G10/G7) e ingesta de outline/: es v0.4, no se toca aquí salvo para confirmar su diferimiento en el registro.
-- Refactors del sobre JSON más allá de check/focus/graph.
+- Otros vocabularios (booker-seven-plots, essay-structures): fuera de v0.4.
+- Cualquier clase nueva en la ontología congelada (Principio X): los términos viven en propp.ttl/greimas.ttl, no en golem.ttl.
+- Validadores que usen el tipado (iteración 031).
 
-Referencia: ver bookwright-roadmap.md § 3, _envelope.py (ok_payload, nota "out of 020's scope"), el registro de diferidos de la iteración 024, bookwright-design.md § 4.2 (G6/G3). Principio IX (--json).
+Referencia: ver bookwright-design.md § 4.4 (vocabularios controlados E55_Type), § 4.2 (módulo Narrative). Principio I, Principio X. Precedente: sources.ttl (v0.2) como vocabulario .ttl separado y su patrón E55_Type.
 ```
 
-**Pista para `/speckit-plan`:** *"Sobre JSON de éxito: en `commands/focus/*` y
-`commands/graph/query.py` reemplaza los dicts `{"status":"ok",...}` por
-`ok_payload(**fields)` + `emit_json`, exactamente como ya hace `status`
-(iteración 020). `check.py` **no** se envuelve en `ok_payload`: su sobre es
-`{"ok": <bool>, "checks": [...]}` sin clave top-level `status` — single-sourcear
-solo donde no cambie ningún byte; los dicts por-check `{"name",...,"status"}` son
-sub-objetos de dominio, no el sobre. `graph build` **ya** serializa por el
-`to_json()` de su report object: confirmar, no tocar. Un test de regresión
-captura los bytes actuales de `check` / `focus` show·set·clear / `graph query` /
-`graph build` y asevera idénticos tras el cambio. Para G6/G3 **la decisión ya
-está tomada (clarify): confirmar diferimiento de ambos, NO cablear** — edita
-`golem/deferrals.py` cambiando las entradas de `RelationshipRole` (G6) y
-`PsychologicalState` (G3) de `"undecided"` a `target_version` `"v0.4"` con razón
-'requires a typed roles/states model with attributes and an authoring surface';
-ambos siguen observados como huérfanos. Actualiza `EXPECTED_VERSIONS` (y, si
-aplica, los pines reachable-set/orphan-set) en
-`tests/golem/test_ingestion_parity.py`; el set de huérfanos NO cambia, solo el
-mapping de versión. Elimina el literal `"undecided"` del contrato del registro.
-Rename unresolved-reference (User Story 3, deferido por la 025): en
-`io/report.py` renombra el tipo `UnresolvedParticipant` → `UnresolvedReference`
-(campos `{path,entity,name}` intactos, docstring generalizado a cualquier
-referencia sin resolver: `participants:` o `setting:`). Renombra la clave `--json`
-`unresolved_participants` → `unresolved_references` en `graph build` conservando
-su POSICIÓN en el sobre; nuevo golden baseline solo para esa clave (todo lo demás
-byte-idéntico). En `commands/graph/build.py` el resumen stderr pasa a 'N
-unresolved reference(s)'. Actualiza `docs/commands/graph-build.md`. Grep final:
-ningún `UnresolvedParticipant` ni `unresolved_participants` en `src/` ni `docs/`."*
+**Pista para `/speckit-plan`:** *"Puebla `resources/vocabularies/propp.ttl` y
+`greimas.ttl` como vocabularios `E55_Type` (un `skos`/`rdfs:label` por término;
+sigue el patrón de `sources.ttl`). En el builder de funciones/roles (iter. 028),
+tras crear la entidad, si el vocab está activo y el nombre/`type:` resuelve a un
+término, emite `crm:P2_has_type <término>`. Lee la activación de la fuente que el
+proyecto ya use para vocabularios (verifícalo con codegraph: cómo se cargan hoy
+`.bookwright/vocabularies/` y qué declara la constitución). Provee
+`resources/commands/references/propp-functions.md` y `greimas-actants.md` si no
+existen. No toques `golem.ttl`. Tests: función que matchea un término Propp recibe
+el `P2_has_type`, función que no matchea queda sin tipar, proyecto sin Propp activo
+no emite tipos, carga/parseo de los TTL poblados."*
 
-**Criterio de aceptación:** `focus`/`graph query` emiten su éxito vía
-`ok_payload`/`emit_json` y `check`/`graph build` quedan confirmados single-sourced,
-todos con salida byte-idéntica salvo la única clave renombrada `unresolved_references`
-(test de regresión verde con nuevo golden para esa clave); G6 y G3 quedan **diferidos a
-v0.4** con razón firme (fuera de "por decidir", siguen huérfanos, test de paridad
-verde); el registro de diferidos no tiene entradas "undecided"; no queda ningún
-`UnresolvedParticipant`/`unresolved_participants` en `src/` ni `docs/` y
-`docs/commands/graph-build.md` nombra la clave nueva; gates verdes; cobertura > 85 %
-en el código nuevo.
+**Criterio de aceptación:** con Propp activo, una función cuyo nombre coincide con
+un término recibe su `crm:P2_has_type`; sin Propp activo no hay regresión; los TTL
+poblados parsean; `golem.ttl` y el cierre congelado no cambian; gates verdes;
+cobertura > 85 % en el código nuevo.
+
+---
+
+### Iteración 031 — Validador de continuidad estructural narrativa
+
+**Objetivo:** dar a la capa estructural un **consumidor SPARQL** que pruebe su
+citabilidad: un validador de continuidad que detecte incoherencias en la
+estructura narrativa, registrado en el sistema de validación existente.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: la capa estructural narrativa ya está en el grafo (unidades, funciones, secuencias, tipado Propp/Greimas), pero nada la consume todavía: su valor es ser citable por SPARQL para detectar incoherencias. El sistema de validación (validation/validators/*, runner.py, queries.py, registry.py) corre continuity checks contra el grafo. Queremos añadir un validador de continuidad estructural narrativa que aproveche la nueva capa, demostrando que es citable y útil al autor.
+
+Comportamiento esperado:
+
+- Se añade un validador nuevo, registrado en validation/registry.py como los existentes (character presence, focalization, setting continuity, temporal), que ejerce SPARQL contra la capa estructural y reporta incoherencias como findings con su locator file:line cuando aplique.
+- Incoherencias candidatas (afinar en clarify, empezar por las de señal clara): (a) unidad narrativa que no pertenece a ninguna secuencia (beat huérfano); (b) hueco o duplicado en el orden (`order`) de una secuencia; (c) unidad cuyo `roles:` referencia un rol no resuelto (ya soft-miss en ingesta, ahora reportado como continuity finding); (d) secuencia vacía. Elegir un subconjunto coherente; no inventar reglas sin valor autoral.
+- El validador respeta el contrato de los demás: se ejecuta vía runner.py, emite findings serializables por el sobre --json existente (Principio IX), y se puede activar/desactivar como el resto.
+- Compatibilidad: un proyecto sin capa estructural narrativa (sin outline/units/) no produce findings de este validador y no regresa nada.
+
+Fuera de scope:
+
+- Reglas que requieran inferencia LLM (este validador es SPARQL determinista).
+- Cambiar el comportamiento de los validadores existentes.
+- Clases/propiedades nuevas en la ontología (Principio X).
+
+Referencia: ver bookwright-design.md § 4.2 (módulo Narrative) y la sección de validación. Principio I, Principio IX (--json). Precedente: los validadores existentes en validation/validators/ y sus queries en queries.py.
+```
+
+**Pista para `/speckit-plan`:** *"Añade `validation/validators/narrative_structure.py`
+(o nombre análogo) siguiendo la forma de un validador existente (mira
+`setting_continuity` con codegraph). Las consultas van en `validation/queries.py`;
+regístralo en `validation/registry.py`. Reúsa el patrón de findings con locator
+`file:line` (la procedencia ya resuelve campo→`file:line` vía el indexador).
+Empieza por 2–3 reglas de señal clara (beat huérfano, secuencia vacía, hueco de
+order) confirmadas en clarify. Tests: fixture con una incoherencia de cada tipo
+que dispara el finding, fixture limpia que no dispara nada, proyecto sin outline/units/
+inerte. Verifica el sobre --json del reporte de validación."*
+
+**Criterio de aceptación:** el validador detecta las incoherencias estructurales
+elegidas con su locator y las emite por el reporte `--json`; una estructura limpia
+no dispara findings; un proyecto sin la capa es inerte; gates verdes; cobertura
+> 85 % en el código nuevo.
+
+---
+
+### Iteración 032 — Cierre v0.4: E2E + docs + re-target G6/G3 + `v0.4.0`
+
+**Objetivo:** cerrar el hito: una fixture E2E que ejerza el flujo completo
+`outline/units/` → grafo → validación, un workflow test, documentación, el
+re-targeting honesto de G6/G3 en el registro de diferidos, y el bump de versión a
+`v0.4.0` con su tag.
+
+**Prompt:**
+
+```
+/speckit-specify
+
+Necesidad: la capa estructural narrativa está cableada (G9/G10/G7), tipada (Propp/Greimas) y validada. Falta cerrar el hito v0.4 como se cerraron M4 (v0.2.0) y M5 (v0.3.0): una fixture E2E que demuestre el flujo de punta a punta, un workflow test, docs actualizadas, dejar el contrato de diferidos honesto, y la release.
+
+Comportamiento esperado:
+
+- Una fixture E2E de proyecto con outline/units/ poblado (unidades con functions, roles, sequence/order, con Propp activo) ejerce el flujo completo: ingesta → graph build → validación, y se verifica que las entidades narrativas, sus cross-refs, sus tipos E55_Type y los findings del validador aparecen como se espera.
+- Un workflow test recorre el camino autoral análogo a los de M4/M5.
+- La documentación (docs/, README) cubre la ingesta de outline/units/, el frontmatter de una unidad, la activación de Propp/Greimas y el validador nuevo, en español (convención de idioma de los docs).
+- El registro de diferidos (deferrals.py) queda honesto: G6 (RelationshipRole) y G3 (PsychologicalState) son los únicos diferidos; su target_version se re-apunta de "v0.4" a un hito posterior concreto (decidir el label en clarify; el contrato exige una etiqueta de versión concreta, no un placeholder). El test de paridad sigue verde.
+- Bump de versión a v0.4.0 (single-source en __version__), CHANGELOG con la sección v0.4.0 (incluida "Design decisions revised during implementation" si aplica), CLAUDE.md y bookwright-design.md actualizados donde el código divergió.
+
+Fuera de scope:
+
+- Cablear G6/G3 (siguen diferidos).
+- Cualquier feature nueva: esta iteración es solo cierre, fixture, docs y release.
+
+Referencia: ver bookwright-roadmap.md § 4 (G6/G3, horizonte demand-pulled), las iteraciones de cierre 016 (M4) y 023 (M5) como precedente, y la skill bookwright-release. Principio VIII (cobertura), Principio I.
+```
+
+**Pista para `/speckit-plan`:** *"Modela la fixture E2E sobre las de M4/M5 (mira
+con codegraph cómo está montada la de la iteración 023). El workflow test reproduce
+el flujo de un autor que estructura la trama. En `deferrals.py` cambia el
+`target_version` de `RelationshipRole` y `PsychologicalState` de `"v0.4"` al label
+posterior confirmado en clarify (p. ej. `"v0.5"`) y actualiza
+`EXPECTED_VERSIONS`/los pines del test de paridad; el set de huérfanos (G6/G3) NO
+cambia, solo el mapping de versión. La release la conduce la skill
+`bookwright-release` (verificar gates → merge a main → bump `__version__` →
+CHANGELOG → CLAUDE.md → design → commit de release → tag anotado `v0.4.0`).
+Actualiza también `bookwright-roadmap.md` § 1 (estado: v0.4 entregada) y el marcador
+`← AQUÍ` de § 2."*
+
+**Criterio de aceptación:** la fixture E2E y el workflow test pasan ejerciendo el
+flujo completo; los docs cubren la nueva ingesta y validación; el registro de
+diferidos solo tiene G6/G3 con un target_version posterior firme (sin "v0.4"); el
+test de paridad verde; `__version__` y CHANGELOG en `v0.4.0`; `main` tageada
+`v0.4.0`; los cuatro gates verdes; cobertura ≥ 80 % global.
 
 ---
 
@@ -410,9 +486,9 @@ y vuelve a analizar. No fuerces `/speckit-implement` con análisis con errores.
 ### 4.2 Iteraciones que se complican
 
 Si una iteración crece más de lo previsto durante `/speckit-tasks` (más de ~10
-tareas), divídela en dos specs/patches. En este tramo, la **027** (sobre JSON +
-decisión G6/G3) es la candidata más probable a split: separa la limpieza mecánica
-del sobre de la decisión de diseño de G6/G3.
+tareas), divídela en dos specs. En este hito, **030** (poblar TTL + cablear
+tagging E55_Type) y **031** (validador con varias reglas) son las candidatas más
+probables a split.
 
 ### 4.3 Cambios en el documento de diseño
 
@@ -420,25 +496,34 @@ El diseño es la fuente de verdad técnica. Si durante la implementación algo d
 diseño no encaja con la realidad técnica, actualiza `bookwright-design.md`
 **antes** de divergir el código, y registra el cambio en `CHANGELOG` bajo "Design
 decisions revised during implementation". Las decisiones de § 16 son inmutables.
+La nota author-only de `outline/` (iteración 024) **se enmienda** en la 028.
 
 ### 4.4 Cuándo pedir ayuda al humano
 
-Spec Kit genera bien spec/plan/tasks pero puede divagar en decisiones de diseño
-no triviales (p. ej. cablear o no G6/G3). Cuando dudes, ejecuta `/speckit-clarify`
-o intervén manualmente; redirige al doc de diseño / roadmap.
+Spec Kit genera bien spec/plan/tasks pero puede divagar en decisiones de diseño no
+triviales (p. ej. la regla de desempate de `order`, la fuente de activación de
+vocabularios, o el subconjunto de reglas del validador). Cuando dudes, ejecuta
+`/speckit-clarify` o intervén manualmente; redirige al doc de diseño / roadmap.
 
-### 4.5 Después de v0.3.x
+### 4.5 Después de v0.4
 
-Tras cerrar este tramo, el roadmap que se mantiene es **v0.4 — la capa estructural
-narrativa** (Propp/Greimas: G9/G10/G7) y la **ingesta de `outline/`**, que cierran
-la paridad de ingesta. La **búsqueda vectorial** (ChromaDB sobre rdflib,
-desacoplada) y el **export** (EPUB/PDF/print vía pandoc) pasan al **horizonte
-demand-pulled**: sin versión asignada, se activan por condición concreta (ver
-`bookwright-roadmap.md` § 4). Cuando llegue el momento, vaciar este plan
-de lo entregado y redactarlo para el siguiente hito, manteniendo
-`bookwright-roadmap.md` como la intención durable. Quedan descartados: presets,
-GrafeoIndexer/Grafeo, multi-integración y extension system; ver
-`bookwright-design.md` § 15.5.
+Con v0.4 la **paridad de ingesta queda cerrada**: todos los conceptos del cierre
+o se alimentan desde texto autoral o están diferidos con razón y versión firmes
+(solo G6/G3, re-apuntados a un hito posterior). Lo que sigue vivo en el roadmap:
+
+- **RelationshipRole (G6) + PsychologicalState (G3)** — el subsistema de
+  roles/estados tipados con atributos y superficie autoral. Candidato a hito
+  propio cuando haya demanda.
+- **Horizonte demand-pulled (sin versión asignada):** búsqueda vectorial
+  (ChromaDB sobre rdflib, desacoplada) y export (EPUB/PDF/print vía pandoc). Se
+  activan por condición concreta, no por número de versión (ver
+  `bookwright-roadmap.md` § 4). El `1.0` se **gana** cuando el flujo de punta a
+  punta esté probado en un libro real; no se pre-asigna.
+
+Cuando llegue el siguiente hito, vacía este plan de lo entregado y redáctalo para
+él, manteniendo `bookwright-roadmap.md` como la intención durable. Quedan
+descartados: presets, GrafeoIndexer/Grafeo, multi-integración y extension system;
+ver `bookwright-design.md` § 15.5.
 
 ---
 

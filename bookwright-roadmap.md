@@ -25,8 +25,9 @@
 
 ## 1. Dónde estamos
 
-`v0.3.0` está **entregada y tageada** (2026-06-13): el hito M5 — orquestación de
-contexto (el "hilo conductor"), design § 21. Con ella, lo entregado hasta hoy:
+El tramo de endurecimiento **`v0.3.x` está cerrado** (`v0.3.4` tageada
+2026-06-15). El siguiente hito es **v0.4 — la capa estructural narrativa**. Lo
+entregado hasta hoy:
 
 - **`v0.1.0`** (M0–M3) — el toolkit v0: manifiesto, modelo GOLEM sobre `rdflib`,
   los 10 commands de autoría materializados como Agent Skills, validación.
@@ -36,6 +37,9 @@ contexto (el "hilo conductor"), design § 21. Con ella, lo entregado hasta hoy:
 - **`v0.3.0`** (M5) — orquestación: el bloque autoral `[focus]`, el comando
   derivado `bookwright status` con `next_actions` deterministas, y las skills
   consumiéndolo.
+- **`v0.3.1`…`v0.3.4`** (endurecimiento v0.3.x) — paridad de ingesta explícita:
+  guarda + registro de diferidos (024), localizaciones G13 (025) y objetos G16
+  (026) cableadas, y cierre de limpieza con G6/G3 diferidos a posterior (027).
 
 Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 `ruff format`, `mypy --strict`, `pytest` ≥ 80 %) verdes.
@@ -45,8 +49,8 @@ Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 ## 2. La línea de versiones
 
 ```
-v0.3.x  ──  endurecimiento: cancelar deuda, robustez, cerrar atajos de v0   ← AQUÍ
-v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)
+v0.3.x  ──  endurecimiento: cancelar deuda, robustez, cerrar atajos de v0   ✅ cerrado (v0.3.4)
+v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)            ← AQUÍ
             + ingesta de outline/  — cierra la paridad de ingesta
 ──── horizonte sin versión asignada (demand-pulled, con condición de activación) ────
 vectores  ─  ChromaDB sobre rdflib, tras el Indexer Protocol. Activar SI:
