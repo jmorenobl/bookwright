@@ -1,8 +1,9 @@
 """The deferral registry: which GOLEM concepts are modelled but not yet fed.
 
-Five of the thirteen :data:`bookwright.golem.CONCEPTS` have no authored-text
+Three of the thirteen :data:`bookwright.golem.CONCEPTS` have no authored-text
 ingestion path today — they are *modelled* (a frozen class, a ``CLASS_IRI``
-entry) but never *materialized* by any builder over ``bible/*.md``. This module
+entry) but never *materialized* by any builder over the ingested source trees
+(``bible/*.md`` and, since iteration 028, ``outline/units/*.md``). This module
 names them explicitly so the gap is a written contract rather than silent.
 
 It is consumed **solely** by the ingestion-parity test
@@ -35,14 +36,6 @@ class DeferralNote(NamedTuple):
 
 
 DEFERRED_CONCEPTS: dict[str, DeferralNote] = {
-    "NarrativeUnit": DeferralNote(
-        reason="narrative structural layer, no ingestion (G9)",
-        target_version="v0.4",
-    ),
-    "NarrativeFunction": DeferralNote(
-        reason="narrative structural layer, no ingestion (G10)",
-        target_version="v0.4",
-    ),
     "NarrativeSequence": DeferralNote(
         reason="narrative structural layer, no ingestion (G7)",
         target_version="v0.4",
@@ -56,5 +49,5 @@ DEFERRED_CONCEPTS: dict[str, DeferralNote] = {
         target_version="v0.4",
     ),
 }
-"""Concept name → deferral note. Exactly five entries, each key a ``CONCEPTS``
+"""Concept name → deferral note. Exactly three entries, each key a ``CONCEPTS``
 member; the orphan set the parity test derives must equal this dict's keys."""

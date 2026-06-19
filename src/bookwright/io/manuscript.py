@@ -4,11 +4,14 @@ v0 does **no** prose mining — extraction is bible-frontmatter-driven. This mod
 only confirms the manuscript directory exists so ``graph build`` can fail fast on
 a malformed project layout.
 
-Both ``manuscript/`` and ``outline/`` are **author-only** in v0.3: the scaffold
-creates them, but the engine never ingests their contents — there is no
-``outline/`` reader at all, and ``manuscript_present`` only checks existence.
-Their inertness is deliberate (see the deferral rationale in
-``bookwright.golem.deferrals`` and ``docs/authoring.md``), not an oversight.
+``manuscript/`` is **author-only**: the scaffold creates it, but the engine
+never ingests its contents — ``manuscript_present`` only checks existence.
+``outline/`` is **partially ingested** since iteration 028: ``outline/units/``
+cards feed ``NarrativeUnit`` / ``NarrativeFunction`` entities (via
+``bookwright.io.outline``), while ``arcs``/``structure``/``synopsis``/``scenes``
+remain author-only prose. This inertness is deliberate (see the deferral
+rationale in ``bookwright.golem.deferrals`` and ``docs/authoring.md``), not an
+oversight.
 """
 
 from __future__ import annotations

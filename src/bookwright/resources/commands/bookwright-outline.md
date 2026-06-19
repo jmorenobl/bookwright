@@ -39,9 +39,18 @@ estructural concreto). La base es la constitución y la biblia.
 5. Si la constitución activó Propp o Greimas, aplícalos: consulta
    `references/propp-functions.md` y `references/greimas-actants.md` para nombrar
    funciones y articular el motor del conflicto.
-6. Donde falte material, marca `[PENDING: <pregunta>]` (ver
+6. Crea **una ficha por unidad narrativa** (beat/latido) bajo `outline/units/`,
+   un archivo `.md` por unidad con front-matter YAML:
+   - `name`: el nombre de la unidad (obligatorio).
+   - `functions`: lista de las funciones narrativas que cumple (p. ej. Propp:
+     `[interdiction, departure]`) — opcional.
+   - `roles`: lista de roles narrativos implicados, por nombre; se resuelven
+     contra los roles que ya declaran los personajes (`narrative_roles`) — opcional.
+   Estas fichas **sí** se ingieren al grafo (a diferencia de `arcs`/`structure`/
+   `synopsis`, que son prosa de autor). La prosa del cuerpo no se indexa.
+7. Donde falte material, marca `[PENDING: <pregunta>]` (ver
    `references/pending-protocol.md`) en vez de inventar.
-7. **Transición de fase**: Al terminar de trazar la estructura y si no quedan
+8. **Transición de fase**: Al terminar de trazar la estructura y si no quedan
    marcadores `[PENDING]` bloqueantes, actualiza el foco del proyecto para
    avanzar al desglose de escenas ejecutando:
    `bookwright focus set --target "Desglose de escenas a partir del outline"`
@@ -59,6 +68,8 @@ modelo estructural fijaste y qué quedó `[PENDING: …]`.
 ## Archivos a escribir
 
 - `outline/arcs.md`, `outline/structure.md`, `outline/synopsis.md`.
+- `outline/units/*.md`: una ficha por unidad narrativa con front-matter
+  `name`/`functions`/`roles` (se ingieren al grafo).
 
 ## Información faltante
 

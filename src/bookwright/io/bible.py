@@ -26,6 +26,7 @@ from rdflib.term import URIRef
 
 from bookwright.golem import (
     AttributeAssignment,
+    Character,
     EmptySlugError,
     Object,
     Setting,
@@ -161,6 +162,7 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
             into_entity_index=True,
         ),
     )
+    _index_character_roles(ctx)
     _map_single_dir(
         ctx,
         _DirSpec(
@@ -246,6 +248,26 @@ def build_provenance(mapped: MappedEntity, uri_base: str) -> Iterable[AttributeA
 
 def _relpath(path: Path, project_root: Path) -> str:
     return path.relative_to(project_root).as_posix()
+
+
+def _index_character_roles(ctx: _MapContext) -> None:
+    """Publish ``slug → every matching character-scoped role node URI`` on the result.
+
+    Run immediately after the character pass so the outline units pass
+    (:func:`bookwright.io.outline.map_outline`) can resolve a unit's ``roles:``
+    against the roles characters already materialize — mirroring settings-before-
+    locations. Reads each built :class:`Character`'s materialized role nodes (the
+    single source of truth for the ``{character.uri}/role/{slug}`` URI scheme)
+    rather than recomputing that scheme, so a future ``CharacterRole`` URI change
+    cannot silently desync the index. Many-valued: one role slug played by C
+    characters maps to C URIs (research D2).
+    """
+    for mapped in ctx.result.mapped:
+        entity = mapped.entity
+        if not isinstance(entity, Character):
+            continue
+        for role in entity._role_nodes:
+            ctx.result.roles_index.setdefault(make_slug(role.label), []).append(role.uri)
 
 
 def _record_unknown_keys(

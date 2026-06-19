@@ -546,7 +546,9 @@ my-book/
 │   ├── arcs.md
 │   ├── structure.md
 │   ├── synopsis.md                      # Corta (250-350) y larga (1000-2000)
-│   └── scenes.md
+│   ├── scenes.md
+│   └── units/                           # Unidades narrativas G9 (name:/functions:/roles:)
+│       └── <slug>.md                    #   se indexan (G9/G10) — ver § 7.4
 │
 ├── .bookwright/                            # Configuración del toolkit
 │   ├── init-options.json                # Opciones con que se inició
@@ -650,6 +652,42 @@ reservada) ni requirió enmienda constitucional. Quedan fuera de este patch los
 atributos de objeto más allá de la identidad y los cross-refs de objeto (p. ej.
 objeto → personaje portador). El command `/bookwright-bible` pasó a instruir la
 creación de fichas de objeto con frontmatter `name:`.
+
+### 7.4 Ingesta de unidades narrativas (G9/G10) — wired en iteración 028 (v0.4)
+
+`outline/units/*.md` **se indexa**: cada ficha produce una `G9_Narrative_Unit` de
+primera clase, el primer árbol fuera de `bible/` que alimenta el grafo. La
+identidad sale del frontmatter `name:` (obligatorio; el *slug* deriva de él). Las
+`functions:` (lista de nombres) se acuñan como nodos `G10_Narrative_Function`
+*identity-only*, deduplicados por *slug* **entre todas las fichas** (la primera
+que introduce un *slug* emite su `rdf:type`; las demás lo reutilizan), enlazados
+por `crm:P67_refers_to`. Las `roles:` (lista de nombres) **no acuñan nada**:
+resuelven por *slug* contra los nodos de rol con alcance de personaje que los
+personajes ya materializan (`narrative_roles`), una arista `crm:P67_refers_to` por
+cada personaje que juega ese rol. Las clases G9/G10/G11 y ambos cross-refs ya eran
+de primera clase en este documento y existían en el código (`golem/modules/
+narrative.py`, en el cierre congelado `CLASS_IRI`, registradas en `CONCEPTS`); la
+iteración 028 añadió **solo la ruta de ingesta**: un módulo hermano `io/outline.py`
+(`map_outline`) que reutiliza el motor genérico de `io/bible.py`, una pasada
+`_index_character_roles` que publica el índice de roles en `MapResult`, y la baja
+de `NarrativeUnit`/`NarrativeFunction` del registro de aplazamientos (iteración
+024).
+
+**Resolución y robustez** (espejo de localizaciones/objetos): ausencia de
+`outline/units/` no afecta a nada (grafo idéntico); una ficha sin frontmatter,
+con `name:` ausente/vacío/no-cadena, o con `functions:`/`roles:` que no sean
+listas de cadenas se omite como inservible (FR-006/007) sin filtrar ninguna
+función parcial; una `role:` sin personaje que la juegue es *soft-miss*
+(`UnresolvedReference`) con la unidad igualmente construida (sin arista); una
+colisión de *slug* de unidad se rechaza como en characters/settings. La prosa del
+cuerpo no se indexa.
+
+No tocó la ontología congelada (Principio X a salvo: clases y cross-refs ya
+reservados) ni requirió enmienda constitucional. Quedan author-only `arcs.md`,
+`structure.md`, `synopsis.md` y `scenes.md`; las secuencias narrativas G7
+(`NarrativeSequence`) siguen aplazadas. El command `/bookwright-outline` pasó a
+instruir la creación de fichas bajo `outline/units/` con frontmatter
+`name:`/`functions:`/`roles:`.
 
 ---
 
@@ -878,8 +916,8 @@ Para añadir una integración futura basta con crear `src/bookwright/integration
 | Command | Input | Output | Fase |
 |---|---|---|---|
 | `/bookwright-constitution` | Brief / conversación | `bible/constitution.md` | 1. Setup |
-| `/bookwright-bible` | Constitution + brief | `bible/characters/*.md`, `bible/settings/*.md`, `bible/locations/*.md`, `bible/timeline.md`, `bible/relationships.md`, `bible/themes.md`, `bible/glossary.md`, `bible/research/_index.md`, `bible/subplots.md`, `bible/pov-structure.md` (si multi-POV), `bible/graph.ttl` | 2. Setup |
-| `/bookwright-outline` | Constitution + bible | `outline/arcs.md`, `outline/structure.md`, `outline/synopsis.md` | 3. Structure |
+| `/bookwright-bible` | Constitution + brief | `bible/characters/*.md`, `bible/settings/*.md`, `bible/locations/*.md`, `bible/objects/*.md`, `bible/timeline.md`, `bible/relationships.md`, `bible/themes.md`, `bible/glossary.md`, `bible/research/_index.md`, `bible/subplots.md`, `bible/pov-structure.md` (si multi-POV), `bible/graph.ttl` | 2. Setup |
+| `/bookwright-outline` | Constitution + bible | `outline/arcs.md`, `outline/structure.md`, `outline/synopsis.md`, `outline/units/*.md` | 3. Structure |
 | `/bookwright-scenes` | Outline + bible | `outline/scenes.md` | 4. Pre-draft |
 | `/bookwright-draft <scene_id>` | Outline + scene | `manuscript/cap-NN.md` (sección de la escena) | 5. Draft |
 | `/bookwright-synopsis` | Estado actual | Actualiza `outline/synopsis.md` (corta + larga) | cualquier momento |

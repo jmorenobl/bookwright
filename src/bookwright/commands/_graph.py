@@ -23,6 +23,7 @@ from bookwright.indexers import Indexer, UnknownIndexerError, resolve_indexer
 from bookwright.io.bible import build_provenance, map_bible
 from bookwright.io.errors import MissingDirectoryError, ResearchError
 from bookwright.io.manuscript import manuscript_present
+from bookwright.io.outline import map_outline
 from bookwright.io.report import BuildReport, ResearchTargetWarning
 from bookwright.io.research import ResearchResult, map_research
 
@@ -90,6 +91,9 @@ def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
 
     uri_base = manifest.bookwright.uri_base
     result = map_bible(root, bible_dir, uri_base)
+    # Append the outline/units pass into the same MapResult (research D1): one result
+    # to iterate, no merge, BuildReport counters aggregate the additions for free.
+    map_outline(root, root / manifest.paths.outline, uri_base, result)
 
     for mapped in result.mapped:
         for triple in mapped.entity.to_triples():

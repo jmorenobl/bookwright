@@ -17,6 +17,8 @@ from bookwright.integrations.constants import (
 )
 from bookwright.integrations.descriptions import SKILL_DESCRIPTIONS
 from bookwright.integrations.errors import SkillMaterializationError
+from bookwright.integrations.generic import GenericIntegration
+from bookwright.integrations.lint import lint_skill_md
 from bookwright.integrations.materialize import generate_skill_md, iter_command_sources
 from bookwright.io.frontmatter import parse_frontmatter
 from bookwright.io.fs import NullLedger
@@ -215,6 +217,33 @@ def test_bible_skill_teaches_object_frontmatter(tmp_path: Path) -> None:
     assert body.startswith("---\n")
     assert "location sheets" in body  # EN trigger
     assert "localizaciones" in body  # ES trigger
+
+
+@pytest.mark.parametrize("integration", [ClaudeIntegration(), GenericIntegration()])
+def test_outline_skill_teaches_unit_cards(
+    integration: ClaudeIntegration | GenericIntegration, tmp_path: Path
+) -> None:
+    """SC-007/A1 — the materialized bookwright-outline skill prescribes `outline/units/` cards.
+
+    The iteration-028 edit (one card per narrative unit with `name`/`functions`/`roles`
+    front-matter, ingested to the graph) must flow through into the rendered skill body
+    for **both** integrations, with its YAML front-matter and bilingual author triggers
+    intact, and still lint clean.
+    """
+    source = next(s for s in iter_command_sources() if Path(s.name).stem == "bookwright-outline")
+    written = generate_skill_md(source, tmp_path, integration, ledger=NullLedger())
+    assert written is not None
+    body = written.read_text(encoding="utf-8")
+    # The unit-card surface and its three front-matter keys are documented.
+    assert "outline/units/" in body
+    assert "`functions`" in body
+    assert "`roles`" in body
+    # Front-matter + bilingual triggers survive (the lint gate enforces the YAML shape).
+    assert body.startswith("---\n")
+    assert "name: bookwright-outline" in body
+    assert "outline the plot" in body  # EN trigger
+    assert "estructurar la trama" in body  # ES trigger
+    lint_skill_md(written.parent)  # A1 — still lints clean
 
 
 def test_dangling_reference_aborts_pre_write(tmp_path: Path) -> None:

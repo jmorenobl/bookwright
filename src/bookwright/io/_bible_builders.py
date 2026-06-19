@@ -22,6 +22,7 @@ from rdflib.term import URIRef
 
 from bookwright.golem import Character, EmptySlugError, NarrativeEvent, NarrativeLocation
 from bookwright.golem.base import GolemEntity
+from bookwright.golem.modules.narrative import NarrativeFunction
 from bookwright.golem.namespaces import TEMPORAL_RELATIONS
 from bookwright.golem.slug import make_slug
 
@@ -64,6 +65,12 @@ class MapResult:
     # research ``bears_on``/``constrains`` targets (D11), distinct from participant
     # ``slug_index``.
     entity_index: dict[str, URIRef] = field(default_factory=dict)
+    # ``make_slug(role label) → every matching character-scoped role node URI`` — built
+    # by the character pass (``_index_character_roles``) and published here so the
+    # outline units pass (``io.outline``) can resolve a unit's ``roles:`` against the
+    # roles characters already materialize. Many-valued: one slug played by C characters
+    # → C URIs (iteration 028, research D2).
+    roles_index: dict[str, list[URIRef]] = field(default_factory=dict)
 
     @property
     def entities(self) -> list[GolemEntity]:
@@ -100,6 +107,13 @@ class _MapContext:
     collisions: _Collisions
     slug_index: dict[str, URIRef]
     settings_index: dict[str, URIRef] = field(default_factory=dict)
+    # The outline units pass threads two more indices through this context: the
+    # character-scoped role index a unit's ``roles:`` resolves against (populated by
+    # the character pass, mirrored from ``result.roles_index``), and the function index
+    # ``_build_unit`` deduplicates ``NarrativeFunction`` minting across units against
+    # (iteration 028).
+    roles_index: dict[str, list[URIRef]] = field(default_factory=dict)
+    functions_index: dict[str, NarrativeFunction] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
