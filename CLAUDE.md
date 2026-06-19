@@ -285,9 +285,10 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 ## Spec Kit specifics
 
-- Pinned at `v0.10.2` (upgraded from `v0.10.1` on 2026-06-12, a patch release
-  picked up alongside the `agy`→`claude` integration switch). Don't upgrade
-  without a reason worth chasing template churn.
+- The installed Spec Kit version lives in `.specify/integration.json` (and the
+  `.specify/integrations/*.manifest.json`) — that's the source of truth, not
+  this file, since it moves often. Don't upgrade without a reason worth chasing
+  template churn.
 - Don't modify Spec Kit *core* (templates, scripts, manifests). Per-project
   *copies* (`.specify/extensions.yml`, `git-config.yml`) are editable.
 - Skill names are hyphenated (`speckit-plan`). `extensions.yml` hook entries
