@@ -146,10 +146,11 @@ a fresh project and confirm `outline/units/` exists.
   units, and emit the unit→function cross-reference (`crm:P67_refers_to`, already
   declared on the `NarrativeUnit` model).
 - **FR-005**: For each name in a unit's `roles`, the system MUST resolve it against
-  the index of narrative roles materialized inline by characters; on a match it
-  MUST emit the unit→role cross-reference (`crm:P67_refers_to`); on no match it
-  MUST record an unresolved-reference soft warning and still build the unit (never
-  crash).
+  an index of the narrative roles that characters materialize inline from their
+  `narrative_roles:` (no such index exists today — it MUST be populated during the
+  character pass, before the units pass runs); on a match it MUST emit the
+  unit→role cross-reference (`crm:P67_refers_to`); on no match it MUST record an
+  unresolved-reference soft warning and still build the unit (never crash).
 - **FR-006**: A unit card with no frontmatter, malformed YAML, unreadable bytes,
   or a missing/empty/non-string `name` MUST be skipped gracefully with a recorded
   reason; the build MUST continue.
@@ -167,16 +168,49 @@ a fresh project and confirm `outline/units/` exists.
   in addition to the prose arcs/structure/synopsis, creating one card per narrative
   unit under `outline/units/` with `name`/`functions`/`roles` frontmatter, and MUST
   be re-materialized as `SKILL.md` by the existing pipeline for both `claude` and
-  `generic`, preserving bilingual (ES/EN) triggers.
+  `generic`, preserving bilingual (ES/EN) triggers. The added instructions MUST be
+  written in the command's existing language (Spanish prose), matching the
+  repository's language conventions for the source commands.
 - **FR-012**: The project scaffold (`resources/project/outline/`) MUST include an
   `outline/units/` directory with starter material, mirroring `bible/settings/`.
 - **FR-013**: The deferral registry MUST no longer list `NarrativeUnit` or
   `NarrativeFunction`; the ingestion-parity test MUST stay green with G9 and G10
   observed as alive (fed) and `NarrativeSequence` (G7) remaining the only narrative
-  orphan.
-- **FR-014**: The iteration-024 author-only note MUST be amended so `outline/` is
-  documented as partially ingested: `units/` is ingested; `arcs`/`structure`/
-  `synopsis` remain author-only prose.
+  orphan. Both module docstrings' count prose — the registry's "Five of the
+  thirteen" / "Exactly five entries", and the parity test's "Eight of the
+  thirteen … the other five are orphans" — and every pinned constant in the
+  parity test that encodes the orphan count — the reachable set
+  (`EXPECTED_REACHABLE`, which gains `NarrativeUnit`/`NarrativeFunction`), the
+  orphan-name set (`ORPHAN_NAMES`), the version-map (`EXPECTED_VERSIONS`), and the
+  `len(DEFERRED_CONCEPTS) == 5` assertion (→ 3) — MUST be updated in lockstep so
+  nothing still claims five orphans where there are now three. The three
+  drift-simulation tests pick their probe concepts from the reachable/orphan sets
+  (`Character`, `NarrativeEvent`, `PsychologicalState`); none names a removed
+  concept, so they keep passing unchanged — the plan MUST confirm this rather than
+  edit them. The `parity-exercise` fixture MUST gain at
+  least one `outline/units/*.md` card declaring at least one `functions` name, so
+  the live build actually observes `NarrativeUnit` and `NarrativeFunction` as
+  reachable types (the parity test reads reachability from a real build, never a
+  hand-list).
+- **FR-014**: Every statement in the repository that documents `outline/` as
+  wholly author-only MUST be amended so `outline/` reads as partially ingested
+  (`units/` is ingested; `arcs`/`structure`/`synopsis`/`scenes` remain author-only
+  prose) — this is a debt class to sweep in full, not a single edit. The known
+  instances are: the iteration-024 note in `src/bookwright/io/manuscript.py`
+  (English, code), the authoring-guide note in `docs/authoring.md` (Spanish, kept
+  Spanish), and the deferral-registry docstring's "no builder over `bible/*.md`"
+  framing. Additionally, the canonical design doc MUST be updated to match the
+  precedent set when locations (§ 7.2) and objects (§ 7.3) were wired: add
+  `outline/units/` to the project-tree listing in § 7 and add a new ingestion
+  subsection (Spanish, mirroring § 7.2/§ 7.3) documenting the `outline/units/`
+  surface. Version-scoped *historical* statements that remain true are
+  deliberately NOT swept — notably `bookwright-roadmap.md`'s record that `outline/`
+  and `manuscript/` were author-only *en v0.3* (a past state it still describes
+  accurately, and the roadmap is a durable ledger never emptied per milestone).
+  The debt class is the *present-tense* claim that the engine ingests no
+  `outline/`; SC-008's repository-wide search is therefore scoped to live source
+  docstrings, the authoring guide, and the design doc, never the roadmap's
+  historical ledger.
 - **FR-015**: No new ontology class or property may be added; G9, G10, and
   `crm:P67_refers_to` already exist (Principle X). The 17-class closure and
   `golem.ttl` MUST remain frozen.
@@ -216,6 +250,12 @@ a fresh project and confirm `outline/units/` exists.
 - **SC-007**: The regenerated `bookwright-outline` `SKILL.md` for both `claude` and
   `generic` documents the `outline/units/` card format and still triggers on
   Spanish and English author prompts (passes the existing skill lint gate).
+- **SC-008**: After the change, no source docstring, authoring doc, or design-doc
+  statement still describes `outline/` as *presently* wholly author-only: a search
+  of those surfaces for the old framing returns only statements that name
+  `outline/units/` as ingested, and the design doc's § 7 tree lists
+  `outline/units/`. Version-scoped historical records (the roadmap's "author-only
+  *en v0.3*") are out of this search by design (FR-014) and remain unchanged.
 
 ## Assumptions
 
@@ -230,12 +270,17 @@ a fresh project and confirm `outline/units/` exists.
   (`narrative-function/<slug>`), while each `roles` name resolves against existing
   character-declared narrative roles and never mints a new entity.
 - **Role resolution is by slug against character-scoped role nodes.** Character
-  roles have character-scoped URIs (`{character}/role/{slug}`), so one role slug
-  may be played by several characters. The assumed default is that a unit `roles`
-  name resolves to **every** character role whose slug matches, emitting one
-  unit→role edge per match; zero matches is a soft miss. **This is the most
-  likely point to confirm in `/speckit-clarify`** (alternatives: resolve to a
-  single canonical role node, or mint a top-level role) before planning.
+  roles have character-scoped URIs (`{character}/role/{slug}`) and are emitted
+  inline by the `Character` model (`CharacterRole`), but they are exposed to **no**
+  resolution index today — one must be built during the character pass (FR-005).
+  Because one role slug may be played by several characters, the assumed default
+  is that a unit `roles` name resolves to **every** character role whose slug
+  matches, emitting one unit→role edge per match; zero matches is a soft miss.
+  **This multiplicity is the single most important point to confirm in
+  `/speckit-clarify`** before planning — it is deliberately left open here rather
+  than baked, and it is why no success criterion pins the unit→role edge count.
+  Alternatives to weigh: resolve to a single canonical role node, or mint a
+  top-level role.
 - **Units are mapped after characters.** The role-resolution index must be
   populated by the character pass before the units pass runs, analogous to
   settings-before-locations.
