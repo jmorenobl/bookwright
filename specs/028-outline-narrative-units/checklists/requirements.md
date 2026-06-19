@@ -37,7 +37,8 @@
   terms (G9/G10/G11, `crm:P67_refers_to`) are domain vocabulary fixed by the
   frozen ontology, not implementation choices — they name the data contract, so
   they are retained deliberately.
-- One open design decision is flagged in Assumptions (how a unit `roles` name
-  resolves against character-scoped role nodes) and deliberately left for the
-  mandatory `/speckit-clarify` step rather than encoded as a [NEEDS CLARIFICATION]
-  marker, since a reasonable default is documented.
+- The one open design decision flagged in Assumptions (how a unit `roles` name
+  resolves against character-scoped role nodes) was **resolved** in
+  `/speckit-clarify` (Session 2026-06-19): resolve to every matching
+  character-scoped role, one edge per match. SC-004 now pins the resulting edge
+  count; nothing remains deferred to planning.

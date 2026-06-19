@@ -129,6 +129,30 @@ a fresh project and confirm `outline/units/` exists.
 - **A unit role name that matches the same role played by several characters** →
   see Assumptions; resolves to every matching character role by slug.
 
+## Clarifications
+
+### Session 2026-06-19
+
+*(Resolved non-interactively on the constitution's NON-NEGOTIABLE principles and
+the zero-debt bar; rationale inline.)*
+
+- Q: When a unit `roles` name matches a role slug played by several characters,
+  how does it resolve — to every matching character-scoped role, to one canonical
+  role node, or by minting a top-level role? → A: It resolves to **every**
+  character-scoped role node whose slug matches, emitting one unit→role
+  `crm:P67_refers_to` edge per match; the units pass mints nothing, and zero
+  matches is a single soft miss. *Rationale*: faithful to the character-scoped
+  role URIs that already exist (`{character}/role/{slug}`); the alternatives
+  either add an identity space the frozen ontology does not need (Principle X) or
+  pick a node non-deterministically — both incur debt. This rule mints nothing
+  and is deterministic.
+- Q: How are repeated `roles` names within a single unit card handled? → A:
+  De-duplicated by slug within the card before resolution, exactly as `functions`
+  are (SC-002); the edge set is therefore (distinct role-slug in the card) ×
+  (characters whose role slug matches). *Rationale*: mirrors the function-dedup
+  contract, makes the unit→role edge count deterministic and testable
+  (Principle VIII), and forecloses duplicate-edge debt.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -145,12 +169,16 @@ a fresh project and confirm `outline/units/` exists.
   `NarrativeFunction` entity (identity only), deduplicated by slug across all
   units, and emit the unit→function cross-reference (`crm:P67_refers_to`, already
   declared on the `NarrativeUnit` model).
-- **FR-005**: For each name in a unit's `roles`, the system MUST resolve it against
-  an index of the narrative roles that characters materialize inline from their
-  `narrative_roles:` (no such index exists today — it MUST be populated during the
-  character pass, before the units pass runs); on a match it MUST emit the
-  unit→role cross-reference (`crm:P67_refers_to`); on no match it MUST record an
-  unresolved-reference soft warning and still build the unit (never crash).
+- **FR-005**: For each **distinct** (slug-deduplicated within the card) name in a
+  unit's `roles`, the system MUST resolve it against an index of the narrative
+  roles that characters materialize inline from their `narrative_roles:` (no such
+  index exists today — it MUST be populated during the character pass, before the
+  units pass runs). The index is many-valued by slug: a name MUST resolve to
+  **every** character-scoped role node whose slug matches, emitting one unit→role
+  cross-reference (`crm:P67_refers_to`) per match; the units pass MUST mint no role
+  entity. On zero matches it MUST record exactly one unresolved-reference soft
+  warning and still build the unit (never crash). (Multiplicity and within-card
+  dedup resolved in Clarifications, Session 2026-06-19.)
 - **FR-006**: A unit card with no frontmatter, malformed YAML, unreadable bytes,
   or a missing/empty/non-string `name` MUST be skipped gracefully with a recorded
   reason; the build MUST continue.
@@ -203,7 +231,13 @@ a fresh project and confirm `outline/units/` exists.
   precedent set when locations (§ 7.2) and objects (§ 7.3) were wired: add
   `outline/units/` to the project-tree listing in § 7 and add a new ingestion
   subsection (Spanish, mirroring § 7.2/§ 7.3) documenting the `outline/units/`
-  surface. Version-scoped *historical* statements that remain true are
+  surface. The design doc's skill-output table (the `Command | Input | Output`
+  table) MUST also be brought current, since this is the same debt class — an
+  authored-and-ingested surface missing from the table: add `outline/units/*.md`
+  to the `/bookwright-outline` output row, and, sweeping the one pre-existing
+  instance of the identical class, add the already-authored-and-ingested
+  `bible/objects/*.md` (iteration 026) that the `/bookwright-bible` row still
+  omits. Version-scoped *historical* statements that remain true are
   deliberately NOT swept — notably `bookwright-roadmap.md`'s record that `outline/`
   and `manuscript/` were author-only *en v0.3* (a past state it still describes
   accurately, and the roadmap is a durable ledger never emptied per milestone).
@@ -239,9 +273,12 @@ a fresh project and confirm `outline/units/` exists.
 - **SC-003**: 100% of malformed unit cards (no frontmatter, bad YAML, missing
   `name`, non-list `functions`/`roles`) are skipped without aborting the build,
   and every skip carries a recorded reason.
-- **SC-004**: A unit `roles` name that matches a character-declared role yields a
-  unit→role edge; an unmatched name yields one unresolved-reference warning and no
-  edge — with the unit still present in the graph in both cases.
+- **SC-004**: A unit `roles` name that matches the role slug declared by exactly C
+  characters yields exactly C unit→role `crm:P67_refers_to` edges (one per matching
+  character-scoped role node); an unmatched name yields exactly one
+  unresolved-reference warning and no edge — with the unit still present in the
+  graph in both cases. Repeated role names within a single card are
+  slug-deduplicated before resolution, so they do not inflate the edge count.
 - **SC-005**: The ingestion-parity test passes with the orphan set reduced to
   exactly `{NarrativeSequence, RelationshipRole, PsychologicalState}` and the
   reachable set extended with `NarrativeUnit` and `NarrativeFunction`.
@@ -253,8 +290,10 @@ a fresh project and confirm `outline/units/` exists.
 - **SC-008**: After the change, no source docstring, authoring doc, or design-doc
   statement still describes `outline/` as *presently* wholly author-only: a search
   of those surfaces for the old framing returns only statements that name
-  `outline/units/` as ingested, and the design doc's § 7 tree lists
-  `outline/units/`. Version-scoped historical records (the roadmap's "author-only
+  `outline/units/` as ingested, the design doc's § 7 tree lists
+  `outline/units/`, and the design-doc skill-output table's `/bookwright-outline`
+  row lists `outline/units/*.md` (with the same-class `/bookwright-bible`
+  `bible/objects/*.md` omission also closed). Version-scoped historical records (the roadmap's "author-only
   *en v0.3*") are out of this search by design (FR-014) and remain unchanged.
 
 ## Assumptions
@@ -269,18 +308,18 @@ a fresh project and confirm `outline/units/` exists.
   `functions` name creates a deduplicated top-level `NarrativeFunction`
   (`narrative-function/<slug>`), while each `roles` name resolves against existing
   character-declared narrative roles and never mints a new entity.
-- **Role resolution is by slug against character-scoped role nodes.** Character
-  roles have character-scoped URIs (`{character}/role/{slug}`) and are emitted
-  inline by the `Character` model (`CharacterRole`), but they are exposed to **no**
-  resolution index today — one must be built during the character pass (FR-005).
-  Because one role slug may be played by several characters, the assumed default
-  is that a unit `roles` name resolves to **every** character role whose slug
-  matches, emitting one unit→role edge per match; zero matches is a soft miss.
-  **This multiplicity is the single most important point to confirm in
-  `/speckit-clarify`** before planning — it is deliberately left open here rather
-  than baked, and it is why no success criterion pins the unit→role edge count.
-  Alternatives to weigh: resolve to a single canonical role node, or mint a
-  top-level role.
+- **Role resolution is by slug against character-scoped role nodes (multiplicity
+  resolved — see Clarifications, Session 2026-06-19).** Character roles have
+  character-scoped URIs (`{character}/role/{slug}`) and are emitted inline by the
+  `Character` model, but they are exposed to **no** resolution index today — one
+  must be built during the character pass (FR-005). Because one role slug may be
+  played by several characters, a unit `roles` name resolves to **every** character
+  role whose slug matches, emitting one unit→role edge per match; zero matches is a
+  soft miss. The rejected alternatives — resolve to a single (necessarily minted or
+  arbitrarily chosen) canonical role node, or mint a top-level role — were declined
+  because each either adds an identity space the frozen ontology does not need
+  (Principle X) or resolves non-deterministically; the chosen rule mints nothing
+  and is deterministic. SC-004 now pins the resulting edge count.
 - **Units are mapped after characters.** The role-resolution index must be
   populated by the character pass before the units pass runs, analogous to
   settings-before-locations.
