@@ -55,6 +55,13 @@ steps:
     type: prompt
     integration: "{{ inputs.integration }}"
     prompt: >
+      PRECONDITION GUARD — run this FIRST, before anything else:
+      `test -f "specs/$(git rev-parse --abbrev-ref HEAD)/spec.md"`. If that file
+      does NOT exist, the prior `specify` step's writes never landed (a known
+      failure mode where file writes are blocked pending a permission grant that
+      never comes, yet the step is still recorded as completed): STOP immediately,
+      create/edit NOTHING, and report the desync loudly so the run can be
+      restarted. Only if the file exists do you proceed.
       Audit the spec just generated and EDIT spec.md in place so it meets
       bookwright's quality bar before planning. Reason concretely about the
       project's Constitution Check gate (.specify/memory/constitution.md): each
@@ -130,6 +137,14 @@ steps:
     type: prompt
     integration: "{{ inputs.integration }}"
     prompt: >
+      PRECONDITION GUARD — run this FIRST: confirm all three upstream artifacts
+      exist —
+      `d="specs/$(git rev-parse --abbrev-ref HEAD)"; for f in spec plan tasks; do test -f "$d/$f.md" || echo "MISSING $f.md"; done`.
+      If any line prints MISSING, a prior step's writes never landed (a known
+      failure mode where writes are blocked pending a permission grant that never
+      comes, yet the step is recorded as completed): STOP immediately, edit
+      NOTHING, and report the desync loudly so the run can be restarted. Only if
+      all three exist do you proceed.
       Perform a cross-artifact consistency and constitution-compliance analysis
       over spec.md, plan.md, tasks.md and .specify/memory/constitution.md — the
       same scope as /speckit-analyze (duplication, ambiguity, coverage gaps,
@@ -168,6 +183,15 @@ steps:
     type: prompt
     integration: "{{ inputs.integration }}"
     prompt: >
+      PRECONDITION GUARD — run this FIRST: confirm the implement step actually
+      landed code. There must be either committed changes since the merge base or
+      uncommitted work —
+      `git diff --quiet "$(git merge-base origin/main HEAD)" HEAD && git diff --quiet && git diff --cached --quiet && echo "NO CHANGES"`.
+      If that prints NO CHANGES, the implement step produced nothing (a known
+      failure mode where writes are blocked pending a permission grant that never
+      comes, yet the step is recorded as completed): STOP immediately, fabricate
+      NO review, and report the desync loudly so the run can be restarted. Only if
+      there are changes do you proceed.
       Review the implementation diff just produced (git diff against origin/main
       or the merge base) for (a) correctness bugs and (b) reuse / simplification /
       DRY / efficiency / layering cleanups, against CLAUDE.md and the project
