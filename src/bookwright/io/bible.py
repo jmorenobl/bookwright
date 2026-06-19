@@ -266,7 +266,7 @@ def _index_character_roles(ctx: _MapContext) -> None:
         entity = mapped.entity
         if not isinstance(entity, Character):
             continue
-        for role in entity._role_nodes:
+        for role in entity.role_nodes:
             ctx.result.roles_index.setdefault(make_slug(role.label), []).append(role.uri)
 
 
