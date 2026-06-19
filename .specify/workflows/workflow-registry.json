@@ -8,6 +8,14 @@
       "source": "bundled",
       "installed_at": "2026-05-28T07:22:15.633211+00:00",
       "updated_at": "2026-05-28T07:22:15.633216+00:00"
+    },
+    "bookwright-quality": {
+      "name": "Bookwright Full SDD Cycle (zero-debt, autonomous)",
+      "version": "1.0.0",
+      "description": "specify → harden-spec → clarify → plan → tasks → analyze-resolve → implement → review-fix → converge → finalize; fully autonomous, zero-debt, headless-safe commits",
+      "source": "local",
+      "installed_at": "2026-06-19T00:00:00+00:00",
+      "updated_at": "2026-06-19T00:00:00+00:00"
     }
   }
 }

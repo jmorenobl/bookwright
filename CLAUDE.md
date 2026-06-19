@@ -244,6 +244,13 @@ source of truth (Constitution I).
 A PR that adds plumbing whose only justification is "future X" MUST be
 rejected (Constitution "Scope & Release Discipline").
 
+When a cleanup is detected but is genuinely out of the current iteration's
+scope (an unrelated debt class that would be its own iteration), it is **not**
+dropped silently: it is recorded in `DEBT.md` (repo root) so the trail is plain
+text, not lore. Debt of the *same* class the iteration already touches is swept
+in full now, not deferred. Resolving a debt entry **removes** it (git keeps the
+history); only consciously `aceptada` (won't-fix) debt stays recorded.
+
 - v0.2 / M4 (design § 20) — research & verification: shipped in `v0.2.0`.
 - v0.3 / M5 — context orchestration (design § 21): shipped in `v0.3.0`.
 - **v0.3.x hardening (current, iterations 024–027) — cancel tech debt / close v0
