@@ -28,3 +28,6 @@ htmlcov/
 
 # Quickstart scratch directory (see specs/001-repo-bootstrap/quickstart.md)
 .scratch/
+
+# Spec Kit workflow run state (per-run, ephemeral; created by `specify workflow run`)
+.specify/workflows/runs/
