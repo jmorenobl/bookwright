@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.3.x hardening complete, v0.4 in progress (030 merged)
+## Repository state: v0.3.x hardening complete, v0.4 in progress (031 merged)
 
 Three milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
@@ -153,7 +153,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now open: 028–030 are merged; 031–032 are planned. Unlike the v0.3.x patches, v0.4 iterations accumulate on `main` and ship **once** as `v0.4.0` at the closing iteration (032), so 028–030 carry no version bump or tag — `__version__` stays `0.3.4` until 032.
+024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now open: 028–031 are merged; 032 is planned. Unlike the v0.3.x patches, v0.4 iterations accumulate on `main` and ship **once** as `v0.4.0` at the closing iteration (032), so 028–031 carry no version bump or tag — `__version__` stays `0.3.4` until 032.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -187,7 +187,7 @@ was correct) and corrupts the run's audit trail.
 | 028 | Ingest narrative units (G9) + functions (G10) from `outline/units/` | v0.4 | ✅ merged |
 | 029 | Ingest narrative sequences (G7) | v0.4 | ✅ merged |
 | 030 | Propp/Greimas vocabularies as `E55_Type` + references | v0.4 | ✅ merged |
-| 031 | Narrative-structure continuity validator | v0.4 | ⏳ planned |
+| 031 | Narrative-structure continuity validator | v0.4 | ✅ merged |
 | 032 | v0.4 close: E2E + docs + re-target G6/G3 + `v0.4.0` | v0.4 | ⏳ planned |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
@@ -207,7 +207,7 @@ The current milestone is **v0.4 — the narrative-structure layer** (Propp/Greim
 G7/G9/G10) plus `outline/` ingestion, which closes ingestion parity. It is a minor
 milestone: iterations 028–032 accumulate on `main` and release **once** as `v0.4.0`
 at the close (032), like M4→`v0.2.0` and M5→`v0.3.0` — no per-iteration patch tags.
-Iterations 028–030 are **merged**: `outline/units/*.md` now ingests into the graph
+Iterations 028–031 are **merged**: `outline/units/*.md` now ingests into the graph
 as `G9_Narrative_Unit` + `G10_Narrative_Function` entities and assembles
 `G7_Narrative_Sequence` from their optional `sequence`/`order` keys (see
 `bookwright-design.md § 7.4`), taking G7/G9/G10 out of the deferral registry's set —
@@ -217,7 +217,13 @@ Propp functions + 6 Greimas actants, ES+EN labels) and types narrative functions
 (G10) and character roles (G11) via `crm:P2_has_type` when the manifest's
 `[vocabularies] active` list turns a vocabulary on — the link reified through the
 existing `E13` provenance path, with zero regression when no vocabulary is active.
-Next: 031 adds the structural-continuity validator; 032 closes
+Iteration 031 adds the `narrative_structure` validator — the first *consumer* of
+that layer: an auto-discovered, `warning`-default, LLM-free check with two rules,
+orphan beat (a `G9` unit in no `G7` sequence, via SPARQL `NOT EXISTS` over
+`dlp:proper-part`) and unresolved role (re-surfaced from outline ingestion's
+`UnresolvedReference` records through a new cached `ValidationContext.outline()`
+accessor), both cited via the existing `E13` provenance path, no ontology change.
+Next: 032 closes
 with the E2E fixture, docs, G6/G3 re-target, and the `v0.4.0` release. Vector search
 and export remain deferred to an unversioned, demand-pulled horizon (activate on a
 concrete trigger, not a pre-assigned version). See `bookwright-roadmap.md`.
