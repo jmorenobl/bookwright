@@ -83,6 +83,15 @@ class Character(SluggedEntity):
             uri_base=self.uri_base, character_uri=self.uri, kind=kind, year=year
         )
 
+    @property
+    def role_nodes(self) -> tuple[CharacterRole, ...]:
+        """The character-scoped role nodes (``edns:plays`` targets), deduped by URI.
+
+        Public read-only view of the materialized roles so callers outside this
+        module (the outline units pass indexes them by slug) need not reach into
+        the private attribute or recompute the ``{uri}/role/{slug}`` scheme."""
+        return self._role_nodes
+
     def derived_assertions(self) -> Iterable[DerivedAssertion]:
         """One :class:`DerivedAssertion` per derived assertion, each tagged with
         the frontmatter key it came from so the indexer can resolve a source line:

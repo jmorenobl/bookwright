@@ -60,6 +60,13 @@ def test_init_materializes_lint_clean_skills(
     assert not (skills_dir / ".bookwright-skills-placeholder").exists()
 
 
+def test_init_scaffolds_outline_units_dir(runner: CliRunner, scaffold_in_tmp: Path) -> None:
+    """FR-012/A2 — a fresh init contains `outline/units/` (mirrors bible/settings)."""
+    result = runner.invoke(app, ["init", "proj", "--no-git"])
+    assert result.exit_code == 0, result.stdout
+    assert (scaffold_in_tmp / "proj" / "outline" / "units").is_dir()
+
+
 def test_forced_lint_failure_aborts_with_envelope(
     runner: CliRunner,
     scaffold_in_tmp: Path,
