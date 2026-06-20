@@ -267,8 +267,14 @@ resolved by these answers; the recommended defaults are adopted.
   § 7.3 documented the locations/objects precedents; (d) the `io/manuscript.py`
   module docstring, which today states `outline/units/` cards "feed `NarrativeUnit`
   / `NarrativeFunction` entities" and MUST add that they also drive
-  `NarrativeSequence`; and (e) the authoring guide (`docs/authoring.md`), whose
-  "desde v0.4 … alimentan unidades y funciones narrativas" note MUST add sequences.
+  `NarrativeSequence`; (e) the authoring guide (`docs/authoring.md`), whose
+  "desde v0.4 … alimentan unidades y funciones narrativas" note MUST add sequences;
+  and (f) this pass's own engine module (`io/outline.py`), whose module-level and
+  `map_outline` docstrings today describe the pass as mapping only
+  `NarrativeUnit` / `NarrativeFunction` (G9/G10) and MUST add that the same pass now
+  assembles `NarrativeSequence` (G7) from the unit cards' `sequence`/`order` keys
+  (this surface is enumerated by SC-009 and swept by the engine module's own edit,
+  not a separate docs pass).
   Version-scoped *historical / planning* statements that remain true — the roadmap's
   record of what was deferred *en v0.3*, the `README.md` "Planificado: v0.4" roadmap
   line (true until `v0.4.0` ships at iteration 032), and the
