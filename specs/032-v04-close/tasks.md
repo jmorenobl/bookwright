@@ -96,9 +96,9 @@ frontmatter, Propp/Greimas activation, and the validator; reachable from nav; si
 
 **Independent Test**: `uv run mkdocs build --strict` (zero warnings) + the page is nav-reachable and covers the four topics (quickstart §4, SC-004).
 
-- [ ] T014 [P] [US3] Write `docs/narrative-structure.md` (Spanish prose, English identifiers/keys) covering: `outline/units/` ingestion → G9/G10/G7; a unit card's frontmatter (`functions`/`roles`/`sequence`/`order`); activating **both** Propp **and** Greimas via `[vocabularies] active` (edge case "Greimas as well as Propp"); and the `narrative_structure` validator's two rules (orphan beat, unresolved role) (FR-012)
-- [ ] T015 [P] [US3] Add the nav entry for `narrative-structure.md` to `mkdocs.yml` (place near `Validación`/`Orquestación`, e.g. `- Estructura narrativa: narrative-structure.md`) (FR-013)
-- [ ] T016 [P] [US3] Update `README.md` to reflect the v0.4 narrative-structure layer in the feature list / project surface (FR-014)
+- [X] T014 [P] [US3] Write `docs/narrative-structure.md` (Spanish prose, English identifiers/keys) covering: `outline/units/` ingestion → G9/G10/G7; a unit card's frontmatter (`functions`/`roles`/`sequence`/`order`); activating **both** Propp **and** Greimas via `[vocabularies] active` (edge case "Greimas as well as Propp"); and the `narrative_structure` validator's two rules (orphan beat, unresolved role) (FR-012)
+- [X] T015 [P] [US3] Add the nav entry for `narrative-structure.md` to `mkdocs.yml` (place near `Validación`/`Orquestación`, e.g. `- Estructura narrativa: narrative-structure.md`) (FR-013)
+- [X] T016 [P] [US3] Update `README.md` to reflect the v0.4 narrative-structure layer in the feature list / project surface (FR-014)
 
 **Checkpoint**: SC-004 met (the `v0.4.0` CHANGELOG entry, FR-015, is produced by the release skill — see Phase 7 note).
 
