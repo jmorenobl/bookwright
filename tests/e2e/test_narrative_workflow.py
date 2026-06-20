@@ -36,10 +36,13 @@ from typer.testing import CliRunner
 from bookwright.cli import app
 from bookwright.commands._graph import build_project_graph
 from bookwright.core.manifest import Manifest
+from bookwright.golem import NarrativeSequence
 from bookwright.golem.namespaces import GOLEM, HAS_TYPE, PROPER_PART, REFERS_TO
 from bookwright.golem.slug import make_slug
 from bookwright.indexers import Indexer
+from bookwright.io.bible import map_bible
 from bookwright.io.frontmatter import parse_frontmatter
+from bookwright.io.outline import map_outline
 from tests.conftest import FIXTURES_DIR, copy_fixture
 
 QUEST = "tiny-quest"
@@ -111,14 +114,44 @@ def _engine(root: Path) -> Indexer:
     return build_project_graph(root, manifest).engine
 
 
-def _graph_facts(engine: Indexer) -> dict[str, Any]:
+def _ordered_members(root: Path) -> list[str]:
+    """The lone sequence's member slugs in emitted ``dlp:proper-part`` order.
+
+    Member order is an *emission-order* contract, never a graph fact: RDF is
+    unordered, so the graph carries no member ordinal and a SPARQL re-query cannot
+    recover the ``order``-sorted line (``ORDER BY`` would only yield the alphabetical
+    URI order, which is the wrong sequence). The slugs are therefore read from the
+    assembled :class:`NarrativeSequence` entity's emitted triples, in tuple order —
+    the iteration-029 ``_member_names`` pattern. A second deterministic mapping pass
+    (no vocabularies: typing does not touch membership) yields that entity.
+    """
+    manifest = Manifest.load(root / "manifest.toml")
+    uri_base = manifest.bookwright.uri_base
+    result = map_bible(root, root / manifest.paths.bible, uri_base)
+    map_outline(root, root / manifest.paths.outline, uri_base, result)
+    sequences = [e for e in result.entities if isinstance(e, NarrativeSequence)]
+    if not sequences:
+        return []
+    sequence = sequences[0]
+    return [
+        _last(str(obj))
+        for subj, pred, obj in sequence.to_triples()
+        if subj == sequence.uri and pred == PROPER_PART
+    ]
+
+
+def _graph_facts(root: Path) -> dict[str, Any]:
     """The deterministic graph facts the oracle pins (Group A surface).
 
-    ``members`` is kept in the engine's raw triple order (the insertion order the
-    deterministic build produces, ascending ``order``); the slug/role lists are
-    sorted because they are compared as sets. ``typed`` maps each typed function
-    slug to its Propp term's last path segment.
+    The set-based facts (units, functions, typings, sequence identity, role
+    cross-refs) are read from the derived graph via SPARQL — the graph the
+    validators consume. ``members`` is the one ordered fact, so it comes from the
+    entity's emitted ``dlp:proper-part`` order (:func:`_ordered_members`), not a
+    SPARQL re-query the unordered graph cannot answer deterministically. ``typed``
+    maps each typed function slug to its Propp term's last path segment; the
+    slug/role lists are sorted because they are compared as sets.
     """
+    engine = _engine(root)
     units = {_last(r["u"]): r["u"] for r in engine.query(f"SELECT ?u WHERE {{ ?u a {_G9} }}")}
     functions = sorted(_last(r["f"]) for r in engine.query(f"SELECT ?f WHERE {{ ?f a {_G10} }}"))
     typed = {
@@ -126,12 +159,7 @@ def _graph_facts(engine: Indexer) -> dict[str, Any]:
         for r in engine.query(f"SELECT ?f ?t WHERE {{ ?f a {_G10} . ?f <{HAS_TYPE}> ?t }}")
     }
     sequences = sorted(r["s"] for r in engine.query(f"SELECT ?s WHERE {{ ?s a {_G7} }}"))
-    members: list[str] = []
-    if sequences:
-        members = [
-            _last(r["u"])
-            for r in engine.query(f"SELECT ?u WHERE {{ <{sequences[0]}> <{PROPER_PART}> ?u }}")
-        ]
+    members = _ordered_members(root) if sequences else []
     roles: dict[str, list[str]] = {}
     for slug, uri in units.items():
         resolved = sorted(
@@ -176,42 +204,32 @@ def test_build_succeeds_with_headline_counts(cli: CliRunner, quest: Path) -> Non
     assert payload["triples"] > 0
 
 
-def test_build_materializes_units_and_functions(
-    cli: CliRunner, quest: Path, oracle: dict[str, Any]
-) -> None:
+def test_build_materializes_units_and_functions(quest: Path, oracle: dict[str, Any]) -> None:
     """A1/A2: the G9 unit set and the distinct G10 function count match the oracle."""
-    facts = _graph_facts(_engine(quest))
+    facts = _graph_facts(quest)
     assert facts["units"] == sorted(oracle["units"]["slugs"])
     assert len(facts["units"]) == oracle["units"]["count"]
     assert len(facts["functions"]) == oracle["functions"]["count"]
 
 
-def test_build_types_functions_against_propp(
-    cli: CliRunner, quest: Path, oracle: dict[str, Any]
-) -> None:
-    """A3: each oracle ``typed`` function carries its ``crm:P2_has_type`` Propp edge;
-    a function absent from ``typed`` carries none (here all six are typed)."""
-    facts = _graph_facts(_engine(quest))
+def test_build_types_functions_against_propp(quest: Path, oracle: dict[str, Any]) -> None:
+    """A3: the typed map equals the oracle exactly — an extra or missing
+    ``crm:P2_has_type`` Propp edge fails the dict equality."""
+    facts = _graph_facts(quest)
     assert facts["typed"] == oracle["functions"]["typed"]
-    untyped = set(facts["functions"]) - set(oracle["functions"]["typed"])
-    assert all(slug not in facts["typed"] for slug in untyped)
 
 
-def test_build_assembles_the_ordered_sequence(
-    cli: CliRunner, quest: Path, oracle: dict[str, Any]
-) -> None:
+def test_build_assembles_the_ordered_sequence(quest: Path, oracle: dict[str, Any]) -> None:
     """A4: exactly one G7 named (by slug) ``oracle.sequence.name`` with ordered members."""
-    facts = _graph_facts(_engine(quest))
+    facts = _graph_facts(quest)
     assert facts["sequence_slugs"] == [make_slug(oracle["sequence"]["name"])]
     assert facts["members"] == oracle["sequence"]["members"]
 
 
-def test_build_resolves_role_cross_refs(
-    cli: CliRunner, quest: Path, oracle: dict[str, Any]
-) -> None:
+def test_build_resolves_role_cross_refs(quest: Path, oracle: dict[str, Any]) -> None:
     """A5: each resolved ``roles:`` slug is a unit→role edge; the orphan card's
     ``dragon`` yields no edge (omen-beat absent from the role map)."""
-    facts = _graph_facts(_engine(quest))
+    facts = _graph_facts(quest)
     expected = {unit: sorted(roles) for unit, roles in oracle["roles_resolved"].items()}
     assert facts["roles"] == expected
     orphan = oracle["narrative_structure"]["orphan_beats"][0]["unit"]
@@ -276,13 +294,11 @@ def test_validate_finding_counts_are_exact(
 # --------------------------------------------------------------------------------------
 
 
-def test_emptying_vocabularies_drops_only_the_typings(
-    cli: CliRunner, quest: Path, oracle: dict[str, Any]
-) -> None:
+def test_emptying_vocabularies_drops_only_the_typings(quest: Path, oracle: dict[str, Any]) -> None:
     """C1/C2: with ``active = []`` the typings vanish while every other fact is identical."""
-    propp_facts = _graph_facts(_engine(quest))
+    propp_facts = _graph_facts(quest)
     _disable_vocabularies(quest)
-    noprop_facts = _graph_facts(_engine(quest))
+    noprop_facts = _graph_facts(quest)
 
     # C1 — no typing edge survives; the oracle's typed map is entirely absent.
     assert noprop_facts["typed"] == {}
@@ -317,12 +333,10 @@ def test_findings_survive_disabled_vocabularies(
 # --------------------------------------------------------------------------------------
 
 
-def test_build_and_validate_are_deterministic(
-    cli: CliRunner, quest: Path, oracle: dict[str, Any]
-) -> None:
+def test_build_and_validate_are_deterministic(cli: CliRunner, quest: Path) -> None:
     """D1: two independent build→validate passes yield byte-identical asserted facts."""
-    first_facts = _graph_facts(_engine(quest))
-    second_facts = _graph_facts(_engine(quest))
+    first_facts = _graph_facts(quest)
+    second_facts = _graph_facts(quest)
     assert first_facts == second_facts
 
     _build_cli(cli)
