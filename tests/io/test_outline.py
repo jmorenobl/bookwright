@@ -1,10 +1,11 @@
-"""Unit tests for the outline units mapper (iteration 028, FR-003/006/007/008/009).
+"""Unit tests for the outline units mapper (iteration 028, FR-003/005/006/007/008/009/010).
 
 Drives ``map_outline`` after ``map_bible`` on a temp project, exercising the
 ``outline/units/*.md`` round-trip: ``NarrativeUnit`` (G9) entities, slug-deduped
 ``NarrativeFunction`` (G10) minting, role resolution against the character-scoped
-role nodes, soft misses, malformed-card skips, slug collisions, and the absent
-directory. See contracts/outline-units-ingestion.md for the guarantees (C1-C9).
+role nodes, soft misses, malformed-card skips, slug collisions, the absent
+directory, and the ``crm:E13`` provenance reification of a unit's cross-refs. See
+contracts/outline-units-ingestion.md for the guarantees (C1-C9).
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ import pytest
 from bookwright.golem import NarrativeFunction, NarrativeUnit
 from bookwright.golem.namespaces import REFERS_TO
 from bookwright.io._bible_builders import MapResult
-from bookwright.io.bible import map_bible
+from bookwright.io.bible import build_provenance, map_bible
 from bookwright.io.errors import SlugCollisionError
 from bookwright.io.outline import map_outline
 
@@ -292,3 +293,43 @@ def test_non_list_roles_skips_card(tmp_path: Path) -> None:
 
     assert [s.path for s in result.skipped] == ["outline/units/card.md"]
     assert _units(result) == []
+
+
+# --- provenance: unit→function / unit→role reified as E13 with locators (FR-010/C7) ---
+
+
+def test_unit_cross_refs_reified_as_e13_with_locators(tmp_path: Path) -> None:
+    """A unit's identity, function and role assertions each reify as a
+    ``crm:E13_Attribute_Assignment`` (via ``build_provenance``): identity carries
+    file-level provenance, while ``functions``/``roles`` resolve to the card's
+    ``relpath:line`` for their originating key — the same per-assertion provenance
+    characters get, now proven for ``NarrativeUnit`` cross-refs (FR-010 / C7)."""
+    _character(tmp_path, "ada", "Ada", ["hero"])
+    _write(
+        tmp_path / "outline/units/opening.md",
+        """\
+        ---
+        name: Opening
+        functions: [departure]
+        roles: [hero]
+        ---
+        """,
+    )
+    result = _run(tmp_path)
+
+    (unit,) = _units(result)
+    (function,) = _functions(result)
+    (role_uri,) = unit.roles
+    (mapped,) = [m for m in result.mapped if m.entity is unit]
+
+    provs = list(build_provenance(mapped, URI_BASE))
+    triples = {(p.target, p.attribute, p.source) for p in provs}
+
+    relpath = "outline/units/opening.md"
+    # Identity is file-level (no line); the `functions:`/`roles:` keys are on
+    # lines 3/4 of the card (line 1 is the fence).
+    assert (unit.uri, unit.uri, relpath) in triples
+    assert (unit.uri, function.uri, f"{relpath}:3") in triples
+    assert (unit.uri, role_uri, f"{relpath}:4") in triples
+    # Exactly those three reifications — no stray assignment from the prose body.
+    assert len(provs) == 3
