@@ -547,8 +547,8 @@ my-book/
 │   ├── structure.md
 │   ├── synopsis.md                      # Corta (250-350) y larga (1000-2000)
 │   ├── scenes.md
-│   └── units/                           # Unidades narrativas G9 (name:/functions:/roles:)
-│       └── <slug>.md                    #   se indexan (G9/G10) — ver § 7.4
+│   └── units/                           # Unidades G9 (name:/functions:/roles:/sequence:/order:)
+│       └── <slug>.md                    #   se indexan (G9/G10; ensamblan G7) — ver § 7.4
 │
 ├── .bookwright/                            # Configuración del toolkit
 │   ├── init-options.json                # Opciones con que se inició
@@ -653,7 +653,7 @@ atributos de objeto más allá de la identidad y los cross-refs de objeto (p. ej
 objeto → personaje portador). El command `/bookwright-bible` pasó a instruir la
 creación de fichas de objeto con frontmatter `name:`.
 
-### 7.4 Ingesta de unidades narrativas (G9/G10) — wired en iteración 028 (v0.4)
+### 7.4 Ingesta de unidades narrativas (G9/G10) y secuencias (G7) — wired en iteraciones 028/029 (v0.4)
 
 `outline/units/*.md` **se indexa**: cada ficha produce una `G9_Narrative_Unit` de
 primera clase, el primer árbol fuera de `bible/` que alimenta el grafo. La
@@ -682,12 +682,28 @@ función parcial; una `role:` sin personaje que la juegue es *soft-miss*
 colisión de *slug* de unidad se rechaza como en characters/settings. La prosa del
 cuerpo no se indexa.
 
+**Secuencias narrativas G7 (iteración 029).** Las mismas fichas de
+`outline/units/` ingieren ahora `G7_Narrative_Sequence` — **sin** directorio
+propio (no hay `outline/sequences/`): las secuencias se *ensamblan*, no se
+redactan. Una ficha puede declarar dos claves opcionales más, `sequence:` (la
+línea argumental a la que pertenece la unidad, por nombre) y `order:` (su posición
+entera dentro de esa línea). Tras construir **todas** las fichas, una segunda
+pasada agrupa por *slug* de `sequence` y acuña una `NarrativeSequence` por grupo,
+cuyos miembros `dlp:proper-part` son las unidades, ordenadas ascendentemente por
+`order`. Un `order` ausente coloca el miembro al final, ordenado por su *slug*; un
+`order` duplicado se desempata por *slug* (orden total → tupla idéntica entre
+*builds*); un `order` sin `sequence` es un aviso *soft* (`UnknownKey "order"`). La
+provenance es a nivel de fichero (sin `:line`), espejo de las funciones acuñadas.
+La clase G7 y su cross-ref `units`→`dlp:proper-part` ya eran de primera clase
+(`golem/modules/narrative.py`, `CLASS_IRI`, `CONCEPTS`); la iteración 029 añadió
+**solo el ensamblaje** y dio de baja `NarrativeSequence` del registro de
+aplazamientos.
+
 No tocó la ontología congelada (Principio X a salvo: clases y cross-refs ya
 reservados) ni requirió enmienda constitucional. Quedan author-only `arcs.md`,
-`structure.md`, `synopsis.md` y `scenes.md`; las secuencias narrativas G7
-(`NarrativeSequence`) siguen aplazadas. El command `/bookwright-outline` pasó a
-instruir la creación de fichas bajo `outline/units/` con frontmatter
-`name:`/`functions:`/`roles:`.
+`structure.md`, `synopsis.md` y `scenes.md`. El command `/bookwright-outline` pasó
+a instruir la creación de fichas bajo `outline/units/` con frontmatter
+`name:`/`functions:`/`roles:` y las claves opcionales `sequence:`/`order:`.
 
 ---
 

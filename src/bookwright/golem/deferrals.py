@@ -1,10 +1,11 @@
 """The deferral registry: which GOLEM concepts are modelled but not yet fed.
 
-Three of the thirteen :data:`bookwright.golem.CONCEPTS` have no authored-text
+Two of the thirteen :data:`bookwright.golem.CONCEPTS` have no authored-text
 ingestion path today — they are *modelled* (a frozen class, a ``CLASS_IRI``
 entry) but never *materialized* by any builder over the ingested source trees
-(``bible/*.md`` and, since iteration 028, ``outline/units/*.md``). This module
-names them explicitly so the gap is a written contract rather than silent.
+(``bible/*.md`` and, since iteration 028, ``outline/units/*.md`` — which also
+assembles ``NarrativeSequence`` (G7) since iteration 029). This module names them
+explicitly so the gap is a written contract rather than silent.
 
 It is consumed **solely** by the ingestion-parity test
 (``tests/golem/test_ingestion_parity.py``), which asserts that the orphan set it
@@ -36,10 +37,6 @@ class DeferralNote(NamedTuple):
 
 
 DEFERRED_CONCEPTS: dict[str, DeferralNote] = {
-    "NarrativeSequence": DeferralNote(
-        reason="narrative structural layer, no ingestion (G7)",
-        target_version="v0.4",
-    ),
     "RelationshipRole": DeferralNote(
         reason="requires a typed roles/states model with attributes and an authoring surface (G6)",
         target_version="v0.4",
@@ -49,5 +46,5 @@ DEFERRED_CONCEPTS: dict[str, DeferralNote] = {
         target_version="v0.4",
     ),
 }
-"""Concept name → deferral note. Exactly three entries, each key a ``CONCEPTS``
+"""Concept name → deferral note. Exactly two entries, each key a ``CONCEPTS``
 member; the orphan set the parity test derives must equal this dict's keys."""

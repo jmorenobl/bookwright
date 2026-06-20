@@ -7,9 +7,11 @@ a malformed project layout.
 ``manuscript/`` is **author-only**: the scaffold creates it, but the engine
 never ingests its contents — ``manuscript_present`` only checks existence.
 ``outline/`` is **partially ingested** since iteration 028: ``outline/units/``
-cards feed ``NarrativeUnit`` / ``NarrativeFunction`` entities (via
-``bookwright.io.outline``), while ``arcs``/``structure``/``synopsis``/``scenes``
-remain author-only prose. This inertness is deliberate (see the deferral
+cards feed ``NarrativeUnit`` / ``NarrativeFunction`` entities and — since
+iteration 029, via their ``sequence``/``order`` keys — assemble
+``NarrativeSequence`` (G7) entities (all via ``bookwright.io.outline``), while
+``arcs``/``structure``/``synopsis``/``scenes`` remain author-only prose. This
+inertness is deliberate (see the deferral
 rationale in ``bookwright.golem.deferrals`` and ``docs/authoring.md``), not an
 oversight.
 """
