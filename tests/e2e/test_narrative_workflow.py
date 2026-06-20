@@ -136,9 +136,7 @@ def _graph_facts(engine: Indexer) -> dict[str, Any]:
     for slug, uri in units.items():
         resolved = sorted(
             _last(r["r"])
-            for r in engine.query(
-                f"SELECT ?r WHERE {{ <{uri}> <{REFERS_TO}> ?r . ?r a {_G11} }}"
-            )
+            for r in engine.query(f"SELECT ?r WHERE {{ <{uri}> <{REFERS_TO}> ?r . ?r a {_G11} }}")
         )
         if resolved:
             roles[slug] = resolved
@@ -161,12 +159,12 @@ def _disable_vocabularies(root: Path) -> None:
     """Empty ``[vocabularies] active`` in the copy's manifest (Group C runtime toggle)."""
     path = root / "manifest.toml"
     doc = tomlkit.parse(path.read_text(encoding="utf-8"))
-    doc["vocabularies"]["active"] = []  # type: ignore[index]
+    doc["vocabularies"]["active"] = []
     path.write_text(tomlkit.dumps(doc), encoding="utf-8")
 
 
 # --------------------------------------------------------------------------------------
-# Group A — build produces the oracle's graph facts (US1/US2, FR-008).
+# Group A — build produces the oracle's graph facts (FR-008).
 # --------------------------------------------------------------------------------------
 
 
@@ -221,7 +219,7 @@ def test_build_resolves_role_cross_refs(
 
 
 # --------------------------------------------------------------------------------------
-# Group B — validate reports the exact findings (US1/US2, FR-009).
+# Group B — validate reports the exact findings (FR-009).
 # --------------------------------------------------------------------------------------
 
 
@@ -232,7 +230,11 @@ def test_validate_reports_the_orphan_beat(
     _build_cli(cli)
     violations = _ns_violations(_validate(cli))
     for entry in oracle["narrative_structure"]["orphan_beats"]:
-        match = next(v for v in violations if v["source"] == entry["source"] and "orphan beat" in v["message"])
+        match = next(
+            v
+            for v in violations
+            if v["source"] == entry["source"] and "orphan beat" in v["message"]
+        )
         assert match["severity"] == "warning"
         assert entry["unit"] in match["message"]
 
@@ -270,7 +272,7 @@ def test_validate_finding_counts_are_exact(
 
 
 # --------------------------------------------------------------------------------------
-# Group C — non-regression when no vocabulary is active (US2, FR-010, edge case).
+# Group C — non-regression when no vocabulary is active (FR-010, edge case).
 # --------------------------------------------------------------------------------------
 
 
@@ -311,7 +313,7 @@ def test_findings_survive_disabled_vocabularies(
 
 
 # --------------------------------------------------------------------------------------
-# Group D — determinism + the committed fixture is source-only (US2, FR-011).
+# Group D — determinism + the committed fixture is source-only (FR-011).
 # --------------------------------------------------------------------------------------
 
 
