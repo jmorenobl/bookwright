@@ -45,10 +45,11 @@ closing iteration 016 (`v0.2.0`) and the M5 closing iteration 023 (`v0.3.0`):
    must make the value **honest**, not invent a fabricated commitment: either a
    genuinely-committed concrete future version, **or** a deliberate first-class
    "demand-pulled, no version until an activation trigger" state (distinct from
-   the banned wishy-washy placeholder). Whichever is chosen (resolved in
-   `/speckit-clarify`) is swept across **both** holders of the value — the
-   `deferrals.py` dict + docstring **and** the parity test's pinned
-   `EXPECTED_VERSIONS` — so the ingestion-parity test stays green.
+   the banned wishy-washy placeholder). The resolved value (Clarifications
+   2026-06-21: the first-class sentinel `"demand-pulled"`) is swept across
+   **both** holders of the value — the `deferrals.py` dict + docstring **and** the
+   parity test's pinned `EXPECTED_VERSIONS` — so the ingestion-parity test stays
+   green.
 5. The **v0.4.0 release** metadata: bump `__version__` to `0.4.0` (single
    source), a CHANGELOG `v0.4.0` section consolidating iterations 028–032
    (including a "Design decisions revised during implementation" subsection if any
@@ -70,15 +71,19 @@ skill behavior, and no ontology change). It explicitly does **not** wire G6/G3.
   only at activation). The contract today forbids a wishy-washy placeholder, but
   fabricating a concrete future version (`"v0.5"`/`"v1.0"`) would invent a
   commitment the roadmap never made. How should the value be made honest? → A:
-  [NEEDS CLARIFICATION: pick the honest re-target for G6/G3. Recommended,
-  roadmap-faithful option: a deliberate first-class **demand-pulled** sentinel
-  (e.g. `target_version="demand-pulled"`) — a named, disciplined "no version
-  until an activation trigger is met" state mirroring roadmap § 4, documented as
-  explicitly distinct from the banned `"undecided"` placeholder, with the
-  `DeferralNote` docstring and the parity test's `EXPECTED_VERSIONS`/placeholder
-  assertions updated to admit it. Alternative: only if the owner *genuinely*
-  commits G6/G3 to a concrete future minor version, use that exact label. Either
-  way the value must be truthful, never a fabricated or wishy-washy placeholder.]
+  Re-point both to a deliberate first-class **demand-pulled** sentinel,
+  `target_version="demand-pulled"` — a named, disciplined "no version until an
+  activation trigger is met" state mirroring roadmap § 4, made an explicit
+  documented `DeferralNote` state distinct from the banned `"undecided"`
+  placeholder. Rationale: the roadmap genuinely assigns G6/G3 no version, so the
+  only honest options are a *genuinely-committed* concrete version (which the
+  owner has not committed) or this disciplined sentinel; fabricating `"v0.5"`
+  would invent an unmade commitment (zero-debt doctrine §3 — eliminate the cause,
+  don't fake a target), so the sentinel is the truthful choice. The `DeferralNote`
+  docstring is extended to admit `"demand-pulled"` as a first-class value, and the
+  parity test's `EXPECTED_VERSIONS` is swept to `{"RelationshipRole":
+  "demand-pulled", "PsychologicalState": "demand-pulled"}` so the version-map
+  assertion and the no-`"undecided"` assertion both stay green.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -398,15 +403,14 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
 
 - **FR-017**: `deferrals.py` MUST be left honest: `DEFERRED_CONCEPTS` MUST contain
   **exactly** `RelationshipRole` (G6) and `PsychologicalState` (G3), and their
-  `target_version` MUST be re-pointed from the now-shipped `"v0.4"` to an
-  **honest** value (resolved in `/speckit-clarify`) — either a genuinely-committed
-  concrete future version, or a deliberate first-class demand-pulled sentinel —
-  and MUST NOT be a fabricated/unsupported version or a wishy-washy placeholder
-  (e.g. `"undecided"`). If the demand-pulled sentinel option is chosen, the
-  `DeferralNote` contract (its `target_version` semantics) MUST be extended to
-  admit that value as a documented first-class state, NOT smuggled in as a
-  placeholder. This is an internal registry change only — it adds no CLI verb,
-  manifest field, validator, skill behavior, or ontology change.
+  `target_version` MUST be re-pointed from the now-shipped `"v0.4"` to the
+  resolved demand-pulled sentinel `"demand-pulled"` (Clarifications 2026-06-21) —
+  a value that is neither a fabricated/unsupported version nor a wishy-washy
+  placeholder (e.g. `"undecided"`). The `DeferralNote` contract (its
+  `target_version` semantics) MUST be extended to admit `"demand-pulled"` as a
+  documented first-class state, NOT smuggled in as a placeholder. This is an
+  internal registry change only — it adds no CLI verb, manifest field, validator,
+  skill behavior, or ontology change.
 - **FR-018**: The `DeferralNote` docstring / explanatory text MUST be made
   consistent with the new value and the fact that v0.4 has shipped (it currently
   cites `"v0.4"` as the example concrete label).
@@ -416,7 +420,9 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
   parity test's pinned `EXPECTED_VERSIONS` map in
   `tests/golem/test_ingestion_parity.py` (which today hard-codes
   `{"RelationshipRole": "v0.4", "PsychologicalState": "v0.4"}` and asserts the
-  registry equals it). No `"v0.4"` deferral-target string may remain anywhere.
+  registry equals it; it MUST become
+  `{"RelationshipRole": "demand-pulled", "PsychologicalState": "demand-pulled"}`).
+  No `"v0.4"` deferral-target string may remain anywhere.
 - **FR-019a**: `tests/golem/test_ingestion_parity.py` MUST stay green: the orphan
   set derived from a live build MUST equal exactly the keys of `DEFERRED_CONCEPTS`
   (`{RelationshipRole, PsychologicalState}`), `test_registry_well_formed`'s version
@@ -542,8 +548,8 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
   `test_ingestion_parity.py` also hard-pins the exact version strings in its
   `EXPECTED_VERSIONS` map and asserts the registry equals it, so the test goes red
   unless that map is updated to the new value in the same change (FR-019). The
-  honest value (concrete-version vs demand-pulled sentinel) is resolved in
-  `/speckit-clarify`.
+  honest value is resolved (Clarifications 2026-06-21): the first-class
+  demand-pulled sentinel `"demand-pulled"`.
 - v0.4 is a **minor** milestone released **once** as `v0.4.0` at this closing
   iteration (like M4→`v0.2.0` and M5→`v0.3.0`); iterations 028–031 carried no
   version bump, so `__version__` moves from `0.3.4` straight to `0.4.0` here.

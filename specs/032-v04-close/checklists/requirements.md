@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,12 +31,10 @@
 
 ## Notes
 
-- **One [NEEDS CLARIFICATION] marker remains by design**: the concrete
-  post-v0.4 `target_version` label for the G6/G3 deferral re-target (FR-017,
-  Clarifications session). The user's `/speckit-specify` input explicitly defers
-  this decision to `/speckit-clarify` ("decidir el label en clarify"), and the
-  workflow's mandatory next step is `/speckit-clarify`, so the marker is left in
-  place rather than resolved here. All other checklist items pass.
+- **The G6/G3 `target_version` clarification is resolved** (Clarifications
+  session 2026-06-21): the deferral re-target uses the first-class demand-pulled
+  sentinel `"demand-pulled"` (FR-017), swept across `deferrals.py` and the parity
+  test's `EXPECTED_VERSIONS` (FR-019). No `[NEEDS CLARIFICATION]` marker remains.
 - The fixture strategy (new dedicated fixture vs. extending an existing one) is
   documented as an assumption with a recommended default (new dedicated fixture)
   rather than a blocking clarification; `/speckit-clarify` may revisit it.
