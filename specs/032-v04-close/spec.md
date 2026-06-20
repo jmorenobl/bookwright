@@ -37,10 +37,18 @@ closing iteration 016 (`v0.2.0`) and the M5 closing iteration 023 (`v0.3.0`):
    activation of Propp/Greimas, and the new validator.
 4. An **honest deferral registry**: with G7/G9/G10 now wired, the only remaining
    deferred concepts are **G6 (RelationshipRole)** and **G3
-   (PsychologicalState)**, whose `target_version` must be re-pointed away from the
-   now-shipping `"v0.4"` to a concrete later version label (the deferral contract
-   forbids a placeholder; the exact label is resolved in `/speckit-clarify`). The
-   ingestion-parity test stays green.
+   (PsychologicalState)**, whose `target_version` currently *lies* — it reads
+   `"v0.4"`, the version shipping now without them. The roadmap does **not**
+   assign G6/G3 any version: iteration 027 left them "diferidos a posterior" and
+   the roadmap's § 4 demand-pulled horizon (which names only vector search and
+   export) assigns a version *at activation*, not in advance. So the re-target
+   must make the value **honest**, not invent a fabricated commitment: either a
+   genuinely-committed concrete future version, **or** a deliberate first-class
+   "demand-pulled, no version until an activation trigger" state (distinct from
+   the banned wishy-washy placeholder). Whichever is chosen (resolved in
+   `/speckit-clarify`) is swept across **both** holders of the value — the
+   `deferrals.py` dict + docstring **and** the parity test's pinned
+   `EXPECTED_VERSIONS` — so the ingestion-parity test stays green.
 5. The **v0.4.0 release** metadata: bump `__version__` to `0.4.0` (single
    source), a CHANGELOG `v0.4.0` section consolidating iterations 028–032
    (including a "Design decisions revised during implementation" subsection if any
@@ -56,15 +64,21 @@ skill behavior, and no ontology change). It explicitly does **not** wire G6/G3.
 ### Session 2026-06-21
 
 - Q: G6 (RelationshipRole) and G3 (PsychologicalState) currently carry
-  `target_version="v0.4"`, which is the version this iteration ships. The
-  deferral contract requires a **concrete** version label, never a placeholder,
-  yet the roadmap (§ 4) places their natural home in the "demand-pulled horizon
-  *without an assigned version*". To what concrete label should their
-  `target_version` be re-pointed? → A: [NEEDS CLARIFICATION: concrete post-v0.4
-  version label for the G6/G3 re-target — e.g. `"v0.5"`, `"v1.0"`, or another
-  firm label. The roadmap's demand-pulled horizon has no assigned version, but
-  the deferral contract (and its parity test) require a concrete string, so a
-  label must be chosen here rather than left as a placeholder.]
+  `target_version="v0.4"`, the version this iteration ships *without* them — a
+  stale, dishonest value. The roadmap assigns them **no** version (iteration 027
+  left them "diferidos a posterior"; the demand-pulled horizon assigns a version
+  only at activation). The contract today forbids a wishy-washy placeholder, but
+  fabricating a concrete future version (`"v0.5"`/`"v1.0"`) would invent a
+  commitment the roadmap never made. How should the value be made honest? → A:
+  [NEEDS CLARIFICATION: pick the honest re-target for G6/G3. Recommended,
+  roadmap-faithful option: a deliberate first-class **demand-pulled** sentinel
+  (e.g. `target_version="demand-pulled"`) — a named, disciplined "no version
+  until an activation trigger is met" state mirroring roadmap § 4, documented as
+  explicitly distinct from the banned `"undecided"` placeholder, with the
+  `DeferralNote` docstring and the parity test's `EXPECTED_VERSIONS`/placeholder
+  assertions updated to admit it. Alternative: only if the owner *genuinely*
+  commits G6/G3 to a concrete future minor version, use that exact label. Either
+  way the value must be truthful, never a fabricated or wishy-washy placeholder.]
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -148,8 +162,8 @@ flow in one run.
    **Then** the test asserts the exact, enumerated `narrative_structure` findings
    (the orphan beat(s) and unresolved role(s), each with validator name, `warning`
    severity, and a `file:line` source), sourced from the oracle.
-3. **Given** the same fixture but with the `[vocabularies] active` list emptied
-   (or a no-vocabulary variant), **When** `graph build` runs, **Then** no
+3. **Given** the same fixture with its `[vocabularies] active` list emptied on the
+   `tmp_path` copy at runtime, **When** `graph build` runs, **Then** no
    `crm:P2_has_type`/`crm:E55_Type` typings are emitted and every other graph fact
    is unchanged — proving vocabulary activation is the only thing that adds the
    typings (zero regression when inactive).
@@ -203,10 +217,15 @@ reading them.
 A maintainer reading `deferrals.py` must find a truthful contract: now that
 G7/G9/G10 are wired, the **only** deferred concepts are G6 (RelationshipRole) and
 G3 (PsychologicalState), and their `target_version` no longer points at the
-just-shipped `"v0.4"`. The value is re-pointed to a concrete later label (the
-contract forbids a placeholder), and the ingestion-parity test — which asserts the
-orphan set derived from a real build equals exactly the deferred set — stays
-green.
+just-shipped `"v0.4"`. The value is re-pointed to an **honest** target — a
+genuinely-committed concrete future version, or a deliberate first-class
+"demand-pulled, no version until activation" sentinel (never a fabricated version
+and never a wishy-washy placeholder). Because the value lives in two pinned
+holders — the `deferrals.py` dict (+ its `DeferralNote` docstring example) and the
+parity test's `EXPECTED_VERSIONS` map — both are swept to the new label in the same
+change, so the ingestion-parity test (which asserts both the orphan *set* equals
+the deferred set **and** the registry's version map equals `EXPECTED_VERSIONS`)
+stays green.
 
 **Why this priority**: A dishonest deferral contract (claiming work targets a
 version that already shipped) is exactly the silent debt the registry exists to
@@ -214,23 +233,30 @@ prevent; correcting it is part of closing the milestone, but it depends on the
 wiring (028–031) already being merged, hence P2.
 
 **Independent Test**: `deferrals.py` lists exactly `{RelationshipRole,
-PsychologicalState}` with a concrete post-v0.4 `target_version`, and
-`tests/golem/test_ingestion_parity.py` passes (the orphan set from a live build
-equals the deferred set) — provable by running that test.
+PsychologicalState}` with an honest, non-`"v0.4"`, non-placeholder
+`target_version`, the parity test's `EXPECTED_VERSIONS` map carries the same
+value, and `tests/golem/test_ingestion_parity.py` passes (both the live orphan
+set equals the deferred set **and** `test_registry_well_formed` finds the version
+map matches `EXPECTED_VERSIONS` and contains no banned placeholder) — provable by
+running that test.
 
 **Acceptance Scenarios**:
 
 1. **Given** `deferrals.py`, **When** a maintainer reads `DEFERRED_CONCEPTS`,
    **Then** it contains exactly two entries (`RelationshipRole`,
-   `PsychologicalState`), each with a concrete `target_version` that is **not**
-   `"v0.4"` and is **not** a placeholder.
+   `PsychologicalState`), each with an honest `target_version` that is **not**
+   `"v0.4"`, **not** `"undecided"`, and **not** a fabricated/unsupported version.
 2. **Given** the re-targeted registry, **When** `tests/golem/test_ingestion_parity.py`
    runs against a real graph build, **Then** the orphan set it derives equals
-   exactly the keys of `DEFERRED_CONCEPTS` and the test passes.
+   exactly the keys of `DEFERRED_CONCEPTS`, the registry's version map equals the
+   updated `EXPECTED_VERSIONS`, no entry carries a banned placeholder, and the
+   whole test passes.
 3. **Given** the `DeferralNote` docstring (which today cites `"v0.4"` as the
-   example label), **When** a maintainer reads it after this iteration, **Then**
-   any example/explanatory text is consistent with the new concrete label and the
-   fact that v0.4 has shipped.
+   example label) **and** the parity test's `EXPECTED_VERSIONS` pin (which today
+   hard-codes `"v0.4"` for both concepts), **When** a maintainer reads them after
+   this iteration, **Then** both carry the new honest label and any
+   example/explanatory text is consistent with it and with the fact that v0.4 has
+   shipped.
 
 ---
 
@@ -280,11 +306,14 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
 - **Mutating a packaged fixture in tests.** The flow rebuilds `bible/graph.ttl`;
   the test must operate on a `tmp_path` copy so the committed fixture stays
   pristine and the run is repeatable.
-- **The re-targeted deferral label must keep the parity test green.** Re-pointing
-  G6/G3's `target_version` must not change the *set* of deferred keys — only the
-  version string — so the parity test (which reconciles keys against the live
-  orphan set) stays green; the orphan set is `{RelationshipRole,
-  PsychologicalState}` because G7/G9/G10 are now fed.
+- **The re-targeted deferral label must keep the parity test green — and the test
+  pins the string, not just the key set.** Re-pointing G6/G3's `target_version`
+  leaves the *set* of deferred keys unchanged (the orphan set stays
+  `{RelationshipRole, PsychologicalState}` because G7/G9/G10 are now fed), so the
+  orphan-set assertion holds. But `test_ingestion_parity.py` *also* asserts the
+  registry's version map equals its `EXPECTED_VERSIONS` pin and forbids the
+  `"undecided"` placeholder, so the new value must be written into `EXPECTED_VERSIONS`
+  too (FR-019) and must not reintroduce a banned placeholder.
 - **Greimas as well as Propp.** Activation is documented for both vocabularies;
   the fixture activates Propp (the functions vocabulary). The documentation must
   still explain Greimas (actant) activation even though the worked fixture leads
@@ -297,7 +326,7 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
 **Fixture**
 
 - **FR-001**: A v0.4 narrative-structure example fixture (under
-  `tests/fixtures/`) MUST be provided that is a valid, loadable Bibliowright
+  `tests/fixtures/`) MUST be provided that is a valid, loadable Bookwright
   project with the standard bible/outline/manuscript skeleton plus a populated
   `outline/units/`. It MUST be source-only (the derived `bible/graph.ttl` is
   rebuilt in a `tmp_path` copy, never committed).
@@ -338,8 +367,9 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
   `narrative_structure` findings (the orphan beat(s) and unresolved role(s), each
   with validator name, `warning` severity, and a `file:line` source), sourced from
   the oracle.
-- **FR-010**: The test MUST assert the **non-regression** guarantee: with
-  `[vocabularies] active` empty (a no-vocabulary variant or a toggled copy), no
+- **FR-010**: The test MUST assert the **non-regression** guarantee by emptying the
+  fixture's `[vocabularies] active` list **on the `tmp_path` copy at runtime** (not
+  by committing a second near-duplicate fixture): with the list empty, no
   `crm:P2_has_type`/`crm:E55_Type` typings are emitted and every other graph fact
   is unchanged.
 - **FR-011**: All test assertions MUST be on **deterministic** output (the graph
@@ -368,14 +398,39 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
 
 - **FR-017**: `deferrals.py` MUST be left honest: `DEFERRED_CONCEPTS` MUST contain
   **exactly** `RelationshipRole` (G6) and `PsychologicalState` (G3), and their
-  `target_version` MUST be re-pointed from `"v0.4"` to a concrete later version
-  label (resolved in `/speckit-clarify`) — **not** a placeholder.
+  `target_version` MUST be re-pointed from the now-shipped `"v0.4"` to an
+  **honest** value (resolved in `/speckit-clarify`) — either a genuinely-committed
+  concrete future version, or a deliberate first-class demand-pulled sentinel —
+  and MUST NOT be a fabricated/unsupported version or a wishy-washy placeholder
+  (e.g. `"undecided"`). If the demand-pulled sentinel option is chosen, the
+  `DeferralNote` contract (its `target_version` semantics) MUST be extended to
+  admit that value as a documented first-class state, NOT smuggled in as a
+  placeholder. This is an internal registry change only — it adds no CLI verb,
+  manifest field, validator, skill behavior, or ontology change.
 - **FR-018**: The `DeferralNote` docstring / explanatory text MUST be made
-  consistent with the new label and the fact that v0.4 has shipped (it currently
+  consistent with the new value and the fact that v0.4 has shipped (it currently
   cites `"v0.4"` as the example concrete label).
-- **FR-019**: `tests/golem/test_ingestion_parity.py` MUST stay green: the orphan
+- **FR-019**: The `"v0.4"` deferral-target value MUST be swept across **every**
+  holder of the debt class repo-wide — both occurrences in `deferrals.py` (the two
+  `DEFERRED_CONCEPTS` entries and the docstring example, FR-017/FR-018) **and** the
+  parity test's pinned `EXPECTED_VERSIONS` map in
+  `tests/golem/test_ingestion_parity.py` (which today hard-codes
+  `{"RelationshipRole": "v0.4", "PsychologicalState": "v0.4"}` and asserts the
+  registry equals it). No `"v0.4"` deferral-target string may remain anywhere.
+- **FR-019a**: `tests/golem/test_ingestion_parity.py` MUST stay green: the orphan
   set derived from a live build MUST equal exactly the keys of `DEFERRED_CONCEPTS`
-  (`{RelationshipRole, PsychologicalState}`).
+  (`{RelationshipRole, PsychologicalState}`), `test_registry_well_formed`'s version
+  assertion MUST match the updated `EXPECTED_VERSIONS`, and the existing
+  no-banned-placeholder assertion MUST still hold for the new value.
+- **FR-019b**: The same stale-`"v0.4"`-target honesty sweep MUST extend to the
+  `DEBT.md` ledger: the two open entries that carry `Target: v0.4` while *not*
+  being resolved in v0.4 — DEBT-001 (`NarrativeRole` dead concept) and DEBT-002
+  (constitution Scope & Release Discipline drift) — MUST have their target lines
+  re-pointed to an honest, non-shipped value (DEBT-001 to a concrete later
+  structural iteration; DEBT-002 to the manual `v0.4.0` release/amendment step
+  that owns it) so the ledger never claims a shipped version as a future target.
+  Both entries otherwise remain deferred (see Out of Scope) — only their stale
+  target strings are corrected.
 
 **Release**
 
@@ -412,8 +467,10 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
   and the exact `narrative_structure` findings, plus the no-vocabulary-active
   non-regression assertion.
 - **Deferral registry (`deferrals.py`)**: The `DEFERRED_CONCEPTS` map, left with
-  exactly G6/G3 and a concrete post-v0.4 `target_version`, reconciled against the
-  live orphan set by `test_ingestion_parity.py`.
+  exactly G6/G3 and an honest `target_version` (a committed concrete version or a
+  first-class demand-pulled sentinel — never `"v0.4"`, a fabricated version, or a
+  placeholder), reconciled against the live orphan set **and** its pinned
+  `EXPECTED_VERSIONS` by `test_ingestion_parity.py`.
 - **v0.4 documentation set**: The narrative-structure documentation page(s)
   (ingestion, unit frontmatter, vocabulary activation, the validator), the updated
   README, and the `v0.4.0` CHANGELOG section.
@@ -435,7 +492,9 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
   plus the no-vocabulary-active non-regression (no typings, everything else
   unchanged).
 - **SC-003**: `deferrals.py` lists exactly `{RelationshipRole, PsychologicalState}`
-  with a concrete post-v0.4 `target_version` (no placeholder), and
+  with an honest `target_version` (not `"v0.4"`, not a fabricated version, not a
+  banned placeholder), the same value is mirrored in the parity test's
+  `EXPECTED_VERSIONS`, no `"v0.4"` deferral-target string remains repo-wide, and
   `test_ingestion_parity.py` is green.
 - **SC-004**: A reader can reach the narrative-structure documentation from the
   site navigation and it covers `outline/units/` ingestion, the unit frontmatter,
@@ -477,10 +536,14 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
   co-located oracle for exact assertions.
 - Documentation prose is written in **Spanish** to match the existing docs site and
   design documents; identifiers, command names, and frontmatter keys stay as-is.
-- The G6/G3 `target_version` re-target is a string-only change to the existing two
-  deferral entries; the *set* of deferred keys is unchanged (G7/G9/G10 already left
-  the set when 028–029 wired them), so `test_ingestion_parity.py` stays green by
-  construction. The concrete label is resolved in `/speckit-clarify`.
+- The G6/G3 `target_version` re-target does **not** change the *set* of deferred
+  keys (G7/G9/G10 already left the set when 028–029 wired them), so the orphan-set
+  parity assertion is unaffected. It is **not**, however, "green by construction":
+  `test_ingestion_parity.py` also hard-pins the exact version strings in its
+  `EXPECTED_VERSIONS` map and asserts the registry equals it, so the test goes red
+  unless that map is updated to the new value in the same change (FR-019). The
+  honest value (concrete-version vs demand-pulled sentinel) is resolved in
+  `/speckit-clarify`.
 - v0.4 is a **minor** milestone released **once** as `v0.4.0` at this closing
   iteration (like M4→`v0.2.0` and M5→`v0.3.0`); iterations 028–031 carried no
   version bump, so `__version__` moves from `0.3.4` straight to `0.4.0` here.
@@ -491,7 +554,8 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
 ## Out of Scope
 
 - Wiring G6 (RelationshipRole) or G3 (PsychologicalState) — they remain deferred,
-  re-pointed to a concrete later version.
+  re-pointed to an honest target (a committed concrete version or a demand-pulled
+  sentinel), never wired here.
 - Any new product mechanism: this iteration adds a fixture, a test, docs, the
   deferral re-target, and the release metadata only; it changes no CLI verb,
   manifest field, validator, skill behavior, or the frozen ontology.
@@ -502,3 +566,16 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
 - Actually publishing/tagging the `v0.4.0` release (merge to `main`, annotated
   tag); this iteration makes it *ready*, the release/tag action is a separate
   manual step (`bookwright-release`).
+- Resolving the substance of `DEBT.md` DEBT-001 (`NarrativeRole`: decide whether
+  the top-level G11 concept is removed from `CONCEPTS` or given its own authoring
+  surface) — that is a structural change to the frozen "thirteen concepts"
+  contract and the parity test, a genuinely separate debt class, and is forbidden
+  here by FR-021 (no new product mechanism). It stays deferred; only its stale
+  `Target: v0.4` line is corrected (FR-019b).
+- Resolving the substance of `DEBT.md` DEBT-002 (the constitution's *Scope &
+  Release Discipline* version-line drift) — correcting a binding document requires
+  the formal `/speckit-constitution` amendment procedure (MINOR bump, Sync Impact
+  Report, template propagation), which CLAUDE.md keeps with the separate manual
+  release and which the autonomous branch flow has no step for. It rides the
+  `v0.4.0` release step, not this branch; only its stale `Target: v0.4` line is
+  corrected here (FR-019b).
