@@ -128,7 +128,7 @@ version bump / CHANGELOG / `CLAUDE.md` flip / design status edits / tag are prod
 
 **Independent Test**: roadmap §1 says v0.4 delivered and §2 `← AQUÍ` advanced past v0.4 (quickstart §5); post-release `bookwright version` → `0.4.0` (SC-005, release-skill step).
 
-- [ ] T020 [P] [US5] Edit `bookwright-roadmap.md`: § 1 record v0.4 as entregada, and advance the § 2 `← AQUÍ` marker past the `v0.4` line (to the demand-pulled horizon) (quickstart §5; user request)
+- [X] T020 [P] [US5] Edit `bookwright-roadmap.md`: § 1 record v0.4 as entregada, and advance the § 2 `← AQUÍ` marker past the `v0.4` line (to the demand-pulled horizon) (quickstart §5; user request)
 - [ ] T021 [US5] Verify release readiness and record the handoff: confirm all four gates green on the branch and that `__version__` (still `0.3.4`), the `v0.4.0` CHANGELOG section, the `CLAUDE.md` status-table flip + milestone prose, and `bookwright-design.md` status edits are **deliberately deferred to the `bookwright-release` skill** post-merge (FR-015/FR-016/FR-020 are satisfied at the release step, not in branch commits) — no branch edit to those files
 
 **Checkpoint**: SC-005 ready — branch green, roadmap current, release handoff documented.

@@ -26,7 +26,9 @@
 ## 1. Dónde estamos
 
 El tramo de endurecimiento **`v0.3.x` está cerrado** (`v0.3.4` tageada
-2026-06-15). El siguiente hito es **v0.4 — la capa estructural narrativa**. Lo
+2026-06-15) y **v0.4 — la capa estructural narrativa — está entregada**
+(iteraciones 028–032; se libera como `v0.4.0` al cierre, iteración 032). El
+siguiente horizonte es **demand-pulled**, sin versión asignada (§ 4). Lo
 entregado hasta hoy:
 
 - **`v0.1.0`** (M0–M3) — el toolkit v0: manifiesto, modelo GOLEM sobre `rdflib`,
@@ -40,6 +42,12 @@ entregado hasta hoy:
 - **`v0.3.1`…`v0.3.4`** (endurecimiento v0.3.x) — paridad de ingesta explícita:
   guarda + registro de diferidos (024), localizaciones G13 (025) y objetos G16
   (026) cableadas, y cierre de limpieza con G6/G3 diferidos a posterior (027).
+- **`v0.4.0`** (capa estructural narrativa) — **v0.4 entregada**: ingesta de
+  `outline/units/` en unidades (G9) y funciones (G10) narrativas (028) y ensamblado
+  de secuencias (G7) (029), los vocabularios Propp/Greimas como `E55_Type` con
+  tipado vía `[vocabularies] active` (030), el validador `narrative_structure`
+  (031), y el cierre E2E + docs + diferidos honestos + release (032). Cierra la
+  paridad de ingesta; G6/G3 quedan en el horizonte demand-pulled.
 
 Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 `ruff format`, `mypy --strict`, `pytest` ≥ 80 %) verdes.
@@ -50,9 +58,9 @@ Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 
 ```
 v0.3.x  ──  endurecimiento: cancelar deuda, robustez, cerrar atajos de v0   ✅ cerrado (v0.3.4)
-v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)            ← AQUÍ
+v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)            ✅ entregada (v0.4.0)
             + ingesta de outline/  — cierra la paridad de ingesta
-──── horizonte sin versión asignada (demand-pulled, con condición de activación) ────
+──── horizonte sin versión asignada (demand-pulled, con condición de activación) ──── ← AQUÍ
 vectores  ─  ChromaDB sobre rdflib, tras el Indexer Protocol. Activar SI:
              corpus multi-libro/serie, O recall estructural medido como
              insuficiente en una skill concreta. Hasta entonces: no se implementa.
