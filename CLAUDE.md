@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.3.x hardening complete, v0.4 in progress (028 merged)
+## Repository state: v0.3.x hardening complete, v0.4 in progress (029 merged)
 
 Three milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
@@ -103,7 +103,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now open: 028 is merged (the first v0.4 iteration); 029–032 are planned. Unlike the v0.3.x patches, v0.4 iterations accumulate on `main` and ship **once** as `v0.4.0` at the closing iteration (032), so 028 carries no version bump or tag — `__version__` stays `0.3.4` until 032.
+024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now open: 028–029 are merged; 030–032 are planned. Unlike the v0.3.x patches, v0.4 iterations accumulate on `main` and ship **once** as `v0.4.0` at the closing iteration (032), so 028–029 carry no version bump or tag — `__version__` stays `0.3.4` until 032.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -135,7 +135,7 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 | 026 | Index objects (G16) + `bible/objects/` scaffold + skill | v0.3.x | ✅ merged |
 | 027 | JSON-envelope cleanup + G6/G3 decision | v0.3.x | ✅ merged |
 | 028 | Ingest narrative units (G9) + functions (G10) from `outline/units/` | v0.4 | ✅ merged |
-| 029 | Ingest narrative sequences (G7) | v0.4 | ⏳ planned |
+| 029 | Ingest narrative sequences (G7) | v0.4 | ✅ merged |
 | 030 | Propp/Greimas vocabularies as `E55_Type` + references | v0.4 | ⏳ planned |
 | 031 | Narrative-structure continuity validator | v0.4 | ⏳ planned |
 | 032 | v0.4 close: E2E + docs + re-target G6/G3 + `v0.4.0` | v0.4 | ⏳ planned |
@@ -157,10 +157,12 @@ The current milestone is **v0.4 — the narrative-structure layer** (Propp/Greim
 G7/G9/G10) plus `outline/` ingestion, which closes ingestion parity. It is a minor
 milestone: iterations 028–032 accumulate on `main` and release **once** as `v0.4.0`
 at the close (032), like M4→`v0.2.0` and M5→`v0.3.0` — no per-iteration patch tags.
-Iteration 028 is **merged**: `outline/units/*.md` now ingests into the graph as
-`G9_Narrative_Unit` + `G10_Narrative_Function` entities (see
-`bookwright-design.md § 7.4`), taking G9/G10 out of the deferral registry's set.
-Next: 029 wires narrative sequences (G7); 030 types functions/roles via
+Iterations 028–029 are **merged**: `outline/units/*.md` now ingests into the graph
+as `G9_Narrative_Unit` + `G10_Narrative_Function` entities and assembles
+`G7_Narrative_Sequence` from their optional `sequence`/`order` keys (see
+`bookwright-design.md § 7.4`), taking G7/G9/G10 out of the deferral registry's set —
+the modelled-but-unfed narrative-structure layer is now alive end to end.
+Next: 030 types functions/roles via
 Propp/Greimas `E55_Type`; 031 adds the structural-continuity validator; 032 closes
 with the E2E fixture, docs, G6/G3 re-target, and the `v0.4.0` release. Vector search
 and export remain deferred to an unversioned, demand-pulled horizon (activate on a
