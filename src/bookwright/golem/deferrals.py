@@ -26,10 +26,14 @@ from typing import NamedTuple
 class DeferralNote(NamedTuple):
     """Why a modelled concept is not yet fed, and when it is expected to be.
 
-    ``target_version`` is always a concrete version label such as ``"v0.4"`` —
-    every deferred concept carries a firm target version, never a
-    deferred-decision placeholder. The concept→version mapping is pinned by the
-    parity test, so the value is a contract, not a comment (FR-002, FR-011).
+    ``target_version`` is either a concrete shipped version label **or** the
+    ``"demand-pulled"`` sentinel — a disciplined "no version until an activation
+    trigger" state mirroring ``bookwright-roadmap.md`` § 4, used when the roadmap
+    genuinely assigns a concept no version (it ships only when a real need pulls
+    it). It is **never** the banned ``"undecided"`` placeholder: every deferred
+    concept carries a firm target, even if that target is "on demand". The
+    concept→version mapping is pinned by the parity test, so the value is a
+    contract, not a comment (FR-002, FR-011).
     """
 
     reason: str
@@ -39,11 +43,11 @@ class DeferralNote(NamedTuple):
 DEFERRED_CONCEPTS: dict[str, DeferralNote] = {
     "RelationshipRole": DeferralNote(
         reason="requires a typed roles/states model with attributes and an authoring surface (G6)",
-        target_version="v0.4",
+        target_version="demand-pulled",
     ),
     "PsychologicalState": DeferralNote(
         reason="requires a typed roles/states model with attributes and an authoring surface (G3)",
-        target_version="v0.4",
+        target_version="demand-pulled",
     ),
 }
 """Concept name → deferral note. Exactly two entries, each key a ``CONCEPTS``

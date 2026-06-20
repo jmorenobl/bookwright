@@ -54,8 +54,8 @@ ORPHAN_NAMES: set[str] = {
 
 #: The full concept→target_version mapping, pinned as a contract (FR-002, SC-002).
 EXPECTED_VERSIONS: dict[str, str] = {
-    "RelationshipRole": "v0.4",
-    "PsychologicalState": "v0.4",
+    "RelationshipRole": "demand-pulled",
+    "PsychologicalState": "demand-pulled",
 }
 
 #: Carrier IRIs in ``CLASS_IRI`` but deliberately outside ``CONCEPTS`` (FR-010).

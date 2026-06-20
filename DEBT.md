@@ -63,10 +63,13 @@
   deuda — toca el registro `CONCEPTS`, el conteo "thirteen concepts" de
   `deferrals.py` y su test de paridad — y limpiarla aquí sería refactorizar por
   delante del plan (Scope discipline).
-- **Resolución sugerida / versión objetivo:** decidir en una iteración v0.4
-  posterior si el concepto se elimina de `CONCEPTS` (si `CharacterRole` es la
-  única encarnación de G11 que se quiere) o si se le da una superficie de
-  autoría propia; ajustar `deferrals.py`/paridad en consecuencia. Target: v0.4.
+- **Resolución sugerida / versión objetivo:** decidir en una iteración
+  estructural posterior si el concepto se elimina de `CONCEPTS` (si
+  `CharacterRole` es la única encarnación de G11 que se quiere) o si se le da una
+  superficie de autoría propia; ajustar `deferrals.py`/paridad en consecuencia.
+  Tocar el registro `CONCEPTS` es su propia clase de deuda estructural, fuera del
+  alcance del cierre de v0.4 (iteración 032 no cablea G6/G3 ni reabre `CONCEPTS`).
+  Target: demand-pulled — iteración estructural posterior, sin versión asignada.
 
 ---
 
@@ -92,8 +95,11 @@
   un hallazgo C1 de `/speckit-analyze` en la iteración 019, en su propio PR.
 - **Resolución sugerida / versión objetivo:** enmienda MINOR de la constitución
   que reescriba la sección a la realidad enviada (v0.4 = capa narrativa; vector
-  search/export → horizonte demand-pulled sin versión), idealmente arrastrada por
-  el cierre de v0.4 (iteración 032). Target: v0.4 (cierre).
+  search/export → horizonte demand-pulled sin versión). La enmienda viaja con el
+  paso manual de release (`bookwright-release`), no con un commit de la rama de la
+  iteración 032 — el cierre de v0.4 deja la rama verde y delega versión/CHANGELOG/
+  constitución al skill de release tras el merge. Target: enmienda MINOR
+  arrastrada por el paso `bookwright-release` de `v0.4.0` (post-merge).
 
 ---
 
