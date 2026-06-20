@@ -66,7 +66,7 @@ reported (one `warning` finding with its `file:line`) and the sequenced one is n
 
 > Write these FIRST and confirm they FAIL before T005–T006.
 
-- [ ] T003 [US1] Create `tests/validation/test_narrative_structure.py` with US1 cases (using the T002 helpers): (1) a project with one unsequenced + one sequenced unit card → exactly one `narrative_structure` `warning` finding naming the orphan slug with its `outline/units/...:line` source, sequenced unit not reported (Acceptance 1, SC-001); (2) every unit card sequenced → zero findings (Acceptance 2); (3) no `outline/units/` directory → zero findings, no `errors[]` entry (Acceptance 3, FR-009, SC-004); (4) a sequence whose members carry an `order:` gap/duplicate → **no** order-related finding (FR-007, research D8).
+- [ ] T003 [US1] Create `tests/validation/test_narrative_structure.py` with US1 cases (using the T002 helpers): (1) a project with one unsequenced + one sequenced unit card → exactly one `narrative_structure` `warning` finding naming the orphan slug with its `outline/units/...:line` source, sequenced unit not reported (Acceptance 1, SC-001); (2) every unit card sequenced → zero findings (Acceptance 2); (3) no `outline/units/` directory → zero findings, no `errors[]` entry (Acceptance 3, FR-009, SC-004); (4) a sequence whose members carry an `order:` gap/duplicate → **no** order-related finding (FR-007, research D8); (5) **determinism & read-only (FR-008, SC-005, research D9)**: running the validator twice over the same orphan-beat project yields byte-for-byte identical finding lists (after the runner's sort), and running it does **not** mutate the indexer's graph (triple count and contents unchanged before/after) — the validator writes nothing.
 
 ### Implementation for User Story 1
 

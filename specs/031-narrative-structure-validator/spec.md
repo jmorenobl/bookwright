@@ -253,7 +253,9 @@ through the existing `--json` report shape with no new top-level keys.
   truth. It MUST reach those records through a **cached `outline()` accessor on
   `ValidationContext`** (mirroring the existing `bible()` accessor) that runs the
   same `map_bible`→`map_outline` pipeline the graph build uses
-  (`build_project_graph`); the validator MUST NOT re-parse cards or build its own
+  (`build_project_graph`) — sans the optional Propp/Greimas typing args, which add
+  only `crm:P2_has_type` triples and do **not** affect `unresolved_references`
+  (research D5); the validator MUST NOT re-parse cards or build its own
   mapping. Each unresolved reference yields one finding naming the beat and the
   unresolved role name and citing the unit card's locator (recovered via the
   FR-004 path on the offending unit).
@@ -393,7 +395,9 @@ through the existing `--json` report shape with no new top-level keys.
   (`queries.resolve_source`), all reused unchanged. US2 additionally requires a new
   cached **`ValidationContext.outline()` accessor** (sibling of the existing
   `bible()`), running the same `map_bible`→`map_outline` pipeline as
-  `build_project_graph`, so the validator reads outline ingestion's
+  `build_project_graph` (without the optional Propp/Greimas typing args, which do
+  not affect `unresolved_references` — research D5), so the validator reads outline
+  ingestion's
   `unresolved_references` without re-resolving roles — the only addition to the
   reused subsystem (see Clarifications, FR-006).
 - Reference: `bookwright-design.md § 4.2` (Narrative module) and the validation
