@@ -34,7 +34,7 @@ independently implementable and testable.
 
 **Purpose**: Confirm the working baseline before touching code.
 
-- [ ] T001 Confirm a green baseline on branch `031-narrative-structure-validator`: run `uv sync`, then `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` and verify all four gates pass before any edits.
+- [X] T001 Confirm a green baseline on branch `031-narrative-structure-validator`: run `uv sync`, then `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` and verify all four gates pass before any edits.
 
 ---
 
@@ -45,7 +45,7 @@ production behavior here, but it BLOCKS the test tasks of US1, US2, and US3.
 
 **⚠️ CRITICAL**: No user-story test can be written/run until this is complete.
 
-- [ ] T002 Extend `tests/validation/conftest.py` **additively** (research D10): add a `units=` knob to `write_project` that writes `outline/units/*.md` cards from the given specs, and add an outline-aware indexer builder that runs `map_bible` → `map_outline` → `build_provenance` into a fresh `RdflibIndexer` (mirroring `commands/_graph.py` `build_project_graph`), so fixtures emit `G7`/`G9` triples and outline provenance. Leave the existing `build_indexer` / `write_project` signatures backward-compatible so every existing validator test (FR-011) is untouched.
+- [X] T002 Extend `tests/validation/conftest.py` **additively** (research D10): add a `units=` knob to `write_project` that writes `outline/units/*.md` cards from the given specs, and add an outline-aware indexer builder that runs `map_bible` → `map_outline` → `build_provenance` into a fresh `RdflibIndexer` (mirroring `commands/_graph.py` `build_project_graph`), so fixtures emit `G7`/`G9` triples and outline provenance. Leave the existing `build_indexer` / `write_project` signatures backward-compatible so every existing validator test (FR-011) is untouched.
 
 **Checkpoint**: Test fixtures can now produce the narrative-structure graph and the
 combined outline `MapResult`. User-story work can begin.
@@ -66,12 +66,12 @@ reported (one `warning` finding with its `file:line`) and the sequenced one is n
 
 > Write these FIRST and confirm they FAIL before T005–T006.
 
-- [ ] T003 [US1] Create `tests/validation/test_narrative_structure.py` with US1 cases (using the T002 helpers): (1) a project with one unsequenced + one sequenced unit card → exactly one `narrative_structure` `warning` finding naming the orphan slug with its `outline/units/...:line` source, sequenced unit not reported (Acceptance 1, SC-001); (2) every unit card sequenced → zero findings (Acceptance 2); (3) no `outline/units/` directory → zero findings, no `errors[]` entry (Acceptance 3, FR-009, SC-004); (4) a sequence whose members carry an `order:` gap/duplicate → **no** order-related finding (FR-007, research D8); (5) **determinism & read-only (FR-008, SC-005, research D9)**: running the validator twice over the same orphan-beat project yields byte-for-byte identical finding lists (after the runner's sort), and running it does **not** mutate the indexer's graph (triple count and contents unchanged before/after) — the validator writes nothing.
+- [X] T003 [US1] Create `tests/validation/test_narrative_structure.py` with US1 cases (using the T002 helpers): (1) a project with one unsequenced + one sequenced unit card → exactly one `narrative_structure` `warning` finding naming the orphan slug with its `outline/units/...:line` source, sequenced unit not reported (Acceptance 1, SC-001); (2) every unit card sequenced → zero findings (Acceptance 2); (3) no `outline/units/` directory → zero findings, no `errors[]` entry (Acceptance 3, FR-009, SC-004); (4) a sequence whose members carry an `order:` gap/duplicate → **no** order-related finding (FR-007, research D8); (5) **determinism & read-only (FR-008, SC-005, research D9)**: running the validator twice over the same orphan-beat project yields byte-for-byte identical finding lists (after the runner's sort), and running it does **not** mutate the indexer's graph (triple count and contents unchanged before/after) — the validator writes nothing.
 
 ### Implementation for User Story 1
 
-- [ ] T004 [P] [US1] In `src/bookwright/validation/queries.py`: import `DLP` from `bookwright.golem.namespaces`, add `("dlp", str(DLP))` to `_PREFIXES`, and add `load_orphan_units(indexer: Indexer) -> list[str]` running the `SELECT ?unit … FILTER NOT EXISTS { ?seq a golem:G7_Narrative_Sequence ; dlp:proper-part ?unit }` query (data-model.md / research D3), returning the URIs **sorted** for determinism (research D9).
-- [ ] T005 [US1] Create `src/bookwright/validation/validators/narrative_structure.py` with the `NarrativeStructure` class: `name: ClassVar[str] = "narrative_structure"`, `severity_default: ClassVar[Severity] = Severity.warning` (research D2), conforming to the `Validator` protocol. Implement the Rule a branch in `validate`: call `queries.load_orphan_units(indexer)`, and for each orphan URI emit one `Violation` (`validator="narrative_structure"`, `severity=warning`, message naming the unit by URI localname/slug, `source=resolve_source(indexer, unit_uri)`, `triples=()`) — data-model.md "Finding: orphan beat", research D4. No hand-registration (auto-discovered, FR-002/research D1).
+- [X] T004 [P] [US1] In `src/bookwright/validation/queries.py`: import `DLP` from `bookwright.golem.namespaces`, add `("dlp", str(DLP))` to `_PREFIXES`, and add `load_orphan_units(indexer: Indexer) -> list[str]` running the `SELECT ?unit … FILTER NOT EXISTS { ?seq a golem:G7_Narrative_Sequence ; dlp:proper-part ?unit }` query (data-model.md / research D3), returning the URIs **sorted** for determinism (research D9).
+- [X] T005 [US1] Create `src/bookwright/validation/validators/narrative_structure.py` with the `NarrativeStructure` class: `name: ClassVar[str] = "narrative_structure"`, `severity_default: ClassVar[Severity] = Severity.warning` (research D2), conforming to the `Validator` protocol. Implement the Rule a branch in `validate`: call `queries.load_orphan_units(indexer)`, and for each orphan URI emit one `Violation` (`validator="narrative_structure"`, `severity=warning`, message naming the unit by URI localname/slug, `source=resolve_source(indexer, unit_uri)`, `triples=()`) — data-model.md "Finding: orphan beat", research D4. No hand-registration (auto-discovered, FR-002/research D1).
 
 **Checkpoint**: US1 is fully functional and independently testable — the orphan-beat
 MVP. The validator is auto-discovered, runs through the existing runner, and emits
@@ -95,12 +95,12 @@ exactly the bad reference is reported (beat name + unresolved role name + the ca
 
 > Write these FIRST and confirm they FAIL before T007–T008.
 
-- [ ] T006 [US2] Add US2 cases to `tests/validation/test_narrative_structure.py` (same file as T003): (1) a unit card whose `roles:` names an unresolvable slug → one `warning` finding naming the beat and the unresolved role with the card's `file:line` (Acceptance 1, SC-002); (2) a card whose `roles:` all resolve → no finding for it (Acceptance 2); (3) no `outline/units/` → no unresolved-role finding (Acceptance 3, FR-009); assert a bible-level `UnresolvedReference` (e.g. a `participants:` miss) is NOT reported by this validator (the `"{outline}/units/"` path filter, research D6).
+- [X] T006 [US2] Add US2 cases to `tests/validation/test_narrative_structure.py` (same file as T003): (1) a unit card whose `roles:` names an unresolvable slug → one `warning` finding naming the beat and the unresolved role with the card's `file:line` (Acceptance 1, SC-002); (2) a card whose `roles:` all resolve → no finding for it (Acceptance 2); (3) no `outline/units/` → no unresolved-role finding (Acceptance 3, FR-009); assert a bible-level `UnresolvedReference` (e.g. a `participants:` miss) is NOT reported by this validator (the `"{outline}/units/"` path filter, research D6).
 
 ### Implementation for User Story 2
 
-- [ ] T007 [P] [US2] In `src/bookwright/validation/base.py`: add a `_outline` sentinel field (`field(default=_UNSET, repr=False, compare=False)`) to `ValidationContext` and a cached `outline() -> MapResult` accessor mirroring `bible()`, running `map_bible(root, bible_dir, uri_base)` then `map_outline(root, root / paths.outline, uri_base, result)` and caching the combined `MapResult` (research D5; no vocabularies — research D5 note). Writes nothing.
-- [ ] T008 [US2] Add the Rule c branch to `src/bookwright/validation/validators/narrative_structure.py`: read `project.outline().unresolved_references`, filter to records whose `path` is under `"{outline}/units/"` (where `outline = manifest.paths.outline.rstrip("/")`, research D6), and for each emit one `Violation` (message naming `ref.entity` beat + `ref.name` role; `source` via `resolve_source(indexer, unit_uri)` where `unit_uri` comes from a `{name: uri}` map built from `outline().mapped`, falling back to `ref.path`, research D7; `triples=()`). Sort references by `(path, entity, name)` (research D9). Reuse the records — do not re-implement role resolution (FR-006).
+- [X] T007 [P] [US2] In `src/bookwright/validation/base.py`: add a `_outline` sentinel field (`field(default=_UNSET, repr=False, compare=False)`) to `ValidationContext` and a cached `outline() -> MapResult` accessor mirroring `bible()`, running `map_bible(root, bible_dir, uri_base)` then `map_outline(root, root / paths.outline, uri_base, result)` and caching the combined `MapResult` (research D5; no vocabularies — research D5 note). Writes nothing.
+- [X] T008 [US2] Add the Rule c branch to `src/bookwright/validation/validators/narrative_structure.py`: read `project.outline().unresolved_references`, filter to records whose `path` is under `"{outline}/units/"` (where `outline = manifest.paths.outline.rstrip("/")`, research D6), and for each emit one `Violation` (message naming `ref.entity` beat + `ref.name` role; `source` via `resolve_source(indexer, unit_uri)` where `unit_uri` comes from a `{name: uri}` map built from `outline().mapped`, falling back to `ref.path`, research D7; `triples=()`). Sort references by `(path, entity, name)` (research D9). Reuse the records — do not re-implement role resolution (FR-006).
 
 **Checkpoint**: US1 and US2 both work independently; each rule fires on its own
 project and both fire on a unit that is both orphaned and bad-role-referencing.
@@ -120,8 +120,8 @@ existing report shape with no new envelope key.
 
 ### Tests for User Story 3
 
-- [ ] T009 [US3] Add US3 cases to `tests/validation/test_narrative_structure.py` (same file as T003/T006): (1) `narrative_structure` is in the resolved active set for a default project (Acceptance 1, FR-002); (2) with `[validators] disabled = ["narrative_structure"]` it does not appear in `summary.ran` and emits no findings, every other validator unchanged (Acceptance 2, SC-006); (3) with `[validators] enabled = ["narrative_structure"]` only it runs.
-- [ ] T010 [P] [US3] Add a `--json` envelope assertion to `tests/validation/test_command.py` (additive): for an orphan-beat project, the `narrative_structure` finding appears in `violations[]` with the existing finding shape (validator, severity, message, source, triples), `failed` stays `false` for a warning-only run, and the envelope gains no new top-level key (FR-003, SC-003, contracts §"Output envelope").
+- [X] T009 [US3] Add US3 cases to `tests/validation/test_narrative_structure.py` (same file as T003/T006): (1) `narrative_structure` is in the resolved active set for a default project (Acceptance 1, FR-002); (2) with `[validators] disabled = ["narrative_structure"]` it does not appear in `summary.ran` and emits no findings, every other validator unchanged (Acceptance 2, SC-006); (3) with `[validators] enabled = ["narrative_structure"]` only it runs.
+- [X] T010 [P] [US3] Add a `--json` envelope assertion to `tests/validation/test_command.py` (additive): for an orphan-beat project, the `narrative_structure` finding appears in `violations[]` with the existing finding shape (validator, severity, message, source, triples), `failed` stays `false` for a warning-only run, and the envelope gains no new top-level key (FR-003, SC-003, contracts §"Output envelope").
 
 **Checkpoint**: All three user stories independently functional; the validator is a
 first-class, configurable member of the suite.
@@ -132,8 +132,8 @@ first-class, configurable member of the suite.
 
 **Purpose**: Verify the whole feature against gates and the quickstart.
 
-- [ ] T011 Run all four gates green: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (coverage ≥ 80 %, single-sourced in `pyproject`). Confirm no existing validator's behavior/findings/severity changed (FR-011) and the frozen ontology is untouched — no class/property added to `golem.ttl` (FR-012, SC-007).
-- [ ] T012 Walk `specs/031-narrative-structure-validator/quickstart.md` scenarios 1–6 against a scratch project to confirm the documented end-to-end behavior (orphan flagged, clean/inert produce nothing, unresolved role flagged, order-gap not flagged, disable-by-name removes findings).
+- [X] T011 Run all four gates green: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (coverage ≥ 80 %, single-sourced in `pyproject`). Confirm no existing validator's behavior/findings/severity changed (FR-011) and the frozen ontology is untouched — no class/property added to `golem.ttl` (FR-012, SC-007).
+- [X] T012 Walk `specs/031-narrative-structure-validator/quickstart.md` scenarios 1–6 against a scratch project to confirm the documented end-to-end behavior (orphan flagged, clean/inert produce nothing, unresolved role flagged, order-gap not flagged, disable-by-name removes findings).
 
 ---
 

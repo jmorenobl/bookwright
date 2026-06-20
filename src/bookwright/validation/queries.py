@@ -17,6 +17,7 @@ from bookwright.golem.namespaces import (
     ASSIGNED_ATTRIBUTE_TO,
     CRM,
     CSM,
+    DLP,
     GOLEM,
     TEMPORAL_RELATIONS,
     TR,
@@ -29,6 +30,7 @@ __all__ = [
     "EventInterval",
     "intervals_disjoint",
     "load_intervals",
+    "load_orphan_units",
     "load_relations",
     "parse_gyear",
     "resolve_source",
@@ -42,6 +44,7 @@ _PREFIXES = "\n".join(
         ("crm", str(CRM)),
         ("tr", str(TR)),
         ("csm", str(CSM)),
+        ("dlp", str(DLP)),
         ("rdf", str(RDF)),
         ("rdfs", str(RDFS)),
         ("xsd", str(XSD)),
@@ -171,6 +174,30 @@ def load_relations(indexer: Indexer) -> dict[str, set[tuple[str, str]]]:
         )
         relations[relation.name] = {(row["a"], row["b"]) for row in rows}
     return relations
+
+
+def load_orphan_units(indexer: Indexer) -> list[str]:
+    """Sorted URIs of every ``G9`` unit that is a member of no ``G7`` sequence (FR-005).
+
+    A unit is orphaned ⇔ no ``G7_Narrative_Sequence`` has a ``dlp:proper-part`` edge
+    to it (the membership edge :class:`NarrativeSequence` emits per member). The
+    ``NOT EXISTS`` states that declaratively over the derived graph; the result is
+    sorted so the validator's output is byte-stable (research D3/D9). A graph with no
+    ``G9`` units returns ``[]`` so the orphan rule stays inert (FR-009).
+    """
+    rows = _q(
+        indexer,
+        """
+        SELECT ?unit WHERE {
+          ?unit a golem:G9_Narrative_Unit .
+          FILTER NOT EXISTS {
+            ?seq a golem:G7_Narrative_Sequence .
+            ?seq dlp:proper-part ?unit .
+          }
+        }
+        """,
+    )
+    return sorted({row["unit"] for row in rows})
 
 
 def resolve_source(indexer: Indexer, uri: str) -> str | None:

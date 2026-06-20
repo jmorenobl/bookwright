@@ -10,8 +10,8 @@ for the behavioural contract and [data-model.md](./data-model.md) for shapes.
 uv sync
 ```
 
-A project with the v0.4 narrative layer: characters (with `plays:` roles) in
-`bible/characters/`, and beats in `outline/units/*.md`. The graph must be built so
+A project with the v0.4 narrative layer: characters (with `narrative_roles:` roles)
+in `bible/characters/`, and beats in `outline/units/*.md`. The graph must be built so
 the validator's SPARQL sees `G7`/`G9`:
 
 ```bash

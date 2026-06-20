@@ -158,6 +158,7 @@ class ValidationContext:
     manifest: Manifest
 
     _bible: Any = field(default=_UNSET, repr=False, compare=False)
+    _outline: Any = field(default=_UNSET, repr=False, compare=False)
     _character_names: Any = field(default=_UNSET, repr=False, compare=False)
     _setting_names: Any = field(default=_UNSET, repr=False, compare=False)
     _manuscript_files: Any = field(default=_UNSET, repr=False, compare=False)
@@ -175,6 +176,28 @@ class ValidationContext:
             bible_dir = self.root / self.manifest.paths.bible
             self._bible = map_bible(self.root, bible_dir, self.uri_base)
         return cast("MapResult", self._bible)
+
+    def outline(self) -> MapResult:
+        """Map the bible **and** ``outline/units/`` to GOLEM entities (once per run).
+
+        Runs the combined ``map_bible`` → ``map_outline`` pipeline (the same one
+        ``commands/_graph.build_project_graph`` runs) into a fresh ``MapResult`` so
+        its ``unresolved_references`` carry the outline pass's role misses — which the
+        bible-only :meth:`bible` never produces, and ``map_outline`` cannot produce
+        standalone because it needs the character pass's ``roles_index``. Vocabularies
+        are omitted on purpose: they only add ``crm:P2_has_type`` typing triples and do
+        not affect ``unresolved_references`` (research D5). Writes nothing; reads no
+        card by hand. The result is the single source of truth for role resolution
+        ``narrative_structure``'s Rule c reuses (FR-006)."""
+        if self._outline is _UNSET:
+            from bookwright.io.bible import map_bible  # noqa: PLC0415
+            from bookwright.io.outline import map_outline  # noqa: PLC0415
+
+            bible_dir = self.root / self.manifest.paths.bible
+            result = map_bible(self.root, bible_dir, self.uri_base)
+            map_outline(self.root, self.root / self.manifest.paths.outline, self.uri_base, result)
+            self._outline = result
+        return cast("MapResult", self._outline)
 
     def _names_of(self, concept_cls: type[SluggedEntity]) -> tuple[tuple[str, str], ...]:
         """Sorted ``(name, bible_relpath)`` pairs for one bible concept class."""

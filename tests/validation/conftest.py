@@ -43,6 +43,7 @@ from bookwright.golem.namespaces import (
 )
 from bookwright.indexers import RdflibIndexer
 from bookwright.io.bible import build_provenance, map_bible
+from bookwright.io.outline import map_outline
 from bookwright.validation.base import ValidationContext
 
 URI_BASE = "https://example.org/novel/"
@@ -64,6 +65,39 @@ authors = ["Autora"]
 key = "claude"
 skills_dir = ".claude/skills/"
 """
+
+
+@dataclass(frozen=True)
+class UnitSpec:
+    """One ``outline/units/<stem>.md`` card, written by the ``units=`` knob.
+
+    The card's front-matter carries ``name`` plus the optional ``functions`` /
+    ``roles`` / ``sequence`` / ``order`` keys the outline mapper recognises, so a
+    fixture can produce orphan beats (no ``sequence``), sequenced beats, and
+    unresolvable ``roles`` references (iteration 031, research D10).
+    """
+
+    stem: str
+    name: str
+    functions: tuple[str, ...] = ()
+    roles: tuple[str, ...] = ()
+    sequence: str | None = None
+    order: int | None = None
+
+    def body(self) -> str:
+        """The card's Markdown front-matter (a YAML block list per multi-value key)."""
+        lines = [f"name: {self.name!r}"]
+        if self.functions:
+            lines.append("functions:")
+            lines.extend(f"  - {value}" for value in self.functions)
+        if self.roles:
+            lines.append("roles:")
+            lines.extend(f"  - {value}" for value in self.roles)
+        if self.sequence is not None:
+            lines.append(f"sequence: {self.sequence!r}")
+        if self.order is not None:
+            lines.append(f"order: {self.order}")
+        return "---\n" + "\n".join(lines) + "\n---\n"
 
 
 def _validators_block(
@@ -90,11 +124,13 @@ def write_project(  # noqa: PLR0913 — a flexible scaffold helper; keyword-only
     root: Path,
     *,
     characters: Iterable[str] = (),
+    character_roles: Mapping[str, Iterable[str]] | None = None,
     settings: Iterable[str] = (),
     timeline: str | None = None,
     relationships: str | None = None,
     manuscript: Mapping[str, str] | None = None,
     constitution: str | None = None,
+    units: Iterable[UnitSpec] | None = None,
     enabled: Iterable[str] | None = None,
     disabled: Iterable[str] | None = None,
     custom: Iterable[str] | None = None,
@@ -105,6 +141,12 @@ def write_project(  # noqa: PLR0913 — a flexible scaffold helper; keyword-only
     ``relationships`` / ``constitution`` are raw file bodies; ``manuscript`` maps a
     relpath (under ``manuscript/``) to its text. The ``manuscript/`` directory always
     exists so the layout is valid.
+
+    ``character_roles`` maps a character name to its ``narrative_roles`` list so the
+    character pass materializes role nodes a unit card's ``roles:`` can resolve
+    against; ``units`` writes one ``outline/units/<stem>.md`` card per
+    :class:`UnitSpec` (iteration 031). Both default to empty/absent, so an existing
+    caller builds an identical project (FR-011, research D10).
     """
     root.mkdir(parents=True, exist_ok=True)
     block = _validators_block(enabled, disabled, custom)
@@ -127,6 +169,16 @@ def write_project(  # noqa: PLR0913 — a flexible scaffold helper; keyword-only
         (bible / "characters" / f"{slug}.md").write_text(
             f'---\nname: "{name}"\n---\n', encoding="utf-8"
         )
+    for name, roles in (character_roles or {}).items():
+        slug = name.lower().replace(" ", "-")
+        role_lines = "\n".join(f"  - {role}" for role in roles)
+        (bible / "characters" / f"{slug}.md").write_text(
+            f"---\nname: {name!r}\nnarrative_roles:\n{role_lines}\n---\n", encoding="utf-8"
+        )
+    for spec in units or ():
+        target = root / "outline" / "units" / f"{spec.stem}.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(spec.body(), encoding="utf-8")
     for name in settings:
         slug = name.lower().replace(" ", "-")
         (bible / "settings" / f"{slug}.md").write_text(
@@ -147,11 +199,20 @@ def load_context(root: Path) -> ValidationContext:
     return ValidationContext(root=root, manifest=Manifest.load(root / "manifest.toml"))
 
 
-def build_indexer(root: Path) -> RdflibIndexer:
-    """Map the bible to GOLEM entities + provenance into a fresh in-memory engine."""
+def build_indexer(root: Path, *, outline: bool = False) -> RdflibIndexer:
+    """Map the bible — and, with ``outline=True``, ``outline/units/`` too — into a
+    fresh in-memory engine with provenance reified.
+
+    ``outline=True`` runs ``map_bible`` → ``map_outline`` over one shared ``MapResult``
+    (mirroring the real ``commands/_graph.build_project_graph`` pipeline) so the engine
+    also carries the ``G7``/``G9`` narrative-structure triples and the outline cards'
+    ``file:line`` provenance that the ``narrative_structure`` validator reads.
+    """
     manifest = Manifest.load(root / "manifest.toml")
     uri_base = manifest.bookwright.uri_base
     result = map_bible(root, root / manifest.paths.bible, uri_base)
+    if outline:
+        map_outline(root, root / manifest.paths.outline, uri_base, result)
     engine = RdflibIndexer()
     for mapped in result.mapped:
         for triple in mapped.entity.to_triples():
@@ -162,11 +223,11 @@ def build_indexer(root: Path) -> RdflibIndexer:
     return engine
 
 
-def build_and_save_graph(root: Path) -> Path:
-    """Build the graph and serialize it to ``bible/graph.ttl`` (for command tests)."""
+def build_and_save_graph(root: Path, *, outline: bool = False) -> Path:
+    """Build the graph (bible, or bible+outline) and serialize it to ``graph.ttl``."""
     manifest = Manifest.load(root / "manifest.toml")
     graph_path = root / manifest.paths.graph
-    build_indexer(root).save(graph_path)
+    build_indexer(root, outline=outline).save(graph_path)
     return graph_path
 
 
