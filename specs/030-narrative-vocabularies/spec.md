@@ -64,32 +64,36 @@ function with no such link.
 ### User Story 2 - Narrative roles become recognized Greimas actants (Priority: P2)
 
 An author analyzing the conflict engine of their story assigns actantial roles to
-the participants of a beat (`roles:` on the unit card) — *subject*, *object*,
-*sender*, *opponent*, or their Spanish forms — and has declared **Greimas**
-active where the project already records active vocabularies. When the graph is
-built, each narrative role whose name matches a Greimas actant gains a "has type"
-link to the corresponding actant term, so the actantial structure of the book is
-queryable rather than buried in identity-only nodes.
+their characters (`narrative_roles:` on a **character** card, `bible/characters/*.md`)
+— *subject*, *object*, *sender*, *opponent*, or their Spanish forms — and has
+declared **Greimas** active where the project already records active vocabularies.
+When the graph is built, each character-scoped narrative-role node
+(`golem:G11_Narrative_Role`, materialized once per distinct role a character
+plays) whose name matches a Greimas actant gains a "has type" link to the
+corresponding actant term, so the actantial structure of the book is queryable
+rather than buried in identity-only nodes. (A unit card's `roles:` list only
+*references* these nodes by slug; it mints no role entity, so it is the character
+card's `narrative_roles:` that is the typed entity's source — see Assumptions.)
 
 **Why this priority**: It is the second half of the Propp/Greimas payoff and
 exercises the same typing mechanism on the role side. It is genuinely
 independent — a project can activate Greimas without Propp — but functions
 (US1) are the more common entry point, so it is P2.
 
-**Independent Test**: Build the graph for a Greimas-active project whose unit
-card names a role matching a Greimas actant; confirm the role entity has a "has
-type" link to that actant term, and that without Greimas declared the role stays
-untyped.
+**Independent Test**: Build the graph for a Greimas-active project whose character
+card declares a `narrative_roles:` entry matching a Greimas actant; confirm the
+resulting character-scoped role node has a "has type" link to that actant term,
+and that without Greimas declared the role node stays untyped.
 
 **Acceptance Scenarios**:
 
-1. **Given** a project that declares Greimas active and a unit card whose
-   `roles:` includes a name matching a canonical Greimas actant, **When** the
-   graph is built, **Then** the resulting narrative-role entity carries a "has
-   type" link to that Greimas vocabulary term.
+1. **Given** a project that declares Greimas active and a character card whose
+   `narrative_roles:` includes a name matching a canonical Greimas actant,
+   **When** the graph is built, **Then** the resulting character-scoped
+   narrative-role node carries a "has type" link to that Greimas vocabulary term.
 2. **Given** a Greimas-active project and a role name that matches no actant,
-   **When** the graph is built, **Then** the role is created as before with no
-   "has type" link and no error.
+   **When** the graph is built, **Then** the role node is created as before with
+   no "has type" link and no error.
 
 ---
 
@@ -132,9 +136,11 @@ following the reference produces typed entities.
 - **A name matches no term in any active vocabulary**: the entity is left
   untyped. This is normal authoring (custom functions, non-canonical roles), not
   an error, and produces no failure. (FR-006)
-- **The same canonical function/role appears on several unit cards**: typing is
-  consistent — every occurrence of that function/role entity resolves to the same
-  single vocabulary term (the deduplicated function/role entity is typed once).
+- **The same canonical function/role recurs**: typing is consistent. A function
+  named on several unit cards is deduplicated into one `NarrativeFunction` entity
+  (by slug, across all units) and so is typed exactly once. A role name played by
+  several characters yields one role node per character; each node is typed
+  independently to the same single vocabulary term.
 - **A declared-active vocabulary name that is unknown** (neither `propp` nor
   `greimas`): handled by the project's existing active-vocabularies declaration
   semantics; this feature adds no new failure mode for it and simply types
@@ -161,15 +167,21 @@ following the reference produces typed entities.
 - **FR-004**: When Propp is active for the project, a narrative function whose
   resolved name matches a Propp function term MUST receive a "has type"
   (`crm:P2_has_type`) link to that term.
-- **FR-005**: When Greimas is active for the project, a narrative role whose
-  resolved name matches a Greimas actant term MUST receive a "has type"
-  (`crm:P2_has_type`) link to that term.
+- **FR-005**: When Greimas is active for the project, a character-scoped
+  narrative-role node (`golem:G11_Narrative_Role`, materialized from a character
+  card's `narrative_roles:` list) whose resolved name matches a Greimas actant
+  term MUST receive a "has type" (`crm:P2_has_type`) link to that term. The typing
+  attaches to the role node at materialization and is independent of whether any
+  unit card references it.
 - **FR-006**: A narrative function or role whose name matches no term in any
   active vocabulary MUST be left untyped. This MUST NOT raise an error or abort
   the build.
-- **FR-007**: When an entity declares an explicit type (a `type:` value) that
-  names a term of an active vocabulary, that explicit declaration MUST be used as
-  the match in preference to the entity's display name.
+- **FR-007**: Matching MUST be name-based only. Narrative functions
+  (`functions:`) and character roles (`narrative_roles:`) are authored as bare
+  strings with no per-item front-matter, so the entity's authored name is the
+  sole match key; this iteration introduces **no** `type:` (or other) explicit
+  type-override authoring surface (Scope discipline — no plumbing for a
+  hypothetical future affordance).
 - **FR-008**: When no vocabulary is active, the graph for narrative functions and
   roles MUST be identical to the iteration-028/029 output — no "has type" links,
   no other change (no regression).
@@ -194,9 +206,10 @@ following the reference produces typed entities.
 - **Greimas actant term**: one controlled-vocabulary type term per actant of the
   actantial model (subject, object, sender, receiver, helper, opponent), living
   in the Greimas vocabulary file.
-- **"Has type" link**: the relationship attached to a narrative function or role
-  when its name matches an active vocabulary term, pointing the entity at that
-  term. Absent when there is no match or the vocabulary is inactive.
+- **"Has type" link**: the relationship attached to a narrative function entity
+  (G10) or character-scoped role node (G11) when its name matches an active
+  vocabulary term, pointing the entity at that term. Absent when there is no match
+  or the vocabulary is inactive.
 - **Active-vocabularies declaration** *(existing, not introduced here)*: the
   project's existing statement of which narrative vocabularies are in use; read,
   not redefined, by this feature.
@@ -235,22 +248,35 @@ following the reference produces typed entities.
   only existing machine-readable mechanism, so FR-003 reuses it; the exact source
   is confirmed in `/speckit-clarify` / `/speckit-plan` per the iteration prompt.
 - **Vocabulary → entity-kind binding**: `propp.ttl` is populated with Propp's
-  narrative *functions* and matches **narrative functions**; `greimas.ttl` is
-  populated with the six *actants* and matches **narrative roles**. Propp's seven
-  spheres of action / dramatis personae are *not* populated as terms in this
-  iteration (the prompt scopes propp.ttl to "las funciones Proppianas"); roles
-  type against Greimas actants. Confirmed in clarify/plan.
-- **Match key**: An entity's name (or explicit `type:` value) is normalized via
-  the project's existing slug rule and compared against each active term's
-  identifier and listed alias names; this is what delivers the case/accent/ES-EN
-  tolerance of FR-010. The reference documents list the alias names that resolve.
-- **Explicit `type:` field (FR-007)**: Narrative functions are currently authored
-  as bare strings in a unit card's `functions:` list and roles as strings in
-  `roles:`, with no per-item front-matter, so name-based matching is the primary
-  path. The authoring shape for an explicit per-item `type:` override (if any is
-  added) is decided in plan/clarify; absent such an affordance, FR-007 is
-  satisfied vacuously by name matching and no new authoring surface is required
-  by this iteration.
+  narrative *functions* and matches the **`NarrativeFunction` (G10)** entities
+  minted from unit cards' `functions:` lists (`io/outline.py::_mint_functions`).
+  `greimas.ttl` is populated with the six *actants* and matches the
+  **character-scoped `CharacterRole` (G11)** nodes minted from a character card's
+  `narrative_roles:` list (`golem/modules/character.py` →
+  `golem/modules/feature.py::CharacterRole`). A unit card's `roles:` list does
+  **not** mint role entities — it only resolves to those existing character role
+  nodes by slug (`io/outline.py::_resolve_roles`), so the role typing happens in
+  the character pass, not the outline pass. (The top-level `NarrativeRole`
+  *concept* in `CONCEPTS` is never instantiated by ingestion and is out of scope
+  here — see DEBT.md DEBT-001.) Propp's seven spheres of action / dramatis
+  personae are *not* populated as terms in this iteration (the prompt scopes
+  propp.ttl to "las funciones Proppianas"); roles type against Greimas actants.
+  Confirmed in clarify/plan.
+- **Match key**: An entity's authored name is normalized via the project's
+  existing slug rule (`golem/slug.py::make_slug`, `python-slugify` default:
+  lowercase + ASCII transliteration, so case and accents fold away) and compared
+  against the slug of each active term's identifier and its listed alias names.
+  Case/accent tolerance comes from `make_slug`; ES/EN tolerance (FR-010) comes
+  from each term carrying both an ES and an EN alias (as the existing references
+  already pair them, e.g. *Destinador*/*sender*). The reference documents list
+  the alias names that resolve.
+- **No explicit `type:` field (FR-007)**: Narrative functions are authored as
+  bare strings in a unit card's `functions:` list, and character roles as bare
+  strings in a character card's `narrative_roles:` list — neither carries
+  per-item front-matter. Name-based matching is therefore the **only** path, and
+  this iteration adds no `type:` override surface. (FR-007 is a deliberate
+  negative requirement, not an unbuilt affordance: adding a `type:` field would be
+  plumbing for a hypothetical future, which Scope discipline forbids.)
 - **No warning on no-match**: An unmatched name produces an untyped entity
   silently (no soft warning), consistent with "queda sin tipar (no es error)".
   Whether to emit an advisory note is a possible clarify item but defaults to
@@ -275,6 +301,13 @@ following the reference produces typed entities.
   against it.
 - **Populating Propp's dramatis personae / spheres of action as terms**: only the
   Propp functions and Greimas actants are populated this iteration.
+- **Removing the vestigial top-level `NarrativeRole` concept**: the
+  `NarrativeRole` entry in `golem.CONCEPTS` (`golem/modules/narrative.py`) is
+  never instantiated by ingestion — only the inlined `CharacterRole` materializes
+  the G11 class — yet it escapes the deferral registry because both share the same
+  `CLASS_IRI`. Cleaning that up is a separate "modelled-but-dead concept" debt
+  class, not the typing work of this iteration; it is recorded in DEBT.md
+  (DEBT-001), not addressed here.
 
 ## Dependencies
 
