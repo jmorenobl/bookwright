@@ -353,8 +353,13 @@ reflect the shipped v0.4 state — verifiable by inspection and by the version g
   (per the `tiny-historical/expected-findings.md` / `expected-status.md`
   precedent), so the test asserts precise facts rather than lower bounds.
 - **FR-006**: Any new fixture MUST NOT break existing fixtures' tests; in
-  particular it MUST NOT alter the `parity-exercise`-driven
-  `test_ingestion_parity.py` assertions or the M4/M5 fixture oracles.
+  particular **the addition of the new fixture** MUST NOT alter the
+  `parity-exercise`-driven **orphan-set** assertion in `test_ingestion_parity.py`
+  (the live orphan set still equals the keys of `DEFERRED_CONCEPTS`) or the M4/M5
+  fixture oracles. This is distinct from the deliberate, separately-required
+  `EXPECTED_VERSIONS` version-map edit (FR-019/FR-019a): that edit is the
+  sanctioned deferral re-target, not fixture-driven breakage, and it keeps the
+  same file green.
 
 **Workflow / E2E test**
 
