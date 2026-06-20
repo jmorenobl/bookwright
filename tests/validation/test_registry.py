@@ -15,6 +15,7 @@ _BUILTINS = {
     "character_presence",
     "factual_anchor",
     "focalization",
+    "narrative_structure",
     "setting_continuity",
     "temporal",
 }

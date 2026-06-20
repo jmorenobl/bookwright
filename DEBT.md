@@ -70,6 +70,33 @@
 
 ---
 
+### DEBT-002 — Sección "Scope & Release Discipline" de la constitución desfasada
+- **Estado:** abierta
+- **Detectada en:** spec-031 (2026-06-20)
+- **Ubicación:** `.specify/memory/constitution.md` (sección *Scope & Release
+  Discipline*, líneas ~218–226; constitución v1.4.0).
+- **Clase de deuda:** deriva documental en un documento vinculante (la
+  constitución se cita como Constitution Check gate en cada PR).
+- **Descripción:** la sección dice "Active work is M5 / v0.3 — context
+  orchestration" y lista **vector search** como diferido a **v0.4**. La realidad
+  (CLAUDE.md + `bookwright-roadmap.md`): v0.3.x hardening cerrado, **v0.4 = capa
+  narrativa Propp/Greimas** (esta milestone, iter 028–032), y vector search +
+  export movidos a un **horizonte demand-pulled sin versión asignada**. La
+  constitución contradice al roadmap en la línea de versiones y en el destino de
+  vector search. No entra en conflicto con el contenido de la iteración 031 (un
+  validador, no vector search), por eso no bloquea esta spec.
+- **Por qué se difiere:** corregir la constitución exige el procedimiento formal
+  de enmienda (bump de versión, Sync Impact Report, propagación a plantillas y a
+  `bookwright-design.md` § 16 si aplica) — es su propio cambio, no parte de un
+  commit `docs(spec)` de la iteración 031. Precedente: la enmienda 1.4.0 nació de
+  un hallazgo C1 de `/speckit-analyze` en la iteración 019, en su propio PR.
+- **Resolución sugerida / versión objetivo:** enmienda MINOR de la constitución
+  que reescriba la sección a la realidad enviada (v0.4 = capa narrativa; vector
+  search/export → horizonte demand-pulled sin versión), idealmente arrastrada por
+  el cierre de v0.4 (iteración 032). Target: v0.4 (cierre).
+
+---
+
 ## Deuda aceptada (no se arreglará)
 
 _Ninguna por ahora._

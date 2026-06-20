@@ -67,7 +67,7 @@ def test_known_state_facts_match_the_fixture(tiny_historical: Path, runner: CliR
     }
 
     assert state["validation"]["counts"]["error"] >= 1
-    assert len(state["validation"]["ran"]) == 5
+    assert len(state["validation"]["ran"]) == 6
 
 
 def test_facts_agree_with_the_owning_tools(tiny_historical: Path, runner: CliRunner) -> None:

@@ -371,8 +371,10 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/030-narrative-vocabularies/plan.md` (iteration 030 — populate
-`propp.ttl`/`greimas.ttl` as `E55_Type` vocabularies and type narrative
-functions G10 / character roles G11 via `crm:P2_has_type` when the manifest
-activates the vocabulary).
+`specs/031-narrative-structure-validator/plan.md` (iteration 031 — add the
+`narrative_structure` continuity validator: rule a orphan beat via SPARQL
+`NOT EXISTS` over `dlp:proper-part`, rule c unresolved role re-surfaced from
+outline ingestion's `UnresolvedReference` records via a new cached
+`ValidationContext.outline()` accessor; auto-discovered, `warning`-default,
+no ontology change).
 <!-- SPECKIT END -->

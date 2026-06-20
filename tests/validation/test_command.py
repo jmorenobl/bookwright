@@ -15,7 +15,11 @@ import pytest
 from typer.testing import CliRunner
 
 from bookwright.cli import app
-from tests.validation.conftest import build_and_save_graph, write_project
+from tests.validation.conftest import (
+    UnitSpec,
+    build_and_save_graph,
+    write_project,
+)
 
 
 def _dirhash(root: Path) -> list[tuple[str, str]]:
@@ -167,6 +171,7 @@ def test_json_is_single_document_with_prose_on_stderr(
         "setting_continuity",
         "focalization",
         "factual_anchor",
+        "narrative_structure",
     }
     assert "{" not in result.stderr  # no JSON leaked to stderr
 
@@ -263,6 +268,40 @@ def test_valid_scope_with_no_violations_exits_zero(
     assert result.exit_code == 0
     assert payload["status"] == "ok"
     assert payload["violations"] == []
+
+
+# --- narrative_structure through the --json envelope (iteration 031) ---------
+
+
+def test_narrative_structure_orphan_in_json_envelope(
+    runner: CliRunner, project_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # An orphan beat surfaces through the existing envelope as a warning: the gate
+    # stays clean and no new top-level key appears (FR-003, SC-003).
+    write_project(
+        project_root,
+        units=[
+            UnitSpec("anchored", "Anchored Beat", sequence="Act I", order=1),
+            UnitSpec("orphan", "Orphan Beat"),
+        ],
+    )
+    build_and_save_graph(project_root, outline=True)
+    monkeypatch.chdir(project_root)
+
+    result = runner.invoke(app, ["validate", "--json"])
+    payload = json.loads(result.stdout)
+
+    assert set(payload) == {"status", "failed", "violations", "errors", "summary"}
+    assert payload["failed"] is False  # warning-only run never gates CI
+    assert result.exit_code == 0
+    orphans = [v for v in payload["violations"] if v["validator"] == "narrative_structure"]
+    assert len(orphans) == 1
+    finding = orphans[0]
+    assert set(finding) == {"validator", "severity", "message", "source", "triples"}
+    assert finding["severity"] == "warning"
+    assert "orphan-beat" in finding["message"]
+    assert finding["source"].startswith("outline/units/orphan.md")
+    assert finding["triples"] == []
 
 
 # --- [validators] config + custom validators --------------------------------
