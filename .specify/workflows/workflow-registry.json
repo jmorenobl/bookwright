@@ -11,11 +11,11 @@
     },
     "bookwright-quality": {
       "name": "Bookwright Full SDD Cycle (zero-debt, autonomous)",
-      "version": "1.0.0",
-      "description": "specify → harden-spec → clarify → plan → tasks → analyze-resolve → implement → review-fix → converge → finalize; fully autonomous, zero-debt, headless-safe commits",
+      "version": "1.1.0",
+      "description": "specify → harden-spec → clarify → plan → tasks → analyze-resolve → implement → converge → implement-remainder → review-fix → finalize; fully autonomous, zero-debt, adversarial review, gate-verified finalize, headless-safe commits",
       "source": "local",
       "installed_at": "2026-06-19T00:00:00+00:00",
-      "updated_at": "2026-06-19T00:00:00+00:00"
+      "updated_at": "2026-06-20T00:00:00+00:00"
     }
   }
 }

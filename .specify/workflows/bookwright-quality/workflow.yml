@@ -2,21 +2,30 @@ schema_version: "1.0"
 workflow:
   id: "bookwright-quality"
   name: "Bookwright Full SDD Cycle (zero-debt, autonomous)"
-  version: "1.0.0"
+  version: "1.1.0"
   author: "Jorge MB"
   description: >
     specify → harden-spec → clarify(principled) → plan(hint) → tasks →
-    analyze+resolve (iterate-until-clean in one step) → implement → review-fix →
-    converge → finalize. Fully autonomous: every decision (clarification answers,
-    finding resolutions) is made against bookwright's Constitution Check gate
-    (.specify/memory/constitution.md) and CLAUDE.md — the NON-NEGOTIABLE
-    principles I (plain-text source of truth), VI (Agent Skills only, never a
-    legacy commands/ dir) and VIII (test discipline, ≥80% coverage), the four CI
-    gates (ruff check, ruff format --check, mypy --strict, pytest) and the Scope
-    & Release Discipline rule — never by asking and never by taking shortcuts.
+    analyze+resolve (iterate-until-clean in one step) → implement → converge →
+    implement-remainder → review-fix → finalize. Fully autonomous: every decision
+    (clarification answers, finding resolutions) is made against bookwright's
+    Constitution Check gate (.specify/memory/constitution.md) and CLAUDE.md — the
+    NON-NEGOTIABLE principles I (plain-text source of truth), VI (Agent Skills
+    only, never a legacy commands/ dir) and VIII (test discipline, ≥80%
+    coverage), the four CI gates (ruff check, ruff format --check, mypy --strict,
+    pytest) and the Scope & Release Discipline rule — never by asking and never by
+    taking shortcuts. The shared anti-debt rules live in ONE place,
+    `.specify/workflows/bookwright-quality/zero-debt-doctrine.md`; every prompt
+    step reads it instead of re-stating the doctrine, so it cannot drift.
     Designed for headless `claude -p` dispatch, where each step starts with a
     clean context, so every step carries its own full guidance rather than
     relying on a prior step's context.
+    ORDERING NOTE: `converge` (which only APPENDS unbuilt work to tasks.md) is
+    placed BEFORE the final code review, and is followed by a second `implement`
+    that completes whatever converge appended — otherwise converge's findings
+    would be written down but never built. `review-fix` is therefore the last
+    quality net over ALL code (initial + converge remainder), and `finalize`
+    re-runs the four gates so the run cannot end green-in-git but red-in-gates.
     NOTE: the Spec Kit extension git-commit hooks are UNRELIABLE in headless
     dispatch (they may silently not commit). So this workflow does NOT trust
     them — every prompt step commits its own edits explicitly, and the final
@@ -62,39 +71,26 @@ steps:
       never comes, yet the step is still recorded as completed): STOP immediately,
       create/edit NOTHING, and report the desync loudly so the run can be
       restarted. Only if the file exists do you proceed.
+      Read `.specify/workflows/bookwright-quality/zero-debt-doctrine.md` in full
+      FIRST — it is the shared anti-debt doctrine (Constitution Check gate, scope
+      discipline, eliminate-the-cause over a justified guard, debt-is-a-class
+      swept repo-wide, the DEBT.md ledger for genuinely out-of-scope debt) and
+      every rule below applies it; do not restate it, apply it.
       Audit the spec just generated and EDIT spec.md in place so it meets
-      bookwright's quality bar before planning. Reason concretely about the
-      project's Constitution Check gate (.specify/memory/constitution.md): each
-      principle, and especially the three NON-NEGOTIABLE ones — I (plain-text
-      source of truth: the graph is always a derived cache, never the source),
-      VI (Agent Skills only — emit SKILL.md, never write to .claude/commands/ or
-      analogues) and VIII (test discipline, ≥80% coverage, single-sourced in
-      [tool.coverage.report]). Also reason about CLAUDE.md's "Scope discipline —
-      do NOT implement ahead of the plan": a spec that adds plumbing whose only
-      justification is "future X" must be rewritten to drop it; keep the
-      iteration to one observable delta. Enforce zero NEW technical debt: if the
-      contract as drafted would prescribe a smell (unused param,
-      internally-inconsistent assertion, "small impurity", deferred
-      "follow-up"), rewrite the spec to remove it now rather than carry it. Debt
-      is a CLASS: when the spec touches a known debt class, sweep EVERY instance
-      of that class now — across the whole repo, even files outside this
-      iteration's diff — not just the single cited location (precedent:
-      iteration 027 unified ALL JSON envelopes, not the one cited). Sweeping a
-      class you are already touching is NOT widening scope; it is the correct
-      fix. The ONLY debt you may leave unfixed is debt of a DIFFERENT, unrelated
-      class whose cleanup would genuinely be its own iteration (Scope discipline:
-      do not refactor ahead of the plan). When you find such out-of-scope debt
-      you MUST NOT silently drop it: append an entry to the repo-root DEBT.md
-      ledger (status, detected-in spec-<NNN>, location, debt class, description,
-      why-deferred, suggested resolution/target version) AND report it loudly in
-      your output — found debt is never left untracked. PREFER ELIMINATING A
-      SMELL'S CAUSE OVER CONTAINING IT:
-      if the spec would add a guard, allowlist entry, suppression, justification
-      or synthetic test to make a smell "safe", first check whether the cause can
-      simply be deleted so no guard is needed at all — a removed cause beats a
-      justified guard. Do not ask questions and do not take shortcuts — resolve
-      genuinely and write the improved spec. FINALLY, stage and commit your
-      edits: derive the spec number from the current branch
+      bookwright's quality bar before planning. Apply the doctrine to the spec:
+      keep the iteration to one observable delta (drop any plumbing justified
+      only by "future X"); if the contract as drafted would prescribe a smell
+      (unused param, internally-inconsistent assertion, "small impurity", deferred
+      "follow-up", or a guard/suppression/synthetic test that exists only to make
+      a smell "safe"), rewrite the spec to delete the cause now rather than carry
+      it; sweep every instance of any debt class the spec touches, repo-wide; and
+      record any genuinely out-of-scope debt class in DEBT.md rather than dropping
+      it. SPEC-QUALITY INVARIANT — enforce it here: every functional requirement
+      must be testable and trace to at least one acceptance scenario, and every
+      success criterion must be measurable; rewrite vague or untestable
+      requirements until they are. Do not ask questions and do not take shortcuts
+      — resolve genuinely and write the improved spec. FINALLY, stage and commit
+      your edits: derive the spec number from the current branch
       (`git rev-parse --abbrev-ref HEAD`) and run
       `git add -A && git commit -m "docs(spec): harden spec-<NNN> to the zero-debt bar"`
       — the auto-commit hooks are unreliable in headless mode, so committing here
@@ -109,11 +105,13 @@ steps:
         Operate non-interactively: do NOT ask the user any questions. For each
         ambiguity that materially impacts architecture, data modeling, testing,
         or correctness, autonomously choose the answer that maximizes code
-        quality and minimizes technical debt per CLAUDE.md and the project
-        constitution (.specify/memory/constitution.md), and encode it directly
-        into the spec with a one-line rationale. Treat the constitution's
-        NON-NEGOTIABLE principles (I, VI, VIII), the Scope & Release Discipline
-        rule and the zero-debt bar as the deciding criteria. No shortcuts.
+        quality and minimizes technical debt per CLAUDE.md, the project
+        constitution (.specify/memory/constitution.md) and the shared anti-debt
+        doctrine in .specify/workflows/bookwright-quality/zero-debt-doctrine.md
+        (read it first), and encode the answer directly into the spec with a
+        one-line rationale. Treat the constitution's NON-NEGOTIABLE principles
+        (I, VI, VIII), the Scope & Release Discipline rule and the zero-debt bar
+        as the deciding criteria. No shortcuts.
 
   # 4. Plan (own hint, NOT the spec prompt) -------------------------------------
   - id: plan
@@ -145,26 +143,29 @@ steps:
       comes, yet the step is recorded as completed): STOP immediately, edit
       NOTHING, and report the desync loudly so the run can be restarted. Only if
       all three exist do you proceed.
+      Read `.specify/workflows/bookwright-quality/zero-debt-doctrine.md` in full
+      FIRST — the shared anti-debt doctrine that governs how you resolve every
+      finding (eliminate the cause, sweep debt as a class repo-wide, record only
+      genuinely out-of-scope debt in DEBT.md, never dilute a principle or defer to
+      a follow-up). Apply it; do not restate it.
       Perform a cross-artifact consistency and constitution-compliance analysis
       over spec.md, plan.md, tasks.md and .specify/memory/constitution.md — the
       same scope as /speckit-analyze (duplication, ambiguity, coverage gaps,
       terminology drift, constitution MUST violations; severities
-      CRITICAL/HIGH/MEDIUM/LOW; constitution conflicts are always CRITICAL). Then
-      resolve, in place, every CRITICAL and HIGH finding by editing the artifacts,
-      guided by bookwright's Constitution Check gate (the NON-NEGOTIABLE
-      principles I/VI/VIII, the Scope & Release Discipline rule, and the four CI
-      gates ruff check / ruff format --check / mypy --strict / pytest). Re-analyze
-      and repeat the fix→re-analyze cycle until no CRITICAL or HIGH findings
-      remain, up to 3 internal passes. Resolve genuinely — never dilute a
-      principle, never defer to a follow-up, never take shortcuts; treat debt as a
-      class (sweep EVERY instance of a class you touch, repo-wide, not just the
-      cited location — that is the correct fix, not scope-widening). Debt of a
-      DIFFERENT, unrelated class that would be its own iteration is the only thing
-      you leave unfixed, and even then you MUST NOT drop it silently: append it to
-      the repo-root DEBT.md ledger (status, detected-in spec-<NNN>, location,
-      class, description, why-deferred, suggested resolution/target) and surface
-      it in your output. Output the resulting findings summary, then stage and
-      commit your edits:
+      CRITICAL/HIGH/MEDIUM/LOW; constitution conflicts are always CRITICAL).
+      TRACEABILITY GATE — additionally build the requirement→task→test matrix:
+      every functional requirement in spec.md must map to at least one task in
+      tasks.md AND to at least one task that adds or extends a test; any FR with
+      no implementing task, or no test task, is a CRITICAL coverage gap. Likewise
+      every success criterion must be measurable and have a verifying task. Then
+      resolve, in place, every CRITICAL and HIGH finding (including these
+      traceability gaps) by editing the artifacts, guided by bookwright's
+      Constitution Check gate (the NON-NEGOTIABLE principles I/VI/VIII, the Scope
+      & Release Discipline rule, and the four CI gates ruff check / ruff format
+      --check / mypy --strict / pytest). Re-analyze and repeat the fix→re-analyze
+      cycle until no CRITICAL or HIGH findings remain, up to 3 internal passes.
+      Output the resulting findings summary AND the requirement→task→test matrix,
+      then stage and commit your edits:
       `git add -A && git commit -m "docs(spec): resolve cross-artifact analysis findings (spec-<NNN>)"`
       (derive <NNN> from the current branch; the auto-commit hooks are unreliable
       in headless mode, so committing here is mandatory). Do not ask questions.
@@ -174,90 +175,107 @@ steps:
     command: speckit.implement
     integration: "{{ inputs.integration }}"
 
-  # 8. Review + fix the implemented CODE — autonomous self-correction ------------
-  #    analyze-resolve reviews the artifacts; nothing else reviews the code. This
-  #    step is a code-review --fix + quality-audit pass over the diff, and it also
-  #    closes the loop on any success criterion implement found unachievable
-  #    without a smell (amend to the clean floor + document, never cram/defer).
+  # 8. Converge — detect any unbuilt work and append it to tasks.md ------------
+  #    Runs BEFORE the final review so its appended tasks get implemented (step 9)
+  #    and reviewed (step 10). Placing it last would write findings nobody builds.
+  - id: converge
+    command: speckit.converge
+    integration: "{{ inputs.integration }}"
+
+  # 9. Implement the remainder converge appended ---------------------------------
+  #    speckit.implement is idempotent over [X] tasks, so a second pass builds ONLY
+  #    the new tasks converge appended (a no-op if it appended none). Without this,
+  #    converge's whole purpose — "so implement can complete it" — is defeated.
+  - id: implement-remainder
+    command: speckit.implement
+    integration: "{{ inputs.integration }}"
+
+  # 10. Review + fix the implemented CODE — autonomous, adversarial self-correction
+  #    analyze-resolve reviews the artifacts; this is the only thing that reviews
+  #    the CODE — the full diff (initial implement + converge remainder). It is a
+  #    code-review --fix + quality-audit pass plus an independent adversarial
+  #    refutation, and it closes the loop on any success criterion implement found
+  #    unachievable without a smell (amend to the clean floor + document).
   - id: review-fix
     type: prompt
     integration: "{{ inputs.integration }}"
     prompt: >
-      PRECONDITION GUARD — run this FIRST: confirm the implement step actually
+      PRECONDITION GUARD — run this FIRST: confirm the implement steps actually
       landed code. There must be either committed changes since the merge base or
       uncommitted work —
       `git diff --quiet "$(git merge-base origin/main HEAD)" HEAD && git diff --quiet && git diff --cached --quiet && echo "NO CHANGES"`.
-      If that prints NO CHANGES, the implement step produced nothing (a known
+      If that prints NO CHANGES, the implement steps produced nothing (a known
       failure mode where writes are blocked pending a permission grant that never
       comes, yet the step is recorded as completed): STOP immediately, fabricate
       NO review, and report the desync loudly so the run can be restarted. Only if
       there are changes do you proceed.
+      Read `.specify/workflows/bookwright-quality/zero-debt-doctrine.md` in full
+      FIRST — the shared anti-debt doctrine; apply it to the code, do not restate
+      it. Its eliminate-the-cause-over-a-guard rule is the crux of this step: the
+      autonomous cycle tends to "contain the smell with a justified guard", so
+      actively hunt the deletable cause instead.
       Review the implementation diff just produced (git diff against origin/main
       or the merge base) for (a) correctness bugs and (b) reuse / simplification /
-      DRY / efficiency / layering cleanups, against CLAUDE.md and the project
-      constitution — the scope of a code-review --fix pass plus the project's
-      quality-audit (SOLID/DRY/KISS/YAGNI, code smells, layering, coverage). Pay
-      specific attention to bookwright's non-negotiables: the graph stays a
-      derived cache (Principle I), agent-facing commands emit a single JSON
-      document on stdout under --json with prose on stderr (Principle IX), every
-      source file ≤ 500 lines and one CLI subcommand per module (Principle IV),
-      and skills materialize as SKILL.md, never a legacy commands/ dir
-      (Principle VI). FIX every genuine finding in the working tree by the
-      zero-debt bar; introduce no new debt and defer nothing to a follow-up.
-      PREFER ELIMINATING A SMELL'S CAUSE OVER CONTAINING IT: when the
-      implementation added (or the spec prescribed) a guard, suppression,
-      justification comment or synthetic test to make a smell "safe", check
-      whether the cause can simply be deleted so no guard is needed at all — a
-      removed cause beats a justified guard. The autonomous cycle tends to
-      "contain the smell with a justified guard"; actively look for the deletable
-      cause instead. Sweep debt as a class repo-wide — fix EVERY instance of a
-      class you touch, even outside this iteration's diff, not just the cited line
-      (precedent: iteration 027 unified ALL JSON envelopes); that is the correct
-      fix, not scope-widening. The only debt you leave unfixed is a DIFFERENT,
-      unrelated class that would be its own iteration, and that you MUST record,
-      never drop: append it to the repo-root DEBT.md ledger (status, detected-in
-      spec-<NNN>, location, class, description, why-deferred, suggested
-      resolution/target) and report it loudly in your output. Additionally, if
-      implement
-      recorded that a success criterion is provably unachievable without
-      introducing a smell (e.g. a LOC target below the clean structural floor
-      mandated by the contracted design), AMEND that criterion in spec.md to the
-      clean floor with a one-line documented rationale rather than cramming or
-      deferring it. Then re-run the four gates — `uv run pytest`,
-      `uv run mypy --strict`, `uv run ruff check` and `uv run ruff format --check`
-      — and leave the tree green. Output a short summary of what you changed.
+      DRY / efficiency / layering cleanups. Run the project's own review tooling,
+      do not merely emulate it: invoke the `quality-audit` skill over the branch
+      diff for the SOLID/DRY/KISS/YAGNI, code-smell, layering and coverage lens.
+      Then obtain an INDEPENDENT adversarial second opinion: dispatch a subagent
+      (general-purpose) whose sole brief is to REFUTE that the diff meets the
+      zero-debt bar — to find, for every guard/suppression/justification/synthetic
+      test in the diff, the deletable cause behind it, plus any bug, layering
+      violation or untested branch; it returns findings, it does not edit. If
+      subagent dispatch is unavailable in this environment, perform that
+      refutation yourself in a deliberate fresh pass. Pay specific attention to
+      bookwright's non-negotiables: the graph stays a derived cache (Principle I),
+      agent-facing commands emit a single JSON document on stdout under --json with
+      prose on stderr (Principle IX), every source file ≤ 500 lines and one CLI
+      subcommand per module (Principle IV), and skills materialize as SKILL.md,
+      never a legacy commands/ dir (Principle VI). FIX every genuine finding (yours
+      and the adversary's) in the working tree by the zero-debt bar — eliminate the
+      cause, sweep the debt class repo-wide, record only genuinely out-of-scope
+      debt in DEBT.md, defer nothing. Additionally, if implement recorded that a
+      success criterion is provably unachievable without introducing a smell (e.g.
+      a LOC target below the clean structural floor mandated by the contracted
+      design), AMEND that criterion in spec.md to the clean floor with a one-line
+      documented rationale rather than cramming or deferring it. Then re-run the
+      four gates — `uv run pytest`, `uv run mypy --strict`, `uv run ruff check`
+      and `uv run ruff format --check` — and leave the tree green. Output a short
+      summary of what you changed and the adversary's verdict.
       FINALLY — this is mandatory and the safety net for the unreliable
       auto-commit hooks — stage and commit ALL outstanding changes (the
-      implementation from the implement step AND your review fixes; the implement
-      hook may have silently not committed): run `git add -A` then `git commit`
+      implementation from both implement steps AND your review fixes; the implement
+      hooks may have silently not committed): run `git add -A` then `git commit`
       with a real Conventional-Commits message, NOT a "[Spec Kit]" one —
       `feat(<scope>): <summary> (spec-<NNN>)` (or `fix(...)`), derive <NNN> from
       the current branch, and end the body with the
       `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer per
       CLAUDE.md. Do not ask questions.
 
-  # 9. Converge (verify nothing unbuilt remains against spec/plan/tasks) --------
-  - id: converge
-    command: speckit.converge
-    integration: "{{ inputs.integration }}"
-
-  # 10. Finalize — guarantee a clean tree (safety net for the flaky commit hooks)
-  #     Converge may append tasks and the extension hooks are unreliable headless,
-  #     so nothing else guarantees the run ends with everything in history. This
-  #     step makes that guarantee explicit and loud.
+  # 11. Finalize — guarantee a clean tree AND green gates ------------------------
+  #     The extension commit hooks are unreliable headless, and converge/its
+  #     remainder may have touched code after review-fix's gate run, so this step
+  #     re-runs the four gates and guarantees the run ends with everything in
+  #     history. A clean git tree with a red gate is still merged debt.
   - id: finalize
     type: prompt
     integration: "{{ inputs.integration }}"
     prompt: >
-      Guarantee the run ends with a clean working tree and all work in history.
-      Run `git status --porcelain`. If it is EMPTY, report the current HEAD hash
-      and confirm the tree is clean — done. If it is NOT empty, the earlier
-      auto-commit hooks left work behind (a known headless failure mode): inspect
-      the changes with `git status` and `git diff`, then stage and commit them
-      with a descriptive Conventional-Commits message (NOT "[Spec Kit]") — pick
-      `docs(spec): ...` if only specs/ artifacts remain, or
-      `feat(...)`/`fix(...): <summary> (spec-<NNN>)` if any src/ or tests/ changes
-      remain — deriving <NNN> from the current branch, ending the body with the
-      `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer. Re-run
-      `git status --porcelain` to confirm it is now empty and report the final
-      HEAD. Never push and never open a PR. Do not ask questions.
+      Guarantee the run ends with a clean working tree, all work in history, AND
+      the four CI gates green — a clean tree with a red gate is still merged debt.
+      STEP 1 — gates: run `uv run ruff format --check`, `uv run ruff check`,
+      `uv run mypy --strict` and `uv run pytest` (the last enforces the ≥80%
+      coverage floor from [tool.coverage.report]). If any gate fails, the tree is
+      NOT done: fix the failures by the zero-debt bar (read
+      `.specify/workflows/bookwright-quality/zero-debt-doctrine.md` and apply it —
+      eliminate the cause, never silence the gate, never lower the coverage floor),
+      then re-run all four until every one passes. STEP 2 — tree: run
+      `git status --porcelain`. If it is NOT empty (your gate fixes, or work the
+      flaky auto-commit hooks left behind), inspect it with `git status` and
+      `git diff`, then stage and commit with a descriptive Conventional-Commits
+      message (NOT "[Spec Kit]") — `docs(spec): ...` if only specs/ artifacts
+      remain, or `feat(...)`/`fix(...): <summary> (spec-<NNN>)` if any src/ or
+      tests/ changes remain — deriving <NNN> from the current branch, ending the
+      body with the `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
+      trailer. Re-run `git status --porcelain` to confirm it is now empty. Report
+      the four gate results and the final HEAD hash. Never push and never open a
+      PR. Do not ask questions.

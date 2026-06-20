@@ -104,10 +104,16 @@ later iterations assume earlier code is on `main`. The auto-git hooks in
 That same sequence is packaged as a headless, zero-debt Spec Kit workflow at
 `.specify/workflows/bookwright-quality/workflow.yml` (registered in
 `.specify/workflows/workflow-registry.json`). It runs, unattended, `specify →
-harden-spec → clarify → plan → tasks → analyze-resolve → implement → review-fix
-→ converge → finalize`; every decision is made against the constitution / CLAUDE.md
-(it never asks), and each step commits its own edits (the auto-git hooks are
-unreliable in headless dispatch). It ends with a clean tree on a fresh
+harden-spec → clarify → plan → tasks → analyze-resolve → implement → converge →
+implement-remainder → review-fix → finalize`; every decision is made against the
+constitution / CLAUDE.md (it never asks), and each step commits its own edits (the
+auto-git hooks are unreliable in headless dispatch). The shared anti-debt rules
+live once in `.specify/workflows/bookwright-quality/zero-debt-doctrine.md` (every
+prompt step reads it rather than re-stating the doctrine). `converge` runs before
+the final review so the work it appends gets built (`implement-remainder`) and
+reviewed; `review-fix` is the last quality net over all code and pulls an
+independent adversarial second opinion; `finalize` re-runs the four gates so the
+run cannot end clean-in-git but red-in-gates. It ends with a clean tree on a fresh
 `NNN-<short-name>` branch — it does **not** push, merge, bump the version, or tag.
 Merging to `main` stays a separate, manual step (replicate the prior iteration's
 `Merge iteration NNN: …` `--no-ff` commit + a `docs(claude): record iteration NNN
