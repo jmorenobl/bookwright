@@ -129,6 +129,27 @@ role name, and the card's `file:line`, and the good card is not.
   a single source of truth for "does this role resolve". The finding's `file:line`
   locator is still recovered through the existing `E13`→source path on the offending
   unit (FR-004). Drives FR-006.
+- Q: *How* does the validator reach those `UnresolvedReference` records (FR-006)? The
+  validator seam passes only the `ValidationContext` and the graph `Indexer`, and
+  `ValidationContext.bible()` runs `map_bible` **only** — its `unresolved_references`
+  never contains the outline pass's role misses, which today only `build_project_graph`
+  (map_bible → `map_outline` on one `MapResult`) produces. → A: Add a **cached
+  `outline()` accessor** to `ValidationContext`, mirroring the existing `bible()`
+  accessor, that runs the **same** `map_bible`→`map_outline` pipeline the graph build
+  uses (`commands/_graph.py` `build_project_graph`; `map_outline` requires the
+  character pass's `roles_index`, so it cannot run standalone) and returns that
+  combined `MapResult`. The validator reads `outline().unresolved_references`. This
+  reuses the established read-once-per-run accessor pattern (no new mechanism), keeps
+  one source of truth for role resolution, re-reads no cards by hand (FR-006), adds no
+  class/property (Principle X) and writes nothing (FR-008). Drives FR-006 and the
+  Dependencies note.
+- Q: What stable `name` does the validator carry — the `[validators]` enable/disable
+  key the US3 acceptance and SC-006 assert against? → A: **`narrative_structure`** —
+  snake_case, named for what it checks like every existing built-in
+  (`setting_continuity`, `temporal`, `focalization`), and echoing the v0.4
+  narrative-structure layer it consumes. Fixing the name now removes test/config
+  churn and gives the disable-by-name tests a concrete target. Drives FR-001/FR-010
+  and Key Entities.
 
 ### User Story 3 - The author can turn the validator off like any other (Priority: P3)
 
@@ -201,9 +222,11 @@ through the existing `--json` report shape with no new top-level keys.
 
 ### Functional Requirements
 
-- **FR-001**: A new continuity validator MUST be added that examines the narrative
-  structural layer (narrative units, sequences, functions, roles) and reports
-  structural incoherencies as findings, joining the existing validator suite.
+- **FR-001**: A new continuity validator named **`narrative_structure`** (the stable
+  `[validators]` enable/disable key, snake_case like the other built-ins) MUST be
+  added that examines the narrative structural layer (narrative units, sequences,
+  functions, roles) and reports structural incoherencies as findings, joining the
+  existing validator suite.
 - **FR-002**: The validator MUST be discovered and run through the **same**
   mechanism as the existing built-in validators (no hand-registration, no new
   runner): it MUST appear in the resolved active set for a default project and run
@@ -227,7 +250,11 @@ through the existing `--json` report shape with no new top-level keys.
   `UnresolvedReference` records the outline ingestion already emits
   (`io/outline.py` `_resolve_roles` → `MapResult.unresolved_references`) — it MUST
   NOT re-implement role resolution, so "does this role resolve" has one source of
-  truth. Each unresolved reference yields one finding naming the beat and the
+  truth. It MUST reach those records through a **cached `outline()` accessor on
+  `ValidationContext`** (mirroring the existing `bible()` accessor) that runs the
+  same `map_bible`→`map_outline` pipeline the graph build uses
+  (`build_project_graph`); the validator MUST NOT re-parse cards or build its own
+  mapping. Each unresolved reference yields one finding naming the beat and the
   unresolved role name and citing the unit card's locator (recovered via the
   FR-004 path on the offending unit).
 - **FR-007** *(Rule b — order gap/duplicate, excluded)*: The validator MUST NOT
@@ -243,9 +270,9 @@ through the existing `--json` report shape with no new top-level keys.
 - **FR-009**: A project with no narrative structural layer (no `outline/units/`)
   MUST produce **zero** findings from this validator and MUST NOT add anything to
   the report — no regression to the pre-feature output for such projects.
-- **FR-010**: The validator MUST be enable/disable-able by name through the
-  existing `[validators]` configuration, exactly like the other built-ins; when
-  disabled it does not run and emits nothing.
+- **FR-010**: The validator MUST be enable/disable-able by its name
+  (`narrative_structure`) through the existing `[validators]` configuration, exactly
+  like the other built-ins; when disabled it does not run and emits nothing.
 - **FR-011**: The validator MUST NOT change the behavior, findings, names, or
   severities of any existing validator.
 - **FR-012**: The validator MUST NOT add any class or property to the frozen GOLEM
@@ -258,9 +285,10 @@ through the existing `--json` report shape with no new top-level keys.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Structural-continuity validator**: the new built-in continuity check. Has a
-  stable name (used in `[validators]` enable/disable config) and a default
-  severity; consumes the narrative structural layer and produces findings.
+- **Structural-continuity validator**: the new built-in continuity check. Has the
+  stable name `narrative_structure` (used in `[validators]` enable/disable config)
+  and a default severity (`warning`); consumes the narrative structural layer and
+  produces findings.
 - **Orphan-beat finding**: a finding stating that a named narrative unit belongs to
   no sequence, located at the unit card.
 - **Unresolved-role finding**: a finding stating that a named beat references a role
@@ -361,8 +389,13 @@ through the existing `--json` report shape with no new top-level keys.
   it.
 - The existing validation subsystem (`validation/runner.py`, `registry.py`,
   `base.py`, `queries.py`, `validators/*`) provides the validator seam, discovery,
-  runner isolation, `--json` envelope, and the `E13`→locator provenance helper,
-  all reused unchanged.
+  runner isolation, `--json` envelope, and the `E13`→locator provenance helper
+  (`queries.resolve_source`), all reused unchanged. US2 additionally requires a new
+  cached **`ValidationContext.outline()` accessor** (sibling of the existing
+  `bible()`), running the same `map_bible`→`map_outline` pipeline as
+  `build_project_graph`, so the validator reads outline ingestion's
+  `unresolved_references` without re-resolving roles — the only addition to the
+  reused subsystem (see Clarifications, FR-006).
 - Reference: `bookwright-design.md § 4.2` (Narrative module) and the validation
   section; Constitution Principle I (plain-text source of truth), Principle IX
   (`--json`), Principle X (frozen ontology).
