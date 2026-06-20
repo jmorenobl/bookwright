@@ -99,6 +99,50 @@ to `main` only when tests are green and `/speckit-analyze` reports no issues;
 later iterations assume earlier code is on `main`. The auto-git hooks in
 `.specify/extensions.yml` offer to commit between phases.
 
+### Autonomous workflow (`bookwright-quality`)
+
+That same sequence is packaged as a headless, zero-debt Spec Kit workflow at
+`.specify/workflows/bookwright-quality/workflow.yml` (registered in
+`.specify/workflows/workflow-registry.json`). It runs, unattended, `specify →
+harden-spec → clarify → plan → tasks → analyze-resolve → implement → review-fix
+→ converge → finalize`; every decision is made against the constitution / CLAUDE.md
+(it never asks), and each step commits its own edits (the auto-git hooks are
+unreliable in headless dispatch). It ends with a clean tree on a fresh
+`NNN-<short-name>` branch — it does **not** push, merge, bump the version, or tag.
+Merging to `main` stays a separate, manual step (replicate the prior iteration's
+`Merge iteration NNN: …` `--no-ff` commit + a `docs(claude): record iteration NNN
+merged` commit that flips the table row and the milestone prose).
+
+Run it from a clean `main` (the `specify` step creates the branch). It takes two
+required string inputs — `spec` (the `/speckit-specify` prompt body, **without**
+the leading `/speckit-specify` line) and `plan_hint` (the `/speckit-plan` hint) —
+both copied **verbatim** from that iteration's section in
+`bookwright-implementation-plan.md`:
+
+```bash
+# Load the prompts into vars with a *quoted* heredoc so zsh does NOT expand the
+# backticks / `$` / `§` in the text, then pass them as -i key=value:
+SPEC=$(cat <<'EOF'
+Necesidad: …            # the iteration's /speckit-specify body, verbatim
+EOF
+)
+PLAN_HINT=$(cat <<'EOF'
+…                       # the iteration's "Pista para /speckit-plan", verbatim
+EOF
+)
+specify workflow run bookwright-quality \
+  -i spec="$SPEC" -i plan_hint="$PLAN_HINT" -i integration=claude
+```
+
+Useful siblings: `specify workflow status` (follow a run), `specify workflow
+resume <run_id>` (restart a failed step), `specify workflow list` / `info
+bookwright-quality`. Run state lives under `.specify/workflows/runs/<run_id>/`
+(`state.json`, `log.jsonl`, `inputs.json`) — these are gitignored. **Refresh
+`inputs.json`/the `-i` values for each iteration**: a stale `spec`/`plan_hint`
+left over from the previous run is a real failure mode (run `24e61111` for 029
+still carried 028's prompt in its recorded inputs even though the shipped spec
+was correct) and corrupts the run's audit trail.
+
 ## Iterations (shipped + planned)
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
