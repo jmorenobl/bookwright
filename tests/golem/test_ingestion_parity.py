@@ -1,8 +1,8 @@
 """Ingestion-parity guard: the *modelled* set minus the *fed* set must equal the
 deferral registry, observed against a real graph build (iteration 024).
 
-Ten of the thirteen :data:`~bookwright.golem.CONCEPTS` materialize from authored
-text today; the other three are orphans — modelled but unfed. This module builds
+Eleven of the thirteen :data:`~bookwright.golem.CONCEPTS` materialize from authored
+text today; the other two are orphans — modelled but unfed. This module builds
 the GOLEM graph from the dedicated ``parity-exercise`` fixture through the real
 pipeline (:func:`build_project_graph`), reads back the concept-level ``rdf:type``
 IRIs the engine actually produced, derives the orphan set, and asserts it equals
@@ -31,7 +31,7 @@ from tests.conftest import copy_fixture
 
 PARITY_FIXTURE = "parity-exercise"
 
-#: The ten concepts the fixture's authored text materializes (FR-004 reachable-set pin).
+#: The eleven concepts the fixture's authored text materializes (FR-004 reachable-set pin).
 EXPECTED_REACHABLE: set[str] = {
     "Character",
     "Setting",
@@ -43,18 +43,17 @@ EXPECTED_REACHABLE: set[str] = {
     "AttributeAssignment",
     "NarrativeUnit",
     "NarrativeFunction",
+    "NarrativeSequence",
 }
 
-#: The three orphan concept names — must equal the registry keys and never appear reachable.
+#: The two orphan concept names — must equal the registry keys and never appear reachable.
 ORPHAN_NAMES: set[str] = {
     "PsychologicalState",
     "RelationshipRole",
-    "NarrativeSequence",
 }
 
 #: The full concept→target_version mapping, pinned as a contract (FR-002, SC-002).
 EXPECTED_VERSIONS: dict[str, str] = {
-    "NarrativeSequence": "v0.4",
     "RelationshipRole": "v0.4",
     "PsychologicalState": "v0.4",
 }
@@ -117,7 +116,7 @@ def parity_outcome(parity_project: tuple[Path, Manifest]) -> BuildOutcome:
 
 
 def test_reachable_set_pin(parity_outcome: BuildOutcome) -> None:
-    """Exactly the ten reachable concepts materialize; no orphan IRI appears (FR-004)."""
+    """Exactly the eleven reachable concepts materialize; no orphan IRI appears (FR-004)."""
     types = _observed_types(parity_outcome)
     assert _reachable(types) == EXPECTED_REACHABLE
     orphan_iris = {str(CLASS_IRI[name]) for name in ORPHAN_NAMES}
@@ -132,7 +131,7 @@ def test_reachable_set_pin(parity_outcome: BuildOutcome) -> None:
 def test_registry_well_formed() -> None:
     """The registry's shape and the full version mapping are a contract (FR-002, SC-002)."""
     assert set(DEFERRED_CONCEPTS) <= set(CONCEPTS)
-    assert len(DEFERRED_CONCEPTS) == 3
+    assert len(DEFERRED_CONCEPTS) == 2
     assert set(DEFERRED_CONCEPTS) == ORPHAN_NAMES
     assert all(note.reason for note in DEFERRED_CONCEPTS.values())
     assert CARRIER_NAMES.isdisjoint(DEFERRED_CONCEPTS), "a non-concept carrier was deferred"

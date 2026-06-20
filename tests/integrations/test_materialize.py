@@ -234,10 +234,13 @@ def test_outline_skill_teaches_unit_cards(
     written = generate_skill_md(source, tmp_path, integration, ledger=NullLedger())
     assert written is not None
     body = written.read_text(encoding="utf-8")
-    # The unit-card surface and its three front-matter keys are documented.
+    # The unit-card surface and its front-matter keys are documented — the
+    # iteration-028 trio plus the iteration-029 `sequence`/`order` keys (FR-012/SC-008).
     assert "outline/units/" in body
     assert "`functions`" in body
     assert "`roles`" in body
+    assert "`sequence`" in body
+    assert "`order`" in body
     # Front-matter + bilingual triggers survive (the lint gate enforces the YAML shape).
     assert body.startswith("---\n")
     assert "name: bookwright-outline" in body

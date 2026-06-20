@@ -93,6 +93,21 @@ def test_within_card_functions_deduped(tmp_path: Path) -> None:
     assert _refers_to_count(unit) == 2
 
 
+def test_unsluggable_function_name_dropped(tmp_path: Path) -> None:
+    # A punctuation-only function name slugs to nothing: silently dropped, the unit
+    # still built (no mint, no skip) — the `_distinct_slugs` EmptySlugError branch.
+    _write(
+        tmp_path / "outline/units/opening.md",
+        '---\nname: Opening\nfunctions: ["!!!", departure]\n---\n',
+    )
+    result = _run(tmp_path)
+
+    (unit,) = _units(result)
+    assert len(unit.functions) == 1
+    assert len(_functions(result)) == 1
+    assert result.skipped == []
+
+
 # --- (c) name but no functions → unit only, no edge, no error ----------------
 
 

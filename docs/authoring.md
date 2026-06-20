@@ -60,9 +60,11 @@ las desglosan; el draft redacta.
 
 > **Nota:** `manuscript/` es **solo para el autor**: el scaffold lo crea, pero el
 > motor no ingiere su contenido. `outline/` está **parcialmente ingerido** desde
-> v0.4: las fichas de `outline/units/` alimentan unidades y funciones narrativas
-> al grafo, mientras que `arcs`/`structure`/`synopsis`/`scenes` siguen siendo
-> prosa de autor que estructura tu trabajo, no el grafo derivado.
+> v0.4: las fichas de `outline/units/` alimentan unidades, funciones y secuencias
+> narrativas al grafo (las unidades que comparten clave `sequence` se ensamblan en
+> una secuencia, ordenadas por `order`), mientras que
+> `arcs`/`structure`/`synopsis`/`scenes` siguen siendo prosa de autor que
+> estructura tu trabajo, no el grafo derivado.
 
 ### Planificación (pre-draft)
 

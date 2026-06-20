@@ -29,7 +29,7 @@ Single project, src-layout: `src/bookwright/`, tests at repo root under `tests/`
 
 **Purpose**: Confirm a green baseline so every later delta is attributable.
 
-- [ ] T001 Confirm the working tree is on branch `029-narrative-sequences` and the
+- [X] T001 Confirm the working tree is on branch `029-narrative-sequences` and the
   four gates are green at baseline: `uv run ruff check && uv run ruff format --check
   && uv run mypy --strict && uv run pytest` (records the pre-change state US2's
   byte-for-byte claim is measured against).
@@ -44,12 +44,12 @@ US1 (engine) and US2 (parity/fixture) build on. No ontology or model edit —
 
 **⚠️ CRITICAL**: These two edits land before the assembly logic and the parity flip.
 
-- [ ] T002 [P] Widen `UNIT_KEYS` to `frozenset({"name", "functions", "roles",
+- [X] T002 [P] Widen `UNIT_KEYS` to `frozenset({"name", "functions", "roles",
   "sequence", "order"})` in `src/bookwright/io/outline.py` and update the
   accompanying comment so any other key remains a soft `unknown_keys` warning
   (FR-001, data-model §Recognised keys). Adding the keys must NOT change any
   existing fixture's warning set (no current card carries them — D9).
-- [ ] T003 [P] Add the transient `_SeqMember` `NamedTuple` (fields `seq_slug:str`,
+- [X] T003 [P] Add the transient `_SeqMember` `NamedTuple` (fields `seq_slug:str`,
   `seq_name:str`, `order:int|None`, `unit_slug:str`, `unit:NarrativeUnit`,
   `relpath:str`) to `src/bookwright/io/outline.py`, with a docstring stating it is
   internal/never serialized (data-model §Transient record).
@@ -71,7 +71,7 @@ third unit in no sequence.
 
 ### Tests for User Story 1 (write first, ensure they FAIL) ⚠️
 
-- [ ] T004 [US1] Create `tests/io/test_outline_sequences.py` covering the five
+- [X] T004 [US1] Create `tests/io/test_outline_sequences.py` covering the five
   quickstart scenarios against `map_outline` (or the assembly seam): (A) three
   ordered beats → one `Act I` sequence with member tuple `(Beat A, Beat B, Beat C)`
   in ascending `order` (SC-001/002/003); (C) duplicate `order: 1` on `"Zeta Beat"`
@@ -84,20 +84,20 @@ third unit in no sequence.
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Add `_coerce_sequence(value) -> str | None` to
+- [X] T005 [US1] Add `_coerce_sequence(value) -> str | None` to
   `src/bookwright/io/outline.py`, mirroring `_resolve_setting`: `None`/blank/
   whitespace → `None` (no membership, FR-004); non-string → `InvalidFrontmatterError`
   (card skipped, FR-007). (research D6, data-model §Validation.)
-- [ ] T006 [US1] Add `_coerce_order(value) -> int | None` to
+- [X] T006 [US1] Add `_coerce_order(value) -> int | None` to
   `src/bookwright/io/outline.py`, mirroring `_coerce_year`: absent/`None` → `None`
   (FR-005); non-int incl. `bool`/float/str/list → `InvalidFrontmatterError` (card
   skipped, FR-007 — booleans MUST NOT be accepted as integers). Do NOT refactor the
   shared `_coerce_year` in `_bible_builders.py` (research D6, scope discipline).
-- [ ] T007 [US1] Add `_member_sort_key(m: _SeqMember) -> tuple[int, int, str]` to
+- [X] T007 [US1] Add `_member_sort_key(m: _SeqMember) -> tuple[int, int, str]` to
   `src/bookwright/io/outline.py` returning `(0, m.order, m.unit_slug)` when `order`
   is set and `(1, 0, m.unit_slug)` when `None` — a total order so the member tuple is
   byte-for-byte stable across builds (FR-005/FR-006, data-model §Member ordering, D2/D3).
-- [ ] T008 [US1] Extend `_build_unit` in `src/bookwright/io/outline.py` to capture a
+- [X] T008 [US1] Extend `_build_unit` in `src/bookwright/io/outline.py` to capture a
   `_SeqMember` into a caller-supplied accumulator: run `_coerce_sequence` and
   `_coerce_order` in the **up-front raising block** (with `_require_name`,
   `make_slug`, `_coerce_str_list`) BEFORE any state mutation so an unusable
@@ -108,7 +108,7 @@ third unit in no sequence.
   `UnknownKey(path=relpath, key="order")` (FR-008, research D8). Thread the
   accumulator via the builder lambda's closure (a `list` local to `map_outline`,
   research D1) — keep `_MapContext` free of an outline-only field.
-- [ ] T009 [US1] Add the assembly step to `map_outline` in
+- [X] T009 [US1] Add the assembly step to `map_outline` in
   `src/bookwright/io/outline.py`, run AFTER `_map_single_dir` returns (the "second
   step", research D1): group the collected `_SeqMember`s by `seq_slug` into an
   insertion-ordered dict (insertion = sorted-glob order → deterministic); for each
@@ -137,12 +137,12 @@ entities; run the parity test green with `len(DEFERRED_CONCEPTS) == 2`.
 
 ### Tests for User Story 2 (write/adjust first) ⚠️
 
-- [ ] T010 [US2] Add the no-sequence scenario (quickstart Scenario E / B) to
+- [X] T010 [US2] Add the no-sequence scenario (quickstart Scenario E / B) to
   `tests/io/test_outline_sequences.py`: units present, none with `sequence` → zero
   `NarrativeSequence` entities and a card's iteration-028 triples unchanged
   (FR-004/FR-011, SC-006). Confirm it FAILS only if assembly wrongly mints on an
   unsequenced unit.
-- [ ] T011 [US2] Update `tests/golem/test_ingestion_parity.py` for the G7 flip
+- [X] T011 [US2] Update `tests/golem/test_ingestion_parity.py` for the G7 flip
   (FR-013, research D10): move `"NarrativeSequence"` from `ORPHAN_NAMES` into
   `EXPECTED_REACHABLE`; drop its `EXPECTED_VERSIONS` key; change
   `len(DEFERRED_CONCEPTS) == 3` → `== 2`; update the module docstring count prose
@@ -153,12 +153,12 @@ entities; run the parity test green with `len(DEFERRED_CONCEPTS) == 2`.
 
 ### Implementation for User Story 2
 
-- [ ] T012 [US2] Edit `src/bookwright/golem/deferrals.py` (FR-013): remove the
+- [X] T012 [US2] Edit `src/bookwright/golem/deferrals.py` (FR-013): remove the
   `"NarrativeSequence"` entry from `DEFERRED_CONCEPTS`; update the module docstring
   count prose ("Three of the thirteen" → "Two of the thirteen") and the trailing
   doc-comment ("Exactly three entries" → "Exactly two entries"). The remaining two
   entries (`RelationshipRole` G6, `PsychologicalState` G3) stay (Out of Scope: 032).
-- [ ] T013 [US2] Edit the `parity-exercise` fixture so the live build observes G7
+- [X] T013 [US2] Edit the `parity-exercise` fixture so the live build observes G7
   (FR-014, research D11): add `sequence`/`order` to
   `tests/fixtures/parity-exercise/outline/units/opening.md` and add one more card in
   the same `outline/units/` directory sharing that `sequence` with a later `order`, so
@@ -181,14 +181,14 @@ triggers on ES/EN prompts (passes `lint_skill_md`).
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T014 [US3] Confirm/extend `tests/integrations/test_materialize.py` stays green
+- [X] T014 [US3] Confirm/extend `tests/integrations/test_materialize.py` stays green
   on the edited source command and, if it asserts on `bookwright-outline` content,
   add an assertion that the regenerated `SKILL.md` mentions the `sequence`/`order`
   keys and still carries its ES/EN triggers (FR-012, SC-008).
 
 ### Implementation for User Story 3
 
-- [ ] T015 [US3] Edit `src/bookwright/resources/commands/bookwright-outline.md`
+- [X] T015 [US3] Edit `src/bookwright/resources/commands/bookwright-outline.md`
   (FR-012, Spanish prose to match the file): document, on a unit card, the two
   additional optional keys `sequence` (the plot line a unit belongs to) and `order`
   (its position in that line) in **both** enumerations — the per-unit "what to
@@ -208,21 +208,21 @@ debt class swept in full, not one edit. Version-scoped historical/planning recor
 (roadmap, README "Planificado: v0.4", implementation-plan ledger) are deliberately
 NOT touched.
 
-- [ ] T016 [P] Update `src/bookwright/io/outline.py` module docstring (and the
+- [X] T016 [P] Update `src/bookwright/io/outline.py` module docstring (and the
   `map_outline` docstring) so it states the pass also assembles `NarrativeSequence`
   (G7) from the unit cards' `sequence`/`order` keys — no longer "G9/G10 only"
   (FR-015(implied)/SC-009).
-- [ ] T017 [P] Update the `src/bookwright/io/manuscript.py` module docstring: the
+- [X] T017 [P] Update the `src/bookwright/io/manuscript.py` module docstring: the
   `outline/units/` cards now also drive `NarrativeSequence`, not only
   `NarrativeUnit`/`NarrativeFunction` (FR-015(d), SC-009).
-- [ ] T018 [P] Update `bookwright-design.md` § 7.4 (Spanish): G7 now ingests
+- [X] T018 [P] Update `bookwright-design.md` § 7.4 (Spanish): G7 now ingests
   unit-driven from `outline/units/` (no separate directory); add `sequence`/`order`
   to the documented unit front-matter keys; remove the present-tense "las secuencias
   narrativas G7 … siguen aplazadas" — mirror how § 7.2/§ 7.3 documented the
   locations/objects precedents (FR-015(c), SC-009).
-- [ ] T019 [P] Update `docs/authoring.md`: the v0.4 note "alimentan unidades y
+- [X] T019 [P] Update `docs/authoring.md`: the v0.4 note "alimentan unidades y
   funciones narrativas" gains "y secuencias" (FR-015(e), SC-009).
-- [ ] T020 Run the full validation: `uv run ruff check && uv run ruff format --check
+- [X] T020 Run the full validation: `uv run ruff check && uv run ruff format --check
   && uv run mypy --strict && uv run pytest`, then walk quickstart.md Scenarios A–E and
   the skill-surface check; confirm SC-009's negative search (no remaining present-tense
   "G7 unfed" / "trio-only" statement in the swept surfaces) returns clean.

@@ -46,6 +46,11 @@ estructural concreto). La base es la constitución y la biblia.
      `[interdiction, departure]`) — opcional.
    - `roles`: lista de roles narrativos implicados, por nombre; se resuelven
      contra los roles que ya declaran los personajes (`narrative_roles`) — opcional.
+   - `sequence`: la línea argumental (secuencia) a la que pertenece la unidad, por
+     nombre; las unidades que comparten `sequence` se ensamblan en una secuencia
+     narrativa (G7) — opcional.
+   - `order`: la posición de la unidad dentro de esa secuencia (entero); si se
+     omite, la unidad va al final, ordenada por su slug — opcional.
    Estas fichas **sí** se ingieren al grafo (a diferencia de `arcs`/`structure`/
    `synopsis`, que son prosa de autor). La prosa del cuerpo no se indexa.
 7. Donde falte material, marca `[PENDING: <pregunta>]` (ver
@@ -69,7 +74,9 @@ modelo estructural fijaste y qué quedó `[PENDING: …]`.
 
 - `outline/arcs.md`, `outline/structure.md`, `outline/synopsis.md`.
 - `outline/units/*.md`: una ficha por unidad narrativa con front-matter
-  `name`/`functions`/`roles` (se ingieren al grafo).
+  `name`/`functions`/`roles`/`sequence`/`order` (se ingieren al grafo; las
+  unidades que comparten `sequence` se ensamblan en una secuencia narrativa G7,
+  ordenadas por `order`).
 
 ## Información faltante
 
