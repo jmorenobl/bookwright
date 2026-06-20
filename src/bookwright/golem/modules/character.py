@@ -5,12 +5,13 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import ClassVar, TypeVar
 
-from pydantic import PrivateAttr
+from pydantic import Field, PrivateAttr
 from rdflib.term import URIRef
 
 from bookwright.golem.base import CrossRef, DerivedAssertion, GolemEntity, SluggedEntity
 from bookwright.golem.modules.feature import BioKind, CharacterFeature, CharacterRole
 from bookwright.golem.namespaces import CLASS_IRI, HAS_FEATURE, PLAYS
+from bookwright.golem.slug import make_slug
 
 _Node = TypeVar("_Node", bound=GolemEntity)
 
@@ -51,6 +52,11 @@ class Character(SluggedEntity):
     died: int | None = None
     features: tuple[str, ...] = ()
     narrative_roles: tuple[str, ...] = ()
+    # role-slug → Greimas actant term, supplied by the IO builder when Greimas is
+    # active (iteration 030). Construction input only — it emits no triples itself;
+    # it just lets each materialized role node carry its matched type. Empty ⇒ the
+    # graph is byte-for-byte the pre-feature output (FR-008/SC-003).
+    role_types: dict[str, URIRef] = Field(default_factory=dict)
 
     _feature_nodes: tuple[CharacterFeature, ...] = PrivateAttr(default=())
     _role_nodes: tuple[CharacterRole, ...] = PrivateAttr(default=())
@@ -75,7 +81,12 @@ class Character(SluggedEntity):
         self._feature_nodes = (*biographical, *free_text)
         self._role_nodes = _dedup_nodes(
             self.narrative_roles,
-            lambda text: CharacterRole(uri_base=self.uri_base, character_uri=self.uri, label=text),
+            lambda text: CharacterRole(
+                uri_base=self.uri_base,
+                character_uri=self.uri,
+                label=text,
+                type_uri=self.role_types.get(make_slug(text)),
+            ),
         )
 
     def _biographical(self, kind: BioKind, year: int) -> CharacterFeature:
@@ -109,6 +120,11 @@ class Character(SluggedEntity):
             yield DerivedAssertion(self.uri, feature.uri, field)
         for role in self._role_nodes:
             yield DerivedAssertion(self.uri, role.uri, "narrative_roles")
+            # A typed role gets a second assertion: the role node → its Greimas
+            # term, so the typing link is reified as a ``crm:E13`` carrying the
+            # character card's ``narrative_roles:`` locator (iteration 030, D4).
+            if role.type_uri is not None:
+                yield DerivedAssertion(role.uri, role.type_uri, "narrative_roles")
 
 
 class Object(SluggedEntity):

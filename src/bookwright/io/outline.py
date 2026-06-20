@@ -50,6 +50,7 @@ from ._bible_builders import (
 from .bible import _DirSpec, _map_single_dir
 from .errors import InvalidFrontmatterError
 from .report import UnknownKey, UnresolvedReference
+from .vocabularies import VocabularyIndex
 
 #: The keys a unit card recognises; anything else is a soft ``unknown_keys`` warning.
 #: ``sequence``/``order`` drive ``NarrativeSequence`` assembly only and are never
@@ -79,6 +80,8 @@ def map_outline(
     outline_dir: Path,
     uri_base: str,
     result: MapResult,
+    *,
+    propp: VocabularyIndex | None = None,
 ) -> None:
     """Append the ``outline/units/`` pass into ``result`` (data-model § Entities).
 
@@ -90,6 +93,11 @@ def map_outline(
     ``NarrativeSequence`` (G7) per distinct sequence slug (the "second step",
     research D1). A no-op when the directory is absent, so a project without unit
     cards builds an identical graph (FR-009 / FR-011 / SC-006).
+
+    When ``propp`` is supplied (the Propp vocabulary is active, iteration 030),
+    each minted ``NarrativeFunction`` whose name matches a canonical Propp term
+    carries a ``crm:P2_has_type`` link to it; with ``propp=None`` (the default,
+    no vocabulary active) the graph is unchanged (FR-008/SC-003).
     """
     ctx = _MapContext(
         project_root=project_root,
@@ -98,6 +106,7 @@ def map_outline(
         slug_index={},
         roles_index=result.roles_index,
         functions_index={},
+        propp=propp,
     )
     # The sequence-member side-channel: a list local to this call, captured by the
     # builder closure (research D1). Kept off the shared ``_MapContext`` so no
@@ -273,12 +282,18 @@ def _mint_functions(
     Deduplicated across **all** units via ``ctx.functions_index``: the first card to
     introduce a slug appends the function's ``MappedEntity`` (so its ``rdf:type``
     triple is emitted once); later cards reuse the stored entity.
+
+    When ``ctx.propp`` is active, the first card to introduce a slug also fixes the
+    function's ``type_uri`` (the matched Propp term, or ``None`` on no-match), so
+    the typing is deterministic and shared by every later card that reuses the
+    slug (iteration 030, FR-004/FR-006).
     """
     functions: list[NarrativeFunction] = []
     for slug, raw in slugs:
         function = ctx.functions_index.get(slug)
         if function is None:
-            function = NarrativeFunction(uri_base=uri_base, name=raw)
+            type_uri = ctx.propp.resolve(raw) if ctx.propp is not None else None
+            function = NarrativeFunction(uri_base=uri_base, name=raw, type_uri=type_uri)
             ctx.functions_index[slug] = function
             ctx.result.mapped.append(MappedEntity(entity=function, relpath=relpath, key_lines={}))
         functions.append(function)

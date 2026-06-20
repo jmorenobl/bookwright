@@ -146,12 +146,19 @@ class CharacterRole(GolemEntity):
     URI is ``{character.uri}/role/{slug(label)}``; emits the type assertion and
     the role text on ``rdfs:label``. Distinct from the top-level ``NarrativeRole``
     concept: this node is inlined under a character and is not in ``CONCEPTS``.
+
+    When ``type_uri`` is set (iteration 030 — the role name matched a Greimas
+    actant), it also emits a ``crm:P2_has_type`` link to that ``crm:E55_Type``
+    term, the same typing shape the biographical feature variant uses. Its type
+    provenance E13 is emitted by its owning :class:`Character`, not here, because
+    only the character is a top-level mapped entity (research D4).
     """
 
     golem_class: ClassVar[URIRef] = CLASS_IRI["NarrativeRole"]
 
     character_uri: URIRef
     label: str
+    type_uri: URIRef | None = None
 
     def model_post_init(self, __context: object) -> None:
         self._uri = URIRef(f"{self.character_uri}/role/{make_slug(self.label)}")
@@ -159,3 +166,6 @@ class CharacterRole(GolemEntity):
     def to_triples(self) -> Iterable[Triple]:
         yield (self.uri, RDF.type, self.golem_class)
         yield (self.uri, RDFS.label, RdfLiteral(self.label))
+        if self.type_uri is not None:
+            yield (self.uri, HAS_TYPE, self.type_uri)
+            yield (self.type_uri, RDF.type, CLASS_IRI["Type"])

@@ -16,11 +16,12 @@ from pathlib import Path
 import pytest
 
 from bookwright.golem import NarrativeFunction, NarrativeUnit
-from bookwright.golem.namespaces import REFERS_TO
+from bookwright.golem.namespaces import HAS_TYPE, REFERS_TO
 from bookwright.io._bible_builders import MapResult
 from bookwright.io.bible import build_provenance, map_bible
 from bookwright.io.errors import SlugCollisionError
 from bookwright.io.outline import map_outline
+from bookwright.io.vocabularies import load_vocabulary
 
 URI_BASE = "https://example.org/my-novel/"
 
@@ -348,3 +349,100 @@ def test_unit_cross_refs_reified_as_e13_with_locators(tmp_path: Path) -> None:
     assert (unit.uri, role_uri, f"{relpath}:4") in triples
     # Exactly those three reifications — no stray assignment from the prose body.
     assert len(provs) == 3
+
+
+# --- iteration 030: Propp function typing (C6/C7/C8/C10/C11/C13) -------------
+
+
+def _run_propp(root: Path) -> MapResult:
+    """Run the bible + outline passes with the Propp vocabulary active."""
+    bible = root / "bible"
+    result = map_bible(root, bible, URI_BASE)
+    map_outline(root, root / "outline", URI_BASE, result, propp=load_vocabulary("propp"))
+    return result
+
+
+def _typed(function: NarrativeFunction) -> object | None:
+    for s, p, o in function.to_triples():
+        if s == function.uri and p == HAS_TYPE:
+            return o
+    return None
+
+
+def test_propp_match_types_function(tmp_path: Path) -> None:
+    """C6: a Propp-active matching ``functions:`` name carries P2_has_type + E55."""
+    _write(tmp_path / "outline/units/op.md", '---\nname: "Op"\nfunctions: [departure]\n---\n')
+    result = _run_propp(tmp_path)
+    (func,) = _functions(result)
+    term = load_vocabulary("propp").resolve("departure")
+    assert _typed(func) == term
+    # The term self-declares as an E55_Type in the same emission.
+    assert any(o == term for _, _, o in func.to_triples())
+
+
+def test_propp_spanish_form_types_to_same_term(tmp_path: Path) -> None:
+    """C7: the Spanish spelling types to the same term as its English form."""
+    _write(tmp_path / "outline/units/op.md", '---\nname: "Op"\nfunctions: [partida]\n---\n')
+    result = _run_propp(tmp_path)
+    (func,) = _functions(result)
+    assert _typed(func) == load_vocabulary("propp").resolve("departure")
+
+
+def test_propp_no_match_is_untyped_and_builds(tmp_path: Path) -> None:
+    """C8: a name matching no term stays identity-only; build succeeds, no error."""
+    _write(tmp_path / "outline/units/op.md", '---\nname: "Op"\nfunctions: [made-up]\n---\n')
+    result = _run_propp(tmp_path)
+    (func,) = _functions(result)
+    assert _typed(func) is None
+    assert result.skipped == []
+
+
+def test_propp_typing_reified_as_e13_with_card_source(tmp_path: Path) -> None:
+    """C10 (function side): the typing link has a matching E13 — target=function,
+    attribute=term, source=the unit card (file-level: minted functions carry no
+    line)."""
+    _write(tmp_path / "outline/units/op.md", '---\nname: "Op"\nfunctions: [departure]\n---\n')
+    result = _run_propp(tmp_path)
+    (func,) = _functions(result)
+    term = load_vocabulary("propp").resolve("departure")
+    (mapped,) = [m for m in result.mapped if m.entity is func]
+    triples = {(p.target, p.attribute, p.source) for p in build_provenance(mapped, URI_BASE)}
+    assert (func.uri, term, "outline/units/op.md") in triples
+
+
+def test_propp_inactive_does_not_type(tmp_path: Path) -> None:
+    """C11: with Propp inactive, a would-match name is not typed."""
+    _write(tmp_path / "outline/units/op.md", '---\nname: "Op"\nfunctions: [departure]\n---\n')
+    result = _run(tmp_path)  # no vocab active
+    (func,) = _functions(result)
+    assert _typed(func) is None
+
+
+def test_propp_typing_is_stable_across_builds(tmp_path: Path) -> None:
+    """C13: same source + same active vocab ⇒ identical typing links every build."""
+    _write(
+        tmp_path / "outline/units/op.md",
+        '---\nname: "Op"\nfunctions: [departure, struggle, made-up]\n---\n',
+    )
+    first = {(f.slug, _typed(f)) for f in _functions(_run_propp(tmp_path))}
+    second = {(f.slug, _typed(f)) for f in _functions(_run_propp(tmp_path))}
+    assert first == second
+    # departure + struggle typed, made-up not.
+    assert sum(1 for _, t in first if t is not None) == 2
+
+
+def test_no_vocab_active_emits_zero_typing(tmp_path: Path) -> None:
+    """C12 / SC-003 / FR-008: with no vocabulary active, a project whose function
+    and role names *would* match emits zero ``P2_has_type`` and zero vocab-term
+    E13s — byte-for-byte the iteration-028/029 graph."""
+    _character(tmp_path, "ada", "Ada", ["sujeto"])
+    _write(tmp_path / "outline/units/op.md", '---\nname: "Op"\nfunctions: [departure]\n---\n')
+    result = _run(tmp_path)  # active = [] (no vocab)
+
+    # No typing triple anywhere in the emitted graph.
+    for m in result.mapped:
+        assert HAS_TYPE not in {p for _, p, _ in m.entity.to_triples()}
+    # No provenance assignment points at a vocabulary term.
+    for m in result.mapped:
+        for prov in build_provenance(m, URI_BASE):
+            assert "/vocab/" not in str(prov.attribute)

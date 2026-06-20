@@ -162,6 +162,43 @@ def test_interval_terms_are_in_frozen_closure() -> None:
             assert obj in frozen, f"class {obj} not frozen"
 
 
+def test_typed_narrative_function_emits_p2_has_type_and_e55(uri_base: str) -> None:
+    """C6 (golem layer): a ``NarrativeFunction`` with ``type_uri`` set emits both
+    the ``crm:P2_has_type`` link and the term's ``rdf:type crm:E55_Type``."""
+    term = URIRef("https://bookwright.dev/vocab/propp#function/departure")
+    func = NarrativeFunction(uri_base=B, name="Departure", type_uri=term)
+    triples = set(func.to_triples())
+    assert (func.uri, ns.HAS_TYPE, term) in triples
+    assert (term, RDF.type, ns.CLASS_IRI["Type"]) in triples
+
+
+def test_untyped_narrative_function_emits_no_typing(uri_base: str) -> None:
+    """``type_uri=None`` (the default) emits neither typing triple — unchanged G10."""
+    func = NarrativeFunction(uri_base=B, name="Departure")
+    predicates = {p for _, p, _ in func.to_triples()}
+    assert ns.HAS_TYPE not in predicates
+
+
+def test_typed_character_role_emits_p2_has_type_and_e55(uri_base: str) -> None:
+    """C9 (golem layer): a typed ``CharacterRole`` (built via its owning Character)
+    emits the ``crm:P2_has_type`` link and the term's ``rdf:type crm:E55_Type``."""
+    term = URIRef("https://bookwright.dev/vocab/greimas#actant/subject")
+    char = Character(
+        uri_base=B, name="Ada", narrative_roles=("sujeto",), role_types={"sujeto": term}
+    )
+    (role,) = char.role_nodes
+    triples = set(role.to_triples())
+    assert (role.uri, ns.HAS_TYPE, term) in triples
+    assert (term, RDF.type, ns.CLASS_IRI["Type"]) in triples
+
+
+def test_untyped_character_role_emits_no_typing(uri_base: str) -> None:
+    """A role with no matching term (empty ``role_types``) emits no typing triple."""
+    char = Character(uri_base=B, name="Ada", narrative_roles=("custom",))
+    (role,) = char.role_nodes
+    assert ns.HAS_TYPE not in {p for _, p, _ in role.to_triples()}
+
+
 def test_term_closure_over_frozen_ontology() -> None:
     frozen = ns.frozen_terms()
     for entity in _sample_entities():
