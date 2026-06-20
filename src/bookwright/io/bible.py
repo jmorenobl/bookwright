@@ -57,6 +57,7 @@ from ._bible_builders import (
 from .errors import InvalidFrontmatterError
 from .frontmatter import Frontmatter, parse_frontmatter
 from .report import SkippedFile, UnknownKey
+from .vocabularies import VocabularyIndex
 
 __all__ = [
     "CHARACTER_KEYS",
@@ -135,7 +136,13 @@ class _CollectionSpec:
     into_entity_index: bool = False
 
 
-def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
+def map_bible(
+    project_root: Path,
+    bible_dir: Path,
+    uri_base: str,
+    *,
+    greimas: VocabularyIndex | None = None,
+) -> MapResult:
     """Map every recognised bible file under ``bible_dir`` to GOLEM entities.
 
     Characters, settings and locations are one-entity-per-file; ``timeline.md`` /
@@ -143,6 +150,11 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
     first so ``events:`` / ``relationships:`` participants resolve against a
     ``slug → URI`` index in a single pass; settings are mapped **before** locations
     so a location's ``setting:`` resolves against the settings-scoped index.
+
+    When ``greimas`` is supplied (the Greimas vocabulary is active, iteration 030),
+    a character's ``narrative_roles`` names that match an actant term type the
+    corresponding character-scoped role node; with ``greimas=None`` (the default)
+    the graph is unchanged (FR-008/SC-003).
     """
     ctx = _MapContext(
         project_root=project_root,
@@ -156,7 +168,7 @@ def map_bible(project_root: Path, bible_dir: Path, uri_base: str) -> MapResult:
         _DirSpec(
             directory=bible_dir / "characters",
             concept="Character",
-            builder=lambda meta, rp: _build_character(uri_base, meta),
+            builder=lambda meta, rp: _build_character(uri_base, meta, greimas=greimas),
             allowed_keys=CHARACTER_KEYS,
             index=True,
             into_entity_index=True,

@@ -1,4 +1,83 @@
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix propp: <https://bookwright.dev/vocab/propp#> .
+@prefix crm:   <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 
-propp:Function a owl:Class .
+# Propp's 31 narrative functions as a controlled vocabulary (iteration 030). Each
+# term is a `crm:E55_Type` individual carrying an English and a Spanish
+# `rdfs:label`; a narrative function (G10) whose authored name matches one (by
+# `make_slug`, ES- or EN-spelled) is typed against it via `crm:P2_has_type`.
+#
+# These terms are Bookwright's, NOT part of the frozen GOLEM ontology
+# (`golem.ttl`): they are intentionally outside the `CLASS_IRI` 17-class closure
+# (Constitution X). The emitted `bible/graph.ttl` reuses only `crm:E55_Type` for
+# typing; no new GOLEM/ontology class is introduced (FR-002). The loader
+# (`io/vocabularies.py`) reads the labels here as the single source of truth —
+# Python hardcodes no term URI (research D2). Subjects use full IRIs (not the
+# `propp:` prefix) because a `/` is illegal in a Turtle prefixed name — mirroring
+# how `sources.ttl` writes its E55_Type individuals.
+#
+# Function #8 is Propp's combined villainy/lack slot (A/a): it carries all four
+# names as labels, so any of villainy / lack / fechoría / carencia types to it.
+
+<https://bookwright.dev/vocab/propp#function/absentation>
+    a crm:E55_Type ; rdfs:label "absentation"@en, "alejamiento"@es .
+<https://bookwright.dev/vocab/propp#function/interdiction>
+    a crm:E55_Type ; rdfs:label "interdiction"@en, "prohibición"@es .
+<https://bookwright.dev/vocab/propp#function/violation>
+    a crm:E55_Type ; rdfs:label "violation"@en, "transgresión"@es .
+<https://bookwright.dev/vocab/propp#function/reconnaissance>
+    a crm:E55_Type ; rdfs:label "reconnaissance"@en, "interrogatorio"@es .
+<https://bookwright.dev/vocab/propp#function/delivery>
+    a crm:E55_Type ; rdfs:label "delivery"@en, "información"@es .
+<https://bookwright.dev/vocab/propp#function/trickery>
+    a crm:E55_Type ; rdfs:label "trickery"@en, "engaño"@es .
+<https://bookwright.dev/vocab/propp#function/complicity>
+    a crm:E55_Type ; rdfs:label "complicity"@en, "complicidad"@es .
+<https://bookwright.dev/vocab/propp#function/villainy>
+    a crm:E55_Type ; rdfs:label "villainy"@en, "lack"@en, "fechoría"@es, "carencia"@es .
+<https://bookwright.dev/vocab/propp#function/mediation>
+    a crm:E55_Type ; rdfs:label "mediation"@en, "mediación"@es .
+<https://bookwright.dev/vocab/propp#function/counteraction>
+    a crm:E55_Type ; rdfs:label "counteraction"@en, "principio de la acción contraria"@es .
+<https://bookwright.dev/vocab/propp#function/departure>
+    a crm:E55_Type ; rdfs:label "departure"@en, "partida"@es .
+<https://bookwright.dev/vocab/propp#function/donor-function>
+    a crm:E55_Type ; rdfs:label "donor function"@en, "primera función del donante"@es .
+<https://bookwright.dev/vocab/propp#function/hero-reaction>
+    a crm:E55_Type ; rdfs:label "hero reaction"@en, "reacción del héroe"@es .
+<https://bookwright.dev/vocab/propp#function/acquisition>
+    a crm:E55_Type ; rdfs:label "acquisition"@en, "recepción del objeto mágico"@es .
+<https://bookwright.dev/vocab/propp#function/guidance>
+    a crm:E55_Type ; rdfs:label "guidance"@en, "desplazamiento"@es .
+<https://bookwright.dev/vocab/propp#function/struggle>
+    a crm:E55_Type ; rdfs:label "struggle"@en, "combate"@es .
+<https://bookwright.dev/vocab/propp#function/branding>
+    a crm:E55_Type ; rdfs:label "branding"@en, "marca"@es .
+<https://bookwright.dev/vocab/propp#function/victory>
+    a crm:E55_Type ; rdfs:label "victory"@en, "victoria"@es .
+<https://bookwright.dev/vocab/propp#function/liquidation>
+    a crm:E55_Type ; rdfs:label "liquidation"@en, "reparación"@es .
+<https://bookwright.dev/vocab/propp#function/return>
+    a crm:E55_Type ; rdfs:label "return"@en, "regreso"@es .
+<https://bookwright.dev/vocab/propp#function/pursuit>
+    a crm:E55_Type ; rdfs:label "pursuit"@en, "persecución"@es .
+<https://bookwright.dev/vocab/propp#function/rescue>
+    a crm:E55_Type ; rdfs:label "rescue"@en, "socorro"@es .
+<https://bookwright.dev/vocab/propp#function/unrecognized-arrival>
+    a crm:E55_Type ; rdfs:label "unrecognized arrival"@en, "llegada de incógnito"@es .
+<https://bookwright.dev/vocab/propp#function/unfounded-claims>
+    a crm:E55_Type ; rdfs:label "unfounded claims"@en, "pretensiones engañosas"@es .
+<https://bookwright.dev/vocab/propp#function/difficult-task>
+    a crm:E55_Type ; rdfs:label "difficult task"@en, "tarea difícil"@es .
+<https://bookwright.dev/vocab/propp#function/solution>
+    a crm:E55_Type ; rdfs:label "solution"@en, "realización de la tarea"@es .
+<https://bookwright.dev/vocab/propp#function/recognition>
+    a crm:E55_Type ; rdfs:label "recognition"@en, "reconocimiento"@es .
+<https://bookwright.dev/vocab/propp#function/exposure>
+    a crm:E55_Type ; rdfs:label "exposure"@en, "desenmascaramiento"@es .
+<https://bookwright.dev/vocab/propp#function/transfiguration>
+    a crm:E55_Type ; rdfs:label "transfiguration"@en, "transfiguración"@es .
+<https://bookwright.dev/vocab/propp#function/punishment>
+    a crm:E55_Type ; rdfs:label "punishment"@en, "castigo"@es .
+<https://bookwright.dev/vocab/propp#function/wedding>
+    a crm:E55_Type ; rdfs:label "wedding"@en, "boda"@es .

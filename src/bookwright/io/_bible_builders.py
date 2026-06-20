@@ -28,6 +28,7 @@ from bookwright.golem.slug import make_slug
 
 from .errors import InvalidFrontmatterError, SlugCollisionError
 from .report import SkippedFile, UnknownKey, UnresolvedReference
+from .vocabularies import VocabularyIndex
 
 # The five qualitative temporal relations an event may declare (each a list of
 # event names resolved against the timeline's own event index — research D11).
@@ -114,6 +115,9 @@ class _MapContext:
     # (iteration 028).
     roles_index: dict[str, list[URIRef]] = field(default_factory=dict)
     functions_index: dict[str, NarrativeFunction] = field(default_factory=dict)
+    # The active Propp index a unit's ``functions:`` names are typed against
+    # (iteration 030); ``None`` ⇒ Propp inactive ⇒ no function typing (FR-008).
+    propp: VocabularyIndex | None = None
 
 
 @dataclass(frozen=True)
@@ -151,12 +155,28 @@ def _coerce_str_list(value: Any, field_name: str) -> tuple[str, ...]:
     return tuple(value)
 
 
-def _build_character(uri_base: str, metadata: dict[str, Any]) -> Character:
+def _build_character(
+    uri_base: str,
+    metadata: dict[str, Any],
+    *,
+    greimas: VocabularyIndex | None = None,
+) -> Character:
     name = _require_name(metadata)
     born = _coerce_year(metadata.get("born"), "born")
     died = _coerce_year(metadata.get("died"), "died")
     features = _coerce_str_list(metadata.get("features"), "features")
     roles = _coerce_str_list(metadata.get("narrative_roles"), "narrative_roles")
+    # When Greimas is active, pre-resolve each role label to its actant term and
+    # hand the character a role-slug → term map (construction input only, never a
+    # triple). Keyed by role slug so it lines up with how ``Character`` slugs each
+    # role label to build its node; with ``greimas=None`` the map is empty and the
+    # graph is unchanged (iteration 030, research D5 / FR-008).
+    role_types: dict[str, URIRef] = {}
+    if greimas is not None:
+        for label in roles:
+            uri = greimas.resolve(label)
+            if uri is not None:
+                role_types[make_slug(label)] = uri
     return Character(
         uri_base=uri_base,
         name=name,
@@ -164,6 +184,7 @@ def _build_character(uri_base: str, metadata: dict[str, Any]) -> Character:
         died=died,
         features=features,
         narrative_roles=roles,
+        role_types=role_types,
     )
 
 

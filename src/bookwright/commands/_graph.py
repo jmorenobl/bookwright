@@ -26,6 +26,7 @@ from bookwright.io.manuscript import manuscript_present
 from bookwright.io.outline import map_outline
 from bookwright.io.report import BuildReport, ResearchTargetWarning
 from bookwright.io.research import ResearchResult, map_research
+from bookwright.io.vocabularies import load_active_vocabularies
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -90,10 +91,15 @@ def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
     engine = engine_cls()
 
     uri_base = manifest.bookwright.uri_base
-    result = map_bible(root, bible_dir, uri_base)
+    # Load the active controlled vocabularies once (iteration 030): Greimas types
+    # character roles in the bible pass, Propp types narrative functions in the
+    # outline pass. With no vocabulary active both are ``None`` ⇒ no typing
+    # (FR-008/SC-003).
+    vocabs = load_active_vocabularies(manifest.vocabularies.active)
+    result = map_bible(root, bible_dir, uri_base, greimas=vocabs.greimas)
     # Append the outline/units pass into the same MapResult (research D1): one result
     # to iterate, no merge, BuildReport counters aggregate the additions for free.
-    map_outline(root, root / manifest.paths.outline, uri_base, result)
+    map_outline(root, root / manifest.paths.outline, uri_base, result, propp=vocabs.propp)
 
     for mapped in result.mapped:
         for triple in mapped.entity.to_triples():

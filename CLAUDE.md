@@ -361,6 +361,8 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/029-narrative-sequences/plan.md` (iteration 029 — ingest narrative
-sequences G7 from `outline/units/` `sequence`/`order` keys).
+`specs/030-narrative-vocabularies/plan.md` (iteration 030 — populate
+`propp.ttl`/`greimas.ttl` as `E55_Type` vocabularies and type narrative
+functions G10 / character roles G11 via `crm:P2_has_type` when the manifest
+activates the vocabulary).
 <!-- SPECKIT END -->

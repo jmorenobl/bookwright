@@ -43,7 +43,30 @@
 
 ## Deuda abierta
 
-_Ninguna por ahora._
+### DEBT-001 — Concepto `NarrativeRole` vestigial (modelado pero nunca ingestado)
+- **Estado:** abierta
+- **Detectada en:** spec-030 (2026-06-20)
+- **Ubicación:** `src/bookwright/golem/modules/narrative.py:37` (clase
+  `NarrativeRole`), registrada en `src/bookwright/golem/__init__.py` (`CONCEPTS`).
+- **Clase de deuda:** concepto GOLEM modelado-pero-muerto que evade el registro de
+  diferimiento.
+- **Descripción:** el concepto de nivel superior `NarrativeRole` está en
+  `CONCEPTS` pero ningún builder lo instancia: la única materialización de
+  `golem:G11_Narrative_Role` la hace el nodo inlined `CharacterRole`
+  (`golem/modules/feature.py`, que **no** está en `CONCEPTS`). Como ambos
+  comparten el mismo `CLASS_IRI["NarrativeRole"]`, el test de paridad de ingestión
+  ve la clase G11 materializada y por eso `NarrativeRole` **no** aparece en
+  `DEFERRED_CONCEPTS` (`golem/deferrals.py`) pese a no tener ruta de ingestión
+  propia. Es un concepto muerto que escapa al contrato de diferimiento.
+- **Por qué se difiere:** la iteración 030 *tipa* entidades G10/G11 vía
+  `E55_Type`; eliminar (o cablear) el concepto `NarrativeRole` es otra clase de
+  deuda — toca el registro `CONCEPTS`, el conteo "thirteen concepts" de
+  `deferrals.py` y su test de paridad — y limpiarla aquí sería refactorizar por
+  delante del plan (Scope discipline).
+- **Resolución sugerida / versión objetivo:** decidir en una iteración v0.4
+  posterior si el concepto se elimina de `CONCEPTS` (si `CharacterRole` es la
+  única encarnación de G11 que se quiere) o si se le da una superficie de
+  autoría propia; ajustar `deferrals.py`/paridad en consecuencia. Target: v0.4.
 
 ---
 

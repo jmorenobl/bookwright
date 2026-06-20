@@ -43,6 +43,22 @@ El modelo organiza seis actantes en tres parejas de oposición:
 - **Oponente (opponent)** — lo que la obstaculiza: el antagonista, pero también
   miedos internos, circunstancias, el tiempo.
 
+## Canonical match-names
+
+Los seis actantes. Cuando el vocabulario de Greimas está activo, un rol de
+personaje (`narrative_roles:` en una ficha de personaje) cuyo nombre coincida con
+cualquiera de estos — en inglés o en español, sin distinguir mayúsculas ni
+acentos — se tipa automáticamente contra el actante correspondiente. Cada línea
+lista los nombres equivalentes separados por `/`; úsalos **literalmente** para que
+el rol quede tipado.
+
+- subject / sujeto
+- object / objeto
+- sender / destinador
+- receiver / destinatario
+- helper / ayudante
+- opponent / oponente
+
 ## Cómo usarlo al escribir
 
 Para una obra o un arco, completa el esquema: *¿Quién es el Sujeto? ¿Qué Objeto

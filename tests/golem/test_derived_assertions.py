@@ -11,7 +11,13 @@ from __future__ import annotations
 
 from rdflib.term import URIRef
 
-from bookwright.golem import Character, DerivedAssertion, NarrativeEvent, SocialRelationship
+from bookwright.golem import (
+    Character,
+    DerivedAssertion,
+    NarrativeEvent,
+    NarrativeFunction,
+    SocialRelationship,
+)
 from bookwright.golem import namespaces as ns
 from tests.golem.conftest import B
 
@@ -101,3 +107,34 @@ def test_participantless_event_emits_only_identity() -> None:
     """An event with no participants makes only its identity assertion."""
     event = NarrativeEvent(uri_base=B, name="the storm")
     assert list(event.derived_assertions()) == [DerivedAssertion(event.uri, event.uri, None)]
+
+
+# --- iteration 030: vocabulary typing yields a provenanced assertion ---------
+
+
+def test_typed_function_yields_extra_assertion_tagged_functions() -> None:
+    """A typed ``NarrativeFunction`` yields its identity assertion plus a type
+    assertion (function → term) tagged ``functions`` so the indexer reifies it."""
+    term = URIRef("https://bookwright.dev/vocab/propp#function/departure")
+    func = NarrativeFunction(uri_base=B, name="Departure", type_uri=term)
+    assert list(func.derived_assertions()) == [
+        DerivedAssertion(func.uri, func.uri, None),
+        DerivedAssertion(func.uri, term, "functions"),
+    ]
+
+
+def test_untyped_function_yields_only_identity() -> None:
+    """An untyped function makes exactly its identity assertion (no type E13)."""
+    func = NarrativeFunction(uri_base=B, name="Departure")
+    assert list(func.derived_assertions()) == [DerivedAssertion(func.uri, func.uri, None)]
+
+
+def test_typed_role_assertion_emitted_by_owning_character() -> None:
+    """A typed role's type E13 is owned by the Character: the role node → its term,
+    tagged ``narrative_roles`` so the locator resolves to that card line (D4)."""
+    term = URIRef("https://bookwright.dev/vocab/greimas#actant/subject")
+    char = Character(
+        uri_base=B, name="Ada", narrative_roles=("sujeto",), role_types={"sujeto": term}
+    )
+    (role,) = char.role_nodes
+    assert DerivedAssertion(role.uri, term, "narrative_roles") in list(char.derived_assertions())
