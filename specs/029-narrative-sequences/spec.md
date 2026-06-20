@@ -123,11 +123,12 @@ English author prompts (passes the existing skill lint gate).
 
 ### Edge Cases
 
-- **Unit with `sequence` but no `order`** → see Clarifications (FR-005): either
-  placed last deterministically or rejected — resolved in `/speckit-clarify`.
-- **Two members of the same sequence sharing the same `order`** → see
-  Clarifications (FR-006): either deterministic tie-break or rejected — resolved
-  in `/speckit-clarify`.
+- **Unit with `sequence` but no `order`** → placed **last** within its sequence
+  (after explicit-`order` members), order-less members tie-broken by slug; never
+  rejected, never a crash (FR-005, resolved in Clarifications).
+- **Two members of the same sequence sharing the same `order`** → deterministic
+  tie-break by slug among the equal-`order` members; never rejected, never a
+  crash (FR-006, resolved in Clarifications).
 - **`sequence` present but not a string** → unusable frontmatter for that key; the
   card is skipped with a recorded reason, build continues (consistent with the
   existing `functions`/`roles` non-list contract).
@@ -151,24 +152,23 @@ English author prompts (passes the existing skill lint gate).
 
 ### Session 2026-06-20
 
-The following two decisions are intentionally deferred to `/speckit-clarify` per
-the iteration prompt ("decidir en clarify"). Each has a recommended default
-recorded inline; `/speckit-clarify` confirms or overrides it before planning.
+- Q: A unit declares `sequence` but omits `order` — where does it sit in the
+  member tuple? → A: **Placed last** within its sequence, deterministically:
+  after every member with an explicit `order`, and among such order-less members
+  ordered by slug. Never a crash. *Rationale*: mirrors the iteration-028 mapper
+  ethos (optional keys degrade softly, the build continues), keeps `order`
+  genuinely optional, and adds no new fatal-error class — lowest tech-debt path
+  consistent with Principle I robustness.
+- Q: Two members of the same sequence share the same `order` value — reject, or
+  deterministic tie-break? → A: **Deterministic tie-break by slug** among
+  equal-`order` members. Never a crash. *Rationale*: consistent with the
+  missing-`order` decision's no-crash determinism, satisfies SC-004 (identical
+  member tuple across builds) without filesystem/dict-iteration dependence, and
+  treats a duplicate `order` as a soft authoring nicety rather than a build-
+  aborting conflict.
 
-- Q1 (FR-005): A unit declares `sequence` but omits `order` — where does it sit?
-  *Recommended default*: placed **last** within its sequence, deterministically,
-  after every member that has an explicit `order`, ordered among such order-less
-  members by slug — never a crash. *Alternative*: reject the card with a clear
-  message. *Why the default leans tolerant*: it mirrors the iteration-028 mapper
-  ethos (optional keys degrade softly, the build continues) and keeps `order`
-  genuinely optional.
-- Q2 (FR-006): Two members of the same sequence share the same `order` value —
-  reject, or deterministic tie-break? *Recommended default*: **deterministic
-  tie-break by slug** among equal-`order` members, never a crash — consistent
-  with Q1's no-crash determinism. *Alternative*: reject the sequence (or the
-  offending card) with a clear message, treating a duplicate `order` as an
-  authoring conflict analogous to a slug collision. Whichever is chosen, the
-  resulting member tuple MUST be fully deterministic across builds (SC-004).
+The two `[NEEDS CLARIFICATION]` markers below (FR-005, FR-006) are hereby
+resolved by these answers; the recommended defaults are adopted.
 
 ## Requirements *(mandatory)*
 
@@ -193,18 +193,17 @@ recorded inline; `/speckit-clarify` confirms or overrides it before planning.
 - **FR-004**: A unit card without a `sequence` key MUST belong to no sequence and
   MUST NOT cause any `NarrativeSequence` to be minted; its iteration-028 behaviour
   (identity, `functions`, `roles`) MUST be unchanged.
-- **FR-005**: A unit that declares `sequence` but omits `order` MUST be handled by
-  one of two deterministic rules — placed last within its sequence (after explicit-
-  `order` members, order-less members tie-broken by slug) **or** rejected with a
-  clear message. [NEEDS CLARIFICATION: missing-`order` handling — place-last
-  (recommended) vs. reject; see Clarifications Q1.] Whichever is chosen, the result
-  MUST be deterministic across builds.
+- **FR-005**: A unit that declares `sequence` but omits `order` MUST NOT be
+  rejected and MUST NOT crash the build; it MUST be placed **last** within its
+  sequence — after every member that has an explicit `order` — and, among the
+  order-less members of the same sequence, ordered deterministically by slug. The
+  result MUST be deterministic across builds. (Resolved in Clarifications,
+  Session 2026-06-20.)
 - **FR-006**: When two members of the same sequence share the same `order` value,
-  the system MUST resolve the tie by one of two deterministic rules — tie-break by
-  slug **or** reject — and MUST NOT produce a build whose member ordering depends
-  on filesystem or dict iteration order. [NEEDS CLARIFICATION: duplicate-`order`
-  handling — deterministic tie-break by slug (recommended) vs. reject; see
-  Clarifications Q2.]
+  the system MUST resolve the tie **deterministically by slug** (the equal-`order`
+  members are ordered among themselves by slug) and MUST NOT reject the build or
+  produce a member ordering that depends on filesystem or dict iteration order.
+  (Resolved in Clarifications, Session 2026-06-20.)
 - **FR-007**: `sequence` present but not a string, or `order` present but not an
   integer, MUST render the card non-ingestible (skipped with a recorded reason);
   the build MUST continue. (Booleans MUST NOT be accepted as integers for `order`.)

@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,11 +31,9 @@
 
 ## Notes
 
-- **Two [NEEDS CLARIFICATION] markers remain by design** (FR-005, FR-006),
-  routed to `/speckit-clarify` per the iteration prompt's explicit "decidir en
-  clarify". Both concern the handling of `order` (missing value, duplicate
-  value); each carries a recommended default in the Clarifications section, so
-  the spec is fully testable once `/speckit-clarify` pins the choice. This is the
-  only open item; all other criteria pass.
-- The two markers are within the ≤ 3 limit and are the project's deliberate
-  next-step input, not unresolved ambiguity in scope.
+- **Both former [NEEDS CLARIFICATION] markers are now resolved** (FR-005,
+  FR-006) in the Clarifications section (Session 2026-06-20). Both concerned the
+  handling of `order` (missing value, duplicate value); each adopted its
+  recommended tolerant/deterministic/no-crash default — placed-last-then-slug for
+  a missing `order`, slug tie-break for a duplicate `order`. The spec is now fully
+  testable with no open markers; all criteria pass.

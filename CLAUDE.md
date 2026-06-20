@@ -314,5 +314,7 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+`specs/029-narrative-sequences/plan.md` (iteration 029 — ingest narrative
+sequences G7 from `outline/units/` `sequence`/`order` keys).
 <!-- SPECKIT END -->
