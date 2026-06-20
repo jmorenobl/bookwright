@@ -148,22 +148,34 @@ following the reference produces typed entities.
 - **Author writes an ambiguous/partial name** (e.g. a near-match or typo): it is
   treated as no-match → untyped, exactly like any other unrecognized name.
 
+## Clarifications
+
+### Session 2026-06-20
+
+- Q: Does `propp.ttl` hold Propp's full 31 discrete functions, or the 6 condensed "movements" the current reference describes? → A: The **31 discrete canonical functions**, each an `E55_Type` term carrying ES+EN aliases; `references/propp-functions.md` is rewritten to enumerate the 31 by canonical match-name so populated terms and reference agree with no orphan (SC-005). (The user stories recognize individual functions like *departure*/*interdiction* — which a 6-movement digest cannot satisfy.)
+- Q: How does the "has type" link participate in the codebase's structural-provenance machinery? → A: It MUST be emitted through the **existing** mechanism — declared as a derived assertion / cross-ref on the entity and reified uniformly as a `crm:E13_Attribute_Assignment` like every other GOLEM triple, never as a special-cased bare triple; its source is the same `functions:` / `narrative_roles:` list item that already provenances the entity's identity. Only the exact field/locator mapping is a plan detail. (Principle I + zero-debt: an un-provenanced one-off triple would open a new debt class.)
+- Q: When a function/role name matches no active term, emit an advisory note or stay silent? → A: **Silent** — no warning, no diagnostic. Unmatched names are normal authoring (custom functions, non-canonical roles); a build-time note would be noise and new plumbing. Discoverability is served by the US3 references, not by warnings.
+- Q: How is typing kept deterministic if a name could match more than one term? → A: Within a single vocabulary, term alias sets MUST be curated **disjoint** so any normalized name resolves to at most one term; functions match only Propp terms and roles only Greimas terms (disjoint entity kinds), so no cross-vocabulary collision is possible. No runtime tie-break logic is added (scope discipline) — a duplicate alias is a vocabulary-data bug to fix, not a feature to resolve.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The Propp vocabulary file MUST be populated with the canonical set
-  of Propp narrative functions, each declared as a controlled-vocabulary type
-  term (the `E55_Type` pattern), and the Greimas vocabulary file MUST be
-  populated with the six actants of the actantial model as such terms.
+- **FR-001**: The Propp vocabulary file MUST be populated with Propp's **31
+  canonical narrative functions** (the discrete functions, not the condensed
+  6 movement-groups of the current reference), each declared as a
+  controlled-vocabulary type term (the `E55_Type` pattern), and the Greimas
+  vocabulary file MUST be populated with the six actants of the actantial model
+  as such terms.
 - **FR-002**: All new vocabulary terms MUST live only in the separate Propp and
   Greimas vocabulary files (`propp.ttl` / `greimas.ttl`), never in the frozen
   GOLEM ontology (`golem.ttl`); this feature MUST NOT add any class to the
   frozen 17-class closure (Constitution Principle X).
 - **FR-003**: Vocabulary activation MUST be read from where the project already
-  declares it; this feature MUST NOT invent a new activation mechanism. (The
-  exact existing source is captured as an assumption below and confirmed during
-  clarify/plan.)
+  declares it; this feature MUST NOT invent a new activation mechanism.
+  (Confirmed in clarify against the codebase: the existing source is the
+  manifest `[vocabularies] active` list — `VocabulariesBlock.active:
+  list[str]`, the sole machine-readable mechanism; see Assumptions.)
 - **FR-004**: When Propp is active for the project, a narrative function whose
   resolved name matches a Propp function term MUST receive a "has type"
   (`crm:P2_has_type`) link to that term.
@@ -192,11 +204,24 @@ following the reference produces typed entities.
   regardless of the author's surface spelling.
 - **FR-011**: Typing MUST be deterministic and stable across rebuilds: the same
   source + same active vocabularies produce the same set of "has type" links
-  every time.
+  every time. Determinism requires a unique match — within a single active
+  vocabulary the terms' alias slugs MUST be disjoint so any one entity name
+  resolves to at most one term; no runtime tie-break logic is added (a duplicate
+  alias is a vocabulary-data bug to fix, not a case to resolve at build time).
 - **FR-012**: `references/propp-functions.md` and `references/greimas-actants.md`
   MUST be provided/updated so that the canonical names an author can use to
   obtain a typed entity are discoverable and consistent with the populated
-  vocabulary terms.
+  vocabulary terms. Specifically, `propp-functions.md` MUST be rewritten to
+  enumerate the 31 functions by their canonical match-names (replacing its
+  current condensed 6-movement digest), and `greimas-actants.md` MUST surface
+  each actant's ES and EN match-names; neither file may name a term absent from
+  the populated vocabulary, nor omit one present in it (no orphan, SC-005).
+- **FR-013**: The "has type" link MUST be produced through the codebase's
+  existing structural-provenance mechanism — declared as a derived assertion /
+  cross-ref on the typed entity and reified uniformly (the way every other GOLEM
+  assertion becomes a `crm:E13_Attribute_Assignment`), never as a special-cased
+  un-provenanced triple. Its provenance source is the same `functions:` /
+  `narrative_roles:` list item that establishes the entity's identity.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -245,8 +270,9 @@ following the reference produces typed entities.
   block already modelled by `VocabulariesBlock`), with the names `propp` and/or
   `greimas`. The constitution's prose "Vocabularios activos" section is the
   human-facing mirror of the same intent and is not machine-parsed. This is the
-  only existing machine-readable mechanism, so FR-003 reuses it; the exact source
-  is confirmed in `/speckit-clarify` / `/speckit-plan` per the iteration prompt.
+  only existing machine-readable mechanism, so FR-003 reuses it. *(Confirmed in
+  clarify against the codebase: `VocabulariesBlock.active: list[str]` in
+  `core/_blocks.py` is the sole machine-readable activation source.)*
 - **Vocabulary → entity-kind binding**: `propp.ttl` is populated with Propp's
   narrative *functions* and matches the **`NarrativeFunction` (G10)** entities
   minted from unit cards' `functions:` lists (`io/outline.py::_mint_functions`).
@@ -261,7 +287,9 @@ following the reference produces typed entities.
   here — see DEBT.md DEBT-001.) Propp's seven spheres of action / dramatis
   personae are *not* populated as terms in this iteration (the prompt scopes
   propp.ttl to "las funciones Proppianas"); roles type against Greimas actants.
-  Confirmed in clarify/plan.
+  *(Confirmed in clarify against the codebase: `io/outline.py::_mint_functions`
+  mints G10 from `functions:`; `golem/modules/feature.py::CharacterRole` is the
+  inlined G11 minted from a character card's `narrative_roles:`.)*
 - **Match key**: An entity's authored name is normalized via the project's
   existing slug rule (`golem/slug.py::make_slug`, `python-slugify` default:
   lowercase + ASCII transliteration, so case and accents fold away) and compared
@@ -269,7 +297,10 @@ following the reference produces typed entities.
   Case/accent tolerance comes from `make_slug`; ES/EN tolerance (FR-010) comes
   from each term carrying both an ES and an EN alias (as the existing references
   already pair them, e.g. *Destinador*/*sender*). The reference documents list
-  the alias names that resolve.
+  the alias names that resolve. Within one vocabulary the terms' alias slugs MUST
+  be disjoint, so any name resolves to at most one term (FR-011); functions match
+  only Propp terms and roles only Greimas terms, so the two vocabularies cannot
+  collide.
 - **No explicit `type:` field (FR-007)**: Narrative functions are authored as
   bare strings in a unit card's `functions:` list, and character roles as bare
   strings in a character card's `narrative_roles:` list — neither carries
@@ -277,18 +308,25 @@ following the reference produces typed entities.
   this iteration adds no `type:` override surface. (FR-007 is a deliberate
   negative requirement, not an unbuilt affordance: adding a `type:` field would be
   plumbing for a hypothetical future, which Scope discipline forbids.)
-- **No warning on no-match**: An unmatched name produces an untyped entity
-  silently (no soft warning), consistent with "queda sin tipar (no es error)".
-  Whether to emit an advisory note is a possible clarify item but defaults to
-  silence to avoid noise on intentional custom names.
-- **Provenance of the typing link**: How (and whether) the "has type" link is
-  reified with the codebase's structural-provenance machinery is an
-  implementation concern deferred to `/speckit-plan`; the spec requires only that
-  the link exist.
-- **Canonical Propp function set**: "The canonical set" is taken as Propp's
-  standard 31 functions; the precise term inventory and their alias names are
-  fixed during plan, consistent with the condensed repertoire already in
-  `references/propp-functions.md`.
+- **No warning on no-match** *(decided in clarify)*: An unmatched name produces
+  an untyped entity silently — no warning, no diagnostic — consistent with "queda
+  sin tipar (no es error)". This is a settled decision, not a default: a
+  build-time advisory would be noise on intentional custom names and would add new
+  plumbing (scope discipline); discoverability is served by the US3 references.
+- **Provenance of the typing link** *(decided in clarify, see FR-013)*: The link
+  MUST flow through the existing structural-provenance machinery — declared as a
+  derived assertion / cross-ref and reified uniformly as a
+  `crm:E13_Attribute_Assignment`, the same as every other GOLEM triple, never as
+  a special-cased bare triple; its source is the originating `functions:` /
+  `narrative_roles:` list item. Only the exact field/locator mapping is left to
+  `/speckit-plan`.
+- **Canonical Propp function set** *(decided in clarify)*: `propp.ttl` is
+  populated with Propp's **31 discrete canonical functions** (not the 6 condensed
+  movement-groups), each an `E55_Type` term carrying an ES and an EN alias.
+  `references/propp-functions.md` is rewritten to enumerate those 31 by canonical
+  match-name so the populated terms and the reference agree with no orphan
+  (SC-005, FR-012). The exact alias spellings are fixed during plan from the
+  established Propp nomenclature.
 
 ## Out of Scope
 
