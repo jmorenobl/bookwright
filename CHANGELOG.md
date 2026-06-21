@@ -4,6 +4,53 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.4.2] — 2026-06-21
+
+First patch of the **v0.4.x post-dogfooding hardening track** (iteration 034) —
+pure hardening that wakes a validator the toolkit's own scaffold had been
+silently disabling. The `focalization` validator anchored its narrative-voice
+declaration pattern at line start, so it never matched the
+`- **Voz narrativa**: …` shape that `constitution.md.j2` itself emits — leaving
+the check dormant on every voice-bearing fixture and on every real project
+scaffolded by `bookwright init` (DEBT-004, surfaced by the 2026-06-21 dogfooding
+run). This release normalizes the candidate line before matching — stripping one
+line-leading bullet/blockquote marker and the emphasis markers around the label —
+so the scaffold shape parses byte-identically to the bare form. No new CLI
+surface, no new runtime dependency, and the GOLEM ontology stays **frozen** —
+this is a prose validator that emits `triples=()` and touches no graph.
+
+### Changed
+
+- **`focalization` tolerates markdown-prefixed voice declarations**
+  (`src/bookwright/validation/validators/focalization.py`): a new
+  `_normalize_declaration_line` helper strips, per candidate line and each
+  independently (no balance guard), one line-leading bullet/blockquote marker
+  (`-`/`*`/`+`/`>` + whitespace), then a leading emphasis run, then an emphasis
+  run anchored between the label and its colon (`*`/`**`/`_`). The
+  person/limited/focal body-extraction is untouched, so `- **Voz narrativa**:
+  Tercera persona limitada, centrada en Elena Vidal.` now parses to the same
+  `_Declaration(person="third", limited=True, focal="Elena Vidal")` as the bare
+  form. The validator is now awake on the scaffold shape (ES + EN).
+
+### Added
+
+- **Template↔parser anti-drift binding test**
+  (`tests/validation/test_focalization.py`): a test reads the live
+  `constitution.md.j2` voice line and asserts the parser accepts it, so the
+  scaffold and the validator can never again silently diverge; plus
+  marker-by-marker recognition coverage and the no-false-positive edge cases
+  (no declaration / `[PENDING:…]` / mid-sentence label). Suite reconciliation
+  confirmed every fixture oracle stays honest: the awakened validator yields
+  **0 findings** on `tiny-historical`'s clean third-person prose, so its
+  project-wide `validation.counts` stays `{error:1, warning:6}` — read from the
+  awake validator, not back-fitted.
+
+### Removed
+
+- **DEBT-004 entry** (`DEBT.md`): the silently-disabled-validator debt is closed
+  and removed (git keeps the history); the intro count drops `tres → dos` and
+  DEBT-006's cross-reference is repointed from `DEBT-004/005` to `DEBT-005`.
+
 ## [0.4.1] — 2026-06-21
 
 First patch on the **v0.4 line** (iteration 033) — pure hardening that removes a
