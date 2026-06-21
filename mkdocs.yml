@@ -35,6 +35,7 @@ nav:
   - Investigación: research.md
   - Orquestación: orchestration.md
   - Extender: extending.md
+  - Dogfooding: dogfooding.md
   - FAQ: faq.md
   - Cambios: changelog.md
 
