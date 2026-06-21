@@ -4,7 +4,46 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
-## [0.4.4] — 2026-06-21
+## [0.4.5] — 2026-06-21
+
+Fourth patch of the **v0.4.x post-dogfooding hardening track** (iteration 037) —
+pure hardening that makes the `focalization` validator treat an unanswered
+`[PENDING: …]` narrative-voice placeholder as *no declaration*, closing DEBT-007.
+A fresh `bookwright init` constitution carries the prompt
+`- **Voz narrativa**: [PENDING: …(primera/tercera persona, omnisciente/limitada)?]`.
+That placeholder *text* literally contains "tercera persona" and "limitada", so
+`_parse_declaration` parsed it as a real declaration (`person="third",
+limited=True`) and the first interiority verb in the manuscript flooded
+head-hopping warnings against every character — a project that had answered
+*nothing* was told its prose was broken. The fix routes a body that is *solely* an
+unanswered `[PENDING]` token into the validator's existing "no declaration → zero
+findings" path, so the check stays dormant until the author actually declares a
+voice, then wakes exactly as before. No new CLI surface, no new runtime
+dependency, no ontology change, and no `--json` envelope change — pure hardening
+on a prose validator (`triples=()`, the frozen ontology untouched, Principle X).
+
+The constitution template is deliberately **not** reworded — suppressing the
+mis-parse at the parser keeps the `[PENDING: …]` author prompt useful instead of
+papering over one template's wording. The recognizer stays local to
+`focalization.py` (no speculative shared `[PENDING]` utility);
+`references/pending-protocol.md` remains the prose source of truth it mirrors.
+
+### Changed
+
+- **`focalization` no longer mis-reads an unanswered voice placeholder as a
+  declaration** (`src/bookwright/validation/validators/focalization.py`): a
+  module-level `_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")`
+  recognizes a body that is *solely* an unanswered `[PENDING: …]` token, and a
+  one-line guard in `_parse_declaration` (after the body is extracted) returns
+  `None` for it — reusing the existing no-declaration path. The full `^…$` anchor
+  means real text *before or after* the token keeps the body a real declaration
+  (FR-002); the check runs on the already markdown-normalized body (iteration
+  034), so the bullet/emphasis scaffold form is recognized; recognition is
+  case-insensitive and label-agnostic (ES/EN). No other focalization rule
+  changed — first-person, interiority/head-hopping, markdown tolerance and focal
+  resolution are byte-identical (FR-006).
+
+
 
 Third patch of the **v0.4.x post-dogfooding hardening track** (iteration 036) —
 pure hardening that makes research-source load errors actionable, closing the last

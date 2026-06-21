@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.4.4 released (036 merged, research-source load errors now actionable — enumerated vocabulary + per-source locator, DEBT-006 closed; the v0.4.x post-dogfooding track is complete; this release also folds in the EUPL-1.2 relicense)
+## Repository state: v0.4.5 released (037 merged, the `focalization` validator now treats an unanswered `[PENDING]` voice placeholder as no declaration — a fresh-init constitution no longer floods spurious head-hopping warnings, DEBT-007 closed)
 
 Five milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
@@ -24,18 +24,28 @@ unordered RDF, DEBT-005) and the `v0.4.4` hardening patch (2026-06-21, iteration
 `type`/`reliability` vocabulary in the message and prefix every per-source fault
 with a single locator (`name` or 1-based `#index`), the `--json` envelope
 byte-unchanged, DEBT-006; this release also folds in the EUPL-1.2 relicense + GOLEM
-CC BY 4.0 attribution that had accumulated on `main`). All
+CC BY 4.0 attribution that had accumulated on `main`) and the `v0.4.5` hardening
+patch (2026-06-21, iteration 037: make the `focalization` validator treat a body
+that is *solely* an unanswered `[PENDING: …]` narrative-voice placeholder as no
+declaration — a fresh `bookwright init` constitution carries
+`- **Voz narrativa**: [PENDING: …(primera/tercera persona, omnisciente/limitada)?]`,
+whose placeholder text literally contains "tercera persona"/"limitada" and so
+parsed as a real declaration, flooding head-hopping warnings on the first
+interiority verb; one anchored `_PENDING_ONLY` guard routes it into the existing
+"no declaration → zero findings" path, DEBT-007). All
 of it is on `main` (tagged) with a real `src/bookwright/` package, ~200 Python
 files, the full test suite, docs, and CI gates green. There is **no active
 iteration branch**. With v0.4 the ingestion-parity north star is reached.
 
-A **dogfooding exercise** (a real book run end-to-end, 2026-06-21) surfaced three
+A **dogfooding exercise** (a real book run end-to-end, 2026-06-21) surfaced
 actionable findings — a silently-disabled validator, a measured structural-recall
-gap, and blinding error messages — recorded as **DEBT-004/005/006** and planned
-as the **`v0.4.x` post-dogfooding hardening track** (iterations 034–036, one patch
-each: `v0.4.2`/`v0.4.3`/`v0.4.4`). All three are now closed (034, `v0.4.2`,
-DEBT-004; 035, `v0.4.3`, DEBT-005; 036, `v0.4.4`, DEBT-006) — the track is
-**complete**. The ready-to-run workflow commands and the
+gap, blinding error messages, and a placeholder-mis-parse that flooded spurious
+warnings — recorded as **DEBT-004/005/006/007** and shipped as the **`v0.4.x`
+post-dogfooding hardening track** (iterations 034–037, one patch each:
+`v0.4.2`/`v0.4.3`/`v0.4.4`/`v0.4.5`). All four are now closed (034, `v0.4.2`,
+DEBT-004; 035, `v0.4.3`, DEBT-005; 036, `v0.4.4`, DEBT-006; 037, `v0.4.5`,
+DEBT-007) — the track is **complete** and `DEBT.md` carries no open debt. The
+ready-to-run workflow commands and the
 per-iteration debt-cancellation/release cycle live in
 `bookwright-implementation-plan.md`. The remaining longer-horizon work — vector
 search (ChromaDB over rdflib) and export — is deferred to an unversioned,
@@ -177,7 +187,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now **released**: 028–032 are all merged and shipped **once** as `v0.4.0` (2026-06-21) at the closing iteration (032), like M4→`v0.2.0` and M5→`v0.3.0`. Iteration 033 then shipped as the `v0.4.1` hardening patch (2026-06-21): it removes the dead top-level `NarrativeRole` concept (`CONCEPTS` 13→12) and hardens the ingestion-parity contract so a dead concept colliding on a carrier's class IRI can never again pass as reachable, closing DEBT-001. Iteration 034 shipped as the `v0.4.2` hardening patch (2026-06-21), the first of the v0.4.x post-dogfooding track: the `focalization` validator now normalizes the candidate line before matching, so the markdown-prefixed `- **Voz narrativa**: …` shape its own scaffold emits parses byte-identically to the bare form — waking a check that had been silently dormant on every voice-bearing fixture, closing DEBT-004. Iteration 035 shipped as the `v0.4.2`'s successor, the `v0.4.3` hardening patch (2026-06-21), the second of the v0.4.x post-dogfooding track: `NarrativeUnit`/`NarrativeFunction` now emit a single `rdfs:label` (the `CharacterRole`/`E55_Type` one-triple shape, riding the identity assertion — no new E13), and `NarrativeSequence` materializes each member's resolved position as a per-unit `bw:sequenceOrdinal` triple (`xsd:integer`, 1-based contiguous rank over the already-sorted members, reified through its own file-level E13) — so the narrative layer is queryable by content (find-by-label) and walkable in declared order (`ORDER BY`) under unordered RDF, closing DEBT-005. `bw:sequenceOrdinal` lives in `sources.ttl` outside the frozen GOLEM closure (Principle X); the CHANGELOG and the `v0.4.3` annotated tag landed with the release step (the `bookwright-release` skill). Iteration 036 shipped as the `v0.4.4` hardening patch (2026-06-21), the third and last of the v0.4.x post-dogfooding track: `_reject_unknown_vocab` now enumerates the accepted members of the closed `type`/`reliability` vocabulary in the rejection message (derived from `SOURCE_TYPE_IRI`/`RELIABILITY_IRI` in declaration order — drift-proof), and `_map_sources` wraps each per-source fault once with a `source '<name>': …` / `source #<n>: …` (1-based) locator prefix, the `--json` error envelope (`code=invalid_research`, `details={relpath, value}`) byte-unchanged — only the human `message` improves (Principle IX); the SPARQL empty-result footgun is documented (not "fixed") in the `graph query` help + docs, closing DEBT-006. This release also folds in the EUPL-1.2 relicense + GOLEM CC BY 4.0 attribution that had accumulated on `main` since `v0.4.3` (previously the CHANGELOG `[Unreleased]` section). `__version__` is now `0.4.4`; the CHANGELOG and the `v0.4.4` annotated tag landed with the release step.
+024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now **released**: 028–032 are all merged and shipped **once** as `v0.4.0` (2026-06-21) at the closing iteration (032), like M4→`v0.2.0` and M5→`v0.3.0`. Iteration 033 then shipped as the `v0.4.1` hardening patch (2026-06-21): it removes the dead top-level `NarrativeRole` concept (`CONCEPTS` 13→12) and hardens the ingestion-parity contract so a dead concept colliding on a carrier's class IRI can never again pass as reachable, closing DEBT-001. Iteration 034 shipped as the `v0.4.2` hardening patch (2026-06-21), the first of the v0.4.x post-dogfooding track: the `focalization` validator now normalizes the candidate line before matching, so the markdown-prefixed `- **Voz narrativa**: …` shape its own scaffold emits parses byte-identically to the bare form — waking a check that had been silently dormant on every voice-bearing fixture, closing DEBT-004. Iteration 035 shipped as the `v0.4.2`'s successor, the `v0.4.3` hardening patch (2026-06-21), the second of the v0.4.x post-dogfooding track: `NarrativeUnit`/`NarrativeFunction` now emit a single `rdfs:label` (the `CharacterRole`/`E55_Type` one-triple shape, riding the identity assertion — no new E13), and `NarrativeSequence` materializes each member's resolved position as a per-unit `bw:sequenceOrdinal` triple (`xsd:integer`, 1-based contiguous rank over the already-sorted members, reified through its own file-level E13) — so the narrative layer is queryable by content (find-by-label) and walkable in declared order (`ORDER BY`) under unordered RDF, closing DEBT-005. `bw:sequenceOrdinal` lives in `sources.ttl` outside the frozen GOLEM closure (Principle X); the CHANGELOG and the `v0.4.3` annotated tag landed with the release step (the `bookwright-release` skill). Iteration 036 shipped as the `v0.4.4` hardening patch (2026-06-21), the third and last of the v0.4.x post-dogfooding track: `_reject_unknown_vocab` now enumerates the accepted members of the closed `type`/`reliability` vocabulary in the rejection message (derived from `SOURCE_TYPE_IRI`/`RELIABILITY_IRI` in declaration order — drift-proof), and `_map_sources` wraps each per-source fault once with a `source '<name>': …` / `source #<n>: …` (1-based) locator prefix, the `--json` error envelope (`code=invalid_research`, `details={relpath, value}`) byte-unchanged — only the human `message` improves (Principle IX); the SPARQL empty-result footgun is documented (not "fixed") in the `graph query` help + docs, closing DEBT-006. This release also folds in the EUPL-1.2 relicense + GOLEM CC BY 4.0 attribution that had accumulated on `main` since `v0.4.3` (previously the CHANGELOG `[Unreleased]` section). Iteration 037 shipped as the `v0.4.5` hardening patch (2026-06-21), the fourth and last of the v0.4.x post-dogfooding track: a module-level `_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")` plus one guard in `_parse_declaration` make the `focalization` validator treat a body that is *solely* an unanswered `[PENDING: …]` narrative-voice placeholder as no declaration (routing it into the existing "no declaration → zero findings" path), so a fresh `bookwright init` constitution — whose placeholder text literally contains "tercera persona"/"limitada" — no longer parses as a real declaration and floods head-hopping warnings on the first interiority verb. The full `^…$` anchor keeps a body with real text *before or after* the token a real declaration; the guard runs on the already markdown-normalized body (iteration 034); recognition is case-insensitive and label-agnostic; no other focalization rule changed and the frozen ontology is untouched (prose validator, `triples=()`, Principle X), closing DEBT-007. `__version__` is now `0.4.5`; the CHANGELOG and the `v0.4.5` annotated tag landed with the release step.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -217,6 +227,7 @@ was correct) and corrupts the run's audit trail.
 | 034 | `focalization` tolerates markdown-prefixed voice declaration (DEBT-004) | v0.4.2 | ✅ merged |
 | 035 | G9 `rdfs:label` + queryable sequence order (DEBT-005) | v0.4.3 | ✅ merged |
 | 036 | Actionable research-source error messages (DEBT-006) | v0.4.4 | ✅ merged |
+| 037 | `focalization` treats unanswered `[PENDING]` voice placeholder as no declaration (DEBT-007) | v0.4.5 | ✅ merged |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the

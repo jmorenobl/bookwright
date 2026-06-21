@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.4.4-6f42c1" alt="Version 0.4.4"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.4.5-6f42c1" alt="Version 0.4.5"></a>
   <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License: EUPL-1.2"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Coverage ≥80%">
@@ -33,7 +33,7 @@ Bookwright derives a knowledge graph from your work and validates
 continuity (characters, settings, chronology, focalization)
 deterministically.
 
-> Status: **v0.4.4** — usable for researching, structuring, drafting and
+> Status: **v0.4.5** — usable for researching, structuring, drafting and
 > validating continuity. It researches with provenance, ingests the
 > narrative structure (units, functions and sequences) and types it
 > against the Propp and Greimas vocabularies. Change-by-change detail in
@@ -202,7 +202,10 @@ From the first pass onward, you work in a loop:
   objective and `bookwright status` derives the state and the next step.
 
 The engine behind all of this is the `[PENDING]` protocol: you leave a
-marked gap, keep moving, and resolve it once the material is ripe.
+marked gap, keep moving, and resolve it once the material is ripe. An
+unanswered `[PENDING]` is treated as *undecided*, not as an answer — so a
+voice declaration still left as `[PENDING: …]` stays invisible to the
+continuity checks until you actually decide it, never a false alarm.
 `/bookwright-clarify` lists the project's open questions for you at any
 time. **There is no "definitive" pass**: there's a manuscript and a graph
 that converge iteration by iteration.
