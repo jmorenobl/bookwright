@@ -37,7 +37,7 @@ Single project, src-layout: source under `src/bookwright/`, tests under
 **Purpose**: Capture the pre-change graph so SC-002 (zero triple regression) can
 be proven by diff, not asserted by faith.
 
-- [ ] T001 Capture a pre-change Turtle baseline of the G11-bearing fixture: run `uv run bookwright graph build --root tests/fixtures/parity-exercise` and save the emitted graph (e.g. `cp tests/fixtures/parity-exercise/bible/graph.ttl /tmp/g11-baseline.ttl`) so the post-change build can be diffed against it for byte-for-byte `golem:G11_Narrative_Role` equivalence.
+- [X] T001 Capture a pre-change Turtle baseline of the G11-bearing fixture: run `uv run bookwright graph build --root tests/fixtures/parity-exercise` and save the emitted graph (e.g. `cp tests/fixtures/parity-exercise/bible/graph.ttl /tmp/g11-baseline.ttl`) so the post-change build can be diffed against it for byte-for-byte `golem:G11_Narrative_Role` equivalence.
 
 **Checkpoint**: Baseline captured — the deletion can now be made and verified.
 
@@ -54,8 +54,8 @@ to.
 still import `NarrativeRole`); US1/US2 restore green. This is expected — the
 phase is a blocking prerequisite, not an independently shippable increment.
 
-- [ ] T002 Delete the `NarrativeRole` class definition from `src/bookwright/golem/modules/narrative.py` (FR-001). Leave every other concept in the module untouched; the file shrinks.
-- [ ] T003 In `src/bookwright/golem/__init__.py` remove the three `NarrativeRole` references — the import, the `CONCEPTS` entry (→ exactly 12 concepts), and the `__all__` entry — and reconcile the module docstring "the thirteen GOLEM concept classes" → "the twelve GOLEM concept classes" (FR-002, FR-003). Do **not** touch `golem/namespaces.py` — `CLASS_IRI["NarrativeRole"]` is preserved.
+- [X] T002 Delete the `NarrativeRole` class definition from `src/bookwright/golem/modules/narrative.py` (FR-001). Leave every other concept in the module untouched; the file shrinks.
+- [X] T003 In `src/bookwright/golem/__init__.py` remove the three `NarrativeRole` references — the import, the `CONCEPTS` entry (→ exactly 12 concepts), and the `__all__` entry — and reconcile the module docstring "the thirteen GOLEM concept classes" → "the twelve GOLEM concept classes" (FR-002, FR-003). Do **not** touch `golem/namespaces.py` — `CLASS_IRI["NarrativeRole"]` is preserved.
 
 **Checkpoint**: `from bookwright.golem import CONCEPTS` yields 12 entries with `NarrativeRole` absent; `from bookwright.golem import NarrativeRole` raises `ImportError`.
 
@@ -68,8 +68,8 @@ phase is a blocking prerequisite, not an independently shippable increment.
 
 **Independent Test**: `uv run python -c "from bookwright.golem import CONCEPTS; assert len(CONCEPTS)==12 and 'NarrativeRole' not in CONCEPTS"`; and `grep -rniE "thirteen|eleven" src/ tests/ --exclude-dir=__pycache__` returns no live concept-count assertion — both the "thirteen"/"twelve" total-count and the "eleven"/"ten" reachable-count word forms are reconciled (only frozen `CHANGELOG.md` history retains "thirteen", and it is out of `src/`/`tests/`).
 
-- [ ] T004 [P] [US1] In `src/bookwright/golem/deferrals.py` reconcile the count prose "Two of the thirteen" → "Two of the twelve" (FR-003). Do **not** change `DEFERRED_CONCEPTS` — its two entries (`RelationshipRole`, `PsychologicalState`) and their `demand-pulled` targets are out of scope (FR-010).
-- [ ] T005 [US1] Verify the honest-registry contract (no new file): assert `len(CONCEPTS) == 12`, `"NarrativeRole"` absent from `CONCEPTS`/`__all__`/all imports, and run a repo-wide `grep -rniE "thirteen|eleven|NarrativeRole" src/ tests/ --exclude-dir=__pycache__` confirming no live reference to a *top-level* `NarrativeRole` concept survives and no stale reachable-count token — neither "thirteen"/"twelve" total nor "eleven"/"ten" reachable — remains in live source/tests (FR-003, SC-001; the final SC-007 grep sweep runs in Phase 7).
+- [X] T004 [P] [US1] In `src/bookwright/golem/deferrals.py` reconcile the count prose "Two of the thirteen" → "Two of the twelve" (FR-003). Do **not** change `DEFERRED_CONCEPTS` — its two entries (`RelationshipRole`, `PsychologicalState`) and their `demand-pulled` targets are out of scope (FR-010).
+- [X] T005 [US1] Verify the honest-registry contract (no new file): assert `len(CONCEPTS) == 12`, `"NarrativeRole"` absent from `CONCEPTS`/`__all__`/all imports, and run a repo-wide `grep -rniE "thirteen|eleven|NarrativeRole" src/ tests/ --exclude-dir=__pycache__` confirming no live reference to a *top-level* `NarrativeRole` concept survives and no stale reachable-count token — neither "thirteen"/"twelve" total nor "eleven"/"ten" reachable — remains in live source/tests (FR-003, SC-001; the final SC-007 grep sweep runs in Phase 7).
 
 **Checkpoint**: The concept registry and its live prose are honest — 12 concepts, no dead entry, no stale "thirteen".
 
@@ -83,11 +83,11 @@ G11's triple/URI behaviour — relocated onto the real carrier, never dropped.
 
 **Independent Test**: `CLASS_IRI` still holds 17 IRIs (incl. G11); `git diff --quiet -- src/bookwright/resources/schemas` (golem.ttl unchanged); the post-change `parity-exercise` graph build diffs clean against the Phase-1 baseline; `CharacterRole` still emits the `golem:G11_Narrative_Role` type.
 
-- [ ] T006 [P] [US2] Rewrite the `CharacterRole` docstring in `src/bookwright/golem/modules/feature.py` (FR-012): drop "Distinct from the top-level `NarrativeRole` concept…" and describe `CharacterRole` as the **sole** materialization of `golem:G11_Narrative_Role`. Leave `golem_class = CLASS_IRI["NarrativeRole"]` and all triple output untouched (FR-005).
-- [ ] T007 [P] [US2] In `tests/golem/test_triples.py` remove the `NarrativeRole` import and instantiation; route any `NarrativeUnit.roles` cross-ref through a bare `URIRef`; relocate the G11 triple/type coverage the dead class provided onto the real carrier `CharacterRole` (whose G11 typing is already asserted in `tests/golem/test_character_attributes.py:50`), so coverage does not silently drop (FR-008b).
-- [ ] T008 [P] [US2] In `tests/golem/test_uri.py` drop `NarrativeRole` from the `SEGMENTS` table and reconcile "12 slugged concepts" → "11" (FR-003, FR-008); keep G11 URI-pattern coverage via the `CharacterRole` character-scoped node URI (`test_character_scoped_node_uri_patterns`).
-- [ ] T009 [P] [US2] In `tests/golem/test_namespaces.py` **reclassify** G11's IRI from the concept bucket into the non-`CONCEPTS` carrier bucket (`12 + 5 == 17`, was `13 + 4`) and rename the `test_class_iri_maps_thirteen_concepts_plus_attribute_carriers` test off the stale "thirteen" count, updating its "13 narrative concepts" docstring — preserving the frozen 17-IRI closure assertion, never lowering the count or deleting an assertion (FR-004, FR-008a).
-- [ ] T010 [US2] Verify zero information loss (depends on T002, T003, T006–T009): `CLASS_IRI` == 17 with `"NarrativeRole"` present; `golem.ttl`/`schemas` byte-for-byte unchanged (`git diff --quiet`); rebuild `tests/fixtures/parity-exercise` and diff against `/tmp/g11-baseline.ttl` (identical `golem:G11_Narrative_Role` triples); `CharacterRole(...).to_triples()` still emits the G11 type (quickstart §2–3, SC-002/SC-003).
+- [X] T006 [P] [US2] Rewrite the `CharacterRole` docstring in `src/bookwright/golem/modules/feature.py` (FR-012): drop "Distinct from the top-level `NarrativeRole` concept…" and describe `CharacterRole` as the **sole** materialization of `golem:G11_Narrative_Role`. Leave `golem_class = CLASS_IRI["NarrativeRole"]` and all triple output untouched (FR-005).
+- [X] T007 [P] [US2] In `tests/golem/test_triples.py` remove the `NarrativeRole` import and instantiation; route any `NarrativeUnit.roles` cross-ref through a bare `URIRef`; relocate the G11 triple/type coverage the dead class provided onto the real carrier `CharacterRole` (whose G11 typing is already asserted in `tests/golem/test_character_attributes.py:50`), so coverage does not silently drop (FR-008b).
+- [X] T008 [P] [US2] In `tests/golem/test_uri.py` drop `NarrativeRole` from the `SEGMENTS` table and reconcile "12 slugged concepts" → "11" (FR-003, FR-008); keep G11 URI-pattern coverage via the `CharacterRole` character-scoped node URI (`test_character_scoped_node_uri_patterns`).
+- [X] T009 [P] [US2] In `tests/golem/test_namespaces.py` **reclassify** G11's IRI from the concept bucket into the non-`CONCEPTS` carrier bucket (`12 + 5 == 17`, was `13 + 4`) and rename the `test_class_iri_maps_thirteen_concepts_plus_attribute_carriers` test off the stale "thirteen" count, updating its "13 narrative concepts" docstring — preserving the frozen 17-IRI closure assertion, never lowering the count or deleting an assertion (FR-004, FR-008a).
+- [X] T010 [US2] Verify zero information loss (depends on T002, T003, T006–T009): `CLASS_IRI` == 17 with `"NarrativeRole"` present; `golem.ttl`/`schemas` byte-for-byte unchanged (`git diff --quiet`); rebuild `tests/fixtures/parity-exercise` and diff against `/tmp/g11-baseline.ttl` (identical `golem:G11_Narrative_Role` triples); `CharacterRole(...).to_triples()` still emits the G11 type (quickstart §2–3, SC-002/SC-003).
 
 **Checkpoint**: The frozen ontology is untouched and every G11 triple is preserved; G11 coverage lives on `CharacterRole`.
 
@@ -101,9 +101,9 @@ is *named* as a failure, not silently counted reachable.
 
 **Independent Test**: `uv run pytest tests/golem/test_ingestion_parity.py -q` is green, including the new `carrier_iri_collisions` invariant (empty for the real registry) and the drift sim that re-adds `"NarrativeRole"` to a local copy and asserts it is named as a collision failure.
 
-- [ ] T011 [US3] Harden `tests/golem/test_ingestion_parity.py` (FR-006, FR-007, SC-004): (a) drop `NarrativeRole` from the pinned `EXPECTED_REACHABLE` set (→ 10 names); (b) add `"NarrativeRole"` to `CARRIER_NAMES` (→ 5: `CharacterFeature`, `Dimension`, `Type`, `TimeInterval`, `NarrativeRole`); (c) add the pure helper `carrier_iri_collisions(concepts)` per contract C4; (d) assert carrier-IRI disjointness `carrier_iri_collisions(set(CONCEPTS)) == set()`; (e) add the drift sim asserting `"NarrativeRole" in carrier_iri_collisions(set(CONCEPTS) | {"NarrativeRole"})`; (f) reconcile **every** stale reachable-count token in this file (doctrine §4, FR-003): the module docstring "Eleven of the thirteen" → "Ten of the twelve" **and** the two inline comments ("The eleven concepts the fixture's authored text materializes" line ~34, "Exactly the eleven reachable concepts materialize" line ~119) → "ten" — leaving no live "eleven"/"thirteen" reachable count in the file. Keep the orphan set observed from a real build `== set(DEFERRED_CONCEPTS) == {RelationshipRole, PsychologicalState}` and the existing drift sims passing unchanged.
-- [ ] T012 [P] [US3] Rewrite the header comment of `tests/fixtures/parity-exercise/manifest.toml` (FR-012) so it describes `golem:G11_Narrative_Role` as materialized solely by the character-scoped `CharacterRole` carrier, not as a top-level `NarrativeRole` reachable ingestion path. Touch only the comment; the fixture's `narrative_roles:` authoring stays as the live G11 observation source.
-- [ ] T013 [US3] Verify the hardened contract (depends on T011, T012): `uv run pytest tests/golem/test_ingestion_parity.py -q` green incl. the collision invariant and drift sim (quickstart §4, SC-004).
+- [X] T011 [US3] Harden `tests/golem/test_ingestion_parity.py` (FR-006, FR-007, SC-004): (a) drop `NarrativeRole` from the pinned `EXPECTED_REACHABLE` set (→ 10 names); (b) add `"NarrativeRole"` to `CARRIER_NAMES` (→ 5: `CharacterFeature`, `Dimension`, `Type`, `TimeInterval`, `NarrativeRole`); (c) add the pure helper `carrier_iri_collisions(concepts)` per contract C4; (d) assert carrier-IRI disjointness `carrier_iri_collisions(set(CONCEPTS)) == set()`; (e) add the drift sim asserting `"NarrativeRole" in carrier_iri_collisions(set(CONCEPTS) | {"NarrativeRole"})`; (f) reconcile **every** stale reachable-count token in this file (doctrine §4, FR-003): the module docstring "Eleven of the thirteen" → "Ten of the twelve" **and** the two inline comments ("The eleven concepts the fixture's authored text materializes" line ~34, "Exactly the eleven reachable concepts materialize" line ~119) → "ten" — leaving no live "eleven"/"thirteen" reachable count in the file. Keep the orphan set observed from a real build `== set(DEFERRED_CONCEPTS) == {RelationshipRole, PsychologicalState}` and the existing drift sims passing unchanged.
+- [X] T012 [P] [US3] Rewrite the header comment of `tests/fixtures/parity-exercise/manifest.toml` (FR-012) so it describes `golem:G11_Narrative_Role` as materialized solely by the character-scoped `CharacterRole` carrier, not as a top-level `NarrativeRole` reachable ingestion path. Touch only the comment; the fixture's `narrative_roles:` authoring stays as the live G11 observation source.
+- [X] T013 [US3] Verify the hardened contract (depends on T011, T012): `uv run pytest tests/golem/test_ingestion_parity.py -q` green incl. the collision invariant and drift sim (quickstart §4, SC-004).
 
 **Checkpoint**: The DEBT-001 loophole is provably closed — re-adding a carrier-only-IRI concept is named as a parity failure.
 
@@ -116,8 +116,8 @@ plain-text still points to it as open.
 
 **Independent Test**: `grep -q "DEBT-001" DEBT.md` returns non-zero (absent); no other entry references the `NarrativeRole` dead-concept gap.
 
-- [ ] T014 [P] [US4] Remove the `### DEBT-001 …` block from `DEBT.md` (FR-009, SC-005); update the "Deuda abierta" section so it reflects the new state with no archival stub.
-- [ ] T015 [P] [US4] In `bookwright-roadmap.md` remove (or reconcile to "resolved") the § 4 *"Decisión estructural sobre `NarrativeRole` (DEBT-001)"* item — its open decision is now made (the concept is eliminated) (FR-009). Leave the G11 status row (line ~112: "G11 ✅ inline vía `narrative_roles:`") untouched — it stays accurate.
+- [X] T014 [P] [US4] Remove the `### DEBT-001 …` block from `DEBT.md` (FR-009, SC-005); update the "Deuda abierta" section so it reflects the new state with no archival stub.
+- [X] T015 [P] [US4] In `bookwright-roadmap.md` remove (or reconcile to "resolved") the § 4 *"Decisión estructural sobre `NarrativeRole` (DEBT-001)"* item — its open decision is now made (the concept is eliminated) (FR-009). Leave the G11 status row (line ~112: "G11 ✅ inline vía `narrative_roles:`") untouched — it stays accurate.
 
 **Checkpoint**: The plain-text ledger records only open debt; DEBT-001 is gone.
 
@@ -127,9 +127,9 @@ plain-text still points to it as open.
 
 **Purpose**: Prove the whole change against the spec's success criteria.
 
-- [ ] T016 Run the SC-007 grep contract: `grep -rn NarrativeRole src/ tests/ --exclude-dir=__pycache__` returns **only** the preserved-key / carrier uses enumerated in contract C5 (`golem/namespaces.py`, `golem/modules/feature.py`, `tests/golem/test_character_attributes.py`, `tests/golem/test_namespaces.py` carrier bucket, `tests/golem/test_ingestion_parity.py` `CARRIER_NAMES`) — no top-level-concept import/`CONCEPTS`/`__all__`/segment/`EXPECTED_REACHABLE` reference (SC-007).
-- [ ] T017 Run all four CI gates green (FR-011, SC-006): `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (≥ 80 % coverage enforced by `[tool.coverage.report]`).
-- [ ] T018 Walk the `quickstart.md` checks end to end (§1–§7) and confirm each prints its ✓; clean up `/tmp/g11-baseline.ttl`.
+- [X] T016 Run the SC-007 grep contract: `grep -rn NarrativeRole src/ tests/ --exclude-dir=__pycache__` returns **only** the preserved-key / carrier uses enumerated in contract C5 (`golem/namespaces.py`, `golem/modules/feature.py`, `tests/golem/test_character_attributes.py`, `tests/golem/test_namespaces.py` carrier bucket, `tests/golem/test_ingestion_parity.py` `CARRIER_NAMES`) — no top-level-concept import/`CONCEPTS`/`__all__`/segment/`EXPECTED_REACHABLE` reference (SC-007).
+- [X] T017 Run all four CI gates green (FR-011, SC-006): `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (≥ 80 % coverage enforced by `[tool.coverage.report]`).
+- [X] T018 Walk the `quickstart.md` checks end to end (§1–§7) and confirm each prints its ✓; clean up `/tmp/g11-baseline.ttl`.
 
 ---
 

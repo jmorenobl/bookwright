@@ -1,6 +1,6 @@
 """GOLEM domain model: typed, frozen entities with deterministic RDF identity.
 
-Public surface: the thirteen GOLEM concept classes, the two
+Public surface: the twelve GOLEM concept classes, the two
 character-scoped attribute carriers (``CharacterFeature`` / ``Dimension`` —
 exported for iteration-10 introspection but deliberately **not** in
 ``CONCEPTS``), the ``GolemError`` / ``EmptySlugError`` types, the ``CONCEPTS``
@@ -18,7 +18,6 @@ from bookwright.golem.modules.feature import CharacterFeature, Dimension
 from bookwright.golem.modules.inference import AttributeAssignment
 from bookwright.golem.modules.narrative import (
     NarrativeFunction,
-    NarrativeRole,
     NarrativeSequence,
     NarrativeUnit,
 )
@@ -38,7 +37,6 @@ CONCEPTS: dict[str, type] = {
     "NarrativeLocation": NarrativeLocation,
     "NarrativeUnit": NarrativeUnit,
     "NarrativeFunction": NarrativeFunction,
-    "NarrativeRole": NarrativeRole,
     "NarrativeSequence": NarrativeSequence,
     "AttributeAssignment": AttributeAssignment,
 }
@@ -58,7 +56,6 @@ __all__ = [
     "NarrativeEvent",
     "NarrativeFunction",
     "NarrativeLocation",
-    "NarrativeRole",
     "NarrativeSequence",
     "NarrativeUnit",
     "Object",

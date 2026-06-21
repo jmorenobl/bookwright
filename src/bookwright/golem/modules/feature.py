@@ -144,8 +144,9 @@ class CharacterRole(GolemEntity):
     """A character-scoped narrative role (``golem:G11_Narrative_Role``).
 
     URI is ``{character.uri}/role/{slug(label)}``; emits the type assertion and
-    the role text on ``rdfs:label``. Distinct from the top-level ``NarrativeRole``
-    concept: this node is inlined under a character and is not in ``CONCEPTS``.
+    the role text on ``rdfs:label``. This inlined-under-a-character node is the
+    **sole** materialization of ``golem:G11_Narrative_Role`` in the model — there
+    is no top-level role concept, and it is deliberately not in ``CONCEPTS``.
 
     When ``type_uri`` is set (iteration 030 — the role name matched a Greimas
     actant), it also emits a ``crm:P2_has_type`` link to that ``crm:E55_Type``

@@ -172,19 +172,13 @@ de diferidos (iteración 024) a escala de subsistema:
   activación:** el flujo de punta a punta se ha probado en un libro real y el
   cuello de botella pasa a ser sacarlo. El número `1.0` se **gana** cuando ese
   flujo completo está probado; no se pre-asigna al export por adelantado.
-- **Decisión estructural sobre `NarrativeRole` (DEBT-001).** El concepto de nivel
-  superior `NarrativeRole` está en el registro `CONCEPTS` pero ningún builder lo
-  instancia: la única materialización de `G11_Narrative_Role` la hace el nodo
-  inlined `CharacterRole` (no registrado en `CONCEPTS`). Como ambos comparten el
-  mismo `CLASS_IRI`, el test de paridad ve G11 materializada y `NarrativeRole`
-  **escapa** al registro de diferidos pese a no tener ruta de ingesta propia —un
-  concepto muerto fuera del contrato de diferimiento. **Condición de activación:**
-  una iteración estructural posterior que toque el registro `CONCEPTS` (y su conteo
-  / test de paridad) decida si `NarrativeRole` se **elimina** de `CONCEPTS`
-  (si `CharacterRole` es la única encarnación de G11 que se quiere) o se le da una
-  **superficie de autoría propia**. No se hace antes: tocar `CONCEPTS` es su propia
-  clase de deuda estructural y refactorizarlo ahora sería plumbing por delante del
-  plan (§ 5). Registrada en `DEBT.md` (DEBT-001) hasta que se resuelva.
+
+> **Resuelto (iteración 033).** La «decisión estructural sobre `NarrativeRole`
+> (DEBT-001)» ya está tomada: el concepto de nivel superior `NarrativeRole` se
+> **eliminó** de `CONCEPTS` —`CharacterRole` es la única encarnación de
+> `G11_Narrative_Role` que se quiere— y el contrato de paridad de ingesta se
+> endureció para nombrar como fallo cualquier concepto cuya IRI la mate solo un
+> carrier fuera de `CONCEPTS`. La clase RDF `G11_Narrative_Role` sigue congelada.
 
 ---
 

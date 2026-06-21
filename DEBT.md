@@ -43,34 +43,31 @@
 
 ## Deuda abierta
 
-### DEBT-001 — Concepto `NarrativeRole` vestigial (modelado pero nunca ingestado)
+### DEBT-003 — Segmento URI `narrative-role` obsoleto en la tabla de diseño
 - **Estado:** abierta
-- **Detectada en:** spec-030 (2026-06-20)
-- **Ubicación:** `src/bookwright/golem/modules/narrative.py:37` (clase
-  `NarrativeRole`), registrada en `src/bookwright/golem/__init__.py` (`CONCEPTS`).
-- **Clase de deuda:** concepto GOLEM modelado-pero-muerto que evade el registro de
-  diferimiento.
-- **Descripción:** el concepto de nivel superior `NarrativeRole` está en
-  `CONCEPTS` pero ningún builder lo instancia: la única materialización de
-  `golem:G11_Narrative_Role` la hace el nodo inlined `CharacterRole`
-  (`golem/modules/feature.py`, que **no** está en `CONCEPTS`). Como ambos
-  comparten el mismo `CLASS_IRI["NarrativeRole"]`, el test de paridad de ingestión
-  ve la clase G11 materializada y por eso `NarrativeRole` **no** aparece en
-  `DEFERRED_CONCEPTS` (`golem/deferrals.py`) pese a no tener ruta de ingestión
-  propia. Es un concepto muerto que escapa al contrato de diferimiento.
-- **Por qué se difiere:** la iteración 030 *tipa* entidades G10/G11 vía
-  `E55_Type`; eliminar (o cablear) el concepto `NarrativeRole` es otra clase de
-  deuda — toca el registro `CONCEPTS`, el conteo "thirteen concepts" de
-  `deferrals.py` y su test de paridad — y limpiarla aquí sería refactorizar por
-  delante del plan (Scope discipline).
-- **Resolución sugerida / versión objetivo:** decidir en una iteración
-  estructural posterior si el concepto se elimina de `CONCEPTS` (si
-  `CharacterRole` es la única encarnación de G11 que se quiere) o si se le da una
-  superficie de autoría propia; ajustar `deferrals.py`/paridad en consecuencia.
-  Tocar el registro `CONCEPTS` es su propia clase de deuda estructural, fuera del
-  alcance del cierre de v0.4 (iteración 032 no cablea G6/G3 ni reabre `CONCEPTS`).
-  Target: demand-pulled — iteración estructural posterior, sin versión asignada.
-  Registrada también en `bookwright-roadmap.md` § 4 (horizonte demand-pulled).
+- **Detectada en:** spec-033 (2026-06-21)
+- **Ubicación:** `bookwright-design.md:203` (tabla "segmento fijo por concepto", § 6)
+- **Clase de deuda:** inconsistencia de documentación en el diseño canónico (la
+  tabla nombra un segmento URI que ningún código acuña).
+- **Descripción:** la fila `| Rol narrativo (`G11_Narrative_Role`) |
+  `narrative-role` | slug |` asigna a G11 un segmento URI de nivel superior que
+  nunca se materializó: la única encarnación real de G11 es el nodo
+  `CharacterRole` anidado en personaje, con URI `{personaje}/role/{slug}` (no
+  `narrative-role`). El segmento `narrative-role` era el `path_segment` de la
+  clase muerta `NarrativeRole`, eliminada en spec-033. La drift es **previa** a
+  esta iteración (el segmento jamás se acuñó) y el propio diseño ya enuncia la
+  semántica correcta en otra parte (línea 1603: "G11 = rol de un personaje";
+  § 7.4: los roles resuelven contra roles de personaje, no acuñan).
+- **Por qué se difiere:** clase distinta a la que toca spec-033 (honestidad del
+  registro `CONCEPTS` en código + prosa de conteo). `bookwright-design.md` es el
+  diseño canónico congelado autoría del owner (numeración de secciones
+  load-bearing); el spec-033 lo dejó **deliberadamente** fuera de scope y lo
+  cita como autoridad (línea 1603, § 7.4). Reescribir el artefacto canónico en
+  una pasada de revisión automática excedería el scope y la disciplina del plan.
+- **Resolución sugerida / versión objetivo:** en una iteración que toque la
+  documentación de diseño, reconciliar la fila para reflejar el carácter
+  anidado-en-personaje de G11 (segmento `role` bajo el personaje) o retirarla,
+  alineándola con la línea 1603 / § 7.4. Edición en español, sin renumerar.
 
 ---
 
