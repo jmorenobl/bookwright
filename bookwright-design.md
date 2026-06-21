@@ -1298,6 +1298,38 @@ class Validator(Protocol):
 
 Validators se autodescubren en `bookwright.validation` y se filtran por `manifest.toml > [validators].enabled`. Validators custom del usuario en `<proyecto>/.bookwright/validators/*.py` se cargan dinámicamente.
 
+### 13.4 Robustez de la validación — `v0.5.0` (issue #1)
+
+> **Dirección decidida en la issue #1, transcrita aquí (Principio I).** El detalle
+> concreto del contrato (la firma exacta del Protocol § 13.1) se actualiza **antes**
+> de divergir el código, en la iteración 040 (plan § 7.3). Esto es el *qué/por qué*;
+> el *cómo* durable está en `bookwright-roadmap.md` § 3.
+
+El dogfooding de v0.4.x destapó **una clase de defecto** —no tres bugs— en los
+validadores de prosa, con dos caras:
+
+- **A — acoplamiento a la prosa de superficie.** Cada validador reimplementa por su
+  cuenta cómo "ver más allá" del markdown que el propio andamiaje emite (encabezados
+  ATX, viñetas, énfasis, placeholders `[PENDING: …]`). Cada formato nuevo reabre la
+  grieta en el siguiente validador. **Cierre (iter 039):** una **costura única** en
+  `io/` que clasifica cada línea/bloque y expone su vista normalizada **una vez**; los
+  validadores la consumen en vez de re-escanear texto crudo, y sus strippers locales
+  se borran. Es Principio I aplicado a la validación: acoplar a la **estructura ya
+  clasificada**, no a la superficie. Sin dependencia de markdown nueva (Constitución
+  II): clasificador determinista, no AST.
+- **B — falsa confianza.** `validate()` devuelve `list[Violation]`, y `[]` no
+  distingue "evaluado y limpio" de "no pude mirar" (un validador dormido se pinta
+  verde). **Cierre (iter 040):** el resultado pasa a **tri-valor** —`evaluado` /
+  `no-evaluado(motivo)`— y el runner, el report, el sobre `--json`, `status` y las
+  skills exponen el tercer estado. Aditivo: el gate sigue clavado solo en hallazgos
+  `error`; `no-evaluado` es un canal distinto de `errors[]` (que es para validadores
+  que petan).
+
+Lo que **no** entra en `v0.5.0`: convertir el heurístico en **juicio semántico** vía
+el path LLM de `bookwright-verify` (§ 20.6). Es el movimiento 3 de la issue, dirección
+del horizonte demand-pulled (`bookwright-roadmap.md` § 5), activable solo cuando un
+heurístico concreto se mida como insuficiente.
+
 ---
 
 ## 14. Stack tecnológico

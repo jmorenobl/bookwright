@@ -54,10 +54,25 @@ DEBT-004; 035, `v0.4.3`, DEBT-005; 036, `v0.4.4`, DEBT-006; 037, `v0.4.5`,
 DEBT-007; 038, `v0.4.6`, DEBT-008) — the track is **complete** and `DEBT.md` carries no open debt. The
 ready-to-run workflow commands and the
 per-iteration debt-cancellation/release cycle live in
-`bookwright-implementation-plan.md`. The remaining longer-horizon work — vector
-search (ChromaDB over rdflib) and export — is deferred to an unversioned,
-demand-pulled horizon: each ships only when its activation condition is met, not on
-a pre-assigned version — see `bookwright-roadmap.md`.
+`bookwright-implementation-plan.md`.
+
+The **next milestone is `v0.5.0` — validation robustness** (issue #1), **planned but
+not started** (no branch yet; the plan's § 1+ is filled, `specs/039-…` does not exist
+on disk yet). The v0.4.x dogfooding made plain that DEBT-004/007/008 were **one class**
+of defect patched instance-by-instance (each validator re-implementing how to "see past
+the markdown the tool itself emits"), not three bugs. Issue #1 decided to **close the
+class at the root** rather than keep playing whack-a-mole. `v0.5.0` is a **minor** (new
+architecture, not a one-delta patch — so iterations accumulate on `main` and release
+once at close, M4→`v0.2.0`-style) with two ordered iterations: **039 — single
+prose/structure seam** (a markdown-aware view in `io/` all prose validators consume,
+deleting the per-validator strippers; closes the surface-coupling facet) and **040 —
+tri-valued result** (`evaluated` / `not-evaluated(reason)` so `[]` stops reading as
+"clean" when it meant "couldn't look"; closes the false-confidence facet). The LLM
+**semantic-judgment** escalation (issue #1 move 3) is parked in the demand-pulled
+horizon. The remaining longer-horizon work — semantic judgment in validation, vector
+search (ChromaDB over rdflib) and export — is deferred to an unversioned, demand-pulled
+horizon: each ships only when its activation condition is met, not on a pre-assigned
+version — see `bookwright-roadmap.md`.
 
 The canonical references:
 
@@ -67,8 +82,8 @@ The canonical references:
   MUST NOT be reopened. § 20 covers the research system (shipped in v0.2);
   § 21 the context orchestration (shipped in v0.3).
 - `bookwright-roadmap.md` (Spanish) — the **durable** intent across versions
-  (the *what* and *why*): the version line (v0.3.x → v0.4 → demand-pulled
-  horizon), the
+  (the *what* and *why*): the version line (v0.3.x → v0.4 → v0.4.x → v0.5.0 →
+  demand-pulled horizon), the
   ingestion-parity north star, the cancelled list. Unlike the plan, it is **not**
   emptied each milestone. A guide, not a commitment.
 - `bookwright-implementation-plan.md` (Spanish) — ordered iteration plan for the
@@ -236,6 +251,8 @@ was correct) and corrupts the run's audit trail.
 | 036 | Actionable research-source error messages (DEBT-006) | v0.4.4 | ✅ merged |
 | 037 | `focalization` treats unanswered `[PENDING]` voice placeholder as no declaration (DEBT-007) | v0.4.5 | ✅ merged |
 | 038 | `character_presence` skips ATX heading first word (DEBT-008) | v0.4.6 | ✅ merged |
+| 039 | Single prose/structure seam — validators stop coupling to surface markdown (issue #1, facet A) | v0.5.0 | ⏳ planned |
+| 040 | Tri-valued validator result: `evaluated` / `not-evaluated(reason)` (issue #1, facet B) | v0.5.0 | ⏳ planned |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the

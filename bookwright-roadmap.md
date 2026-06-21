@@ -26,10 +26,13 @@
 ## 1. Dónde estamos
 
 El tramo de endurecimiento **`v0.3.x` está cerrado** (`v0.3.4` tageada
-2026-06-15) y **v0.4 — la capa estructural narrativa — está entregada**
-(iteraciones 028–032; se libera como `v0.4.0` al cierre, iteración 032). El
-siguiente horizonte es **demand-pulled**, sin versión asignada (§ 4). Lo
-entregado hasta hoy:
+2026-06-15), **v0.4 — la capa estructural narrativa — está entregada**
+(iteraciones 028–032; `v0.4.0` al cierre, iteración 032) y el **tramo de
+endurecimiento post-dogfooding `v0.4.x`** (iteraciones 033–038, patches
+`v0.4.1`…`v0.4.6`) está **cerrado** (`v0.4.6` tageada 2026-06-22). El siguiente
+hito es **`v0.5.0` — validación robusta** (§ 3), que cierra la *clase* de defecto
+de superficie de los validadores (issue #1); tras él, el horizonte
+**demand-pulled** sin versión asignada (§ 5). Lo entregado hasta hoy:
 
 - **`v0.1.0`** (M0–M3) — el toolkit v0: manifiesto, modelo GOLEM sobre `rdflib`,
   los 10 commands de autoría materializados como Agent Skills, validación.
@@ -48,6 +51,16 @@ entregado hasta hoy:
   tipado vía `[vocabularies] active` (030), el validador `narrative_structure`
   (031), y el cierre E2E + docs + diferidos honestos + release (032). Cierra la
   paridad de ingesta; G6/G3 quedan en el horizonte demand-pulled.
+- **`v0.4.1`…`v0.4.6`** (endurecimiento post-dogfooding v0.4.x) — un dogfooding real
+  (libro de punta a punta, 2026-06-21) destapó hallazgos accionables, saldados como
+  un patch cada uno: parámetro `NarrativeRole` muerto fuera (033, DEBT-001), y el
+  tramo de la **issue #1** —`focalization` tolera la declaración de voz prefijada con
+  markdown (034, DEBT-004), `rdfs:label` + orden de secuencia consultable (035,
+  DEBT-005), mensajes de error de fuentes accionables (036, DEBT-006), `focalization`
+  trata el placeholder `[PENDING]` de voz como "sin declaración" (037, DEBT-007) y
+  `character_presence` ignora la primera palabra de un encabezado markdown (038,
+  DEBT-008). Las cinco son **parches por instancia** de una misma clase de defecto
+  (§ 3); cerrarla de raíz es el cometido de `v0.5.0`.
 
 Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 `ruff format`, `mypy --strict`, `pytest` ≥ 80 %) verdes.
@@ -60,7 +73,13 @@ Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 v0.3.x  ──  endurecimiento: cancelar deuda, robustez, cerrar atajos de v0   ✅ cerrado (v0.3.4)
 v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)            ✅ entregada (v0.4.0)
             + ingesta de outline/  — cierra la paridad de ingesta
-──── horizonte sin versión asignada (demand-pulled, con condición de activación) ──── ← AQUÍ
+v0.4.x  ──  endurecimiento post-dogfooding (issue #1, instancia a instancia)  ✅ cerrado (v0.4.6)
+v0.5.0  ──  validación robusta: cerrar la CLASE del defecto de superficie     ← AQUÍ
+            (costura única + estado tri-valor; verde = evaluado).  issue #1.
+──── horizonte sin versión asignada (demand-pulled, con condición de activación) ────
+juicio    ─  escalado semántico (voz/focalización/temporal) vía el path LLM de
+semántico    bookwright-verify, con el regex como pre-filtro. Activar cuando un
+             validador concreto pida juicio literario que el heurístico no da.
 vectores  ─  ChromaDB sobre rdflib, tras el Indexer Protocol. Activar SI:
              corpus multi-libro/serie, O recall estructural medido como
              insuficiente en una skill concreta. Hasta entonces: no se implementa.
@@ -74,7 +93,7 @@ del proyecto —los conceptos narrativos modelados-sin-alimentar que quedan
 núcleo. Lo que **no** entra es la búsqueda vectorial: es un subsistema blando
 (embeddings, recall sobre prosa) sin un consumidor que hoy sufra por su ausencia,
 y mezclarlo con la capa estructural trataría como pares dos cosas de naturaleza
-opuesta. Por eso pasa al **horizonte demand-pulled** (§ 4): buena idea sin
+opuesta. Por eso pasa al **horizonte demand-pulled** (§ 5): buena idea sin
 disparador presente, con condición de activación explícita en vez de número de
 versión. El export sale del mismo molde —su `v1.0` estaba **pre-asignado** sin
 haberse ganado; el número 1.0 se gana cuando el flujo de punta a punta esté
@@ -93,7 +112,76 @@ scope de la constitución).
 
 ---
 
-## 3. El norte de v0.3.x: paridad de ingesta
+## 3. El norte actual: `v0.5.0` — validación robusta (issue #1)
+
+El dogfooding de v0.4.x destapó **una clase de defecto, no tres bugs**. Cinco
+parches (`v0.4.2`…`v0.4.6`) saldaron instancias sueltas de un mismo patrón
+recurrente; la **issue #1** lo nombró y decidió **cerrar la clase de raíz** en vez
+de seguir jugando al whack-a-mole. `v0.5.0` es ese cierre. Es un **minor** (no un
+patch v0.4.x): introduce arquitectura nueva —una costura compartida y un contrato
+de resultado tri-valor—, así que las iteraciones **acumulan en `main`** y se
+liberan **una sola vez** al cierre, al estilo de M4→`v0.2.0` (plan § 0.3).
+
+La clase tiene **dos caras**:
+
+- **A — acoplamiento a la prosa de superficie.** Cada validador que escanea
+  manuscrito/constitución reimplementa por su cuenta "cómo ver más allá del
+  markdown que la propia herramienta emite": `character_presence` strippea el
+  encabezado ATX (`# `, DEBT-008), `focalization` strippea viñeta + énfasis +
+  placeholder (`- **Voz narrativa**`, `[PENDING: …]`, DEBT-004/007), y
+  `setting_continuity` re-escanea `splitlines()` crudo. Cada formato markdown nuevo
+  (un epígrafe, un `> blockquote`) vuelve a abrir la grieta en el siguiente
+  validador. Un topo por iteración.
+- **B — falsa confianza.** `validate()` devuelve `list[Violation]`, y `[]` es
+  **indistinguible** entre "evaluado y limpio" y "no pude mirar". DEBT-004 fue,
+  literalmente, un validador **dormido y verde**. Para una herramienta de autoría el
+  peor fallo no es el falso positivo (ruido), es la **falsa confianza**.
+
+**Lo que entrega `v0.5.0`** (dos iteraciones, cierran A y B; movimientos 1 y 2 de
+la issue):
+
+- **Costura de prosa/estructura única** (iter 039, cierra A). Una sola capa
+  markdown-aware en `io/` —vecina de `frontmatter.py`, que ya lleva tracking de
+  líneas— que **todos** los validadores de prosa consumen: clasifica cada línea
+  (encabezado / viñeta / blockquote / énfasis / placeholder `[PENDING]` / prosa) y
+  expone la vista normalizada **una vez**, con los números de línea preservados
+  (el locator `relpath:línea` no cambia). Los tres validadores se reescriben sobre
+  ella y sus strippers locales (`_HEADING_MARKER`, `_BULLET`, `_LEAD_EMPHASIS`,
+  `_CLOSE_EMPHASIS`, `_PENDING_ONLY`, `_normalize_declaration_line`) **se borran**.
+  Cero regresión en los fixtures vivos; un fixture nuevo de la *siguiente* superficie
+  (`> blockquote`/epígrafe) prueba que la costura generaliza sin tocar validador.
+  **Sin dependencia nueva** (Constitución II): es un clasificador determinista de
+  bloques sobre las primitivas regex existentes, **no** un AST de markdown.
+- **Resultado tri-valor** (iter 040, cierra B). El contrato del validador pasa de
+  "lista de hallazgos" a **`evaluado` / `con-hallazgos` / `no-evaluado(motivo)`**.
+  Los retornos-tempranos-`[]` de hoy (focalización sin declaración parseable o con
+  voz aún en `[PENDING]`; manuscrito vacío) se vuelven `no-evaluado` con motivo. El
+  runner, el report, el sobre `--json`, `bookwright status` y las skills exponen el
+  tercer estado, de modo que **verde = evaluado**. El gate (solo `error` rompe CI) y
+  la forma de `Violation` no cambian; el estado es **aditivo**. La detección de
+  placeholder de la costura (iter 039) alimenta aquí el motivo "declaración sin
+  responder", uniendo ambas caras.
+
+**Alineado con los principios.** Es Principio I llevado a la validación: los
+validadores dejan de acoplar a la **prosa de superficie** y consumen la
+**estructura ya clasificada**. No toca la ontología congelada (validadores de
+prosa, `triples=()`, Principio X). La decisión § 13.1 del diseño (el Protocol
+`validate`) se actualiza **antes** de divergir el código (plan § 7.3).
+
+**Lo que NO entra** (movimiento 3 de la issue, → horizonte demand-pulled, § 5): el
+**escalado a juicio semántico** de los validadores que lo exigen (voz,
+focalización, continuidad temporal) reusando el path LLM de `bookwright-verify`
+(iter 015), con el regex como **pre-filtro barato**, no como veredicto. La propia
+issue lo deja como **dirección roadmap-level**, no como patch: se activa cuando un
+validador concreto pida juicio literario que el heurístico determinista no da, no
+antes (sería plumbing especulativo).
+
+---
+
+## 4. El norte de v0.3.x→v0.4: paridad de ingesta (histórico — cerrado)
+
+> Cerrado con `v0.4.0`. Se conserva como registro de la intención que guió
+> `v0.3.x`/`v0.4`; ya no es el norte vigente (ese es § 3).
 
 La deuda dominante descubierta en revisión: **la ontología congelada modela 13
 conceptos narrativos, pero solo ~6 son alcanzables desde texto autoral.** El
@@ -146,19 +234,24 @@ no documentada como tal).
 
 ---
 
-## 4. Más allá: v0.4 y el horizonte demand-pulled
-
-**v0.4 — capa estructural narrativa.** El último gran trozo de "paridad de
-ingesta": cablear los conceptos Propp/Greimas modelados-sin-alimentar
-(NarrativeUnit G9, NarrativeFunction G10, NarrativeSequence G7) con su modelo e
-ingesta de `outline/` nuevos. Es un subsistema, no un fix: no cabe en un patch
-v0.3.x. Determinista y citable por SPARQL, encaja como núcleo del proyecto.
+## 5. Más allá: el horizonte demand-pulled
 
 **Horizonte sin versión asignada (demand-pulled).** Buenas ideas sin disparador
 presente. No se cancelan, pero **no se implementan hasta que su condición se
 cumpla** — y entonces se les asigna número de versión. Es el patrón del registro
 de diferidos (iteración 024) a escala de subsistema:
 
+- **Juicio semántico en validación** (movimiento 3 de la issue #1). Escalar a juicio
+  literario los validadores que lo exigen —voz, focalización, continuidad
+  temporal— reusando el path LLM existente (`bookwright-verify`, iteración 015), con
+  el heurístico regex como **pre-filtro barato** que acota candidatos, no como
+  veredicto final. `v0.5.0` cierra el acoplamiento de superficie y la falsa confianza
+  (§ 3), pero **no** convierte el heurístico en juicio; algunos juicios (¿esta prosa
+  rompe de verdad la focalización limitada?) son irreductiblemente semánticos.
+  **Condición de activación:** un validador concreto cuyo heurístico determinista se
+  mida como insuficiente (demasiados falsos positivos/negativos sobre prosa real), no
+  "mejor validación" en abstracto. Hasta entonces, plumbing especulativo
+  (disciplina de scope, § 6).
 - **Búsqueda vectorial.** ChromaDB (o equivalente) **sobre `rdflib`**, desacoplada
   del grafo, detrás del `Indexer` Protocol. Sin Grafeo (cancelado). Su valor real
   es la capa RAG (lo que las skills recuperan como contexto) y la detección
@@ -166,7 +259,7 @@ de diferidos (iteración 024) a escala de subsistema:
   "mejor búsqueda" en abstracto. **Condición de activación:** existe un corpus real
   multi-libro/serie, **o** se mide que la recuperación estructural falla en recall
   en una skill concreta. Hasta entonces no hay consumidor que sufra su ausencia, y
-  añadirla sería plumbing especulativo (disciplina de scope, § 5).
+  añadirla sería plumbing especulativo (disciplina de scope, § 6).
 - **Export.** EPUB / PDF / print vía `pandoc`. El texto plano canónico ya es la
   fuente; el export es una proyección más, como el grafo. **Condición de
   activación:** el flujo de punta a punta se ha probado en un libro real y el
@@ -182,7 +275,7 @@ de diferidos (iteración 024) a escala de subsistema:
 
 ---
 
-## 5. Principios de qué entra y qué sale
+## 6. Principios de qué entra y qué sale
 
 - **Texto plano fuente de verdad** (Principio I). Todo lo derivado —grafo,
   `status.json`, futuros índices vectoriales, export— es caché reconstruible,
@@ -205,7 +298,7 @@ de `claude` / `generic` · sistema de extensiones. Ver `bookwright-design.md`
 
 ---
 
-## 6. Cómo evoluciona este documento
+## 7. Cómo evoluciona este documento
 
 Cuando un hito se cierra y libera, el **plan** se vacía de lo entregado y se
 rellena con el siguiente tramo; este **roadmap** se actualiza solo en su tabla de
