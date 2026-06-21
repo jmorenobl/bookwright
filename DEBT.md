@@ -43,7 +43,80 @@
 
 ## Deuda abierta
 
-_Ninguna por ahora._
+> Las tres entradas siguientes salieron del **ejercicio de dogfooding** sobre un
+> libro real ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples,
+> 2026-06-21). Cada una tiene su iteración asignada en
+> `bookwright-implementation-plan.md` y se **borra** al cerrar esa iteración.
+
+### DEBT-004 — `focalization` se autodesactiva con el formato de su propia plantilla
+- **Estado:** abierta
+- **Detectada en:** dogfooding post-`v0.4.1` (2026-06-21)
+- **Ubicación:** `src/bookwright/validation/validators/focalization.py:24`
+  (regex `_DECLARATION`) frente a
+  `src/bookwright/resources/project/bible/constitution.md:20` (la plantilla del
+  scaffold) — y el fixture `tests/fixtures/tiny-historical/bible/constitution.md`.
+- **Clase de deuda:** bug de correctitud / acoplamiento frágil plantilla↔parser (un
+  validador que no lee el formato que su propio scaffold genera).
+- **Descripción:** el patrón `^\s*(?:voz narrativa|narrative voice)\s*:` exige la
+  etiqueta al inicio de línea, pero la plantilla emite `- **Voz narrativa**: …`
+  (viñeta + negrita markdown), que **no matchea**. Sin declaración parseable,
+  `focalization` devuelve cero findings **en silencio**: queda desactivado para
+  cualquier autor que rellene la constitución tal como se genera. Verificado: el
+  fixture `tiny-historical` usa ese mismo formato, así que el validador está dormido
+  también ahí.
+- **Por qué se difiere:** detectado en dogfooding, fuera de una iteración; es su
+  propia clase (correctitud de validador) y merece su spec/test, no un parche al
+  vuelo.
+- **Resolución sugerida / versión objetivo:** que el parser tolere prefijos markdown
+  (`-`/`*`/`+`/`>` y `*`/`**`/`_` de énfasis) antes de la etiqueta — o normalice la
+  línea antes de aplicar el patrón — y un test que ate el formato exacto del scaffold
+  al parser para que no vuelvan a divergir. **Iteración 034 → `v0.4.2`.**
+
+### DEBT-005 — la capa narrativa (G9) no es consultable por contenido ni por orden
+- **Estado:** abierta
+- **Detectada en:** dogfooding post-`v0.4.1` (2026-06-21)
+- **Ubicación:** `src/bookwright/golem/modules/narrative.py` (`NarrativeUnit` sin
+  `rdfs:label`; `NarrativeSequence`: el orden vive solo como orden de tupla del
+  emisor, FR-015, no como triple — líneas 67-68).
+- **Clase de deuda:** gap de recall estructural / información de autoría no
+  materializada en el grafo.
+- **Descripción:** (a) las `G9_Narrative_Unit` no emiten `rdfs:label`; su nombre
+  humano vive **solo** en el slug de la URI, así que ninguna consulta SPARQL por
+  nombre/contenido de beat es posible. (b) El `order:` declarado se consume al
+  ensamblar la secuencia y **no se materializa**: RDF es no-ordenado, así que SPARQL
+  no puede recuperar el orden de los beats. Medido en dogfooding: las sondas "lista
+  las funciones en orden de la secuencia X" y "beats sobre <tema>" fallan
+  estructuralmente. Es el **prerequisito** antes de evaluar búsqueda vectorial
+  (horizonte demand-pulled): primero hay que poder hacer match por label/orden.
+- **Por qué se difiere:** añade triples a la capa narrativa y exige decidir el
+  mecanismo de orden bajo RDF respetando Principio X — es su propia iteración, no
+  material del fix de `focalization`.
+- **Resolución sugerida / versión objetivo:** emitir `rdfs:label` en `NarrativeUnit`
+  (y `NarrativeFunction` si aplica) con su `name`, siguiendo el patrón de
+  `CharacterRole`/`E55_Type`; y materializar un ordinal **consultable** de la
+  membresía de secuencia, **sin clase de ontología nueva** (Principio X). Verificar
+  con dos consultas SPARQL (por label y units en orden). **Iteración 035 → `v0.4.3`.**
+
+### DEBT-006 — mensajes de error de autoría ciegan al autor (research sources)
+- **Estado:** abierta
+- **Detectada en:** dogfooding post-`v0.4.1` (2026-06-21)
+- **Ubicación:** el loader/modelo de fuentes de research (p. ej. `src/bookwright/io/research.py`
+  + el modelo Pydantic `Source`).
+- **Clase de deuda:** calidad de diagnósticos de error (UX de autoría).
+- **Descripción:** (F1) cuando una fuente declara un `type` fuera del vocabulario
+  cerrado (`primaria|secundaria|oficial|académica|periodística|testimonial`), el
+  error nombra el valor inválido pero **no enumera los aceptados** → el autor itera a
+  ciegas. (F2) cuando `access_date` se escribe entrecomillado (string en vez de fecha
+  YAML), el error `Input should be a valid date` **no nombra qué fuente** de la lista
+  falló ni que la causa son las comillas. (Footgun relacionado, fuera de fix de
+  mensaje: un typo de clase/predicado en `graph query` devuelve resultado vacío
+  indistinguible de "no hay datos" — se **documenta**, no se arregla con un mensaje.)
+- **Por qué se difiere:** clase distinta (UX de errores) a DEBT-004/005; agrupable en
+  su propia pasada de endurecimiento.
+- **Resolución sugerida / versión objetivo:** enumerar los valores válidos en el
+  error de `type`; anteponer el `name` (o índice 1-based) de la fuente a los errores
+  por-fuente; tests para ambos mensajes; nota de documentación para el footgun de
+  SPARQL. **Iteración 036 → `v0.4.4`.**
 
 ---
 

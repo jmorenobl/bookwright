@@ -15,10 +15,18 @@ the `v0.4.1` hardening patch (2026-06-21, iteration 033: remove the dead
 `NarrativeRole` concept + close the carrier-IRI parity loophole, DEBT-001). All
 of it is on `main` (tagged) with a real `src/bookwright/` package, ~200 Python
 files, the full test suite, docs, and CI gates green. There is **no active
-iteration branch**. With v0.4 the ingestion-parity north star is reached. The remaining
-work — vector search (ChromaDB over rdflib) and export — is deferred to an
-unversioned, demand-pulled horizon: each ships only when its activation condition
-is met, not on a pre-assigned version — see `bookwright-roadmap.md`.
+iteration branch**. With v0.4 the ingestion-parity north star is reached.
+
+A **dogfooding exercise** (a real book run end-to-end, 2026-06-21) surfaced three
+actionable findings — a silently-disabled validator, a measured structural-recall
+gap, and blinding error messages — now recorded as **DEBT-004/005/006** and planned
+as the **`v0.4.x` post-dogfooding hardening track** (iterations 034–036, one patch
+each: `v0.4.2`/`v0.4.3`/`v0.4.4`). The ready-to-run workflow commands and the
+per-iteration debt-cancellation/release cycle live in
+`bookwright-implementation-plan.md`. The remaining longer-horizon work — vector
+search (ChromaDB over rdflib) and export — is deferred to an unversioned,
+demand-pulled horizon: each ships only when its activation condition is met, not on
+a pre-assigned version — see `bookwright-roadmap.md`.
 
 The canonical references:
 
@@ -192,6 +200,9 @@ was correct) and corrupts the run's audit trail.
 | 031 | Narrative-structure continuity validator | v0.4 | ✅ merged |
 | 032 | v0.4 close: E2E + docs + re-target G6/G3 + `v0.4.0` | v0.4 | ✅ merged |
 | 033 | Remove dead `NarrativeRole` from `CONCEPTS` + harden parity (DEBT-001) | v0.4.1 | ✅ merged |
+| 034 | `focalization` tolerates markdown-prefixed voice declaration (DEBT-004) | v0.4.2 | 📋 planned |
+| 035 | G9 `rdfs:label` + queryable sequence order (DEBT-005) | v0.4.3 | 📋 planned |
+| 036 | Actionable research-source error messages (DEBT-006) | v0.4.4 | 📋 planned |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the
