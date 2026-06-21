@@ -30,8 +30,9 @@ exactamente como en v0.2 (ver [Inercia](#inercia-cuando-no-se-usa)).
    puede hacer: investigar un tema, verificar la prosa contra las anclas, redactar.
    Lo hacen las Agent Skills (`bookwright-research`, `bookwright-verify`,
    `bookwright-continuity`, `bookwright-bible`), cada una invocada por la acción que
-   `status` recomienda. El juicio del modelo vive aquí, nunca en las capas autorada o
-   derivada.
+   `status` recomienda. Son las cuatro skills a las que enruta el bucle de orquestación;
+   el catálogo completo de skills de autoría está en [Autoría](authoring.md). El juicio
+   del modelo vive aquí, nunca en las capas autorada o derivada.
 
 La separación es deliberada (diseño § 16, axioma): el plan no es un texto que se pudre,
 sino una **función** del corpus. Borra `bible/graph.ttl`, vuelve a construir y obtienes
@@ -87,7 +88,7 @@ build → status` y asevera la convergencia descrita arriba.
 
 ## Las skills consumen `status` al arrancar
 
-Las skills de autoría (iteraciones 021–022) **empiezan leyendo `status`**: antes de
+Las skills de autoría **empiezan leyendo `status`**: antes de
 investigar o redactar, una skill consulta el estado derivado para situarse en el foco
 actual y en la cola de trabajo pendiente, en lugar de pedirte que se lo expliques. Así,
 la capa de juicio se ancla en la capa derivada —y esta, en el texto plano— cerrando el

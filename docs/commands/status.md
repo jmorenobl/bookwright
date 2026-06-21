@@ -84,5 +84,5 @@ sobre el mismo corpus.
 | 3 | Colisión de slugs en la biblia (`slug_collision`). |
 | 4 | ≥ 1 fichero de la biblia omitido por front-matter inutilizable (`skipped_sources`, con `details` por fichero) — un informe de hechos sobre un corpus parcial sería mentira. |
 
-Los fallos emiten el sobre de error unificado de la iteración 018
+Los fallos emiten el sobre de error unificado
 (`{"status":"error","code":…,"message":…}`) bajo `--json`.

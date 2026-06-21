@@ -61,8 +61,8 @@ El protocolo de autoría no se rellena a mano: invocas
 documenta** los hallazgos con procedencia bajo `bible/research/`, marcando cuáles son
 anclas. Dispara con prompts en español o inglés («investiga \<tema\>», «documenta
 \<tema\> con fuentes» / «research \<topic\>», «find sources on \<topic\>»). No verifica
-prosa ya escrita (eso es `bookwright-verify`) ni puebla fichas de personajes (eso es
-`bookwright-bible`).
+prosa ya escrita (eso es [`bookwright-verify`](authoring.md)) ni puebla fichas de
+personajes (eso es [`bookwright-bible`](authoring.md)).
 
 ## Verificación en dos capas
 

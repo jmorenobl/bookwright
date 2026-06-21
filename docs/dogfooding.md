@@ -8,9 +8,8 @@ la **receta repetible** para hacerlo: autorar un libro real de extremo a extremo
 registrar dónde cruje.
 
 Es una práctica de calidad, no un comando: produce un **log de fricción** y dos
-veredictos (recall y export-readiness), y de ahí salen entradas de `DEBT.md` y de
-`bookwright-implementation-plan.md`. La corrida del 2026-06-21 que siguió esta receta
-destapó DEBT-004/005/006.
+veredictos (recall y export-readiness), y de ahí salen entradas en el registro de
+deuda interno y en el plan de implementación.
 
 ## Cuándo hacerlo
 
@@ -29,7 +28,8 @@ active = ["propp", "greimas"]   # tipa funciones (G10) y roles (G11)
 [research]
 enabled = true                  # activa fuentes/findings/anchors
 [validators]
-enabled = []                    # ninguno deshabilitado → todos corren
+enabled = []                    # vacío → todos los integrados corren
+disabled = []                   # nada deshabilitado
 ```
 
 ## 2. Inventa **un** libro para cobertura total
@@ -97,8 +97,8 @@ filas, no un error —indistinguible de "no hay datos".
    **medido** que justifique búsqueda vectorial? Cita la evidencia.
 3. **Veredicto de export-readiness**: ¿el flujo `build → validate` queda verde
    (warnings tolerables, sin errores que gateen) sobre un libro real?
-4. **Hallazgos nuevos → `DEBT.md`** (con ubicación, clase, repro) y su iteración en
-   `bookwright-implementation-plan.md`.
+4. **Hallazgos nuevos → el registro de deuda interno** (con ubicación, clase, repro) y
+   su entrada en el plan de implementación.
 
 ## El proyecto de prueba es **desechable**
 
