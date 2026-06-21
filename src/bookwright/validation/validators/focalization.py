@@ -21,7 +21,17 @@ from typing import ClassVar
 from bookwright.indexers import Indexer
 from bookwright.validation.base import Severity, ValidationContext, Violation
 
-_DECLARATION = re.compile(r"(?im)^\s*(?:voz narrativa|narrative voice)\s*:\s*(?P<body>.+)$")
+_LABEL = r"(?:voz narrativa|narrative voice)"
+# The declaration, recognized on an already-normalized (markdown-stripped) line.
+_DECLARATION = re.compile(rf"(?i)^\s*{_LABEL}\s*:\s*(?P<body>.+)$")
+# One line-leading bullet/blockquote marker + trailing whitespace (the whitespace
+# distinguishes a list bullet `* Voz…` from an emphasis run `*Voz…*`).
+_BULLET = re.compile(r"^\s*[-*+>]\s+")
+# A leading emphasis run (before the label): `**`, `*`, or `_`, repeated.
+_LEAD_EMPHASIS = re.compile(r"^\s*(?:\*\*|\*|_)+")
+# An emphasis run sitting between the label and its colon (anchored to the label
+# so the declaration *body* is never touched, FR-006).
+_CLOSE_EMPHASIS = re.compile(rf"(?i)^(?P<label>\s*{_LABEL})(?:\*\*|\*|_)+(?=\s*:)")
 _THIRD = re.compile(r"(?i)\b(tercera|third)\b")
 _FIRST = re.compile(r"(?i)\b(primera|first)\b")
 _LIMITED = re.compile(r"(?i)\b(limitada|limitado|limited)\b")
@@ -126,8 +136,29 @@ class Focalization:
         return out
 
 
+def _normalize_declaration_line(line: str) -> str:
+    """Strip markdown markup around the narrative-voice label (FR-001/FR-002).
+
+    Removes one line-leading bullet/blockquote marker, then a leading emphasis
+    run, then an emphasis run between the label and its colon — each independently
+    (no balance guard, per spec clarification). The declaration body is never
+    touched, so the parsed ``_Declaration`` is identical to the bare form (R1).
+    """
+    line = _BULLET.sub("", line, count=1)
+    line = _LEAD_EMPHASIS.sub("", line, count=1)
+    line = _CLOSE_EMPHASIS.sub(r"\g<label>", line, count=1)
+    return line
+
+
 def _parse_declaration(text: str, character_names: list[str]) -> _Declaration | None:
-    match = _DECLARATION.search(text)
+    match = next(
+        (
+            m
+            for line in text.splitlines()
+            if (m := _DECLARATION.match(_normalize_declaration_line(line))) is not None
+        ),
+        None,
+    )
     if match is None:
         return None
     body = match.group("body")

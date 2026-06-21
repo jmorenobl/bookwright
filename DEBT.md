@@ -43,34 +43,10 @@
 
 ## Deuda abierta
 
-> Las tres entradas siguientes salieron del **ejercicio de dogfooding** sobre un
+> Las dos entradas siguientes salieron del **ejercicio de dogfooding** sobre un
 > libro real ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples,
 > 2026-06-21). Cada una tiene su iteración asignada en
 > `bookwright-implementation-plan.md` y se **borra** al cerrar esa iteración.
-
-### DEBT-004 — `focalization` se autodesactiva con el formato de su propia plantilla
-- **Estado:** abierta
-- **Detectada en:** dogfooding post-`v0.4.1` (2026-06-21)
-- **Ubicación:** `src/bookwright/validation/validators/focalization.py:24`
-  (regex `_DECLARATION`) frente a
-  `src/bookwright/resources/project/bible/constitution.md:20` (la plantilla del
-  scaffold) — y el fixture `tests/fixtures/tiny-historical/bible/constitution.md`.
-- **Clase de deuda:** bug de correctitud / acoplamiento frágil plantilla↔parser (un
-  validador que no lee el formato que su propio scaffold genera).
-- **Descripción:** el patrón `^\s*(?:voz narrativa|narrative voice)\s*:` exige la
-  etiqueta al inicio de línea, pero la plantilla emite `- **Voz narrativa**: …`
-  (viñeta + negrita markdown), que **no matchea**. Sin declaración parseable,
-  `focalization` devuelve cero findings **en silencio**: queda desactivado para
-  cualquier autor que rellene la constitución tal como se genera. Verificado: el
-  fixture `tiny-historical` usa ese mismo formato, así que el validador está dormido
-  también ahí.
-- **Por qué se difiere:** detectado en dogfooding, fuera de una iteración; es su
-  propia clase (correctitud de validador) y merece su spec/test, no un parche al
-  vuelo.
-- **Resolución sugerida / versión objetivo:** que el parser tolere prefijos markdown
-  (`-`/`*`/`+`/`>` y `*`/`**`/`_` de énfasis) antes de la etiqueta — o normalice la
-  línea antes de aplicar el patrón — y un test que ate el formato exacto del scaffold
-  al parser para que no vuelvan a divergir. **Iteración 034 → `v0.4.2`.**
 
 ### DEBT-005 — la capa narrativa (G9) no es consultable por contenido ni por orden
 - **Estado:** abierta
@@ -111,7 +87,7 @@
   falló ni que la causa son las comillas. (Footgun relacionado, fuera de fix de
   mensaje: un typo de clase/predicado en `graph query` devuelve resultado vacío
   indistinguible de "no hay datos" — se **documenta**, no se arregla con un mensaje.)
-- **Por qué se difiere:** clase distinta (UX de errores) a DEBT-004/005; agrupable en
+- **Por qué se difiere:** clase distinta (UX de errores) a DEBT-005; agrupable en
   su propia pasada de endurecimiento.
 - **Resolución sugerida / versión objetivo:** enumerar los valores válidos en el
   error de `type`; anteponer el `name` (o índice 1-based) de la fuente a los errores
