@@ -8,17 +8,20 @@
 > `bookwright-design.md` en el root del repo).
 
 > **Hito en curso: track de endurecimiento post-dogfooding `v0.4.x`** (iteraciones
-> **034–036**). Salió de un **ejercicio de dogfooding** sobre un libro real
+> **034–037**). Salió de un **ejercicio de dogfooding** sobre un libro real
 > ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples, 2026-06-21)
 > que destapó tres hallazgos concretos —un bug de validador, un gap de recall medido
 > y fricción de mensajes de error— hoy registrados como **DEBT-004/005/006** en
-> `DEBT.md`. Cada iteración cierra una entrada de deuda y corta su **patch** propio
-> (`v0.4.2`, `v0.4.3`, `v0.4.4`). No es trabajo especulativo: un bug, un gap *medido*
-> y UX — todos pasan la disciplina de scope. Las iteraciones 1–33 (M0–M5, el tramo
-> `v0.3.1`…`v0.3.4`, `v0.4.0` y el patch `v0.4.1`) están **mergeadas en `main`**; su
-> detalle vive en el historial git, en `specs/001-…` … `specs/033-…` y en el
-> `CHANGELOG`. El horizonte demand-pulled (búsqueda vectorial, export, G6/G3) sigue
-> en `bookwright-roadmap.md` § 4, **no** aquí.
+> `DEBT.md`; un **segundo dogfooding** ("El Faro de Halia", 2026-06-21) destapó un
+> cuarto, **DEBT-007** (el placeholder `[PENDING]` de la constitución se parsea como
+> voz declarada). Cada iteración cierra una entrada de deuda y corta su **patch**
+> propio (`v0.4.2`, `v0.4.3`, `v0.4.4`, `v0.4.5`). No es trabajo especulativo: dos
+> bugs, un gap *medido* y UX — todos pasan la disciplina de scope. Las iteraciones
+> 1–36 (M0–M5, el tramo `v0.3.1`…`v0.3.4`, `v0.4.0`, el patch `v0.4.1` y los patches
+> `v0.4.2`…`v0.4.4`) están **mergeadas en `main`**; su detalle vive en el historial
+> git, en `specs/001-…` … `specs/036-…` y en el `CHANGELOG`. El horizonte
+> demand-pulled (búsqueda vectorial, export, G6/G3) sigue en `bookwright-roadmap.md`
+> § 4, **no** aquí.
 
 ---
 
@@ -316,42 +319,97 @@ specify workflow run bookwright-quality \
 ```
 
 **Cierre:** ciclo § 0.5 → merge + `record iteration 036` + `bookwright-release` →
-`v0.4.4`. DEBT-006 ya borrada por el workflow; verifícalo. Con las tres entradas
-cerradas, `DEBT.md` vuelve a quedar vacío y el track `v0.4.x` post-dogfooding termina.
+`v0.4.4`. DEBT-006 ya borrada por el workflow; verifícalo.
 
 ---
 
-## 5. Notas operativas
+## 5. Iteración 037 — el placeholder `[PENDING]` no debe parsear como voz declarada (`v0.4.5`, DEBT-007)
 
-### 5.1 Manejo de spec rechazadas
+**Problema.** Segundo ejercicio de dogfooding ("El Faro de Halia", 2026-06-21):
+un proyecto recién creado por `bookwright init`, con la constitución **sin
+rellenar**, ya dispara avisos `focalization` de *head-hopping* contra **todos**
+los personajes en cuanto el manuscrito contiene un verbo de interioridad
+(`pensó/supo/sintió/…`). La causa: el placeholder por defecto
+`- **Voz narrativa**: [PENDING: …(primera/tercera persona, omnisciente/limitada)?]`
+(`src/bookwright/resources/project/bible/constitution.md.j2:20`) contiene
+literalmente "tercera persona" y "limitada", de modo que `_parse_declaration`
+(`validators/focalization.py:154`) lo acepta como una declaración real y deduce
+`person=third, limited=True, focal=None`; con `focal=None` cada personaje es
+"non-focal". El docstring del propio validador promete lo contrario ("No parsable
+declaration → zero findings"). Misma clase que DEBT-004 (parsing de la declaración
+de focalización). Es un bug de correctitud — friction de primer arranque.
+
+**Comando del workflow:**
+
+```bash
+SPEC=$(cat <<'EOF'
+Necesidad: un proyecto recién creado por `bookwright init`, con la constitución SIN rellenar, ya dispara avisos `focalization` de head-hopping contra TODOS los personajes en cuanto el manuscrito tiene un verbo de interioridad (pensó/supo/sintió/…). La causa: el placeholder por defecto de la plantilla de constitución (`src/bookwright/resources/project/bible/constitution.md.j2`) es `- **Voz narrativa**: [PENDING: ¿Quién narra y desde qué distancia (primera/tercera persona, omnisciente/limitada)?]`, cuyo TEXTO contiene literalmente "tercera persona" y "limitada"; el parser `_parse_declaration` (src/bookwright/validation/validators/focalization.py) lo acepta como una declaración real y deduce persona=tercera, limitada, focal=None, así que cada personaje cuenta como "non-focal" y cualquier verbo de interioridad se marca como head-hopping. El docstring del validador promete lo contrario ("No parsable declaration → zero findings (edge case)"): la intención es que una constitución no rellenada produzca CERO hallazgos. Queremos que una declaración cuyo cuerpo sigue siendo un placeholder `[PENDING: …]` sin responder se trate como NO declaración (cero findings), sin cambiar ninguna otra regla del validador.
+
+Comportamiento esperado:
+
+- Cuando el cuerpo de la declaración "Voz narrativa"/"Narrative voice" es todavía un token `[PENDING: …]` sin responder, el parser lo trata como no parseable (devuelve la nada → cero findings), igual que si no hubiera declaración.
+- Una declaración real (p. ej. `- **Voz narrativa**: Tercera persona limitada, focalizada en Halia`) sigue parseándose exactamente como hoy (persona, limitada, focal): sin regresión sobre las fixtures existentes ni sobre lo que arregló la 034.
+- Un test parte de la constitución EXACTA del scaffold (src/bookwright/resources/project/bible/constitution.md.j2, placeholder intacto) + un manuscrito con un verbo de interioridad y exige cero hallazgos `focalization`; otro test verifica que al rellenar la voz el validador despierta.
+- Se borra la entrada DEBT-007 de DEBT.md (git conserva el historial).
+
+Validaciones / no-regresión:
+
+- `uv run pytest` verde; los cuatro gates (ruff check, ruff format --check, mypy --strict, pytest ≥80%) pasan.
+
+Fuera de scope (NO reabrir en clarify):
+
+- Cambiar otras reglas de focalization o sus heurísticas de pronombre/interioridad/markdown (la 034 ya cubre el prefijo markdown).
+- Leer el POV desde el frontmatter de la escena (`pov:`): el personaje focal se declara en la constitución por diseño; no es esta iteración.
+- Tocar la ontología congelada (Principio X): es un validador sobre prosa, no toca el grafo.
+
+Referencia: src/bookwright/validation/validators/focalization.py (_parse_declaration); src/bookwright/resources/project/bible/constitution.md.j2. DEBT-007 en DEBT.md. Principio VIII (test discipline).
+EOF
+)
+PLAN_HINT=$(cat <<'EOF'
+En `src/bookwright/validation/validators/focalization.py`, en `_parse_declaration`, detecta cuando el cuerpo (`match.group("body")`) sigue siendo un placeholder `[PENDING: …]` sin responder y trátalo como no declaración (devuelve `None`, como cuando no hay match): un guard de una línea, p. ej. un regex `^\s*\[PENDING\b` sobre el body. No toques las otras reglas (pronombre primera persona, interioridad/head-hopping, tolerancia markdown de la 034). Añade un test que lea la constitución EXACTA del scaffold (`src/bookwright/resources/project/bible/constitution.md.j2`, placeholder intacto) + un manuscrito con un verbo de interioridad y verifique cero findings `focalization`, y otro que confirme que al sustituir el placeholder por una voz real el validador despierta — atando plantilla↔parser para que el placeholder y el parser no vuelvan a divergir. Sin clases nuevas (Principio X): validador sobre prosa, no toca el grafo. Borra la entrada DEBT-007 de DEBT.md. Verifica `uv run pytest` y los cuatro gates.
+EOF
+)
+specify workflow run bookwright-quality \
+  -i spec="$SPEC" -i plan_hint="$PLAN_HINT" -i integration=claude
+```
+
+**Cierre:** ciclo § 0.5 → merge + `record iteration 037` + `bookwright-release` →
+`v0.4.5`. DEBT-007 ya borrada por el workflow; verifícalo. Con DEBT-007 cerrada,
+`DEBT.md` vuelve a quedar vacío.
+
+---
+
+## 6. Notas operativas
+
+### 6.1 Manejo de spec rechazadas
 
 Si tras `/speckit-analyze` aparecen issues de consistencia entre spec/plan/tasks,
 vuelve a `/speckit-clarify` o edita `spec.md` directamente, regenera plan y tasks, y
 vuelve a analizar. No fuerces `/speckit-implement` con análisis con errores. (En el
 workflow headless, el paso `analyze-resolve` lo hace solo contra la constitución.)
 
-### 5.2 Iteraciones que se complican
+### 6.2 Iteraciones que se complican
 
 Si una iteración crece más de lo previsto durante `/speckit-tasks` (más de ~10
 tareas), divídela en dos specs. En este track, la candidata clara a split es la **035**
 (labels + orden): si el mecanismo de orden bajo RDF se complica, sepáralo de los
 labels.
 
-### 5.3 Cambios en el documento de diseño
+### 6.3 Cambios en el documento de diseño
 
 El diseño es la fuente de verdad técnica. Si durante la implementación algo del diseño
 no encaja con la realidad técnica, actualiza `bookwright-design.md` **antes** de
 divergir el código, y registra el cambio en `CHANGELOG` bajo "Design decisions revised
 during implementation". Las decisiones de § 16 son inmutables.
 
-### 5.4 Cuándo pedir ayuda al humano
+### 6.4 Cuándo pedir ayuda al humano
 
 Spec Kit genera bien spec/plan/tasks pero puede divagar en decisiones de diseño no
 triviales — en este track, **el mecanismo de orden consultable de la 035** es la
 decisión sensible (cómo materializar orden bajo RDF sin clase nueva). Cuando dudes,
 ejecuta `/speckit-clarify` o intervén manualmente; redirige al diseño / roadmap.
 
-### 5.5 Tras este track
+### 6.5 Tras este track
 
 Cuando 034–036 estén mergeadas y liberadas (`v0.4.2`…`v0.4.4`) y `DEBT.md` vacío, no
 hay siguiente hito con número de versión asignado: vuelve el **horizonte
