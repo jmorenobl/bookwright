@@ -200,7 +200,6 @@ nombre, UUIDv7 para aserciones):
 | Rol de relación (`G6_Relationship_Role`) | `relationship-role` | slug |
 | Unidad narrativa (`G9_Narrative_Unit`) | `narrative-unit` | slug |
 | Función narrativa (`G10_Narrative_Function`) | `narrative-function` | slug |
-| Rol narrativo (`G11_Narrative_Role`) | `narrative-role` | slug |
 | Secuencia narrativa (`G7_Narrative_Sequence`) | `narrative-sequence` | slug |
 | Aserción de atributo (`E13_Attribute_Assignment`) | `assertion` | UUIDv7 |
 | Fuente de investigación (`source`, v0.2) | `source` | slug |

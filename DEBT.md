@@ -43,31 +43,7 @@
 
 ## Deuda abierta
 
-### DEBT-003 — Segmento URI `narrative-role` obsoleto en la tabla de diseño
-- **Estado:** abierta
-- **Detectada en:** spec-033 (2026-06-21)
-- **Ubicación:** `bookwright-design.md:203` (tabla "segmento fijo por concepto", § 6)
-- **Clase de deuda:** inconsistencia de documentación en el diseño canónico (la
-  tabla nombra un segmento URI que ningún código acuña).
-- **Descripción:** la fila `| Rol narrativo (`G11_Narrative_Role`) |
-  `narrative-role` | slug |` asigna a G11 un segmento URI de nivel superior que
-  nunca se materializó: la única encarnación real de G11 es el nodo
-  `CharacterRole` anidado en personaje, con URI `{personaje}/role/{slug}` (no
-  `narrative-role`). El segmento `narrative-role` era el `path_segment` de la
-  clase muerta `NarrativeRole`, eliminada en spec-033. La drift es **previa** a
-  esta iteración (el segmento jamás se acuñó) y el propio diseño ya enuncia la
-  semántica correcta en otra parte (línea 1603: "G11 = rol de un personaje";
-  § 7.4: los roles resuelven contra roles de personaje, no acuñan).
-- **Por qué se difiere:** clase distinta a la que toca spec-033 (honestidad del
-  registro `CONCEPTS` en código + prosa de conteo). `bookwright-design.md` es el
-  diseño canónico congelado autoría del owner (numeración de secciones
-  load-bearing); el spec-033 lo dejó **deliberadamente** fuera de scope y lo
-  cita como autoridad (línea 1603, § 7.4). Reescribir el artefacto canónico en
-  una pasada de revisión automática excedería el scope y la disciplina del plan.
-- **Resolución sugerida / versión objetivo:** en una iteración que toque la
-  documentación de diseño, reconciliar la fila para reflejar el carácter
-  anidado-en-personaje de G11 (segmento `role` bajo el personaje) o retirarla,
-  alineándola con la línea 1603 / § 7.4. Edición en español, sin renumerar.
+_Ninguna por ahora._
 
 ---
 
