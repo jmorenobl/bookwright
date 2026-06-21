@@ -1,87 +1,88 @@
 <p align="center">
   <picture>
-    <source srcset="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/banner.svg" type="image/svg+xml">
-    <img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/banner.png" alt="Bookwright — toolkit de autoría spec-driven para novelas, ensayos y memorias" width="100%">
+    <source srcset="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/banner.en.svg" type="image/svg+xml">
+    <img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/banner.png" alt="Bookwright — spec-driven authoring toolkit for novels, essays, and memoirs" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.4.4-6f42c1" alt="Versión 0.4.4"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="Licencia: EUPL-1.2"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.4.4-6f42c1" alt="Version 0.4.4"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License: EUPL-1.2"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Cobertura ≥80%">
-  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white" alt="Lint con Ruff"></a>
-  <img src="https://img.shields.io/badge/types-mypy%20strict-2a6db2" alt="Tipado con mypy --strict">
-  <a href="https://github.com/github/spec-kit"><img src="https://img.shields.io/badge/built%20with-Spec%20Kit-0b7285" alt="Hecho con Spec Kit"></a>
+  <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Coverage ≥80%">
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white" alt="Linted with Ruff"></a>
+  <img src="https://img.shields.io/badge/types-mypy%20strict-2a6db2" alt="Typed with mypy --strict">
+  <a href="https://github.com/github/spec-kit"><img src="https://img.shields.io/badge/built%20with-Spec%20Kit-0b7285" alt="Built with Spec Kit"></a>
 </p>
 
 <p align="center">
-  <b>Toolkit de autoría spec-driven para novelas, ensayos y memorias.</b><br>
-  <i><a href="https://github.com/jmorenobl/bookwright/blob/main/README.en.md">Read in English</a></i>
+  <b>Spec-driven authoring toolkit for novels, essays, and memoirs.</b><br>
+  <i><a href="https://github.com/jmorenobl/bookwright/blob/main/README.es.md">Léeme en español</a></i>
 </p>
 
-Bookwright aplica el patrón Spec-Driven Development a la escritura de
-formato largo: destilas tus ideas en un puñado de documentos canónicos
-(constitución, biblia, outline, escenas) y dejas que un agente IA escriba
-a partir de *ellos*, no de un chat libre. Tu libro vive en texto plano,
-versionado en git, completamente auditable, y sobrevive al toolkit.
+Bookwright applies the Spec-Driven Development pattern to long-form
+writing: you distill your ideas into a handful of canonical documents
+(constitution, bible, outline, scenes) and let an AI agent write from
+*them*, not from a free-form chat. Your book lives in plain text,
+versioned in git, fully auditable, and outlives the toolkit.
 
-**¿Por qué?** Porque te avisa de que tu personaje tiene los ojos azules en
-el capítulo 3 y verdes en el 12 — antes que tu lector. Bookwright deriva un
-grafo de conocimiento de tu obra y valida la continuidad (personajes,
-settings, cronología, focalización) de forma determinista.
+**Why?** Because it warns you that your character has blue eyes in
+chapter 3 and green eyes in chapter 12 — before your reader does.
+Bookwright derives a knowledge graph from your work and validates
+continuity (characters, settings, chronology, focalization)
+deterministically.
 
-> Estado: **v0.4.4** — usable para investigar, estructurar, redactar y
-> validar continuidad. Investiga con procedencia, ingiere la estructura
-> narrativa (unidades, funciones y secuencias) y la tipa contra los
-> vocabularios de Propp y Greimas. Detalle de cambios en el
-> [CHANGELOG](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md).
+> Status: **v0.4.4** — usable for researching, structuring, drafting and
+> validating continuity. It researches with provenance, ingests the
+> narrative structure (units, functions and sequences) and types it
+> against the Propp and Greimas vocabularies. Change-by-change detail in
+> the [CHANGELOG](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md).
 
 ---
 
-## Cómo se usa, en una frase
+## How you use it, in one sentence
 
-Bookwright es **una CLI más un conjunto de skills para tu agente**. Esto
-define *dónde* tecleas cada cosa, y es la idea que conviene tener clara
-antes de empezar:
+Bookwright is **a CLI plus a set of skills for your agent**. That defines
+*where* you type each thing, and it's the idea worth being clear on before
+you start:
 
-| Cuándo | Dónde | Qué |
+| When | Where | What |
 | --- | --- | --- |
-| **Una vez, al empezar** | en tu **terminal** | `bookwright init` |
-| **El 95% del tiempo** | dentro de tu **agente** (Claude Code, etc.) | invocas skills: `/bookwright-constitution`, `/bookwright-bible`, … |
-| **De vez en cuando** | en tu **terminal** | `bookwright graph build` · `bookwright validate` · `bookwright status` |
+| **Once, at the start** | in your **terminal** | `bookwright init` |
+| **95% of the time** | inside your **agent** (Claude Code, etc.) | you invoke skills: `/bookwright-constitution`, `/bookwright-bible`, … |
+| **Now and then** | in your **terminal** | `bookwright graph build` · `bookwright validate` · `bookwright status` |
 
-Las skills se invocan **dentro del agente**, escribiendo `/bookwright-<comando>`
-en el prompt. Lo que escribes después del comando llega a la skill como su
-input (una referencia a un archivo, texto pegado, o la conversación previa).
+Skills are invoked **inside the agent**, by typing `/bookwright-<command>`
+in the prompt. Whatever you type after the command reaches the skill as its
+input (a reference to a file, pasted text, or the prior conversation).
 
 ---
 
-## Instalación
+## Installation
 
-El paquete en PyPI es `bookwright-cli`; el comando que instala es `bookwright`.
+The PyPI package is `bookwright-cli`; the command it installs is `bookwright`.
 
 ```bash
-uv tool install bookwright-cli   # con uv (recomendado)
-pipx install bookwright-cli      # o con pipx
+uv tool install bookwright-cli   # with uv (recommended)
+pipx install bookwright-cli      # or with pipx
 bookwright version
 ```
 
-¿Probarlo una vez sin instalar nada?
+Want to try it once without installing anything?
 
 ```bash
 uvx --from bookwright-cli bookwright version
 ```
 
-Directamente desde el repositorio (última versión de `main`):
+Straight from the repository (latest `main`):
 
 ```bash
 uv tool install "git+https://github.com/jmorenobl/bookwright"
-# o:  pipx install "git+https://github.com/jmorenobl/bookwright"
+# or:  pipx install "git+https://github.com/jmorenobl/bookwright"
 ```
 
-Para desarrollar sobre el toolkit, clona el repo y sincroniza el entorno:
+To work on the toolkit itself, clone the repo and sync the environment:
 
 ```bash
 git clone https://github.com/jmorenobl/bookwright && cd bookwright
@@ -91,178 +92,186 @@ uv run bookwright --help
 
 ---
 
-## Quickstart: tu primera escena validada
+## Quickstart: your first validated scene
 
-### 1 · Crea el proyecto · `[en tu terminal]`
-
-```bash
-bookwright init mi-novela --integration claude
-cd mi-novela
-```
-
-Esto genera la estructura (`bible/`, `outline/`, `manuscript/`), el
-`manifest.toml` y materializa las skills de Bookwright en `.claude/skills/`.
-
-Vuelca tu idea en un Markdown libre, sin formato obligatorio — la premisa,
-los personajes que ya conoces, el tono:
+### 1 · Create the project · `[in your terminal]`
 
 ```bash
-echo "Un peregrino abandona el Camino de Santiago en la etapa 17..." > idea.md
+bookwright init my-novel --integration claude
+cd my-novel
 ```
 
-### 2 · Destila tu idea con las skills · `[en tu agente]`
+This generates the structure (`bible/`, `outline/`, `manuscript/`), the
+`manifest.toml`, and materializes the Bookwright skills in `.claude/skills/`.
 
-Abre el proyecto en Claude Code e invoca la primera skill. **Esto se teclea
-en el prompt del agente, no en la terminal:**
+Dump your idea into a free-form Markdown, with no required format — the
+premise, the characters you already know, the tone:
 
-```
-/bookwright-constitution lee idea.md y destila la constitución
-```
-
-La skill lee tu brief, redacta el artefacto y marca con `[PENDING: ¿…?]` lo
-que tu material todavía no decide — sin inventar canon. Una sesión típica:
-
-```
-Tú  ▸ /bookwright-constitution lee idea.md y destila la constitución
-
-Claude ▸ He leído idea.md y redactado la constitución en
-         bible/constitution.md. Resumen:
-           · Voz: tercera persona cercana, foco en el peregrino
-           · Pacto con el lector: realismo psicológico, sin giros sobrenaturales
-           · Líneas rojas: no resolver el conflicto con coincidencias
-         He dejado 2 pendientes que necesito que decidas:
-           · [PENDING: ¿en qué año transcurre?]
-           · [PENDING: ¿el narrador conoce el final desde el principio?]
+```bash
+echo "A pilgrim abandons the Camino de Santiago at stage 17..." > idea.md
 ```
 
-Resuelves los pendientes cuando quieras (editando el `.md` o volviendo a
-invocar la skill) y sigues con el resto del pipeline, **en orden**:
+### 2 · Distill your idea with the skills · `[in your agent]`
+
+Open the project in Claude Code and invoke the first skill. **This is typed
+in the agent's prompt, not in the terminal:**
 
 ```
-/bookwright-bible      ← personajes, settings, cronología, relaciones
-/bookwright-outline    ← arcos y estructura de actos/capítulos
-/bookwright-scenes     ← desglose en escenas concretas
-/bookwright-draft      ← redacta la prosa de UNA escena
+/bookwright-constitution read idea.md and distill the constitution
 ```
 
-> Estas cinco son el camino principal. Hay otras skills de apoyo
-> (`/bookwright-synopsis`, `/bookwright-clarify` para listar dudas abiertas,
-> `/bookwright-checklist` para comprobar si un artefacto está completo,
+The skill reads your brief, drafts the artifact, and marks with
+`[PENDING: …?]` what your material does not yet decide — without inventing
+canon. A typical session:
+
+```
+You  ▸ /bookwright-constitution read idea.md and distill the constitution
+
+Claude ▸ I've read idea.md and drafted the constitution in
+         bible/constitution.md. Summary:
+           · Voice: close third person, focused on the pilgrim
+           · Pact with the reader: psychological realism, no supernatural twists
+           · Red lines: don't resolve the conflict with coincidences
+         I've left 2 pending items I need you to decide:
+           · [PENDING: what year does it take place?]
+           · [PENDING: does the narrator know the ending from the start?]
+```
+
+You resolve the pending items whenever you like (by editing the `.md` or
+re-invoking the skill) and continue with the rest of the pipeline, **in
+order**:
+
+```
+/bookwright-bible      ← characters, settings, chronology, relationships
+/bookwright-outline    ← arcs and act/chapter structure
+/bookwright-scenes     ← breakdown into concrete scenes
+/bookwright-draft      ← draft the prose of ONE scene
+```
+
+> These five are the main path. There are other support skills
+> (`/bookwright-synopsis`, `/bookwright-clarify` to list open questions,
+> `/bookwright-checklist` to check whether an artifact is complete,
 > `/bookwright-analyze`, `/bookwright-continuity`, `/bookwright-research`,
-> `/bookwright-verify`) que usarás cuando las necesites.
+> `/bookwright-verify`) that you'll use when you need them.
 
-### 3 · Construye y valida · `[en tu terminal]`
+### 3 · Build and validate · `[in your terminal]`
 
 ```bash
-bookwright graph build      # deriva el grafo GOLEM → bible/graph.ttl
-bookwright validate         # exit 0 si no hay errores de continuidad
+bookwright graph build      # derives the GOLEM graph → bible/graph.ttl
+bookwright validate         # exit 0 if there are no continuity errors
 ```
 
 ---
 
-## El loop, no la escalera
+## The loop, not the staircase
 
-Ese orden de cinco pasos es solo tu **primera pasada**. Escribir no es
-lineal: investigando una escena descubres un dato que cambia un personaje,
-replanteas la estructura a mitad del draft, una decisión tardía contradice
-algo que diste por cerrado. Bookwright está hecho para ese ir y venir, no
-para una única bajada en escalera.
+That five-step order is only your **first pass**. Writing isn't linear:
+researching a scene you discover a fact that changes a character, you
+rethink the structure mid-draft, a late decision contradicts something you
+took as settled. Bookwright is built for that back-and-forth, not for a
+single descent down a staircase.
 
 <p align="center">
   <picture>
     <source srcset="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/loop.svg" type="image/svg+xml">
-    <img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/loop.png" alt="El loop del escritor: idea → scaffolding → destila → build y valida → edita, y vuelta a empezar" width="100%">
+    <img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/loop.png" alt="The writer's loop: idea → scaffolding → distill → build and validate → edit, and back to the start" width="100%">
   </picture>
 </p>
 
-A partir de la primera pasada, trabajas en bucle:
+From the first pass onward, you work in a loop:
 
-- **Descubres algo que cambia el canon** (investigando, o sin más,
-  pensando) → reinvocas la skill afectada (`/bookwright-bible`,
-  `/bookwright-outline`…). Las skills generativas **actualizan en sitio**:
-  respetan tu prosa y los pendientes ya resueltos, y solo rellenan lo que
-  sigue abierto. No reescriben lo que ya decidiste.
-- **Replanteas la estructura** → vuelves a `/bookwright-outline`, y
-  `/bookwright-analyze` te señala qué quedó descolgado entre constitución,
-  biblia, outline y escenas (consistencia **pre-draft**).
-- **Ya tienes prosa y quieres saber qué rompiste** → `bookwright validate`
-  (chequeo determinista sobre el grafo) y `/bookwright-continuity` (el
-  manuscrito frente a la biblia: cumplimiento, arcos, cronología,
-  **post-draft**).
-- **Para obra basada en hechos**, la investigación es su propio sub-loop:
-  `/bookwright-research` documenta hallazgos con procedencia y marca cuáles
-  son *anclas* que restringen la ficción; `/bookwright-verify` contrasta la
-  prosa ya escrita contra esas anclas (anacronismos, errores de
-  procedimiento).
-- **¿No recuerdas por dónde ibas?** `bookwright focus set` fija tu objetivo
-  actual y `bookwright status` deriva el estado y el siguiente paso.
+- **You discover something that changes the canon** (while researching, or
+  just thinking) → you re-invoke the affected skill (`/bookwright-bible`,
+  `/bookwright-outline`…). The generative skills **update in place**: they
+  respect your prose and the pending items you've already resolved, and
+  only fill in what's still open. They don't rewrite what you already
+  decided.
+- **You rethink the structure** → you go back to `/bookwright-outline`, and
+  `/bookwright-analyze` points out what was left dangling across
+  constitution, bible, outline and scenes (**pre-draft** consistency).
+- **You already have prose and want to know what you broke** →
+  `bookwright validate` (deterministic check over the graph) and
+  `/bookwright-continuity` (the manuscript against the bible: compliance,
+  arcs, chronology, **post-draft**).
+- **For fact-based work**, research is its own sub-loop:
+  `/bookwright-research` documents findings with provenance and marks which
+  ones are *anchors* that constrain the fiction; `/bookwright-verify`
+  checks the already-written prose against those anchors (anachronisms,
+  procedural errors).
+- **Forgot where you were?** `bookwright focus set` pins your current
+  objective and `bookwright status` derives the state and the next step.
 
-El motor de todo esto es el protocolo `[PENDING]`: dejas un hueco marcado,
-sigues avanzando, y lo resuelves cuando el material esté maduro.
-`/bookwright-clarify` te lista en cualquier momento las dudas abiertas del
-proyecto. **No hay una pasada "definitiva"**: hay un manuscrito y un grafo
-que convergen iteración a iteración.
+The engine behind all of this is the `[PENDING]` protocol: you leave a
+marked gap, keep moving, and resolve it once the material is ripe.
+`/bookwright-clarify` lists the project's open questions for you at any
+time. **There is no "definitive" pass**: there's a manuscript and a graph
+that converge iteration by iteration.
 
-El recorrido completo está en
-[Primeros pasos](https://github.com/jmorenobl/bookwright/blob/main/docs/getting-started.md).
-
----
-
-## Principios de diseño
-
-- **El texto plano es la fuente de verdad.** Manuscrito, biblia,
-  constitución y grafo son Markdown, TOML o Turtle (RDF). Auditables por
-  humanos, diffables en git, portables.
-- **Batch, no conversacional.** Tú consolidas el input; la skill lo destila
-  en un artefacto versionable. Iteras los *documentos*, no el chat. El
-  agente no es un co-escritor frase a frase.
-- **Agnóstico de agente.** Las skills se materializan como
-  [Agent Skills](https://agentskills.io) portables. Bookwright entrega dos
-  integraciones (`claude`, `generic`); agentes como Codex, Cursor o Copilot
-  consumen la salida `generic` directamente.
-- **GOLEM por debajo.** El grafo narrativo usa la
-  [ontología GOLEM](https://github.com/GOLEM-lab/golem-ontology) serializada
-  en Turtle. No necesitas tocar RDF para usar Bookwright.
+The full walkthrough is in
+[Getting started](https://github.com/jmorenobl/bookwright/blob/main/docs/getting-started.md).
 
 ---
 
-## Roadmap y fuera de scope
+## Design principles
 
-Bookwright ya cubre investigación con procedencia, orquestación de contexto
-(foco autoral y estado derivado con siguiente paso) y la ingesta de la
-estructura narrativa: unidades, funciones y secuencias, con tipado opcional
-contra los vocabularios de Propp y Greimas y un validador de continuidad
-narrativa. La intención durable a través de versiones vive en
+- **Plain text is the source of truth.** Manuscript, bible, constitution
+  and graph are Markdown, TOML or Turtle (RDF). Human-auditable,
+  git-diffable, portable.
+- **Batch, not conversational.** You consolidate the input; the skill
+  distills it into a versionable artifact. You iterate on the *documents*,
+  not the chat. The agent is not a sentence-by-sentence co-writer.
+- **Agent-agnostic.** Skills are materialized as portable
+  [Agent Skills](https://agentskills.io). Bookwright ships two integrations
+  (`claude`, `generic`); agents like Codex, Cursor or Copilot consume the
+  `generic` output directly.
+- **GOLEM underneath.** The narrative graph uses the
+  [GOLEM ontology](https://github.com/GOLEM-lab/golem-ontology) serialized
+  in Turtle. You don't need to touch RDF to use Bookwright.
+
+---
+
+## Roadmap and out of scope
+
+Bookwright already covers research with provenance, context orchestration
+(authored focus and derived state with a next step) and ingestion of the
+narrative structure: units, functions and sequences, with optional typing
+against the Propp and Greimas vocabularies and a narrative-continuity
+validator. The durable intent across versions lives in
 [bookwright-roadmap.md](https://github.com/jmorenobl/bookwright/blob/main/bookwright-roadmap.md).
 
-**Horizonte demand-pulled (sin versión asignada)**, se activa solo ante un
-disparador concreto, nunca como plumbing especulativo: **búsqueda vectorial**
-(se activa con un corpus real multi-libro / serie o ante un fallo medido de
-recall estructural) y **export** a EPUB / PDF / impresión (se activa cuando el
-flujo de extremo a extremo esté probado sobre un libro real).
+**Demand-pulled horizon (no version assigned)**, activated only by a
+concrete trigger, never as speculative plumbing: **vector search**
+(activated by a real multi-book / series corpus or a measured
+structural-recall failure) and **export** to EPUB / PDF / print (activated
+once the end-to-end flow is proven on a real book).
 
-**Cancelado (decisión del owner), no lo pidas:** presets de género /
-paquetes de plantilla; el motor `Grafeo` / `GrafeoIndexer`; integraciones
-más allá de `claude` y `generic`; el sistema de extensiones.
+**Cancelled (owner's decision), don't ask for it:** genre presets /
+template packages; the `Grafeo` / `GrafeoIndexer` engine; integrations
+beyond `claude` and `generic`; the extension system.
 
 ---
 
-## Documentos del proyecto
+## Project documents
 
-- **[Sitio de documentación](https://github.com/jmorenobl/bookwright/blob/main/docs/index.md)** — guía de usuario completa
-  (primeros pasos, comandos, validación, extender, FAQ).
-- **[bookwright-design.md](https://github.com/jmorenobl/bookwright/blob/main/bookwright-design.md)** — la especificación
-  de diseño completa.
-- **[bookwright-roadmap.md](https://github.com/jmorenobl/bookwright/blob/main/bookwright-roadmap.md)** — la intención
-  durable a través de versiones.
-- **[CONTRIBUTING.md](https://github.com/jmorenobl/bookwright/blob/main/CONTRIBUTING.md)** — instalación, quality gates y
-  cómo extender el toolkit (nueva integración, validador, vocabulario).
-- **[CHANGELOG.md](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md)** — historial de cambios.
+> **Note:** the project documentation — the documentation site and the design
+> spec linked below — is currently available **in Spanish only**. This README is
+> the English-language entry point; the rest of the docs have not been
+> translated yet.
 
-## Licencia
+- **[Documentation site](https://github.com/jmorenobl/bookwright/blob/main/docs/index.md)** — full user guide
+  (getting started, commands, validation, extending, FAQ).
+- **[bookwright-design.md](https://github.com/jmorenobl/bookwright/blob/main/bookwright-design.md)** — the complete
+  design specification.
+- **[bookwright-roadmap.md](https://github.com/jmorenobl/bookwright/blob/main/bookwright-roadmap.md)** — the durable
+  intent across versions.
+- **[CONTRIBUTING.md](https://github.com/jmorenobl/bookwright/blob/main/CONTRIBUTING.md)** — install, quality gates and
+  how to extend the toolkit (new integration, validator, vocabulary).
+- **[CHANGELOG.md](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md)** — change history.
 
-[EUPL-1.2](https://github.com/jmorenobl/bookwright/blob/main/LICENSE) (Licencia Pública de la Unión Europea v. 1.2; el `LICENSE` incluye el texto oficial en español e inglés). Consulta [NOTICE](https://github.com/jmorenobl/bookwright/blob/main/NOTICE) para la atribución.
+## License
 
-Esta licencia cubre **solo el software bookwright**. El contenido que crees
-con la herramienta —*bibles*, escaletas, manuscritos y los grafos de
-conocimiento derivados— sigue siendo enteramente tuyo.
+[EUPL-1.2](https://github.com/jmorenobl/bookwright/blob/main/LICENSE) (European Union Public Licence v. 1.2; the `LICENSE` file carries the official Spanish and English texts). See [NOTICE](https://github.com/jmorenobl/bookwright/blob/main/NOTICE) for attribution.
+
+This license covers the **bookwright software only**. The content you
+author with it — story bibles, outlines, manuscripts, and the derived
+knowledge graphs — remains entirely yours.
