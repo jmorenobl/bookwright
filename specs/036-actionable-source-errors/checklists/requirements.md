@@ -32,9 +32,13 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
-- The spec deliberately keeps the closed-vocabulary set abstract (no value listing
-  in requirement prose) and refers to message *content* without prescribing
-  message *format* — kept technology-agnostic per the checklist.
+- The clarify pass (Session 2026-06-21) deliberately pins the *observable* message
+  shapes — the `one of: …` vocabulary enumeration and the `source <id>: …` locator
+  prefix — because those strings are the product's user-facing UX for this DX
+  iteration and FR-003/FR-004 demand exact-string tests. This is observable
+  behaviour, not a language/framework/API detail, so the "no implementation details"
+  items stay satisfied; code-internal grounding (file/symbol names) is confined to
+  the Clarifications rationale log, not the requirement prose.
 - One scope-expanding assumption (reliability swept alongside type) is documented
   in Assumptions and justified by the project's same-class-debt sweep rule, not
   left implicit.

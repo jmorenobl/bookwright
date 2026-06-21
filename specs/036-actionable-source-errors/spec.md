@@ -8,6 +8,36 @@
 
 **Input**: User description: "Necesidad: el dogfooding sobre un libro real expuso mensajes de error en la carga de fuentes de research que ciegan al autor. (F1) `type` fuera del vocabulario cerrado no enumera los valores aceptados. (F2) `access_date` entrecomillado falla sin nombrar QUÉ fuente. Queremos errores accionables: enumerar el vocabulario válido de `type`, e incluir el identificador de la fuente (su `name`, o el índice 1-based) en los errores por-fuente. El footgun de SPARQL se DOCUMENTA. Borrar DEBT-006."
 
+## Clarifications
+
+### Session 2026-06-21
+
+Resolved non-interactively (zero-debt doctrine: decide by the Constitution Check
+gate, never by asking). Each decision below is the lowest-debt, most-testable
+option grounded in the actual loader code (`src/bookwright/io/research.py`,
+`golem/namespaces.py`).
+
+- Q: How is the per-source identifier prefix rendered, and where is it applied? →
+  A: Rendered as `source <id>: <original reason>`, where `<id>` is the `name` in
+  single quotes (`source 'Diario de X': …`) when usable, else `#<n>` 1-based
+  (`source #3: …`) — the two forms are visually distinguishable so the author knows
+  whether they got a name or a row number (SC-002). It is applied **once**, at the
+  per-source loop boundary in `_map_sources` (the only scope that knows both the
+  1-based index *and*, after a successful read, the `name`), not bolted onto each
+  individual `raise` site — a single locator point, which is also where the inline
+  self-naming is removed (FR-011). Rationale: loop-boundary wrapping is the only
+  place that satisfies US2 scenario 2 (failure *before* `name` is read → index is
+  the sole available locator) and yields one locator, not many (doctrine §3, §4).
+- Q: What exact string format enumerates the accepted vocabulary values (FR-003)? →
+  A: The substring `one of: <v1>, <v2>, …` — comma-space separated, unquoted,
+  emitted in the declaration order of `SOURCE_TYPE_IRI` / `RELIABILITY_IRI`. This
+  makes FR-003's "a test can assert the exact string" concrete and deterministic.
+- Q: Where does the SPARQL empty-result note live — command help, docs, or both
+  (FR-008)? → A: **Both.** The `graph query` command help (English, the in-product
+  surface SC-004 demands an author reach "without reading source code") **and** the
+  existing `docs/commands/graph-query.md` page (Spanish, per the language
+  conventions). Both are mandatory so the note is discoverable from either surface.
+
 ## User Scenarios & Testing *(mandatory)*
 
 This is a developer-experience (authoring-UX) hardening iteration. The "user" is
@@ -98,9 +128,9 @@ unlike F1/F2 — the decision is explicitly to **document, not fix** (validating
 arbitrary user IRIs against the graph is out of scope). A short documentation note
 fully discharges it.
 
-**Independent Test**: Confirm the `graph query` command help text and/or the
-project docs contain a note stating that an unknown/misspelled IRI returns zero
-rows rather than an error.
+**Independent Test**: Confirm both the `graph query` command help text and the
+`docs/commands/graph-query.md` page contain a note stating that an
+unknown/misspelled IRI returns zero rows rather than an error.
 
 **Acceptance Scenarios**:
 
@@ -143,9 +173,16 @@ rows rather than an error.
 - **FR-003**: The enumerated accepted values MUST be the author-facing vocabulary
   values (the accented Spanish keys authors type), emitted in the vocabulary's own
   declaration order — a fixed, deterministic sequence identical on every run, so a
-  test can assert the exact string.
+  test can assert the exact string. The enumeration is rendered as the substring
+  `one of: <v1>, <v2>, …` (comma-space separated, unquoted, in the vocabulary's own
+  fixed declaration order).
 - **FR-004**: Every error raised while loading an **individual** source MUST be
   prefixed with that source's identifier so the author can locate the failing row.
+  The prefix is rendered `source <id>: ` where `<id>` is the `name` single-quoted
+  when usable, else `#<n>` (1-based index) — the two forms distinguishable — and is
+  applied at a **single point** while processing each source (where both the 1-based
+  index and, once read, the `name` are known), never bolted onto each individual
+  failure site.
 - **FR-005**: The source identifier MUST be the source's `name` when it is a
   present, non-empty, usable string; otherwise it MUST be the source's 1-based
   position within the `sources:` list.
@@ -157,9 +194,10 @@ rows rather than an error.
   the unified `{status, code, message[, details]}` JSON shape (Principle IX,
   iterations 018/027); only the human-readable `message` (and, where already
   present, `details`) content improves. No new error type, code, or field.
-- **FR-008**: The `graph query` command's help text and/or the graph/query
-  documentation MUST carry a brief note that a query referencing a non-existent
-  (e.g. misspelled) IRI returns an empty result set rather than an error.
+- **FR-008**: The `graph query` command's help text (English, in-product) **and**
+  the `docs/commands/graph-query.md` page (Spanish) MUST each carry a brief note
+  that a query referencing a non-existent (e.g. misspelled) IRI returns an empty
+  result set rather than an error — discoverable from either surface.
 - **FR-009**: The DEBT-006 entry MUST be removed from `DEBT.md` (git preserves the
   history; resolved debt is deleted, not archived).
 - **FR-010**: Test coverage MUST exercise both improved messages: the enumerated

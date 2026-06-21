@@ -406,32 +406,30 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/035-narrative-label-order/plan.md` (iteration 035 — make the v0.4 narrative
-layer queryable by content and by order, closing DEBT-005, all in
-`src/bookwright/golem/modules/narrative.py`. (1) Labels: `NarrativeUnit` and
-`NarrativeFunction` each emit a single `(uri, rdfs:label, Literal(name))` triple
-reusing the `CharacterRole`/`CharacterFeature` one-triple label shape; the label
-rides the entity's identity assertion (no new E13). (2) Order under unordered RDF,
-no new ontology class (Principle X): each member unit's resolved position in its
-`G7_Narrative_Sequence` is materialized as a per-unit predicate triple
-`(unit, bw:sequenceOrdinal, Literal(rank, xsd:integer))` — chosen over a reified
-membership node because a unit declares at most one `sequence:` (YAGNI). The rank
-is the member's 1-based contiguous index in the already-sorted `units` tuple
-(`_member_sort_key`), so it is total/gap-free under missing/duplicate/absent
-`order:`. Emitted from `NarrativeSequence.to_triples()` (the only place that knows
-the resolved order; subject = the unit URI, one hop from the sequence), reified
-through its own file-level `crm:E13` (target=unit, attribute=sequence) on the
-assembly path. `bw:sequenceOrdinal` is declared in
-`resources/vocabularies/sources.ttl` (the `bw:reference` home) with
-`rdfs:label`/`rdfs:comment`, outside `golem.ttl`/`CLASS_IRI`/the
-`test_namespaces.py` closure (SC-005). One justified test refinement:
-`test_triples.py::test_term_closure_over_frozen_ontology` gains an explicit `bw:`
-namespace exemption (the sample `NarrativeSequence` now emits a `bw:` term —
-the same tolerance research entities already get by exclusion). Reconcile the
-`tiny-quest` oracle (add label facts; members list unchanged) and rewrite the E2E
-`_ordered_members` to query the graph by ordinal (`ORDER BY ?n`), overturning its
-"the graph carries no member ordinal" assumption. Ship the two demonstrative SPARQL
-queries (find-by-label, list-in-order) as tests. Delete DEBT-005. `uv run pytest`
-and the four gates green; ships as `v0.4.3`. If `/speckit-tasks` exceeds ~10 tasks,
-split labels / order.
+`specs/036-actionable-source-errors/plan.md` (iteration 036 — make research-source
+load errors actionable, closing DEBT-006, almost entirely in
+`src/bookwright/io/research.py`. (F1) `_reject_unknown_vocab` now ENUMERATES the
+closed vocabulary in the message — `unknown source type 'x' in <relpath>; one of:
+<", ".join(SOURCE_TYPE_IRI)>` and the twin for `reliability`/`RELIABILITY_IRI` —
+the keys are the accented author-facing values in declaration order, so the test
+can assert the exact string and the set never drifts from the validator. (F2) the
+`for raw in raw_sources` loop body in `_map_sources` is wrapped in ONE
+`try/except ResearchError` that re-raises `ResearchError(exc.relpath, f"source
+{id}: {exc.message}", exc.value)` — a single locator point that knows both the
+1-based index and the candidate `name`; `id` is the `name` single-quoted when
+`raw["name"]` is a non-empty str that `make_slug` accepts, else `#<n>` (1-based).
+Envelope byte-unchanged (FR-007): same `code=invalid_research`, same
+`details={relpath, value}`, only `message` enriched; underlying pydantic reason
+preserved (FR-006). FR-011: drop the now-redundant inline name locator from the
+translation-rule error (`needs a translation (language … ≠ book …)`) and the
+duplicate-name error (`duplicate source name (slug '…')` — keep the slug as the
+retained semantic subject, drop the human name). The SPARQL empty-result footgun
+is DOCUMENTED, not fixed: the `graph query` `sparql` arg `help=` string (English)
+and `docs/commands/graph-query.md` (Spanish) both note that a non-existent/
+misspelled IRI returns zero rows, not an error (no IRI validation added). Tests in
+`tests/io/test_research.py` (F1 enumeration + F2 prefix, named & index) and the
+graph-query help/docs note; delete DEBT-006 from `DEBT.md`. Keep `research.py`
+≤ 500 lines (463 today) — if the identifier helper would push it over, move it to
+`io/_research_identity.py`. `uv run pytest` and the four gates green; ships as
+`v0.4.4`. If `/speckit-tasks` exceeds ~10 tasks, split F1 / F2 / docs.
 <!-- SPECKIT END -->
