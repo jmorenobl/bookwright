@@ -33,6 +33,41 @@ touching the frozen ontology. It is the recorded resolution of **DEBT-005** and 
 explicit prerequisite to any future vector-search evaluation (which is *not* in
 scope here).
 
+## Clarifications
+
+### Session 2026-06-21
+
+Resolved non-interactively against `.specify/memory/constitution.md`, `CLAUDE.md` and
+the zero-debt doctrine — Principle X (frozen ontology), Scope & Release Discipline
+(no speculative plumbing) and structural provenance are the deciding criteria.
+
+- Q: Ordinal mechanism — a single per-unit predicate triple, or a reified
+  per-membership node? → A: **Per-unit predicate triple** `(unit, bw:<order-term>,
+  Literal(rank, xsd:integer))`. A unit declares **at most one** `sequence:`
+  (`outline.py:195-206`), so a per-edge membership node would be plumbing justified
+  only by hypothetical multi-membership — speculative, and dropped under Scope &
+  Release Discipline (§2). The per-unit triple is one SPARQL hop from the sequence
+  (`?seq dlp:proper-part ?unit . ?unit bw:<order-term> ?n`) and adds no node.
+- Q: Ordinal value — the raw authored `order:` integer, or the derived contiguous
+  rank of the resolved total order? → A: **Derived contiguous rank** — the member's
+  index in the already-sorted `units` tuple (the existing `_member_sort_key` total
+  order, `outline.py:156`). Only a derived rank is total and gap-free under a
+  missing/duplicate `order:`; it reuses the existing sort and invents no new
+  ordering. (Confirms the previously open-to-confirmation assumption.)
+- Q: Ordinal provenance — its own `crm:E13_Attribute_Assignment`, or folded into
+  the unit's identity assertion the way `rdfs:label` is? → A: **Its own E13**, with
+  file-level provenance (`key_lines={}`) recorded on the sequence-assembly path. The
+  ordinal is *relational* (a property of the membership the sequence assembles), not
+  intrinsic to the unit, so the label's ride-the-identity-assertion shortcut does not
+  apply; structural provenance — every non-identity assertion is reified — holds.
+- Q: Ordinal predicate home + literal datatype? → A: A **new `bw:` property**
+  declared in `resources/vocabularies/*.ttl` (the `bw:reference` home, with
+  `rdfs:label`/`rdfs:comment` like its siblings), kept out of `CLASS_IRI` and the
+  `test_namespaces.py` closure (Principle X); literal datatype **`xsd:integer`**
+  (numeric `ORDER BY`). Only the exact local name and the base index (0- vs
+  1-indexed — sort-identical, and SC-002 asserts *relative* order) remain
+  `/speckit-plan` cosmetics.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Find a narrative beat by its authored name (Priority: P1)
@@ -154,31 +189,42 @@ query functions by `rdfs:label`; assert the function URI is returned.
   single minted entity).
 - **FR-003**: Each member unit's position within its `G7_Narrative_Sequence` (the
   `dlp:proper-part` membership) MUST be materialized as a **queryable** integer ordinal —
-  reachable from the sequence in a single SPARQL hop so members can be `ORDER BY`-ed,
-  whether the ordinal is attached to the member unit or to a reified membership node.
+  reachable from the sequence in a single SPARQL hop (`?seq dlp:proper-part ?unit . ?unit
+  bw:<order-term> ?n`) so members can be `ORDER BY`-ed. **Mechanism (clarified):** a
+  single per-unit predicate triple `(unit, bw:<order-term>, Literal(rank, xsd:integer))`,
+  **not** a reified membership node — a unit declares at most one `sequence:`, so a
+  per-edge node would be speculative plumbing (YAGNI / Scope & Release Discipline).
 - **FR-004**: The materialized ordinal MUST reproduce the total order the existing
   assembly already defines for a sequence's members — ascending by declared `order:`,
   a missing `order:` placed last, ties broken by slug — so that sorting members by the
-  ordinal yields the author's declared order and is byte-identical across rebuilds.
+  ordinal yields the author's declared order and is byte-identical across rebuilds. The
+  ordinal is the member's **derived contiguous rank** in that resolved total order (its
+  index in the assembled `units` tuple), **not** the raw authored `order:` value — which
+  cannot represent a missing or duplicated position as a clean total order.
 - **FR-005**: The feature MUST NOT add any class or predicate to the frozen GOLEM
   ontology — concretely, it adds nothing to `golem.ttl`, nothing to `CLASS_IRI`, and
   nothing to the closure-checked predicate list in `test_namespaces.py` (Principle X).
   The label uses `rdfs:label`, which already sits outside that closure by design (it is
   emitted today and is in neither checked list). The ordinal MUST likewise use a term
-  outside the frozen GOLEM closure — either a predicate in Bookwright's own `bw:`
-  namespace (the same place `bw:reference` etc. live, declared in a `resources/
-  vocabularies/*.ttl`, never in `golem.ttl`) or a standard `rdf:`/`rdfs:` ordering term
-  — never a newly minted GOLEM class or predicate. The exact predicate is a
-  `/speckit-plan` decision; whatever it is, the closure test in `test_namespaces.py`
+  outside the frozen GOLEM closure: **(clarified)** a new predicate in Bookwright's own
+  `bw:` namespace, declared in a `resources/vocabularies/*.ttl` (the same place
+  `bw:reference` etc. live, with an `rdfs:label`/`rdfs:comment` like its siblings), never
+  in `golem.ttl`, with literal datatype `xsd:integer` — never a newly minted GOLEM class
+  or predicate. Only the predicate's exact local name and base index remain a
+  `/speckit-plan` cosmetic; whatever they are, the closure test in `test_namespaces.py`
   MUST stay unmodified and green (SC-005).
 - **FR-006**: The label assertions MUST NOT invent a new `crm:E13_Attribute_Assignment`:
   an `rdfs:label` rides the entity's already-emitted identity assertion (which carries
   the unit/function's `file:line` via the existing `DerivedAssertion(uri, uri, None)`),
   exactly as `CharacterRole`/`CharacterFeature` labels do today — adding a dedicated E13
-  per label would be unjustified plumbing. The ordinal assertion, when it introduces a
-  genuinely new attribution on the assembled sequence, MUST carry file-level provenance
-  (no `:line`, since a sequence has no single source line), mirroring how minted
-  functions and assembled sequences already record provenance (`key_lines={}`).
+  per label would be unjustified plumbing. The ordinal, by contrast, **is** a genuinely
+  new attribution and **(clarified)** MUST be reified as its **own**
+  `crm:E13_Attribute_Assignment` with file-level provenance (`key_lines={}`, no `:line`,
+  since the rank emerges across a sequence's cards, not at one source line), recorded on
+  the sequence-assembly path that already provisions minted functions and assembled
+  sequences. It does **not** ride the unit's identity assertion the way the label does:
+  the ordinal is relational (a property of the assembled membership), not intrinsic to
+  the unit — so structural provenance (every non-identity assertion is reified) holds.
 - **FR-007**: A SPARQL query MUST be able to find a narrative unit by matching its
   `rdfs:label`; this query ships as a test.
 - **FR-008**: A SPARQL query MUST be able to list a sequence's member units in their
@@ -207,9 +253,10 @@ query functions by `rdfs:label`; assert the function URI is returned.
 - **Narrative Sequence (`G7_Narrative_Sequence`)**: a story-line assembled from units
   sharing a `sequence:` name; its `dlp:proper-part` memberships now carry a queryable
   ordinal reflecting each member's declared `order:`.
-- **Sequence membership ordinal**: the integer position of a unit within its sequence,
-  materialized so SPARQL can `ORDER BY` it; not a new ontology class — a queryable shape
-  over existing/permitted terms.
+- **Sequence membership ordinal**: the unit's derived contiguous rank within its
+  sequence, materialized as a single per-unit `bw:` predicate triple (`xsd:integer`) so
+  SPARQL can `ORDER BY` it; not a new ontology class — a `bw:` term outside the frozen
+  closure, reified through its own file-level `crm:E13_Attribute_Assignment`.
 
 ## Success Criteria *(mandatory)*
 
@@ -240,14 +287,16 @@ query functions by `rdfs:label`; assert the function URI is returned.
   by slug — design § 7.4). Materializing that resolved rank (rather than the authored
   integers) is what makes "list in declared order" unambiguous and `ORDER BY`-clean; it
   faithfully "reflects the declared order" because it *is* the order the declaration
-  resolves to. The exact base (0- vs 1-indexed) and the literal datatype are left to
-  `/speckit-plan`. *(Open to confirmation in `/speckit-clarify`.)*
-- **The concrete ordinal mechanism is a planning decision.** The spec requires only a
-  queryable integer ordinal under Principle X. Because a unit declares **at most one**
-  `sequence:` (single optional key, `outline.py:195-206`), its membership is unique, so
-  a per-unit ordinal predicate (e.g. `?unit <bw:order> ?n`) and a reified-membership
-  node are both viable; the choice — and the predicate term, base index, and literal
-  datatype — is made and justified against Principle X in `/speckit-plan` (per the
+  resolves to. **(Confirmed in `/speckit-clarify`.)** The literal datatype is
+  `xsd:integer` (numeric `ORDER BY`); only the base (0- vs 1-indexed — sort-identical,
+  and SC-002 asserts *relative* order) is left to `/speckit-plan`.
+- **The ordinal mechanism is fixed to a per-unit predicate (clarified).** The spec
+  requires a queryable integer ordinal under Principle X. Because a unit declares **at
+  most one** `sequence:` (single optional key, `outline.py:195-206`), its membership is
+  unique, so the reified-membership-node alternative is dropped as speculative plumbing
+  (Scope & Release Discipline): the ordinal is a single per-unit predicate triple
+  (`?unit bw:<order-term> ?n`). Only the predicate's exact local name and base index
+  remain `/speckit-plan` cosmetics, justified against Principle X (per the
   implementation-plan risk note for iteration 035; splitting into separate label/order
   tasks is permitted if tasks inflate beyond ~10).
 - **G10 functions get labels too.** The user's "si encaja / si aplica" is read as
