@@ -44,7 +44,11 @@ toolkit.
 > skills que lo consumen para guiar el siguiente paso. **v0.3.x**
 > (track de hardening, iteraciones 024–027): guard de paridad de ingesta
 > + registro de aplazamientos (`v0.3.1`) e ingesta de `bible/locations/*`
-> como nodos `G13_Narrative_Location` (`v0.3.2`). La documentación de
+> como nodos `G13_Narrative_Location` (`v0.3.2`). **v0.4** (capa de
+> estructura narrativa, iteraciones 028–032): la ingesta de `outline/units/`
+> en unidades (G9), funciones (G10) y secuencias (G7) narrativas, el tipado
+> Propp/Greimas vía `[vocabularies] active`, y el validador
+> `narrative_structure`. La documentación de
 > usuario completa vive en el
 > [sitio de documentación](https://github.com/jmorenobl/bookwright/blob/main/docs/index.md).
 
@@ -195,9 +199,12 @@ skills `research`/`verify`, validador `factual_anchor`); **v0.3 / M5** —
 orquestación de contexto (foco autoral `[focus]` + `bookwright focus`, estado
 derivado `bookwright status` con `next_actions`, y las skills que lo consumen);
 **v0.3.x** — track de hardening (paridad de ingesta, registro de aplazamientos,
-ingesta de localizaciones G13, objetos G16). Planificado: **v0.4** — la capa de
-estructura narrativa Propp/Greimas (G7/G9/G10) y la ingesta de `outline/`, que
-cierra la paridad de ingesta.
+ingesta de localizaciones G13, objetos G16); **v0.4** — la capa de estructura
+narrativa Propp/Greimas (G7/G9/G10): la ingesta de `outline/units/*.md` en
+unidades, funciones y secuencias narrativas, el tipado de funciones/roles contra
+los vocabularios de Propp y Greimas vía `[vocabularies] active`, y el validador
+`narrative_structure` (beat huérfano, rol sin resolver) — cierra la paridad de
+ingesta. Ver [Estructura narrativa](docs/narrative-structure.md).
 
 **Horizonte demand-pulled (sin versión asignada)**, se activa solo ante un
 disparador concreto, nunca como plumbing especulativo: **búsqueda vectorial**

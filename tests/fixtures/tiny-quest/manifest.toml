@@ -1,0 +1,53 @@
+# Bookwright project manifest — fixture `tiny-quest`.
+#
+# The worked v0.4 example (iteration 032): a tiny folktale-shaped quest whose
+# `outline/units/` cards describe Propp-typed beats with roles and one ordered
+# `"Quest"` sequence. It activates the Propp vocabulary (`[vocabularies] active`)
+# so each function card gains a `crm:P2_has_type` link to its `crm:E55_Type`
+# term, and it deliberately plants exactly two `narrative_structure` warnings (see
+# expected-narrative.md): one orphan beat (a unit with no `sequence`) and one
+# unresolved role (a `roles:` slug no character plays). Shipped source-only —
+# `bible/graph.ttl` is rebuilt in a tmp copy by the tests, never committed.
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.1"
+manifest_version = "1"
+uri_base = "https://example.org/tiny-quest/"
+indexer = "rdflib"
+
+[book]
+title = "Tiny Quest"
+type = "novel"
+language = "es"
+authors = ["Bookwright Test Suite"]
+status = "drafting"
+
+# Turns on Propp function typing (iteration 030): each NarrativeFunction (G10)
+# whose name matches a canonical Propp term gains a `crm:P2_has_type` edge to that
+# term. The E2E non-regression group empties this list at runtime to prove the
+# typings vanish while every other graph fact stays byte-for-byte identical.
+[vocabularies]
+active = ["propp"]
+
+[validators]
+# All built-in validators active — none disabled, so `narrative_structure`
+# (auto-discovered) audits the beats. The other built-ins stay clean: every
+# character is named in the manuscript, there is no timeline event, and there are
+# no settings, so no `error`-severity finding fires (validate's gate stays green).
+enabled = []
+disabled = []
+custom = []
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"

@@ -377,10 +377,13 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/031-narrative-structure-validator/plan.md` (iteration 031 — add the
-`narrative_structure` continuity validator: rule a orphan beat via SPARQL
-`NOT EXISTS` over `dlp:proper-part`, rule c unresolved role re-surfaced from
-outline ingestion's `UnresolvedReference` records via a new cached
-`ValidationContext.outline()` accessor; auto-discovered, `warning`-default,
-no ontology change).
+`specs/032-v04-close/plan.md` (iteration 032 — close v0.4: a new source-only
+`tests/fixtures/tiny-quest/` (Propp active, a deliberate orphan beat + unresolved
+role) with a co-located oracle, an E2E `tests/e2e/test_narrative_workflow.py`
+(build → validate, oracle-sourced, non-regression toggle, modelled on the 023
+orchestration test), the Spanish `docs/narrative-structure.md`, the honest
+deferral re-target (`deferrals.py` + parity `EXPECTED_VERSIONS` + DEBT-001/002
+targets: `"v0.4"` → `"demand-pulled"` sentinel), roadmap §1/§2, and the `v0.4.0`
+release metadata driven by the `bookwright-release` skill — no new mechanism, no
+ontology change, G6/G3 stay deferred).
 <!-- SPECKIT END -->
