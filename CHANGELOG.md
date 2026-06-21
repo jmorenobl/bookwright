@@ -4,6 +4,56 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.4.6] — 2026-06-22
+
+Fifth patch of the **v0.4.x post-dogfooding hardening track** (iteration 038) —
+pure hardening that makes the `character_presence` validator stop flagging the
+first word of a markdown heading as an unknown proper noun, closing DEBT-008.
+The proper-noun heuristic exempts a capitalized word that opens a line or follows
+sentence-ending punctuation as grammatical, but did not recognize ATX heading
+syntax: the first word of `# Capítulo 1` is preceded by the `# ` marker, so
+`_is_sentence_initial` saw a non-empty, non-terminal prefix and reported
+`proper noun 'Capítulo' appears in the manuscript but has no bible entry` on
+every chapter heading — a manuscript that named no off-roster character was told
+it had unbound proper nouns. The fix strips a single leading ATX marker before
+the heuristic runs, so the heading's first content word lands at offset 0 and is
+exempted by the **existing** empty-prefix branch — no new exemption rule. The
+rest of the line is analyzed unchanged, so a real out-of-roster name later in the
+title (`Elena` in `# La caída de Elena`) still fires. No new CLI surface, no new
+runtime dependency, no ontology change, and no `--json` envelope change — pure
+hardening on a prose validator (`triples=()`, the frozen ontology untouched,
+Principle X).
+
+The `_HEADING_MARKER` recognizer stays local to `character_presence.py` (no
+speculative shared markdown-stripping utility), mirroring iteration 037's local
+`_PENDING_ONLY`. The marker is anchored at `^` with no leading whitespace, so
+`#Capítulo` (no space), seven-or-more `#`, and indented heading-like lines are
+out of scope and behave exactly as before. The `relpath:line` locator is
+unchanged: `lineno` comes from `enumerate`, never the match offset.
+
+### Changed
+
+- **`character_presence` no longer mis-flags a markdown heading's first word**
+  (`src/bookwright/validation/validators/character_presence.py`): a module-level
+  `_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` and a `scan = _HEADING_MARKER.sub(
+  "", line, count=1)` step in `_unknown_mentions` strip a single leading ATX
+  marker before `_CANDIDATE.finditer(scan)` and `_is_sentence_initial(scan, …)`
+  run, so the heading-initial word inherits the existing sentence-initial
+  exemption. The inverse (bible→manuscript, `error`) direction, the pinned
+  `_STOP_WORDS`, per-name collapsing, and the `warning` severity are untouched.
+- **`tests/fixtures/tiny-historical/expected-status.md`**: the project-wide
+  `warning` count drops `6 → 5`. Its manuscript opens with
+  `# Capítulo 1 — El telar nuevo`, and the oracle had baked the spurious
+  `Capítulo` flag into its expected output; correcting the validator removes the
+  false positive, so the oracle is brought into line (the fixture manuscript is
+  not edited).
+
+### Removed
+
+- **DEBT-008** removed from `DEBT.md` (the "Deuda abierta" section returns to
+  `_Ninguna por ahora._`) — the v0.4.x post-dogfooding hardening track is
+  complete, with no open debt.
+
 ## [0.4.5] — 2026-06-21
 
 Fourth patch of the **v0.4.x post-dogfooding hardening track** (iteration 037) —
