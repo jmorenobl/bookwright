@@ -26,6 +26,9 @@ _CANDIDATE = re.compile(r"[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,}")
 # Sentence-ending punctuation: a capital right after one of these (or at line start)
 # is grammatical, not necessarily a proper noun — excluded (conservative, D3).
 _SENTENCE_END = frozenset(".!?¿¡")
+# ATX heading opening marker, anchored at ``^`` with no leading whitespace (research D2):
+# stripped before the heuristic so a heading's first content word lands at offset 0.
+_HEADING_MARKER = re.compile(r"^#{1,6}\s+")
 _MIN_TOKEN_LEN = 3  # shortest name token worth matching as a standalone word.
 # Common capitalized non-names we never treat as a character mention (pinned stop-set).
 _STOP_WORDS = frozenset(
@@ -143,14 +146,17 @@ class CharacterPresence:
         first_seen: dict[str, tuple[str, str]] = {}
         for relpath, text in files:
             for lineno, line in enumerate(text.splitlines(), start=1):
-                for match in _CANDIDATE.finditer(line):
+                # Strip a single leading ATX heading marker so the title's first word
+                # is line-initial (and thus exempt); the rest of the line is unchanged.
+                scan = _HEADING_MARKER.sub("", line, count=1)
+                for match in _CANDIDATE.finditer(scan):
                     token = match.group(0)
                     slug = make_slug(token)
                     if (
                         slug in roster_slugs
                         or slug in first_seen
                         or slug in _STOP_WORDS
-                        or _is_sentence_initial(line, match.start())
+                        or _is_sentence_initial(scan, match.start())
                     ):
                         continue
                     first_seen[slug] = (token, f"{relpath}:{lineno}")

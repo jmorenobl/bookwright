@@ -423,36 +423,41 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/037-focalization-pending-placeholder/plan.md` (iteration 037 — make the
-`focalization` validator treat an unanswered `[PENDING: …]` narrative-voice
-placeholder as no declaration, closing DEBT-007, entirely in
-`src/bookwright/validation/validators/focalization.py`. The bug: a fresh
-`bookwright init` constitution carries `- **Voz narrativa**: [PENDING: …(primera/
-tercera persona, omnisciente/limitada)?]`; that placeholder *text* literally
-contains "tercera persona" and "limitada", so `_parse_declaration` parses it as a
-real declaration (`person="third", limited=True, focal=None`) and the first
-interiority verb floods head-hopping warnings against every character. The fix: add
-a module-level `_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")` and
-ONE guard in `_parse_declaration` after `body = match.group("body")` —
-`if _PENDING_ONLY.match(body): return None` (reuses the existing "no declaration →
-zero findings" path). Full `^…$` anchor = "solely a placeholder" (FR-002): real
-text before OR after the token keeps the body a real declaration; whitespace/case
-tolerated. Runs on the already markdown-normalized body (iteration 034), so the
-bullet/emphasis scaffold form is recognized. No other rule changes (first-person,
-interiority, markdown tolerance, focal resolution) — FR-006. Prose validator: no
-graph, `triples=()`, frozen ontology untouched (Principle X / FR-010). Tests in
-`tests/validation/test_focalization.py`: (FR-007) read the EXACT live scaffold
-constitution via `importlib.resources` (placeholder intact — its body really
-contains "tercera persona", unlike the existing simplified `[PENDING: ¿quién
-narra?]` test which does NOT reproduce the bug) + an interiority-verb manuscript →
-assert 0 findings; (FR-008) replace only the placeholder with a real voice → assert
-the head-hopping finding wakes; and FLIP the existing `test_template_binding`
-assertion from `is not None` to `is None` (the live placeholder line now parses to
-None by design — leaving it red-fails the gate). Delete DEBT-007 from `DEBT.md`
-(add `_Ninguna por ahora._` under "Deuda abierta"). The recognizer stays LOCAL to
-`focalization.py` (no shared `[PENDING]` utility — speculative plumbing per
-clarification); `references/pending-protocol.md` stays the prose source of truth it
-mirrors. The constitution template is NOT reworded (clarification: parser-level
-suppression keeps the prompt useful). `focalization.py` ≤ 500 lines (183 today).
-`uv run pytest` and the four gates green; ships as `v0.4.5`.
+`specs/038-character-presence-heading/plan.md` (iteration 038 — make the
+`character_presence` validator stop flagging the first word of a markdown heading
+as an unknown proper noun, closing DEBT-008, entirely in
+`src/bookwright/validation/validators/character_presence.py`. The bug: the
+proper-noun heuristic exempts a capital that opens a line or follows
+`_SENTENCE_END` punctuation as grammatical, but does not recognize ATX heading
+syntax — the first word of `# Capítulo 1` is preceded by the `# ` marker, so
+`_is_sentence_initial` sees a non-empty, non-terminal prefix and reports
+`proper noun 'Capítulo' appears in the manuscript but has no bible entry` on every
+chapter heading. The fix: add a module-level
+`_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` and, in `_unknown_mentions`, compute
+a `scan` string (the line with any leading ATX marker stripped, else the line
+unchanged) BEFORE the heuristic; run `_CANDIDATE.finditer(scan)` and pass `scan` to
+`_is_sentence_initial`. The marker removed, the heading's first content word sits
+at offset 0 and is exempted by the EXISTING empty-prefix branch — no new exemption
+rule (FR-001). The rest of the line is analyzed unchanged, so a real out-of-roster
+name later in the title (`Elena` in `# La caída de Elena`) still fires (FR-002).
+Marker shape is anchored at `^` with NO leading whitespace (spec Edge Cases put
+indented forms out of scope — this drops the `^\s*` the plan hint loosely wrote);
+`#Capítulo` (no space) and seven-plus `#` are not matched, so they behave exactly
+as today. The `relpath:line` locator is unchanged: `lineno` comes from `enumerate`,
+not the match offset (FR-005). The inverse (bible→manuscript, `error`) direction,
+the pinned `_STOP_WORDS`, the per-name collapsing, and the `warning` severity are
+untouched (FR-003/FR-004). Prose validator: no graph, `triples=()`, frozen ontology
+untouched (Principle X / FR-009). Tests in
+`tests/validation/test_character_presence.py`: (FR-006) a synthetic in-test
+manuscript with multi-depth chapter headings (`# Capítulo 1`, `## Escena …`) +
+plain prose with no out-of-roster names → assert 0 findings (the scaffold ships an
+EMPTY manuscript, so there is no live artifact to bind to — unlike iter 037);
+(FR-007) a heading `# La caída de Elena` with `Elena` off-roster → assert the
+unknown-proper-noun warning for `Elena` fires (proving the marker, not the title,
+is stripped). Existing fixtures stay green unchanged (FR-003 parity). Delete
+DEBT-008 from `DEBT.md` (the "Deuda abierta" section becomes `_Ninguna por ahora._`).
+The `_HEADING_MARKER` recognizer stays LOCAL to `character_presence.py` (no shared
+markdown-stripping utility — speculative plumbing per Scope discipline), mirroring
+iter 037's local `_PENDING_ONLY`. `character_presence.py` ≤ 500 lines (203 today).
+`uv run pytest` and the four gates green.
 <!-- SPECKIT END -->
