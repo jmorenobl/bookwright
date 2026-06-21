@@ -78,6 +78,10 @@ identifier (its `name`) and still carries the underlying validation reason.
 3. **Given** a `sources.md` where every source is valid, **When** the build runs,
    **Then** no per-source error is raised (no regression) and the produced
    entities are unchanged.
+4. **Given** a source whose fault already named the source inline (e.g. a
+   translation-rule violation, or a duplicate `name`), **When** the build runs,
+   **Then** the source's locator identifier appears **exactly once** in the message
+   — the prefix — with no doubled mention of the same source as a locator.
 
 ---
 
@@ -119,6 +123,10 @@ rows rather than an error.
   appear in the `sources:` list (the order the loader processes them).
 - **Vocabulary enumeration order**: the accepted values are listed in a stable,
   deterministic order so tests and authors see the same sequence every run.
+- **A fault that already named the source**: the duplicate-name and translation-rule
+  errors embed the source `name` inline today; once the uniform locator prefix is
+  added, that inline locator becomes redundant and is removed so the source is named
+  once, not twice (FR-011).
 
 ## Requirements *(mandatory)*
 
@@ -133,8 +141,9 @@ rows rather than an error.
   the identical footgun lives in the same code path as FR-001 and is fixed in the
   same pass, not deferred).
 - **FR-003**: The enumerated accepted values MUST be the author-facing vocabulary
-  values (the accented Spanish keys authors type), emitted in a stable,
-  deterministic order.
+  values (the accented Spanish keys authors type), emitted in the vocabulary's own
+  declaration order — a fixed, deterministic sequence identical on every run, so a
+  test can assert the exact string.
 - **FR-004**: Every error raised while loading an **individual** source MUST be
   prefixed with that source's identifier so the author can locate the failing row.
 - **FR-005**: The source identifier MUST be the source's `name` when it is a
@@ -155,6 +164,16 @@ rows rather than an error.
   history; resolved debt is deleted, not archived).
 - **FR-010**: Test coverage MUST exercise both improved messages: the enumerated
   `type` (F1) and the source-identified per-source failure (F2).
+- **FR-011**: The source identifier MUST appear **exactly once** in a per-source
+  error message — as the single locator prefix. Two existing per-source errors
+  already embed the source `name` inline purely as their own locator (the
+  duplicate-name error and the translation-rule error in the same sources loop);
+  those redundant inline embeddings MUST be removed when the uniform prefix is
+  introduced, so no message names the same source twice. (Same-class sweep: the
+  prefix and the de-duplication are one change, not a prefix bolted over messages
+  that already self-name.) An identifier that appears as the *semantic subject* of
+  a fault — e.g. the duplicated value reported by the duplicate-name check — is not
+  a redundant locator and is retained.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -196,7 +215,9 @@ rows rather than an error.
   source** in the sources loop (missing required facet, out-of-vocabulary value,
   model validation failure, empty/unsluggable name, duplicate name, translation
   rule), not only the quoted-`access_date` case. The identifier prefix is applied
-  uniformly so the locator behaviour is consistent across all source-level faults.
+  uniformly so the locator behaviour is consistent across all source-level faults —
+  and, where a message already named the source inline as its own locator, that
+  inline mention is removed so the prefix is the single locator (FR-011).
 - **The fix is message content only.** No change to the source schema, the closed
   vocabularies themselves, the strict fault model (a bad source still aborts the
   build), the error codes, or the JSON envelope.
