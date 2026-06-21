@@ -4,6 +4,64 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.4.0] — 2026-06-21
+
+The **narrative-structure layer** (iterations 028–032), shipped once as a minor
+release at the close of the milestone — like M4→`v0.2.0` and M5→`v0.3.0`, the
+five iterations accumulated on `main` and carry no per-iteration patch tag. This
+release brings Propp/Greimas narrative structure (the modelled-but-unfed
+`G7`/`G9`/`G10` closure) alive end to end: `outline/units/*.md` now ingests, the
+graph assembles narrative sequences from it, the Propp/Greimas vocabularies type
+the result, and a new continuity validator consumes the layer. With it the
+**ingestion-parity north star is reached** — every authorable concept now has an
+ingestion path. No new runtime dependency, and the GOLEM ontology stays
+**frozen** (the 17-class closure is untouched; the `G7`/`G9`/`G10`/`G11` classes
+already existed — only their ingestion and typing paths are new).
+
+### Added
+
+- **`outline/units/*.md` ingestion → `G9_Narrative_Unit` + `G10_Narrative_Function`**
+  (iteration 028, `bookwright-design.md § 7.4`): outline beats now map into the
+  graph as narrative units carrying their narrative function, the third ingested
+  mirror of the `bible/` pattern after locations (G13) and objects (G16). Takes
+  `G9`/`G10` out of the deferral registry's observed-orphan set.
+- **`G7_Narrative_Sequence` assembly** (iteration 029): units' optional
+  `sequence`/`order` front-matter keys assemble into ordered narrative sequences
+  via `dlp:proper-part`, completing the `G7`/`G9`/`G10` ingestion closure.
+- **Propp/Greimas vocabularies as `crm:E55_Type`** (iteration 030,
+  `resources/vocabularies/propp.ttl` + `greimas.ttl`): 31 Propp functions and 6
+  Greimas actants with ES+EN labels. When the manifest's new `[vocabularies]
+  active` list turns a vocabulary on, narrative functions (G10) and character
+  roles (G11) are typed via `crm:P2_has_type`, the link reified through the
+  existing `E13` provenance path — with zero regression when no vocabulary is
+  active.
+- **`narrative_structure` validator** (iteration 031,
+  `src/bookwright/validation/validators/narrative_structure.py`): the first
+  *consumer* of the layer — an auto-discovered, `warning`-default, LLM-free check
+  with two rules: **orphan beat** (a `G9` unit in no `G7` sequence, via SPARQL
+  `NOT EXISTS` over `dlp:proper-part`) and **unresolved role** (re-surfaced from
+  outline ingestion's `UnresolvedReference` records). Both findings are cited via
+  the existing `E13` provenance path; no ontology change.
+- **Narrative-structure E2E + docs** (iteration 032): a source-only
+  `tests/fixtures/tiny-quest/` fixture with a co-located oracle (Propp active, a
+  deliberate orphan beat and unresolved role), the build→validate E2E
+  `tests/e2e/test_narrative_workflow.py`, and the Spanish
+  `docs/narrative-structure.md`.
+
+### Changed
+
+- **`ValidationContext.outline()` accessor** (iteration 031): a new cached
+  accessor exposes outline ingestion's `UnresolvedReference` records to the
+  validation layer, so the `narrative_structure` validator can re-surface
+  unresolved roles without re-parsing.
+- **G6/G3 deferral re-targeted to `demand-pulled`** (iteration 032,
+  `src/bookwright/golem/deferrals.py`, the ingestion-parity parity test's
+  `EXPECTED_VERSIONS`, and `DEBT.md`): `RelationshipRole` (G6) and
+  `PsychologicalState` (G3), previously stamped target `"v0.4"`, are honestly
+  re-pointed at the first-class `"demand-pulled"` sentinel — they ship when an
+  activation condition is met, not on a pre-assigned version. The two remain
+  observed as orphans by the ingestion-parity build.
+
 ## [0.3.4] — 2026-06-15
 
 Fourth and **closing** patch of the **v0.3.x hardening track** (iteration 027).

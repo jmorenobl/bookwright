@@ -2,21 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.3.x hardening complete, v0.4 in progress (031 merged)
+## Repository state: v0.4 released (032 merged, narrative-structure layer complete)
 
-Three milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
+Five milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
-verification system, iterations 12–18) and `v0.3.0` (2026-06-13, the M5 context
-orchestration system, iterations 19–23). All of it is on `main` (tagged) with a
-real `src/bookwright/` package, ~200 Python files, the full test suite, docs, and
-CI gates green. The **v0.3.x hardening track** (cancel tech debt, robustness,
-close v0 shortcuts) is now also **fully released**: iterations 024–027 shipped as
-successive patches (`v0.3.1`…`v0.3.4`, the last on 2026-06-15), all on `main`
-(tagged). There is **no active iteration branch**. The next work is the
-narrative-structure layer (Propp/Greimas), which is
-v0.4. Vector search (ChromaDB over rdflib) and export are deferred to an
-unversioned, demand-pulled horizon — each ships only when its activation
-condition is met, not on a pre-assigned version — see `bookwright-roadmap.md`.
+verification system, iterations 12–18), `v0.3.0` (2026-06-13, the M5 context
+orchestration system, iterations 19–23), the **v0.3.x hardening track**
+(iterations 024–027, shipped as successive patches `v0.3.1`…`v0.3.4`, the last on
+2026-06-15) and now `v0.4.0` (2026-06-21, the narrative-structure layer:
+Propp/Greimas G7/G9/G10 + `outline/` ingestion, iterations 028–032). All of it is
+on `main` (tagged) with a real `src/bookwright/` package, ~200 Python files, the
+full test suite, docs, and CI gates green. There is **no active iteration
+branch**. With v0.4 the ingestion-parity north star is reached. The remaining
+work — vector search (ChromaDB over rdflib) and export — is deferred to an
+unversioned, demand-pulled horizon: each ships only when its activation condition
+is met, not on a pre-assigned version — see `bookwright-roadmap.md`.
 
 The canonical references:
 
@@ -153,7 +153,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now closed on `main`: 028–032 are all merged. Unlike the v0.3.x patches, v0.4 iterations accumulate on `main` and ship **once** as `v0.4.0` at the closing iteration (032), so 028–032 carry no per-iteration version bump or tag — `__version__` stays `0.3.4` until the single `v0.4.0` release step (the `bookwright-release` skill) bumps it, writes the CHANGELOG, and tags.
+024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now **released**: 028–032 are all merged and shipped **once** as `v0.4.0` (2026-06-21) at the closing iteration (032), like M4→`v0.2.0` and M5→`v0.3.0`. `__version__` is now `0.4.0`; the CHANGELOG and the `v0.4.0` annotated tag landed with the release step (the `bookwright-release` skill).
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -203,10 +203,11 @@ the last two `"undecided"` orphan verdicts (G6/G3) are firmly deferred to v0.4,
 and the `UnresolvedParticipant` misnomer is renamed to `UnresolvedReference`. The
 v0.3.x hardening track is **complete**.
 
-The current milestone is **v0.4 — the narrative-structure layer** (Propp/Greimas:
-G7/G9/G10) plus `outline/` ingestion, which closes ingestion parity. It is a minor
-milestone: iterations 028–032 accumulate on `main` and release **once** as `v0.4.0`
-at the close (032), like M4→`v0.2.0` and M5→`v0.3.0` — no per-iteration patch tags.
+**v0.4 — the narrative-structure layer** (Propp/Greimas: G7/G9/G10) plus
+`outline/` ingestion, which closes ingestion parity, is now **released** (`v0.4.0`,
+2026-06-21). It was a minor milestone: iterations 028–032 accumulated on `main` and
+shipped **once** as `v0.4.0` at the close (032), like M4→`v0.2.0` and M5→`v0.3.0` —
+no per-iteration patch tags.
 Iterations 028–031 are **merged**: `outline/units/*.md` now ingests into the graph
 as `G9_Narrative_Unit` + `G10_Narrative_Function` entities and assembles
 `G7_Narrative_Sequence` from their optional `sequence`/`order` keys (see
@@ -227,10 +228,10 @@ Iteration 032 closes the milestone (merged): a source-only `tests/fixtures/tiny-
 fixture + oracle, the build→validate E2E `tests/e2e/test_narrative_workflow.py`, the
 Spanish `docs/narrative-structure.md`, and the honest G6/G3 deferral re-target
 (`"v0.4"` → the first-class `"demand-pulled"` sentinel, swept across `deferrals.py`,
-the parity test, and `DEBT.md`). The remaining `v0.4.0` release metadata — the
-`__version__` bump, the CHANGELOG section, the CLAUDE.md/design status edits, the
-release commit and the annotated tag — is the `bookwright-release` skill's separate
-step. Vector search and export remain deferred to an unversioned, demand-pulled
+the parity test, and `DEBT.md`). The `v0.4.0` release metadata — the `__version__`
+bump to `0.4.0`, the CHANGELOG section, the CLAUDE.md/design status edits, the
+release commit and the annotated tag — landed via the `bookwright-release` skill,
+closing the milestone. Vector search and export remain deferred to an unversioned, demand-pulled
 horizon (activate on a concrete trigger, not a pre-assigned version). See
 `bookwright-roadmap.md`.
 
