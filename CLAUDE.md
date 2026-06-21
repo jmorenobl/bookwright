@@ -404,6 +404,33 @@ system (template resolution is 2 layers, overrides → core); `GrafeoIndexer` /
 Grafeo engine; multi-integration beyond `claude` / `generic` and the
 `bookwright integrate` command; extension system. See design § 15.5, § 20.12.
 
+## GitHub issues — design discussion only (NOT the source of truth)
+
+The repo (`jmorenobl/bookwright`) has issues enabled, but they are **not** an
+intake or tracking system — that would violate Principle I (plain-text source of
+truth). Plain text stays canonical: shippable, out-of-scope debt → `DEBT.md`;
+durable cross-version intent → `bookwright-roadmap.md`; the ordered iteration
+plan → `bookwright-implementation-plan.md`; per-iteration artifacts → `specs/`.
+
+Issues fill the **one** gap plain text doesn't: an open-ended **design /
+deliberation thread** for "should we change our approach" questions that span a
+whole subsystem and are bigger than a `DEBT.md` entry. Rules:
+
+- Open an issue **only** for cross-cutting design discussion, never for a bug or a
+  single shippable fix (that's `DEBT.md`) or for ordered work (that's the plan).
+- The issue is a scratchpad. **The decision MUST be transcribed back** to
+  `bookwright-roadmap.md` / `bookwright-design.md §` (or the constitution) — the
+  issue never becomes the record.
+- Do **not** migrate the plain-text intake to issues. That move is demand-pulled:
+  it activates only on a concrete trigger (a second contributor without repo
+  fluency, or external bug reporters), not speculatively.
+
+Labels (the only three; created 2026-06-22 with the first issue): **`design`**
+(a direction decision), **`discussion`** (an open deliberation thread),
+**`validation`** (the validation layer / validators). Precedent: issue **#1**
+("parchear por instancia vs. cerrar la clase", the `focalization`/`character_presence`
+surface-heuristic class behind DEBT-004/007/008).
+
 ## Language conventions
 
 - `bookwright-design.md`, `bookwright-implementation-plan.md`, the README, and
