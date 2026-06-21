@@ -2,18 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.4 released (032 merged, narrative-structure layer complete)
+## Repository state: v0.4.1 released (033 merged, dead NarrativeRole removed + parity hardened)
 
 Five milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
 verification system, iterations 12–18), `v0.3.0` (2026-06-13, the M5 context
 orchestration system, iterations 19–23), the **v0.3.x hardening track**
 (iterations 024–027, shipped as successive patches `v0.3.1`…`v0.3.4`, the last on
-2026-06-15) and now `v0.4.0` (2026-06-21, the narrative-structure layer:
-Propp/Greimas G7/G9/G10 + `outline/` ingestion, iterations 028–032). All of it is
-on `main` (tagged) with a real `src/bookwright/` package, ~200 Python files, the
-full test suite, docs, and CI gates green. There is **no active iteration
-branch**. With v0.4 the ingestion-parity north star is reached. The remaining
+2026-06-15) and `v0.4.0` (2026-06-21, the narrative-structure layer:
+Propp/Greimas G7/G9/G10 + `outline/` ingestion, iterations 028–032), followed by
+the `v0.4.1` hardening patch (2026-06-21, iteration 033: remove the dead
+`NarrativeRole` concept + close the carrier-IRI parity loophole, DEBT-001). All
+of it is on `main` (tagged) with a real `src/bookwright/` package, ~200 Python
+files, the full test suite, docs, and CI gates green. There is **no active
+iteration branch**. With v0.4 the ingestion-parity north star is reached. The remaining
 work — vector search (ChromaDB over rdflib) and export — is deferred to an
 unversioned, demand-pulled horizon: each ships only when its activation condition
 is met, not on a pre-assigned version — see `bookwright-roadmap.md`.
@@ -153,7 +155,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now **released**: 028–032 are all merged and shipped **once** as `v0.4.0` (2026-06-21) at the closing iteration (032), like M4→`v0.2.0` and M5→`v0.3.0`. `__version__` is now `0.4.0`; the CHANGELOG and the `v0.4.0` annotated tag landed with the release step (the `bookwright-release` skill).
+024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now **released**: 028–032 are all merged and shipped **once** as `v0.4.0` (2026-06-21) at the closing iteration (032), like M4→`v0.2.0` and M5→`v0.3.0`. Iteration 033 then shipped as the `v0.4.1` hardening patch (2026-06-21): it removes the dead top-level `NarrativeRole` concept (`CONCEPTS` 13→12) and hardens the ingestion-parity contract so a dead concept colliding on a carrier's class IRI can never again pass as reachable, closing DEBT-001. `__version__` is now `0.4.1`; the CHANGELOG and the `v0.4.1` annotated tag landed with the release step (the `bookwright-release` skill).
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -189,7 +191,7 @@ was correct) and corrupts the run's audit trail.
 | 030 | Propp/Greimas vocabularies as `E55_Type` + references | v0.4 | ✅ merged |
 | 031 | Narrative-structure continuity validator | v0.4 | ✅ merged |
 | 032 | v0.4 close: E2E + docs + re-target G6/G3 + `v0.4.0` | v0.4 | ✅ merged |
-| 033 | Remove dead `NarrativeRole` from `CONCEPTS` + harden parity (DEBT-001) | v0.4.1 | 🚧 in progress |
+| 033 | Remove dead `NarrativeRole` from `CONCEPTS` + harden parity (DEBT-001) | v0.4.1 | ✅ merged |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the

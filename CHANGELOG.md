@@ -4,6 +4,51 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.4.1] — 2026-06-21
+
+First patch on the **v0.4 line** (iteration 033) — pure hardening that removes a
+dead concept and closes the structural loophole that let it hide. The top-level
+`NarrativeRole` Python concept was unreachable: `G11_Narrative_Role` is
+materialized solely by the character-scoped `CharacterRole` carrier (the design
+defines G11 as *a character's role*, `bookwright-design.md` line 1603), so the
+standalone concept minted nothing yet still counted toward the registry. This
+release deletes it and hardens the ingestion-parity contract so a dead concept
+that shares a carrier's class IRI can never again be silently counted reachable
+(DEBT-001, closed). No new CLI surface, no new runtime dependency, and the GOLEM
+ontology stays **frozen** — the 17-class closure is untouched (now 12 concept +
+5 carrier IRIs), `golem.ttl` and `golem:G11_Narrative_Role` unchanged, and the
+graph emits byte-identical triples.
+
+### Removed
+
+- **Dead `NarrativeRole` concept** (`src/bookwright/golem/modules/narrative.py`
+  and its import / `CONCEPTS` entry / `__all__` entry in
+  `src/bookwright/golem/__init__.py`): the unreachable standalone concept is
+  deleted, dropping `CONCEPTS` from **13 → 12** and the parity reachable set from
+  **11 → 10**. G11 continues to be materialized — with identical triples — by the
+  `CharacterRole` carrier, which was never in `CONCEPTS`.
+
+### Changed
+
+- **Ingestion-parity contract hardened against carrier-IRI collision**
+  (`tests/golem/test_ingestion_parity.py`): `NarrativeRole` joins `CARRIER_NAMES`
+  (→ 5), `EXPECTED_REACHABLE` drops to 10, and a new pure `carrier_iri_collisions`
+  invariant plus a drift simulation assert that no `CONCEPTS` member may share a
+  class IRI with a carrier-only entry — closing the DEBT-001 loophole by
+  construction.
+- **G11 triple/URI coverage relocated onto the real carrier** (`test_triples.py`,
+  `test_uri.py`, `test_namespaces.py`): coverage that referenced the deleted
+  concept now exercises `CharacterRole`; `test_namespaces.py` reclassifies the
+  G11 IRI from the concept bucket to the carrier bucket (`12 + 5 == 17`), so the
+  closure count is preserved, not lowered.
+- **Stale "thirteen concepts" counts swept** to "twelve" across live source and
+  tests (`golem/__init__.py`, `golem/deferrals.py`, the parity test, the
+  `parity-exercise/manifest.toml` header, the `CharacterRole` docstring);
+  released `CHANGELOG.md` history is left intact (Principle I).
+- **DEBT-001 retired** (`DEBT.md`, `bookwright-roadmap.md` §4): the ledger entry
+  is removed and the roadmap decision reconciled to *Resuelto (iteración 033)*.
+  The G6/G3 deferrals are untouched.
+
 ## [0.4.0] — 2026-06-21
 
 The **narrative-structure layer** (iterations 028–032), shipped once as a minor
