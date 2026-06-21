@@ -67,25 +67,31 @@ unknown-proper-noun finding for `Elena` fires.
    **When** `character_presence` runs, **Then** it emits the
    `proper noun 'Elena' …` warning (the heading marker is removed; `Elena` is
    still mid-line, so it is analyzed normally).
-2. **Given** a heading `# La caída de Elena` where `La` opens the heading, **When**
-   `character_presence` runs, **Then** `La` is treated as heading-initial and is
-   **not** flagged (the opening word still gets the sentence-initial exemption).
+2. **Given** a heading `# Elena observó el faro` where `Elena` — a ≥3-letter
+   proper-noun candidate not in the roster — **opens** the heading, **When**
+   `character_presence` runs, **Then** `Elena` is treated as heading-initial and is
+   **not** flagged: the opening word receives the same exemption a sentence-opening
+   capital already gets, so the validator never invents a name from a structural
+   capital. (Contrast scenario 1: the *same* word mid-heading **is** flagged — this
+   scenario is load-bearing precisely because `Elena` would be flagged here but for
+   the heading-initial exemption.)
 
 ---
 
 ### Edge Cases
 
-- **No space after the marker**: a line like `#Capítulo` (no space) is **not** a
-  markdown heading; it is left unchanged and analyzed as ordinary prose (the
-  opening word is still line-initial, so it is already exempt by the existing
-  line-start rule).
+- **No space after the marker**: a line like `#Capítulo` (no space) is **not** an
+  ATX heading (CommonMark requires the space). Its marker is **not** stripped and
+  the line is analyzed exactly as today, so this fix neither adds nor removes a
+  finding for the no-space form — only a valid `#{1,6}␠` marker is normalized.
 - **Leading whitespace before the marker**: indented heading-like lines are not in
   scope; the recognized form is a line that *starts* with one to six `#`
   characters followed by a space, matching the manuscript headings `bookwright`
   scaffolds and authors write.
-- **Heading depth boundary**: one through six `#` is a heading; seven or more `#`
-  is not a markdown heading and is left unchanged (its first capitalized word is
-  still line-initial and thus already exempt).
+- **Heading depth boundary**: one through six `#` followed by a space is a heading
+  whose marker is stripped; seven or more `#` is not an ATX heading, so its marker
+  is **not** stripped and the line is analyzed exactly as today — no behavior change
+  in either direction.
 - **Real proper noun opening a heading**: `# Elena observó el faro` — `Elena` opens
   the heading and, like a sentence-opening capital, receives the existing
   heading/line-initial exemption (the validator's conservative direction: it never
