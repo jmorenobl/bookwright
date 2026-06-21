@@ -8,6 +8,12 @@
 
 **Input**: User description: "Necesidad: el validador `focalization` no reconoce la declaración de voz narrativa cuando viene con prefijos markdown, que es justo el formato que la plantilla de constitución del scaffold genera. … Queremos que `focalization` tolere los prefijos markdown habituales delante de la etiqueta «Voz narrativa»/«Narrative voice» … sin cambiar ninguna otra regla del validador. (DEBT-004)"
 
+## Clarifications
+
+### Session 2026-06-21
+
+- Q: Must the markdown emphasis around the voice label be *balanced* (matching open/close runs), or are the named emphasis markers tolerated independently on each side? → A: Tolerated independently — no balance check. (Rationale: a balance-checking guard has no author benefit and violates the zero-debt doctrine §3 "delete the cause, don't add a guard"; an independent-optional-emphasis pattern is simpler and cannot reject a valid scaffold-adjacent edit.)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The scaffold's own narrative-voice declaration wakes the validator (Priority: P1)
@@ -82,7 +88,7 @@ re-proven, but it is a guardrail on the P1 change rather than new behavior.
 ### Edge Cases
 
 - **Bullet markers**: the parser tolerates `-`, `*`, `+`, and `>` as a line-leading list/quote marker before the label.
-- **Emphasis markers**: the parser tolerates markdown emphasis (`*`, `**`, `_`) wrapping the label, e.g. `**Voz narrativa**`, `*Narrative voice*`, `_Voz narrativa_`, including the closing emphasis run before the colon (`**Voz narrativa**:`).
+- **Emphasis markers**: the parser tolerates markdown emphasis (`*`, `**`, `_`) wrapping the label, e.g. `**Voz narrativa**`, `*Narrative voice*`, `_Voz narrativa_`, including the closing emphasis run before the colon (`**Voz narrativa**:`). Emphasis need not be balanced — the named markers are stripped independently around the label (no balance guard), so a single-sided run still parses.
 - **Combined prefix**: bullet + emphasis together — the scaffold's `- **Voz narrativa**: …` — parses.
 - **Whitespace**: leading indentation and spaces between the marker and the label remain tolerated (as today).
 - **Colon placement**: the colon may sit immediately after a closing emphasis run (`**Voz narrativa**:`) or after the bare label (`Voz narrativa:`).
@@ -94,7 +100,7 @@ re-proven, but it is a guardrail on the P1 change rather than new behavior.
 ### Functional Requirements
 
 - **FR-001**: The `focalization` declaration parser MUST recognize the narrative-voice declaration when the label ("Voz narrativa" / "Narrative voice", case-insensitive, bilingual) is preceded by a single line-leading markdown list or blockquote marker drawn from `-`, `*`, `+`, `>` (optionally followed by whitespace).
-- **FR-002**: The parser MUST recognize the declaration when the label is wrapped in markdown emphasis markers (`*`, `**`, `_`) on either side, with the colon permitted to follow the closing emphasis run.
+- **FR-002**: The parser MUST recognize the declaration when the label is wrapped in markdown emphasis markers (`*`, `**`, `_`) on either side, with the colon permitted to follow the closing emphasis run. The emphasis runs MUST be tolerated *independently* on each side — the parser MUST NOT require the opening and closing runs to balance or match — so unbalanced/single-sided forms parse as a harmless consequence; requiring balance would add a guard with no author benefit (zero-debt doctrine §3) and could reject a valid scaffold-adjacent edit.
 - **FR-003**: The parser MUST recognize the scaffold's exact combined shape `- **Voz narrativa**: <body>` and extract the same declaration (person, limited flag, focal character) it would extract from the bare `Voz narrativa: <body>` form.
 - **FR-004**: For the example `- **Voz narrativa**: Tercera persona limitada, centrada en X` (with X a named bible character), the parser MUST yield person=third, limited=true, focal=X.
 - **FR-005**: When no narrative-voice declaration line is present (or the present line names no recognizable person), `focalization` MUST continue to return zero findings — the documented edge case is unchanged.

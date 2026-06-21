@@ -398,18 +398,21 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/033-remove-dead-narrativerole/plan.md` (iteration 033 — remove the dead
-top-level `NarrativeRole` concept and close DEBT-001: delete the unreachable
-`NarrativeRole` class from `golem/modules/narrative.py` + its three references in
-`golem/__init__.py` (import, `CONCEPTS` entry → 12 concepts, `__all__`), sweep
-every live "thirteen concepts" count to "twelve"/"ten reachable"
-(`__init__.py`/`deferrals.py`/parity + namespaces/uri tests; CHANGELOG history
-untouched), harden the ingestion-parity contract so a concept whose class IRI is
-carried only by a non-`CONCEPTS` carrier is *named* as a failure (widen
-`CARRIER_NAMES` with `NarrativeRole`, add a pure `carrier_iri_collisions` invariant
-+ drift sim), relocate G11 triple/URI coverage onto the real carrier
-`CharacterRole` (already covered in `test_character_attributes.py`), and delete the
-DEBT-001 ledger entry + its roadmap §4 cross-reference — zero triple regression, no
-ontology change (`golem:G11_Narrative_Role` and `golem.ttl` frozen, `CLASS_IRI`
-stays 17 = 12 concept + 5 carrier), G6/G3 deferrals untouched).
+`specs/034-focalization-markdown-voice/plan.md` (iteration 034 — make the
+`focalization` validator tolerate markdown-prefixed voice declarations and close
+DEBT-004: the parser anchors `voz narrativa|narrative voice` at line start, so it
+silently ignores the `- **Voz narrativa**: …` shape its own scaffold emits and is
+dormant on all five voice-bearing fixtures. Fix by *normalizing* the candidate
+line before matching — strip one line-leading bullet/blockquote marker
+(`-`/`*`/`+`/`>`) + whitespace, then strip the emphasis markers (`*`/`**`/`_`)
+*independently* on each side of the label (no balance guard, per spec
+clarification) — leaving the body-extraction (person/limited/focal) untouched so
+the scaffold shape parses byte-identically to the bare form. Add a binding test
+that reads the live `constitution.md.j2` voice line and asserts the parser accepts
+it (anti-drift), plus marker-by-marker unit coverage. Reconcile the whole fixture
+suite: only `tiny-historical`'s `expected-status.md` `validation.counts` shifts —
+read the awake `warning` total from the validator, don't back-fit; `tiny-novel`
+must still `validate` clean; `tiny-quest`/`tiny-essay`/`tiny-memoir` oracles
+unaffected. Delete the DEBT-004 entry. No GOLEM/ontology/graph change — prose
+validator only (`triples=()`, Principle X); ships as `v0.4.2`.
 <!-- SPECKIT END -->
