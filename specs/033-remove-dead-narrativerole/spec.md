@@ -49,8 +49,15 @@ surface lies about what the system can author, and the deferral contract has a s
 2. **Given** the public package surface, **When** `bookwright.golem.__all__` is read,
    **Then** `"NarrativeRole"` is absent and no import of it remains.
 3. **Given** the source code and docstrings that counted "thirteen concepts"
-   (`golem/__init__.py`, `golem/deferrals.py`), **When** they are read after the change,
-   **Then** they say "twelve" and describe the registry accurately.
+   (`golem/__init__.py`, `golem/deferrals.py`, the parity-test module docstring), **When**
+   they are read after the change, **Then** they say "twelve" / "ten reachable" and describe
+   the registry accurately — while the **historical** `CHANGELOG.md` "thirteen `CONCEPTS`"
+   release note is left untouched (it was true at its release; Principle I).
+4. **Given** the live source and tests after the change, **When** they are searched for any
+   reference to a *top-level* `NarrativeRole` **concept** (its import, its `CONCEPTS` / `__all__`
+   / segment-table / reachable-set entry, or a comment calling it "the top-level `NarrativeRole`"),
+   **Then** none is found; every residual `NarrativeRole` token is a use of the preserved
+   `CLASS_IRI["NarrativeRole"]` **key** or the parity carrier set.
 
 ---
 
@@ -96,9 +103,10 @@ a carrier-only-IRI concept into a local copy of the registry is named as a parit
 **Acceptance Scenarios**:
 
 1. **Given** the hardened parity contract, **When** the graph is built and `G11` is observed
-   as materialized, **Then** the contract recognizes `CharacterRole` as the legitimate sole
-   carrier of `golem:G11_Narrative_Role` *outside* `CONCEPTS`, and does **not** attribute
-   that IRI to any `CONCEPTS` member.
+   as materialized, **Then** the contract recognizes `golem:G11_Narrative_Role` as a
+   **carrier-only IRI** — a `CLASS_IRI` key with no `CONCEPTS` member, joining the existing
+   carrier-only keys `CharacterFeature` / `Dimension` / `Type` / `TimeInterval`, materialized
+   solely by `CharacterRole` — and does **not** attribute that IRI to any `CONCEPTS` member.
 2. **Given** a (simulated) `CONCEPTS` member whose class IRI is materialized only by a
    non-`CONCEPTS` carrier, **When** parity is evaluated, **Then** the contract reports a
    failure that names the offending concept (the DEBT-001 pattern is detected).
@@ -138,12 +146,31 @@ references the `NarrativeRole` dead-concept gap.
   exercising the dead class while keeping G11's triple/URI behavior covered through its real
   carrier (`CharacterRole`), so coverage does not silently drop.
 - **`CLASS_IRI`-closure test conflation**: `tests/golem/test_namespaces.py` pins the 17-class
-  ontology and labels G11 as "pinned in the CONCEPTS registry". After the change G11's IRI
-  stays in the 17-class closure but is no longer a `CONCEPTS` member; the test/prose must be
-  reconciled without changing the frozen count (still 17).
+  ontology in `test_class_iri_maps_thirteen_concepts_plus_attribute_carriers`, whose local
+  `concepts` set lists G11 among **13** "narrative concepts" and asserts
+  `len(concepts) + len(carriers) == 17` (13 + 4). After the change G11's IRI stays in the
+  17-IRI closure but is no longer a `CONCEPTS` member, so the fix MUST **reclassify** G11's IRI
+  from the concept bucket into the non-`CONCEPTS` carrier bucket (12 + 5 = 17) and **rename** the
+  `…thirteen_concepts…` test off the stale count — preserving the frozen 17, not lowering it or
+  deleting an assertion.
 - **Slugged-concept count**: `test_uri.py` enumerates "12 slugged concepts"; after removal it
   is 11 slugged concepts (CONCEPTS is 12 total, one of which — `AttributeAssignment` — is not
   slugged).
+- **Stale "top-level `NarrativeRole`" prose**: `golem/modules/feature.py`'s `CharacterRole`
+  docstring ("Distinct from the top-level `NarrativeRole` concept…") and the
+  `tests/fixtures/parity-exercise/manifest.toml` header (which lists `NarrativeRole` among the
+  reachable authored-text ingestion paths) both describe a top-level concept that will no longer
+  exist; both must be rewritten (FR-012) to describe G11 as materialized solely by the
+  character-scoped `CharacterRole` carrier, without touching the preserved
+  `CLASS_IRI["NarrativeRole"]` key they rely on.
+- **Carrier-IRI recognition in parity**: after removal `"NarrativeRole"` is a `CLASS_IRI` key
+  outside `CONCEPTS`; the parity test's carrier set (`CARRIER_NAMES`, today
+  `{CharacterFeature, Dimension, Type, TimeInterval}`) must gain it so G11 is treated as
+  carrier-only and never attributed to a `CONCEPTS` member (FR-006).
+- **G11 coverage relocation**: `tests/golem/test_triples.py` covers G11 today by instantiating
+  the dead `NarrativeRole`; its G11 triple/type coverage must move to the real carrier
+  `CharacterRole` (whose G11 typing is already asserted independently in
+  `tests/golem/test_character_attributes.py`), so removing the dead class drops no coverage.
 
 ## Requirements *(mandatory)*
 
@@ -154,9 +181,17 @@ references the `NarrativeRole` dead-concept gap.
 - **FR-002**: The system MUST remove every reference to `NarrativeRole` from the GOLEM public
   surface in `src/bookwright/golem/__init__.py`: its import, its `CONCEPTS` entry, and its
   `__all__` entry. After the change `CONCEPTS` MUST contain exactly twelve concepts.
-- **FR-003**: The system MUST update every source docstring/comment that states the registry
-  holds "thirteen concepts" (at least `golem/__init__.py` and `golem/deferrals.py`) to state
-  "twelve" and to describe the registry accurately.
+- **FR-003**: The system MUST sweep the **entire repository's live source and tests** for the
+  stale concept-count assertion class ("thirteen concepts" / "Eleven of the thirteen") and
+  reconcile **every** occurrence to the post-change reality (twelve concepts, ten reachable),
+  not just a cited subset (doctrine §4 — debt is a class). The known occurrences are:
+  `golem/__init__.py` ("the thirteen GOLEM concept classes"), `golem/deferrals.py` ("Two of the
+  thirteen"), `tests/golem/test_ingestion_parity.py` module docstring ("Eleven of the thirteen"
+  → "Ten of the twelve"), `tests/golem/test_namespaces.py` (the `…thirteen_concepts…` test name
+  and its "13 narrative concepts" docstring), and `tests/golem/test_uri.py` ("12 slugged
+  concepts" → "11"). The sweep MUST **NOT** edit the **historical** "thirteen `CONCEPTS`" note in
+  `CHANGELOG.md` — it is a frozen record of the v0.3.1 release and was true then (Principle I:
+  released history is not rewritten).
 - **FR-004**: The RDF class `golem:G11_Narrative_Role` MUST remain in the frozen ontology:
   `CLASS_IRI` MUST still hold all 17 class IRIs (including `NarrativeRole`'s IRI) and
   `golem.ttl` MUST NOT change (Constitution X / Principle X). The deletion is of the *Python
@@ -167,8 +202,13 @@ references the `NarrativeRole` dead-concept gap.
 - **FR-006**: The ingestion-parity contract (`tests/golem/test_ingestion_parity.py`) MUST be
   hardened so that a `CONCEPTS` member whose class IRI is materialized **only** by a
   non-`CONCEPTS` carrier (the DEBT-001 collision pattern) is reported as a parity failure
-  naming the offending concept. It MUST recognize `CharacterRole` as the legitimate carrier
-  of G11 outside `CONCEPTS`.
+  naming the offending concept. Concretely: after the change `"NarrativeRole"` is a `CLASS_IRI`
+  key with **no** `CONCEPTS` member — it joins the carrier-only keys the test already tracks in
+  `CARRIER_NAMES` (`CharacterFeature` / `Dimension` / `Type` / `TimeInterval`), materialized
+  solely by `CharacterRole`. The contract MUST record `golem:G11_Narrative_Role` as carrier-only
+  and assert that **no** `CONCEPTS` member's class IRI equals a carrier-only IRI, so that
+  re-adding a `NarrativeRole`-like concept mapped to G11 is *named as a failure* rather than
+  silently counted reachable by IRI collision.
 - **FR-007**: After the change, the parity test's pinned reachable set MUST drop
   `NarrativeRole` (ten reachable concepts), the orphan/deferred set MUST remain exactly
   `{RelationshipRole, PsychologicalState}`, and the reachable set MUST continue to be
@@ -178,13 +218,35 @@ references the `NarrativeRole` dead-concept gap.
   — MUST be updated so they no longer exercise the deleted class, while G11's triple and URI
   behavior stays covered through its real carrier (`CharacterRole`). Concept/segment counts in
   those tests and their comments MUST be reconciled (e.g. "12 slugged concepts" → 11).
+  Specifically: (a) `tests/golem/test_namespaces.py` MUST keep asserting the **17-IRI** closure
+  with G11's IRI **reclassified** from the concept bucket into the non-`CONCEPTS` carrier bucket
+  (12 + 5 = 17) and its `…thirteen_concepts…` test renamed — never by lowering the count or
+  deleting an assertion; and (b) the G11 triple/type coverage `tests/golem/test_triples.py`
+  gets today from instantiating `NarrativeRole` MUST be carried by `CharacterRole`, whose G11
+  typing is **already** asserted independently in `tests/golem/test_character_attributes.py`, so
+  coverage does not silently drop.
 - **FR-009**: The `### DEBT-001 …` entry MUST be removed from `DEBT.md` (no archival section;
   git retains history), and any cross-reference to it in tracked plain-text MUST be reconciled.
+  This includes the `bookwright-roadmap.md` § 4 *"Decisión estructural sobre `NarrativeRole`
+  (DEBT-001)"* entry, whose open decision is now made (the concept is eliminated): it MUST be
+  reconciled to record the resolution or removed as resolved. The roadmap's G11 status row
+  (G11 ✅ inline vía `narrative_roles:`) stays — it remains accurate, since G11 is still
+  materialized via `CharacterRole`.
 - **FR-010**: The change MUST NOT alter the deferral registry's two entries (G6
   `RelationshipRole`, G3 `PsychologicalState`) nor their `demand-pulled` targets; the G6/G3
   deferrals are out of scope.
 - **FR-011**: All four CI gates (`ruff check`, `ruff format --check`, `mypy --strict`,
   `pytest` with ≥ 80 % coverage) MUST pass after the change.
+- **FR-012**: The system MUST reconcile every remaining live plain-text reference that implies a
+  *top-level `NarrativeRole` concept*, so none survives the deletion (doctrine §4): at minimum
+  the `CharacterRole` docstring in `src/bookwright/golem/modules/feature.py` ("Distinct from the
+  top-level `NarrativeRole` concept…") and the `tests/fixtures/parity-exercise/manifest.toml`
+  header comment (which lists `NarrativeRole` among the reachable authored-text ingestion paths)
+  MUST be rewritten to describe `golem:G11_Narrative_Role` as materialized solely by the
+  character-scoped `CharacterRole` carrier. References that use the **preserved**
+  `CLASS_IRI["NarrativeRole"]` *key* (`feature.py`'s `golem_class`, `golem/namespaces.py`,
+  `tests/golem/test_character_attributes.py`, the parity `CARRIER_NAMES`) are correct and MUST
+  remain.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -217,6 +279,14 @@ references the `NarrativeRole` dead-concept gap.
 - **SC-005**: `DEBT.md` no longer contains DEBT-001.
 - **SC-006**: All four gates pass (ruff check, ruff format --check, mypy --strict, pytest
   ≥ 80 % coverage).
+- **SC-007**: After the change, `grep -rn NarrativeRole src/ tests/` (excluding `__pycache__`)
+  returns **only** uses of the preserved `CLASS_IRI["NarrativeRole"]` key and the parity
+  carrier set — `golem/namespaces.py` (the key definition), `golem/modules/feature.py`
+  (`CharacterRole.golem_class` + its rewritten carrier docstring), `tests/golem/test_character_attributes.py`,
+  `tests/golem/test_namespaces.py` (carrier bucket), and `tests/golem/test_ingestion_parity.py`
+  (`CARRIER_NAMES`). **No** occurrence references a top-level `NarrativeRole` *concept*: no
+  import of the class, no `CONCEPTS` / `__all__` / segment-table / `EXPECTED_REACHABLE` entry,
+  and no comment calling it "the top-level `NarrativeRole`".
 
 ## Assumptions
 
@@ -228,6 +298,14 @@ references the `NarrativeRole` dead-concept gap.
   and the debt ledger are touched.
 - The `parity-exercise` fixture and its `narrative_roles:` authoring continue to materialize
   G11 via `CharacterRole`, providing the live observation the hardened parity test needs.
+- G11's triple/type behaviour is **already** covered through its real carrier by
+  `tests/golem/test_character_attributes.py` (it asserts `CharacterRole` emits the
+  `golem:G11_Narrative_Role` type), so relocating coverage off the deleted `NarrativeRole` in
+  `tests/golem/test_triples.py` loses no G11 coverage.
+- The historical "thirteen `CONCEPTS`" note in `CHANGELOG.md` and the `bookwright-roadmap.md`
+  G11 status row are accurate in their own context and are **not** rewritten by this change
+  (Principle I — released history is not rewritten); only the open DEBT-001 *decision* entry in
+  roadmap § 4 is reconciled.
 
 ## Out of Scope *(owner decision — do NOT reopen in clarify)*
 
