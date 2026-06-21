@@ -29,7 +29,7 @@ Single project, src-layout (Constitution III): `src/bookwright/`, `tests/` at re
 
 **Purpose**: Establish a clean, green baseline before touching the loader.
 
-- [ ] T001 Confirm the working branch is `036-actionable-source-errors` and capture a green baseline by running `uv run pytest tests/io/test_research.py tests/commands/graph/test_query.py` (no code change — record that the existing `test_out_of_vocabulary_aborts_naming_value` and the success-path tests pass before edits).
+- [X] T001 Confirm the working branch is `036-actionable-source-errors` and capture a green baseline by running `uv run pytest tests/io/test_research.py tests/commands/graph/test_query.py` (no code change — record that the existing `test_out_of_vocabulary_aborts_naming_value` and the success-path tests pass before edits).
 
 ---
 
@@ -58,11 +58,11 @@ separate one with `reliability: altísima`; assert each error contains
 
 ### Implementation for User Story 1
 
-- [ ] T002 [US1] In `src/bookwright/io/research.py`, update `_reject_unknown_vocab` (currently lines ~222–233) so both raises append the enumeration: type → `unknown source type {value!r} in {relpath}; one of: {", ".join(SOURCE_TYPE_IRI)}`, reliability → `unknown reliability {value!r} in {relpath}; one of: {", ".join(RELIABILITY_IRI)}`. Keep the existing `value=str(...)` third argument and `relpath` unchanged (envelope byte-stable, FR-007). Derive the enumeration from the imported `SOURCE_TYPE_IRI` / `RELIABILITY_IRI` maps (already imported at line 37) — never a hardcoded copy — so it can never drift (per contract C1).
+- [X] T002 [US1] In `src/bookwright/io/research.py`, update `_reject_unknown_vocab` (currently lines ~222–233) so both raises append the enumeration: type → `unknown source type {value!r} in {relpath}; one of: {", ".join(SOURCE_TYPE_IRI)}`, reliability → `unknown reliability {value!r} in {relpath}; one of: {", ".join(RELIABILITY_IRI)}`. Keep the existing `value=str(...)` third argument and `relpath` unchanged (envelope byte-stable, FR-007). Derive the enumeration from the imported `SOURCE_TYPE_IRI` / `RELIABILITY_IRI` maps (already imported at line 37) — never a hardcoded copy — so it can never drift (per contract C1).
 
 ### Tests for User Story 1
 
-- [ ] T003 [US1] In `tests/io/test_research.py`, extend/add assertions on the F1 path (alongside `test_out_of_vocabulary_aborts_naming_value`): assert the `type` error message contains `", ".join(SOURCE_TYPE_IRI)` and the literal substring `one of: primaria, secundaria, oficial, académica, periodística, testimonial`; assert the `reliability` error contains `", ".join(RELIABILITY_IRI)` and `one of: alta, media, baja`; assert the offending value is still present and `code == "invalid_research"`. Compute the expected list from the map itself (drift-proof, contract C1).
+- [X] T003 [US1] In `tests/io/test_research.py`, extend/add assertions on the F1 path (alongside `test_out_of_vocabulary_aborts_naming_value`): assert the `type` error message contains `", ".join(SOURCE_TYPE_IRI)` and the literal substring `one of: primaria, secundaria, oficial, académica, periodística, testimonial`; assert the `reliability` error contains `", ".join(RELIABILITY_IRI)` and `one of: alta, media, baja`; assert the offending value is still present and `code == "invalid_research"`. Compute the expected list from the map itself (drift-proof, contract C1).
 
 **Checkpoint**: US1 fully functional and independently testable. MVP shippable.
 
@@ -84,15 +84,15 @@ prefix, slug retained in the body; a translation-rule violation → name once.
 
 ### Implementation for User Story 2
 
-- [ ] T004 [US2] In `src/bookwright/io/research.py`, add a small helper that computes a source's locator `<id>`: return `f"'{name}'"` when `raw["name"]` is a non-empty `str` that `make_slug` accepts (catch `EmptySlugError`), else `f"#{n}"` (1-based loop index). Keep it in `research.py` if the file stays ≤ 500 lines; if it would exceed 500, move it to the existing companion `src/bookwright/io/_research_identity.py` and import it (per plan Structure / Constitution IV).
-- [ ] T005 [US2] In `src/bookwright/io/research.py`, wrap the `for raw in raw_sources` loop **body** in `_map_sources` (lines ~188–200) in a single `try/except ResearchError`: on catch, compute `<id>` via the T004 helper using the 1-based index and `raw`, then `raise ResearchError(exc.relpath, f"source {id}: {exc.message}", exc.value) from exc`. This is the **single** locator point (FR-004) — covers `_build_source`, vocab, validation, empty-name, duplicate-name, and translation-rule faults uniformly. Do **not** add per-`raise` prefixes anywhere else.
-- [ ] T006 [US2] In `src/bookwright/io/research.py`, apply the FR-011 reconciliation so no message names the same source twice: in `_apply_translation_rule` (lines ~244–249) change the inner message to `needs a translation (language {source.original_language!r} ≠ book {acc.book_language!r}) in {relpath}` (drop the leading `source {source.name!r}`); in the duplicate-name raise in `_map_sources` (lines ~194–198) change it to `duplicate source name (slug {slug!r}) in {relpath}` (drop the human `{source.name!r}`, **retain** the `slug` as the semantic subject). Leave the `value=` arguments as-is.
+- [X] T004 [US2] In `src/bookwright/io/research.py`, add a small helper that computes a source's locator `<id>`: return `f"'{name}'"` when `raw["name"]` is a non-empty `str` that `make_slug` accepts (catch `EmptySlugError`), else `f"#{n}"` (1-based loop index). Keep it in `research.py` if the file stays ≤ 500 lines; if it would exceed 500, move it to the existing companion `src/bookwright/io/_research_identity.py` and import it (per plan Structure / Constitution IV).
+- [X] T005 [US2] In `src/bookwright/io/research.py`, wrap the `for raw in raw_sources` loop **body** in `_map_sources` (lines ~188–200) in a single `try/except ResearchError`: on catch, compute `<id>` via the T004 helper using the 1-based index and `raw`, then `raise ResearchError(exc.relpath, f"source {id}: {exc.message}", exc.value) from exc`. This is the **single** locator point (FR-004) — covers `_build_source`, vocab, validation, empty-name, duplicate-name, and translation-rule faults uniformly. Do **not** add per-`raise` prefixes anywhere else.
+- [X] T006 [US2] In `src/bookwright/io/research.py`, apply the FR-011 reconciliation so no message names the same source twice: in `_apply_translation_rule` (lines ~244–249) change the inner message to `needs a translation (language {source.original_language!r} ≠ book {acc.book_language!r}) in {relpath}` (drop the leading `source {source.name!r}`); in the duplicate-name raise in `_map_sources` (lines ~194–198) change it to `duplicate source name (slug {slug!r}) in {relpath}` (drop the human `{source.name!r}`, **retain** the `slug` as the semantic subject). Leave the `value=` arguments as-is.
 
 ### Tests for User Story 2
 
-- [ ] T007 [US2] In `tests/io/test_research.py`, add F2 named-source case: a `sources.md` with ≥2 valid sources and one named source whose `access_date` is quoted (`"1937-04-26"`); assert the error `message` starts with `source '<name>': ` **and** still contains the pydantic reason `Input should be a valid date` (FR-006), with `code == "invalid_research"` and `details` keys `relpath`, `value` unchanged (contract C2/C5).
-- [ ] T008 [US2] In `tests/io/test_research.py`, add F2 index-fallback case: a source that fails before a usable `name` is available (drop the `name` facet, or make it empty/unsluggable); assert the error `message` starts with `source #<n>: ` carrying the correct 1-based position (edge cases: empty/unsluggable name → index; failure before name read → index).
-- [ ] T009 [US2] In `tests/io/test_research.py`, add FR-011 single-locator cases: (a) duplicate name → assert `source '<name>':` appears exactly once and the body contains `slug '<slug>'`; (b) translation-rule violation (book language ≠ source language, no translation) → assert `source '<name>': needs a translation (language 'fr' ≠ book 'es')` with the name appearing exactly once (contract C3).
+- [X] T007 [US2] In `tests/io/test_research.py`, add F2 named-source case: a `sources.md` with ≥2 valid sources and one named source whose `access_date` is quoted (`"1937-04-26"`); assert the error `message` starts with `source '<name>': ` **and** still contains the pydantic reason `Input should be a valid date` (FR-006), with `code == "invalid_research"` and `details` keys `relpath`, `value` unchanged (contract C2/C5).
+- [X] T008 [US2] In `tests/io/test_research.py`, add F2 index-fallback case: a source that fails before a usable `name` is available (drop the `name` facet, or make it empty/unsluggable); assert the error `message` starts with `source #<n>: ` carrying the correct 1-based position (edge cases: empty/unsluggable name → index; failure before name read → index).
+- [X] T009 [US2] In `tests/io/test_research.py`, add FR-011 single-locator cases: (a) duplicate name → assert `source '<name>':` appears exactly once and the body contains `slug '<slug>'`; (b) translation-rule violation (book language ≠ source language, no translation) → assert `source '<name>': needs a translation (language 'fr' ≠ book 'es')` with the name appearing exactly once (contract C3).
 
 **Checkpoint**: US1 AND US2 both work independently; DEBT-006's two blinding messages are fixed.
 
@@ -110,12 +110,12 @@ the docs page contains the Spanish note.
 
 ### Implementation for User Story 3
 
-- [ ] T010 [P] [US3] In `src/bookwright/commands/graph/query.py`, extend the `sparql` `typer.Argument` `help=` string (line ~37) with an English note that a query referencing a non-existent / misspelled IRI returns an empty result set, not an error (combine `non-existent`/`misspelled` + `IRI` + `empty`/`zero` result + `not an error`, per contract C4).
-- [ ] T011 [P] [US3] In `docs/commands/graph-query.md`, add a short Spanish note with the same meaning (e.g. *"un IRI inexistente o mal escrito devuelve cero resultados, no un error"*) — language conventions: docs stay Spanish.
+- [X] T010 [P] [US3] In `src/bookwright/commands/graph/query.py`, extend the `sparql` `typer.Argument` `help=` string (line ~37) with an English note that a query referencing a non-existent / misspelled IRI returns an empty result set, not an error (combine `non-existent`/`misspelled` + `IRI` + `empty`/`zero` result + `not an error`, per contract C4).
+- [X] T011 [P] [US3] In `docs/commands/graph-query.md`, add a short Spanish note with the same meaning (e.g. *"un IRI inexistente o mal escrito devuelve cero resultados, no un error"*) — language conventions: docs stay Spanish.
 
 ### Tests for User Story 3
 
-- [ ] T012 [US3] In `tests/commands/graph/test_query.py`, add a test asserting the `graph query --help` output (English) contains the empty-result-for-unknown-IRI note substring; and a test (or docs-content check reading `docs/commands/graph-query.md`) asserting the Spanish note is present (contract C4).
+- [X] T012 [US3] In `tests/commands/graph/test_query.py`, add a test asserting the `graph query --help` output (English) contains the empty-result-for-unknown-IRI note substring; and a test (or docs-content check reading `docs/commands/graph-query.md`) asserting the Spanish note is present (contract C4).
 
 **Checkpoint**: All three user stories independently functional and verified.
 
@@ -125,10 +125,10 @@ the docs page contains the Spanish note.
 
 **Purpose**: Discharge the remaining FR/SC obligations and prove no regression.
 
-- [ ] T013 Confirm `src/bookwright/io/research.py` is ≤ 500 lines (`wc -l`); if T004 pushed it over, the helper must already have moved to `src/bookwright/io/_research_identity.py` (Constitution IV) — verify it did.
-- [ ] T014 Remove the DEBT-006 entry (line ~52) from `DEBT.md` (FR-009/SC-006); verify `grep -c DEBT-006 DEBT.md` → 0.
-- [ ] T015 Run `specs/036-actionable-source-errors/quickstart.md` scenarios 1–5 end to end and confirm each expected substring appears (F1 enumeration, F2 named + index prefixes, FR-011 single locator, SPARQL note, non-regression).
-- [ ] T016 Run the four gates green (the exit bar, SC-005): `uv run pytest` (≥80% coverage), `uv run ruff check`, `uv run ruff format --check`, `uv run mypy --strict`. Confirm the error JSON envelope stayed byte-compatible (`status`/`code=invalid_research`/`details={relpath,value}`).
+- [X] T013 Confirm `src/bookwright/io/research.py` is ≤ 500 lines (`wc -l`); if T004 pushed it over, the helper must already have moved to `src/bookwright/io/_research_identity.py` (Constitution IV) — verify it did.
+- [X] T014 Remove the DEBT-006 entry (line ~52) from `DEBT.md` (FR-009/SC-006); verify `grep -c DEBT-006 DEBT.md` → 0.
+- [X] T015 Run `specs/036-actionable-source-errors/quickstart.md` scenarios 1–5 end to end and confirm each expected substring appears (F1 enumeration, F2 named + index prefixes, FR-011 single locator, SPARQL note, non-regression).
+- [X] T016 Run the four gates green (the exit bar, SC-005): `uv run pytest` (≥80% coverage), `uv run ruff check`, `uv run ruff format --check`, `uv run mypy --strict`. Confirm the error JSON envelope stayed byte-compatible (`status`/`code=invalid_research`/`details={relpath,value}`).
 
 ---
 
