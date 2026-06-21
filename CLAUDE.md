@@ -412,30 +412,36 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/036-actionable-source-errors/plan.md` (iteration 036 — make research-source
-load errors actionable, closing DEBT-006, almost entirely in
-`src/bookwright/io/research.py`. (F1) `_reject_unknown_vocab` now ENUMERATES the
-closed vocabulary in the message — `unknown source type 'x' in <relpath>; one of:
-<", ".join(SOURCE_TYPE_IRI)>` and the twin for `reliability`/`RELIABILITY_IRI` —
-the keys are the accented author-facing values in declaration order, so the test
-can assert the exact string and the set never drifts from the validator. (F2) the
-`for raw in raw_sources` loop body in `_map_sources` is wrapped in ONE
-`try/except ResearchError` that re-raises `ResearchError(exc.relpath, f"source
-{id}: {exc.message}", exc.value)` — a single locator point that knows both the
-1-based index and the candidate `name`; `id` is the `name` single-quoted when
-`raw["name"]` is a non-empty str that `make_slug` accepts, else `#<n>` (1-based).
-Envelope byte-unchanged (FR-007): same `code=invalid_research`, same
-`details={relpath, value}`, only `message` enriched; underlying pydantic reason
-preserved (FR-006). FR-011: drop the now-redundant inline name locator from the
-translation-rule error (`needs a translation (language … ≠ book …)`) and the
-duplicate-name error (`duplicate source name (slug '…')` — keep the slug as the
-retained semantic subject, drop the human name). The SPARQL empty-result footgun
-is DOCUMENTED, not fixed: the `graph query` `sparql` arg `help=` string (English)
-and `docs/commands/graph-query.md` (Spanish) both note that a non-existent/
-misspelled IRI returns zero rows, not an error (no IRI validation added). Tests in
-`tests/io/test_research.py` (F1 enumeration + F2 prefix, named & index) and the
-graph-query help/docs note; delete DEBT-006 from `DEBT.md`. Keep `research.py`
-≤ 500 lines (463 today) — if the identifier helper would push it over, move it to
-`io/_research_identity.py`. `uv run pytest` and the four gates green; ships as
-`v0.4.4`. If `/speckit-tasks` exceeds ~10 tasks, split F1 / F2 / docs.
+`specs/037-focalization-pending-placeholder/plan.md` (iteration 037 — make the
+`focalization` validator treat an unanswered `[PENDING: …]` narrative-voice
+placeholder as no declaration, closing DEBT-007, entirely in
+`src/bookwright/validation/validators/focalization.py`. The bug: a fresh
+`bookwright init` constitution carries `- **Voz narrativa**: [PENDING: …(primera/
+tercera persona, omnisciente/limitada)?]`; that placeholder *text* literally
+contains "tercera persona" and "limitada", so `_parse_declaration` parses it as a
+real declaration (`person="third", limited=True, focal=None`) and the first
+interiority verb floods head-hopping warnings against every character. The fix: add
+a module-level `_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")` and
+ONE guard in `_parse_declaration` after `body = match.group("body")` —
+`if _PENDING_ONLY.match(body): return None` (reuses the existing "no declaration →
+zero findings" path). Full `^…$` anchor = "solely a placeholder" (FR-002): real
+text before OR after the token keeps the body a real declaration; whitespace/case
+tolerated. Runs on the already markdown-normalized body (iteration 034), so the
+bullet/emphasis scaffold form is recognized. No other rule changes (first-person,
+interiority, markdown tolerance, focal resolution) — FR-006. Prose validator: no
+graph, `triples=()`, frozen ontology untouched (Principle X / FR-010). Tests in
+`tests/validation/test_focalization.py`: (FR-007) read the EXACT live scaffold
+constitution via `importlib.resources` (placeholder intact — its body really
+contains "tercera persona", unlike the existing simplified `[PENDING: ¿quién
+narra?]` test which does NOT reproduce the bug) + an interiority-verb manuscript →
+assert 0 findings; (FR-008) replace only the placeholder with a real voice → assert
+the head-hopping finding wakes; and FLIP the existing `test_template_binding`
+assertion from `is not None` to `is None` (the live placeholder line now parses to
+None by design — leaving it red-fails the gate). Delete DEBT-007 from `DEBT.md`
+(add `_Ninguna por ahora._` under "Deuda abierta"). The recognizer stays LOCAL to
+`focalization.py` (no shared `[PENDING]` utility — speculative plumbing per
+clarification); `references/pending-protocol.md` stays the prose source of truth it
+mirrors. The constitution template is NOT reworded (clarification: parser-level
+suppression keeps the prompt useful). `focalization.py` ≤ 500 lines (183 today).
+`uv run pytest` and the four gates green; ships as `v0.4.5`.
 <!-- SPECKIT END -->

@@ -8,6 +8,26 @@
 
 **Input**: User description: "Un proyecto recién creado por `bookwright init`, con la constitución SIN rellenar, ya dispara avisos `focalization` de head-hopping contra TODOS los personajes en cuanto el manuscrito tiene un verbo de interioridad (pensó/supo/sintió/…). La causa: el placeholder por defecto de la plantilla de constitución es `- **Voz narrativa**: [PENDING: …(primera/tercera persona, omnisciente/limitada)?]`, cuyo TEXTO contiene literalmente «tercera persona» y «limitada»; el parser `_parse_declaration` lo acepta como una declaración real. Queremos que una declaración cuyo cuerpo sigue siendo un placeholder `[PENDING: …]` sin responder se trate como NO declaración (cero findings), sin cambiar ninguna otra regla del validador."
 
+## Clarifications
+
+### Session 2026-06-21
+
+- Q: Eliminate the cause by rewording the constitution template (drop the trigger
+  words "tercera persona"/"limitada") or by making the parser treat an unanswered
+  `[PENDING]` body as no declaration? → A: Parser-level suppression. Rationale: the
+  template prompt must keep naming the person/distance options to stay useful to the
+  author; rewording only hides today's instance while the real cause — the parser
+  accepting an unanswered prompt as data — stays latent and would re-trigger on any
+  future placeholder mentioning a person. Suppressing at the parser eliminates the
+  cause *class*, not the symptom (zero-debt doctrine §3 "eliminate the cause" / §4
+  "debt is a class").
+- Q: Should `[PENDING]` recognition become a shared, repo-wide token utility, or
+  stay local to the `focalization` validator? → A: Local to `focalization.py`. A
+  shared utility would be speculative plumbing for the other validators/sections
+  this iteration explicitly does not touch (doctrine §2, scope discipline); the
+  prose `references/pending-protocol.md` remains the single source of truth the
+  local recognizer mirrors.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A freshly initialized project produces no spurious focalization warnings (Priority: P1)
@@ -180,6 +200,11 @@ head-hopping finding.
 - Mixed bodies (a real answer with a leftover `[PENDING]` fragment) are treated as
   real declarations; suppressing them would risk silencing partially-authored
   voices, which is out of scope and against the "wake on real declaration" intent.
+- The fix lives at the parser, not in the template: the placeholder must keep naming
+  the person/distance options to remain useful, so rewording it would degrade the
+  scaffold while leaving the parser bug (accepting an unanswered prompt as a
+  declaration) latent. Suppressing an unanswered body at parse time removes the
+  cause class once, for any present or future person-mentioning placeholder.
 
 ## Out of Scope
 
@@ -190,4 +215,8 @@ head-hopping finding.
 - Touching the frozen ontology (Constitution X); this is a prose validator that
   does not touch the graph.
 - Generalizing `[PENDING]` suppression to other validators or constitution
-  sections — this iteration scopes the guard to the narrative-voice declaration.
+  sections — this iteration scopes the recognizer to the narrative-voice
+  declaration. The `[PENDING]` recognizer is therefore a local constant in
+  `focalization.py`, not a new shared/repo-wide token module (which would be
+  speculative plumbing); `references/pending-protocol.md` stays the prose source of
+  truth it mirrors.
