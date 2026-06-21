@@ -4,10 +4,41 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
-## [Unreleased]
+## [0.4.4] — 2026-06-21
+
+Third patch of the **v0.4.x post-dogfooding hardening track** (iteration 036) —
+pure hardening that makes research-source load errors actionable, closing the last
+dogfooding finding (DEBT-006). The dogfooding run hit two blinding error shapes:
+an out-of-vocabulary `type:` (or `reliability:`) rejected the value without naming
+the accepted alternatives, and a per-source fault (a quoted `access_date`, a
+duplicate name) named neither which source in the `sources:` list had failed. This
+release enumerates the closed vocabulary in the message and prefixes every
+per-source error with a single locator (the source's quoted `name`, or its 1-based
+`#index` when the name is absent or unsluggable), with the underlying reason
+preserved. No new CLI surface, no new runtime dependency, no ontology change, and
+the `--json` error envelope is **byte-unchanged** (`code=invalid_research`,
+`details={relpath, value}`) — only the human-readable `message` improves
+(Principle IX). The SPARQL empty-result footgun (a query over a misspelled IRI
+returns zero rows, not an error) is **documented, not "fixed"** — arbitrary-query
+IRI validation is explicitly out of scope.
+
+This release also folds in the **relicense to EUPL-1.2** and the licensing-accuracy
+corrections that had accumulated on `main` since `v0.4.3` (previously the
+`[Unreleased]` section), so they ship under a tagged version.
 
 ### Changed
 
+- **Research-source load errors are now actionable**
+  (`src/bookwright/io/research.py`): `_reject_unknown_vocab` enumerates the
+  accepted members of the closed vocabulary in the message — `unknown source type
+  'x' in <relpath>; one of: primaria, secundaria, oficial, académica,
+  periodística, testimonial` and the `reliability` twin (`one of: alta, media,
+  baja`). The list is derived from the imported `SOURCE_TYPE_IRI`/`RELIABILITY_IRI`
+  maps in declaration order, so it can never drift from the real vocabulary. Each
+  per-source fault is wrapped once with a `source '<name>': …` / `source #<n>: …`
+  locator prefix (1-based), so the author knows which `sources:` entry failed; the
+  duplicate-name and translation-rule messages were de-duplicated so no source is
+  named twice (the duplicate retains its `slug` as the semantic subject).
 - **Relicensed from Apache-2.0 to EUPL-1.2.** Bookwright is now distributed under
   the European Union Public Licence v. 1.2. `LICENSE` carries the official,
   verbatim EUPL 1.2 text in Spanish and English (Spanish first); `pyproject.toml`
@@ -15,6 +46,14 @@ project aims to follow semantic versioning.
   default (`DEFAULT_SKILL_LICENSE`) and the design doc were updated to match.
   Third-party licence mentions are unchanged (Spec Kit = MIT, agentskills =
   Apache-2.0).
+
+### Added
+
+- **SPARQL empty-result note** (`src/bookwright/commands/graph/query.py`,
+  `docs/commands/graph-query.md`): the `graph query` command help (English) and
+  the docs page (Spanish) now warn that a query referencing a non-existent or
+  misspelled IRI returns an empty result set, not an error — surfacing the footgun
+  without adding IRI validation to arbitrary queries.
 
 ### Fixed
 
