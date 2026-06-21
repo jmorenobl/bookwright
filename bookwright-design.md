@@ -1230,14 +1230,16 @@ Implementación con `rdflib`:
 - `query`: usa SPARQLWrapper interno de rdflib.
 - Performance esperado: aceptable para grafos <10k triples (la mayoría de libros).
 
-### 12.3 Búsqueda vectorial (v0.4, sobre rdflib — sin Grafeo)
+### 12.3 Búsqueda vectorial (horizonte demand-pulled, sobre rdflib — sin Grafeo)
 
 `GrafeoIndexer` queda **descartado** (no se implementará; ver § 15.5): `rdflib`
 es el motor de grafo permanente y cubre los grafos de tamaño libro (<10k triples)
 sin problema.
 
-La **búsqueda vectorial sí se mantiene** como capacidad de v0.4 (desplazada desde
-v0.3, que ahora ocupa la orquestación de contexto de § 21), pero
+La **búsqueda vectorial sí se mantiene** como capacidad del **horizonte
+demand-pulled** (sin versión asignada: se activa solo ante un disparador concreto
+—un corpus real multi-libro/serie o un fallo medido de structural-recall en una
+skill—, nunca como plomería especulativa), pero
 **desacoplada de Grafeo**: se implementa como una capa de recuperación semántica
 sobre el corpus (sobre todo `bible/research/` y el manuscrito), usando un vector
 store ligero (ChromaDB o equivalente, embebido y en fichero) en paralelo al grafo
@@ -1323,7 +1325,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Búsqueda vectorial (v0.4), opcional y desacoplada del grafo. Ver § 12.3 y § 20.12.
+# Búsqueda vectorial (horizonte demand-pulled), opcional y desacoplada del grafo. Ver § 12.3 y § 20.12.
 vectors = ["chromadb>=0.5"]
 
 [project.scripts]
@@ -1454,17 +1456,19 @@ dev = [
   determinista (`bookwright status` + `next_actions`) y consumo por las skills
   ("Próximos pasos"). El plan detallado de iteraciones (019–023) vive en
   `bookwright-implementation-plan.md`.
-- v0.4: **búsqueda vectorial** (ChromaDB o equivalente) sobre el grafo `rdflib`, para recuperación semántica del corpus de fuentes (`bible/research/`) y el manuscrito. Desacoplada de Grafeo (ver § 12.3 y el análisis de coste en § 20.12). Sinergia con M4: mejora la recuperación, pero M4 no la requiere.
-- v0.5: commands de autoría adicionales: `bookwright-export`, `bookwright-feedback`, `bookwright-polish`, `bookwright-revise`, `bookwright-query`. (El antiguo `bookwright-status` de esta lista queda absorbido por el verbo de CLI determinista `bookwright status` de M5, § 21.5.)
-- v1.0: export a EPUB/PDF (`bookwright-export` con pandoc).
+- **v0.4 — capa estructural narrativa** (Propp/Greimas G7/G9/G10 + ingesta de `outline/`, § 7.4): **entregada como `v0.4.0`** (2026-06-21), cierra la paridad de ingesta.
+- **Horizonte demand-pulled (sin versión asignada).** Capacidades que se activan solo cuando se cumple su disparador concreto, nunca como plomería especulativa:
+  - **búsqueda vectorial** (ChromaDB o equivalente) sobre el grafo `rdflib`, para recuperación semántica del corpus de fuentes (`bible/research/`) y el manuscrito; desacoplada de Grafeo (ver § 12.3 y el análisis de coste en § 20.12). Activar ante un corpus real multi-libro/serie o un fallo medido de structural-recall en una skill.
+  - **export a EPUB/PDF/print** (`bookwright-export` con pandoc): activar una vez probado el flujo end-to-end en un libro real. La etiqueta `1.0` se gana con ese flujo probado, no se pre-asigna a export.
+  - commands de autoría adicionales (`bookwright-feedback`, `bookwright-polish`, `bookwright-revise`, `bookwright-query`): a demanda, sin versión asignada. (El antiguo `bookwright-status` queda absorbido por el verbo de CLI determinista `bookwright status` de M5, § 21.5.)
 
 > **Funcionalidades descartadas (no se implementarán).** Decisiones del
 > propietario, posteriores al cuerpo original del documento:
 > - **Sistema de presets / genre-packages**: un resolver de templates por género.
 >   La resolución de templates es de **2 capas** (overrides → core, § 5.4).
 > - **`GrafeoIndexer` / motor Grafeo**: `rdflib` es el motor permanente y basta
->   para grafos de tamaño libro. La búsqueda vectorial de v0.4 **se conserva**,
->   pero implementada aparte (ChromaDB sobre rdflib), no vía Grafeo.
+>   para grafos de tamaño libro. La búsqueda vectorial (horizonte demand-pulled)
+>   **se conserva**, pero implementada aparte (ChromaDB sobre rdflib), no vía Grafeo.
 > - **Multi-integración** (Copilot, Gemini, Cursor/Codex específicos) y el
 >   comando `bookwright integrate`: el target es Claude Code; `claude` y
 >   `generic` ya cubren el uso. La arquitectura `INTEGRATION_REGISTRY` deja la
@@ -1538,12 +1542,12 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 
 - El inventario de documentos canónicos: synopsis (corta+larga), themes con motif registry, locations con sensory anchors, glossary, research, subplots, pov-structure.
 - El comando `continuity` (post-draft) como complemento a `analyze` (pre-draft).
-- La idea de incluir RAG / búsqueda vectorial para recuperación semántica (futuro v0.4, desacoplada del motor de grafo; ver § 12.3 y § 20.12).
-- El patrón de export con pandoc (futuro v1.0).
+- La idea de incluir RAG / búsqueda vectorial para recuperación semántica (horizonte demand-pulled, desacoplada del motor de grafo; ver § 12.3 y § 20.12).
+- El patrón de export con pandoc (horizonte demand-pulled).
 
 **Licencia del preset:** MIT. Permite reutilización de estructura de templates con atribución.
 
-**Posible interoperabilidad futura (v0.4+):** que `bookwright` pueda importar un proyecto inicializado con el preset y construir el grafo GOLEM a partir de sus archivos. Esto sería un gancho de adopción para usuarios que ya estén en ese ecosistema.
+**Posible interoperabilidad futura (sin versión asignada):** que `bookwright` pueda importar un proyecto inicializado con el preset y construir el grafo GOLEM a partir de sus archivos. Esto sería un gancho de adopción para usuarios que ya estén en ese ecosistema.
 
 ### 17.3 Agent Skills open standard (agentskills.io)
 
@@ -1851,15 +1855,16 @@ Además, `factual_anchor` se suma a la lista de validators activables en
   sistema funciona leyendo Markdown sin búsqueda vectorial; GOLEM sin ontología
   propia (3) —se usa Inference/`E13` y `E55`; solo Agent Skills (7) —research y
   verify son skills, no commands legacy; sin scripts shell (6).
-- **Sinergia con vector search (v0.4), sin dependerla.** La búsqueda vectorial
-  (ChromaDB sobre rdflib, v0.4 — **no** Grafeo) mejoraría la recuperación
+- **Sinergia con vector search (horizonte demand-pulled), sin dependerla.** La búsqueda vectorial
+  (ChromaDB sobre rdflib — **no** Grafeo) mejoraría la recuperación
   semántica sobre un corpus grande de fuentes, pero **no es prerrequisito**: la
   primera versión opera con el agente leyendo los Markdown de `bible/research/`
   directamente. No se adelanta plomería de los vectores (respeta la disciplina de
   scope). El análisis de coste y viabilidad de los vectores está en § 20.12.
 - **Versión: v0.2.0, milestone propio.** Por su peso, este sistema es el hito
-  **M4** (§ 15.5) y se libera como **v0.2.0**. La búsqueda vectorial es un hito
-  posterior (v0.4 tras la orquestación de contexto de § 21, que toma v0.3). El
+  **M4** (§ 15.5) y se libera como **v0.2.0**. La búsqueda vectorial es una
+  capacidad del **horizonte demand-pulled** (sin versión asignada; se activa ante
+  su disparador, ver § 12.3 / § 20.12), no un hito programado. El
   preset externo `fiction-book-writing`
   (§ 17.2) sigue siendo solo inspiración de templates.
 
@@ -1876,12 +1881,14 @@ Además, `factual_anchor` se suma a la lista de validators activables en
 | `[research]` | `manifest.toml` | Configuración |
 | segmentos `source`/`finding`/`anchor` | § 4.5 | URIs |
 
-### 20.12 Búsqueda vectorial: viabilidad y coste (v0.4)
+### 20.12 Búsqueda vectorial: viabilidad y coste (horizonte demand-pulled)
 
 > Análisis pedido por el propietario al decidir mantener los vectores tras
 > descartar Grafeo. Conclusión adelantada: **es viable, barato y de bajo riesgo**
-> implementarlo desacoplado, sin Grafeo. No es trabajo de M4 (v0.2) ni de M5
-> (v0.3, § 21); es v0.4.
+> implementarlo desacoplado, sin Grafeo. No es trabajo de un hito programado: es
+> una capacidad del **horizonte demand-pulled** (sin versión asignada), que se
+> activa solo ante un corpus real multi-libro/serie o un fallo medido de
+> structural-recall en una skill.
 
 **Qué problema resuelve.** El grafo `rdflib` responde preguntas *estructuradas*
 (¿qué anclas restringen a este personaje? ¿qué eventos hay antes de 1944?). No

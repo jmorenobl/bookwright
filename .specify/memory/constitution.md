@@ -1,22 +1,22 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.3.0 → 1.4.0
-Bump rationale: MINOR — materially updated guidance in the Scope & Release
-Discipline section to match shipped reality and the canonical roadmap. The
-prior wording said "the v0 line ships exactly the M0–M3 milestones" and listed
-deferred capabilities against stale version targets (preset system → v0.2,
-GrafeoIndexer + vector search → v0.3, multi-integration → v0.4, extension
-system → v0.5). Since ratification, M0–M3 shipped as v0.1.0 and M4 as v0.2.0,
-M5 / v0.3 (context orchestration) is the active line, and the owner cancelled
-the preset system, Grafeo/GrafeoIndexer, multi-integration beyond claude/
-generic, and the extension system outright (design § 15.5, § 20.12), while
-vector search moved to v0.4. The section now distinguishes **deferred**
-(vector search v0.4, export v1.0) from **cancelled** capabilities and keeps the
-anti-speculative-generality rule. Surfaced by /speckit-analyze on iteration
-019-focus-state (finding C1): the "ships exactly M0–M3" sentence contradicted
-M5 work without this refresh. No principle is reworded; this reflects decisions
-already recorded in the design document and reopens no § 16 axiom (Principle X).
+Version change: 1.4.0 → 1.5.0
+Bump rationale: MINOR — refreshes the Scope & Release Discipline section again
+to shipped reality and the canonical roadmap. Since 1.4.0: M5 / v0.3 shipped as
+v0.3.0 (context orchestration), the v0.3.x hardening track shipped as patches
+v0.3.1…v0.3.4, and v0.4 shipped as the **narrative-structure layer**
+(Propp/Greimas G7/G9/G10 + `outline/` ingestion, iterations 028–032) — **not**
+vector search. The prior wording pinned vector search to v0.4 and export to
+v1.0; both are now moved to an **unversioned, demand-pulled horizon** — each
+ships only when a concrete activation trigger is met (a real multi-book corpus
+or measured structural-recall failure for vector search; a proven end-to-end
+book flow for export), not on a pre-assigned version. This matches
+`bookwright-roadmap.md` and `CLAUDE.md`. Surfaced as DEBT-002 (spec-031): the
+binding constitution and the canonical `bookwright-design.md` both still labelled
+these capabilities with stale version targets. No principle is reworded; this
+reflects decisions already recorded in the roadmap and reopens no § 16 axiom
+(Principle X).
 
 Principles: I–X unchanged (no renames, additions, or removals). Only the
 Scope & Release Discipline section changed.
@@ -25,11 +25,11 @@ Propagation:
 - ✅ Scope & Release Discipline section rewritten in place.
 - ✅ .specify/templates/*.md — no change required (the plan-template Constitution
   Check is generic; no template restates the deferred/cancelled list).
-- ✅ bookwright-design.md — no change required: § 15.5 / § 20.12 already record
-  the cancellations this section now mirrors; no § 16 axiom is reopened.
-- ✅ CLAUDE.md — the "Scope discipline" and roadmap notes already match the
-  refreshed deferred/cancelled split; the Spec Kit pin was bumped to v0.10.1 in
-  the same housekeeping change.
+- ✅ bookwright-design.md — swept in the same v0.4.0 release step: § 12.3 / § 20.12
+  titles, the version scale (~§ 14), and the vector-search/export prose retargeted
+  from v0.4/v0.5/v1.0 to the demand-pulled horizon. No § 16 axiom is reopened.
+- ✅ CLAUDE.md / bookwright-roadmap.md — already describe v0.4 as the narrative
+  layer and vector search/export as the demand-pulled horizon.
 
 History:
 - 1.0.0 (2026-05-28): initial ratification (Principles I–X, Technical
@@ -42,6 +42,11 @@ History:
 - 1.4.0 (2026-06-11): refreshed Scope & Release Discipline to shipped reality
   (M0–M4 done, M5/v0.3 active) and split deferred (vector search v0.4, export
   v1.0) from cancelled capabilities (iteration 019-focus-state, finding C1).
+- 1.5.0 (2026-06-21): refreshed Scope & Release Discipline again to shipped
+  reality (v0.3.0, v0.3.x hardening, and v0.4.0 = the narrative-structure layer
+  all done) and moved vector search + export off pinned versions to the
+  unversioned, demand-pulled horizon (DEBT-002, carried by the v0.4.0 release
+  step).
 -->
 
 # Bookwright Constitution
@@ -215,15 +220,24 @@ constitutional bump.
 
 ## Scope & Release Discipline
 
-Milestones M0–M3 shipped as `v0.1.0` and the M4 research & verification system
-as `v0.2.0`. Active work is M5 / v0.3 — context orchestration (design § 21).
-Every milestone lands through numbered iterations, never as freehand commits.
+Milestones M0–M3 shipped as `v0.1.0`, the M4 research & verification system as
+`v0.2.0`, M5 context orchestration as `v0.3.0`, the v0.3.x hardening track as
+patches `v0.3.1`…`v0.3.4`, and the narrative-structure layer (Propp/Greimas
+G7/G9/G10 + `outline/` ingestion, design § 7.4) as `v0.4.0`. With v0.4 the
+ingestion-parity north star is reached. Every milestone lands through numbered
+iterations, never as freehand commits.
 
-The following capabilities remain **deferred** and MUST NOT be pulled into the
-current line ahead of their milestone:
+The following capabilities remain **deferred to an unversioned, demand-pulled
+horizon** — they carry **no pre-assigned version** and MUST NOT be pulled into
+any line as speculative plumbing; each ships only when its concrete activation
+trigger is met:
 
-- **Vector search** (ChromaDB over rdflib, decoupled from Grafeo) — v0.4.
-- **Export to EPUB / PDF / print** (pandoc pipeline) — v1.0.
+- **Vector search** (ChromaDB over rdflib, decoupled from Grafeo) — activate on
+  a real multi-book/series corpus, or a measured structural-recall failure in a
+  skill.
+- **Export to EPUB / PDF / print** (pandoc pipeline) — activate once the
+  end-to-end authoring flow is proven on a real book. The `1.0` label is earned
+  by that proven flow, not pre-assigned to export.
 
 The following are **cancelled** by owner decision (design § 15.5, § 20.12) and
 MUST NOT be implemented at all: the preset / genre-package system (template
@@ -266,4 +280,4 @@ either the code is fixed or the constitution is amended through the
 procedure above. The CI pipeline (Principle VIII) is the automated half of
 this gate; human review covers the rest.
 
-**Version**: 1.4.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-06-11
+**Version**: 1.5.0 | **Ratified**: 2026-05-28 | **Last Amended**: 2026-06-21

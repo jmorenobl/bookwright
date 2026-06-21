@@ -70,51 +70,7 @@
   Tocar el registro `CONCEPTS` es su propia clase de deuda estructural, fuera del
   alcance del cierre de v0.4 (iteración 032 no cablea G6/G3 ni reabre `CONCEPTS`).
   Target: demand-pulled — iteración estructural posterior, sin versión asignada.
-
----
-
-### DEBT-002 — Sección "Scope & Release Discipline" de la constitución desfasada
-- **Estado:** abierta
-- **Detectada en:** spec-031 (2026-06-20)
-- **Ubicación:** `.specify/memory/constitution.md` (sección *Scope & Release
-  Discipline*, líneas ~218–226; constitución v1.4.0) **y** `bookwright-design.md`
-  (§ 12.3 título "Búsqueda vectorial (v0.4 …)", § 20.12 título "(v0.4)", la escala
-  de versiones ~1457–1459 que asigna vector search a v0.4 y export a v0.5/v1.0, y
-  la prosa de 1239–1240, 1326, 1466, 1546, 1854–1855, 1861–1862, 1884).
-- **Clase de deuda:** deriva documental en documentos vinculantes/canónicos (la
-  constitución se cita como Constitution Check gate en cada PR; `bookwright-design.md`
-  es la spec canónica) — capacidad diferida etiquetada con una versión concreta
-  cuando la decisión vigente es **demand-pulled sin versión**.
-- **Descripción:** la sección de la constitución dice "Active work is M5 / v0.3 —
-  context orchestration" y lista **vector search** como diferido a **v0.4**; el
-  diseño canónico repite la misma etiqueta (vector search "de v0.4", export a
-  v0.5/v1.0) en § 12.3 / § 20.12 y en su escala de versiones. La realidad
-  (CLAUDE.md + `bookwright-roadmap.md`): v0.3.x hardening cerrado, **v0.4 = capa
-  narrativa Propp/Greimas** (esta milestone, iter 028–032), y vector search +
-  export movidos a un **horizonte demand-pulled sin versión asignada**. Ambos
-  documentos contradicen al roadmap en la línea de versiones y en el destino de
-  vector search/export. No entra en conflicto con el contenido de la iteración 032
-  (cierre E2E + docs + re-target de G6/G3, que **no** toca vector search/export),
-  por eso no bloquea esta spec.
-- **Por qué se difiere:** corregir la constitución exige el procedimiento formal
-  de enmienda (bump de versión, Sync Impact Report, propagación a plantillas y a
-  `bookwright-design.md` § 16 si aplica) — es su propio cambio, no parte de un
-  commit `docs(spec)` de la iteración 032. El barrido gemelo en `bookwright-design.md`
-  es la reconciliación de toda su taxonomía de versiones futuras (vector search,
-  export) en secciones y títulos canónicos (§ 12.3, § 20.12) cuya numeración es
-  *load-bearing* y cuyo § 16 lista axiomas que no se reabren a la ligera: es una
-  pasada documental editorial deliberada, no un find-replace de un paso de review,
-  y toca capacidades (vector/export) que la iteración 032 no implementa. Precedente:
-  la enmienda 1.4.0 nació de un hallazgo C1 de `/speckit-analyze` en la iteración
-  019, en su propio PR.
-- **Resolución sugerida / versión objetivo:** enmienda MINOR que reescriba a la
-  realidad enviada **tanto** la constitución **como** la taxonomía de versiones de
-  `bookwright-design.md` (v0.4 = capa narrativa; vector search/export → horizonte
-  demand-pulled sin versión, retitulando § 12.3 / § 20.12 y la escala ~1457–1459).
-  Viaja con el paso manual de release (`bookwright-release`), no con un commit de la
-  rama de la iteración 032 — el cierre de v0.4 deja la rama verde y delega
-  versión/CHANGELOG/constitución/diseño al skill de release tras el merge. Target:
-  enmienda MINOR arrastrada por el paso `bookwright-release` de `v0.4.0` (post-merge).
+  Registrada también en `bookwright-roadmap.md` § 4 (horizonte demand-pulled).
 
 ---
 
