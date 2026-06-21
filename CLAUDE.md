@@ -153,7 +153,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
 012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now open: 028–031 are merged; 032 is planned. Unlike the v0.3.x patches, v0.4 iterations accumulate on `main` and ship **once** as `v0.4.0` at the closing iteration (032), so 028–031 carry no version bump or tag — `__version__` stays `0.3.4` until 032.
+024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now closed on `main`: 028–032 are all merged. Unlike the v0.3.x patches, v0.4 iterations accumulate on `main` and ship **once** as `v0.4.0` at the closing iteration (032), so 028–032 carry no per-iteration version bump or tag — `__version__` stays `0.3.4` until the single `v0.4.0` release step (the `bookwright-release` skill) bumps it, writes the CHANGELOG, and tags.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -188,7 +188,7 @@ was correct) and corrupts the run's audit trail.
 | 029 | Ingest narrative sequences (G7) | v0.4 | ✅ merged |
 | 030 | Propp/Greimas vocabularies as `E55_Type` + references | v0.4 | ✅ merged |
 | 031 | Narrative-structure continuity validator | v0.4 | ✅ merged |
-| 032 | v0.4 close: E2E + docs + re-target G6/G3 + `v0.4.0` | v0.4 | ⏳ planned |
+| 032 | v0.4 close: E2E + docs + re-target G6/G3 + `v0.4.0` | v0.4 | ✅ merged |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the
@@ -223,10 +223,16 @@ orphan beat (a `G9` unit in no `G7` sequence, via SPARQL `NOT EXISTS` over
 `dlp:proper-part`) and unresolved role (re-surfaced from outline ingestion's
 `UnresolvedReference` records through a new cached `ValidationContext.outline()`
 accessor), both cited via the existing `E13` provenance path, no ontology change.
-Next: 032 closes
-with the E2E fixture, docs, G6/G3 re-target, and the `v0.4.0` release. Vector search
-and export remain deferred to an unversioned, demand-pulled horizon (activate on a
-concrete trigger, not a pre-assigned version). See `bookwright-roadmap.md`.
+Iteration 032 closes the milestone (merged): a source-only `tests/fixtures/tiny-quest/`
+fixture + oracle, the build→validate E2E `tests/e2e/test_narrative_workflow.py`, the
+Spanish `docs/narrative-structure.md`, and the honest G6/G3 deferral re-target
+(`"v0.4"` → the first-class `"demand-pulled"` sentinel, swept across `deferrals.py`,
+the parity test, and `DEBT.md`). The remaining `v0.4.0` release metadata — the
+`__version__` bump, the CHANGELOG section, the CLAUDE.md/design status edits, the
+release commit and the annotated tag — is the `bookwright-release` skill's separate
+step. Vector search and export remain deferred to an unversioned, demand-pulled
+horizon (activate on a concrete trigger, not a pre-assigned version). See
+`bookwright-roadmap.md`.
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
