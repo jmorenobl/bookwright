@@ -186,10 +186,16 @@ references the `NarrativeRole` dead-concept gap.
   reconcile **every** occurrence to the post-change reality (twelve concepts, ten reachable),
   not just a cited subset (doctrine §4 — debt is a class). The known occurrences are:
   `golem/__init__.py` ("the thirteen GOLEM concept classes"), `golem/deferrals.py` ("Two of the
-  thirteen"), `tests/golem/test_ingestion_parity.py` module docstring ("Eleven of the thirteen"
-  → "Ten of the twelve"), `tests/golem/test_namespaces.py` (the `…thirteen_concepts…` test name
-  and its "13 narrative concepts" docstring), and `tests/golem/test_uri.py` ("12 slugged
-  concepts" → "11"). The sweep MUST **NOT** edit the **historical** "thirteen `CONCEPTS`" note in
+  thirteen"), `tests/golem/test_ingestion_parity.py` **both** the module docstring ("Eleven of
+  the thirteen" → "Ten of the twelve") **and the two inline reachable-count comments** ("The
+  eleven concepts the fixture's authored text materializes" and "Exactly the eleven reachable
+  concepts materialize" → "ten"), `tests/golem/test_namespaces.py` (the `…thirteen_concepts…`
+  test name and its "13 narrative concepts" docstring), and `tests/golem/test_uri.py` ("12
+  slugged concepts" → "11"). This enumeration is illustrative, not exhaustive: per doctrine §4
+  the sweep covers **every** live stale reachable-count token of this class — including the word
+  form "eleven" wherever it counts reachable concepts — verified by the post-change reachable-count
+  grep net (Phase 3 independent test / SC-001 verification), not only the cited lines. The sweep
+  MUST **NOT** edit the **historical** "thirteen `CONCEPTS`" note in
   `CHANGELOG.md` — it is a frozen record of the v0.3.1 release and was true then (Principle I:
   released history is not rewritten).
 - **FR-004**: The RDF class `golem:G11_Narrative_Role` MUST remain in the frozen ontology:
