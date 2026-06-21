@@ -225,15 +225,14 @@ def test_term_closure_over_frozen_ontology() -> None:
     frozen = ns.frozen_terms()
     for entity in _sample_entities():
         for subject, predicate, obj in entity.to_triples():
-            # ``bw:`` is Bookwright's own vocabulary, declared in ``sources.ttl`` and
-            # intentionally outside the frozen GOLEM closure — the same status the
-            # ``bw:reference`` family has (which is why research entities are excluded
-            # from ``_sample_entities``). ``NarrativeSequence`` now emits a ``bw:`` term
-            # (``bw:sequenceOrdinal``), so the closure check exempts that namespace.
+            # ``bw:sequenceOrdinal`` is Bookwright's own vocabulary, declared in
+            # ``sources.ttl`` and intentionally outside the frozen GOLEM closure — the
+            # same status the ``bw:reference`` family has (which is why research entities
+            # are excluded from ``_sample_entities``). ``NarrativeSequence`` now emits it,
+            # so the closure check exempts that one term — *not* the whole ``bw:``
+            # namespace, so any other stray ``bw:`` emission still fails this gate.
             assert (
-                predicate == RDF.type
-                or predicate in frozen
-                or str(predicate).startswith(str(ns.BW))
+                predicate == RDF.type or predicate in frozen or predicate == ns.BW_SEQUENCE_ORDINAL
             ), f"predicate {predicate} not frozen"
             if predicate == RDF.type:
                 assert obj in frozen, f"class {obj} not frozen"
