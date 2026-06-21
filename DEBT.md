@@ -43,14 +43,7 @@
 
 ## Deuda abierta
 
-### DEBT-008 — el heurístico de proper-noun marca la primera palabra de los encabezados markdown
-- **Estado:** abierta
-- **Detectada en:** dogfooding v0.4.5 (2026-06-21)
-- **Ubicación:** `src/bookwright/validation/validators/character_presence.py` (regla `_CANDIDATE` + exclusión por `_SENTENCE_END`/inicio de línea, ~líneas 23–29 y 160–166)
-- **Clase de deuda:** falso positivo de validador (heurístico que no contempla la sintaxis markdown del manuscrito)
-- **Descripción:** el chequeo `character_presence` excluye una mayúscula a inicio de línea o tras puntuación de fin de frase (es gramatical, no un nombre propio), pero no salta el prefijo de encabezado markdown (`# `, `## `, …). La primera palabra de todo `# Capítulo 1` queda precedida por `# ` y se trata como mitad de frase, disparando `proper noun 'Capítulo' appears in the manuscript but has no bible entry` en cada cabecera de capítulo. Reproducido en la corrida de dogfooding (`manuscript/cap-01.md:1`). Es `warning`, no rompe CI, pero es ruido recurrente en cualquier manuscrito con encabezados.
-- **Por qué se difiere:** el track v0.4.x (post-dogfooding) está cerrado y sin deuda abierta; esta es una clase de validador distinta a las que tocó (focalización), así que limpiarla aquí rompería el scope. Es su propia iteración.
-- **Resolución sugerida / versión objetivo:** normalizar la línea quitando el prefijo de encabezado markdown (y, opcionalmente, todo `#{1,6}\s+` de apertura) antes de aplicar el heurístico, de modo que la primera palabra del heading reciba el mismo trato de "inicio de oración" que ya existe; añadir un fixture de manuscrito con encabezados de capítulo al test del validador. Patch menor (siguiente hardening de validación).
+_Ninguna por ahora._
 
 ---
 

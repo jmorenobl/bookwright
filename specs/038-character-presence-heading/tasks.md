@@ -31,7 +31,7 @@ prerequisite; each story then adds its own regression test.
 
 **Purpose**: Confirm the working environment; no scaffolding needed (single-module patch).
 
-- [ ] T001 Sync the dev environment: run `uv sync` from repo root so `.venv` has deps + dev group, then confirm the baseline is green with `uv run pytest tests/validation/test_character_presence.py -q` (the four existing tests must pass before any edit — establishes the FR-003 parity baseline).
+- [X] T001 Sync the dev environment: run `uv sync` from repo root so `.venv` has deps + dev group, then confirm the baseline is green with `uv run pytest tests/validation/test_character_presence.py -q` (the four existing tests must pass before any edit — establishes the FR-003 parity baseline).
 
 ---
 
@@ -45,8 +45,8 @@ ATX heading marker before the proper-noun heuristic runs in
 land before either story's test can pass (the tests are authored first and will fail
 until this is in place).
 
-- [ ] T002 Add the module-level recognizer `_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` to `src/bookwright/validation/validators/character_presence.py` (near `_CANDIDATE`/`_SENTENCE_END`, with a one-line comment: ATX opening marker, anchored at `^`, no leading whitespace — research D2). `re` is already imported.
-- [ ] T003 In `_unknown_mentions` (`src/bookwright/validation/validators/character_presence.py`), inside the `for lineno, line in enumerate(text.splitlines(), start=1)` loop, compute `scan = _HEADING_MARKER.sub("", line, count=1)` (the line with any single leading ATX marker removed, else the line unchanged), then change `_CANDIDATE.finditer(line)` → `_CANDIDATE.finditer(scan)` and `_is_sentence_initial(line, match.start())` → `_is_sentence_initial(scan, match.start())`. Leave `lineno` (and thus the `relpath:line` locator) untouched — it comes from `enumerate`, not the match offset (FR-005, research D3). Do not touch `_orphans`/`_is_mentioned`, `_STOP_WORDS`, `_is_sentence_initial`, the dedup, message text, or `warning` severity (FR-004).
+- [X] T002 Add the module-level recognizer `_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` to `src/bookwright/validation/validators/character_presence.py` (near `_CANDIDATE`/`_SENTENCE_END`, with a one-line comment: ATX opening marker, anchored at `^`, no leading whitespace — research D2). `re` is already imported.
+- [X] T003 In `_unknown_mentions` (`src/bookwright/validation/validators/character_presence.py`), inside the `for lineno, line in enumerate(text.splitlines(), start=1)` loop, compute `scan = _HEADING_MARKER.sub("", line, count=1)` (the line with any single leading ATX marker removed, else the line unchanged), then change `_CANDIDATE.finditer(line)` → `_CANDIDATE.finditer(scan)` and `_is_sentence_initial(line, match.start())` → `_is_sentence_initial(scan, match.start())`. Leave `lineno` (and thus the `relpath:line` locator) untouched — it comes from `enumerate`, not the match offset (FR-005, research D3). Do not touch `_orphans`/`_is_mentioned`, `_STOP_WORDS`, `_is_sentence_initial`, the dedup, message text, or `warning` severity (FR-004).
 
 **Checkpoint**: The marker-stripping seam is live; a heading's first content word now
 lands at offset 0 and is exempted by the existing empty-prefix branch of
@@ -67,7 +67,7 @@ heading-opening word.
 
 ### Tests for User Story 1 ⚠️ (write FIRST, must FAIL before T002/T003 land)
 
-- [ ] T004 [US1] Add `test_heading_first_word_is_not_flagged` to `tests/validation/test_character_presence.py` using the `write_project` / `load_context` / `RdflibIndexer` helpers (mirror the existing tests' shape via the local `_run`). Author a **synthetic in-test** manuscript with headings at multiple depths and roster-only prose, e.g. `characters=["Aparici"]`, `manuscript={"cap-01.md": "# Capítulo 1\n\nAparici llegó al muelle.\n\n## Escena en el faro\n\nAllí esperó.\n\n###### El faro\n\nVolvió.\n"}`. Assert `_run(project_root) == []` (no finding attributable to `Capítulo`, `Escena`, `El`, etc.). Per Clarifications 2026-06-21 the test authors its own heading-bearing manuscript — the `bookwright init` scaffold ships an empty `manuscript/` (FR-006).
+- [X] T004 [US1] Add `test_heading_first_word_is_not_flagged` to `tests/validation/test_character_presence.py` using the `write_project` / `load_context` / `RdflibIndexer` helpers (mirror the existing tests' shape via the local `_run`). Author a **synthetic in-test** manuscript with headings at multiple depths and roster-only prose, e.g. `characters=["Aparici"]`, `manuscript={"cap-01.md": "# Capítulo 1\n\nAparici llegó al muelle.\n\n## Escena en el faro\n\nAllí esperó.\n\n###### El faro\n\nVolvió.\n"}`. Assert `_run(project_root) == []` (no finding attributable to `Capítulo`, `Escena`, `El`, etc.). Per Clarifications 2026-06-21 the test authors its own heading-bearing manuscript — the `bookwright init` scaffold ships an empty `manuscript/` (FR-006).
 
 **Checkpoint**: US1 is independently verifiable — heading markers no longer flood
 spurious proper-noun warnings.
@@ -87,7 +87,7 @@ title — is removed.
 
 ### Tests for User Story 2 ⚠️ (write FIRST, must FAIL before T002/T003 land)
 
-- [ ] T005 [P] [US2] Add `test_name_in_heading_body_is_still_flagged` to `tests/validation/test_character_presence.py`: `characters=["Aparici"]`, `manuscript={"cap-01.md": "# La caída de Elena\n\nAparici la recordó.\n"}` (`Elena` not in roster and not in the body). Filter findings to `Severity.warning`; assert exactly one whose `message` contains `Elena` and whose `source` is `manuscript/cap-01.md:1` — `La` opens the title and is exempt, `Elena` is mid-line and fires (FR-002 / FR-007). Additionally assert `findings[…].triples == ()` on the emitted finding to pin the prose-validator-no-graph contract at the test level (FR-009 / Principle X — the frozen ontology is untouched). This test is [P] with T004: same target file but independent, additive functions — author them in one editing pass to avoid a merge conflict.
+- [X] T005 [P] [US2] Add `test_name_in_heading_body_is_still_flagged` to `tests/validation/test_character_presence.py`: `characters=["Aparici"]`, `manuscript={"cap-01.md": "# La caída de Elena\n\nAparici la recordó.\n"}` (`Elena` not in roster and not in the body). Filter findings to `Severity.warning`; assert exactly one whose `message` contains `Elena` and whose `source` is `manuscript/cap-01.md:1` — `La` opens the title and is exempt, `Elena` is mid-line and fires (FR-002 / FR-007). Additionally assert `findings[…].triples == ()` on the emitted finding to pin the prose-validator-no-graph contract at the test level (FR-009 / Principle X — the frozen ontology is untouched). This test is [P] with T004: same target file but independent, additive functions — author them in one editing pass to avoid a merge conflict.
 
 **Checkpoint**: US2 is independently verifiable — the fix narrows to the marker, leaving
 no silent blind spot for title-only names.
@@ -98,9 +98,9 @@ no silent blind spot for title-only names.
 
 **Purpose**: Cancel the debt entry and prove the whole change against the gates.
 
-- [ ] T006 [P] Remove the DEBT-008 entry from `DEBT.md` and make the "Deuda abierta" section read `_Ninguna por ahora._` (git retains the history; debt-cancellation convention, FR-008 / SC-005). Confirm with `grep -c "DEBT-008" DEBT.md` → `0`.
-- [ ] T007 Run the full quality gates from repo root: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy --strict`, `uv run pytest` (full suite, ≥ 80 % coverage enforced). All four must pass (SC-004). Confirm `src/bookwright/validation/validators/character_presence.py` stays ≤ 500 lines (Principle IV; ~206 after the edit).
-- [ ] T008 Walk the `quickstart.md` scenarios as a final acceptance pass: Scenario 1 (zero findings on headings), Scenario 2 (`Elena` flagged once), Scenario 3 (existing four tests green unchanged — FR-003 parity), Scenario 5 (`DEBT-008` gone). Confirm the existing fixtures were not edited.
+- [X] T006 [P] Remove the DEBT-008 entry from `DEBT.md` and make the "Deuda abierta" section read `_Ninguna por ahora._` (git retains the history; debt-cancellation convention, FR-008 / SC-005). Confirm with `grep -c "DEBT-008" DEBT.md` → `0`.
+- [X] T007 Run the full quality gates from repo root: `uv run ruff check`, `uv run ruff format --check`, `uv run mypy --strict`, `uv run pytest` (full suite, ≥ 80 % coverage enforced). All four must pass (SC-004). Confirm `src/bookwright/validation/validators/character_presence.py` stays ≤ 500 lines (Principle IV; ~206 after the edit).
+- [X] T008 Walk the `quickstart.md` scenarios as a final acceptance pass: Scenario 1 (zero findings on headings), Scenario 2 (`Elena` flagged once), Scenario 3 (existing four tests green unchanged — FR-003 parity), Scenario 5 (`DEBT-008` gone). Confirm the existing fixtures were not edited.
 
 ---
 
@@ -176,3 +176,12 @@ Task T006: "Remove DEBT-008 from DEBT.md"
 - Do not edit the four existing tests — their unchanged-pass is the FR-003 parity proof.
 - Commit after the logical group (source edit + tests + debt edit) per the iteration's
   patch shape.
+- **Implementation discovery (T007/T008):** the `tiny-historical` E2E oracle
+  (`tests/fixtures/tiny-historical/expected-status.md`) had baked the spurious
+  `Capítulo` warning into its project-wide `validation.counts.warning` total — the
+  fixture's manuscript opens with the ATX heading `# Capítulo 1 — El telar nuevo`, the
+  exact DEBT-008 shape. The fix correctly drops that false positive, so the oracle's
+  count moved 6 → 5 (three spots: the YAML `counts`, the explanatory NOTE comment, and
+  the Spanish prose frame). The fixture **manuscript was not edited** and the four
+  existing `character_presence` unit tests stay byte-unchanged (FR-003 parity holds);
+  only the oracle's *expected* count, which had pinned buggy output, was corrected.
