@@ -4,6 +4,27 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [Unreleased]
+
+### Changed
+
+- **Relicensed from Apache-2.0 to EUPL-1.2.** Bookwright is now distributed under
+  the European Union Public Licence v. 1.2. `LICENSE` carries the official,
+  verbatim EUPL 1.2 text in Spanish and English (Spanish first); `pyproject.toml`
+  declares `license = "EUPL-1.2"`; `NOTICE`, the READMEs, the materialized-skill
+  default (`DEFAULT_SKILL_LICENSE`) and the design doc were updated to match.
+  Third-party licence mentions are unchanged (Spec Kit = MIT, agentskills =
+  Apache-2.0).
+
+### Fixed
+
+- **Licensing-accuracy corrections** surfaced during the relicense audit: the
+  redistributed GOLEM ontology was mislabelled Apache-2.0 — it is actually **CC
+  BY 4.0** (declared via `dcterms:license` in the ontology itself; the upstream
+  repo ships no `LICENSE`), now corrected in `bookwright-design.md` and attributed
+  in `NOTICE`. A broken attribution URL in this changelog now points to the real
+  preset repo (`adaumann/speckit-preset-fiction-book-writing`).
+
 ## [0.4.3] — 2026-06-21
 
 Second patch of the **v0.4.x post-dogfooding hardening track** (iteration 035) —
@@ -547,10 +568,10 @@ This entry consolidates iterations 1–11.
 - The template **structure** (the document inventory: short + long synopsis,
   themes with a motif registry, locations with sensory anchors, glossary,
   research, subplots, POV structure) is inspired by the
-  [`fiction-book-writing`](https://github.com/adaumann/fiction-book-writing)
+  [`fiction-book-writing`](https://github.com/adaumann/speckit-preset-fiction-book-writing)
   preset by **adaumann** (MIT-licensed), whose license permits structural reuse
   with attribution. Bookwright's redaction is **original** prose under
-  **Apache-2.0**, rewritten in Spanish and adapted to the **GOLEM** narrative
+  **EUPL-1.2**, rewritten in Spanish and adapted to the **GOLEM** narrative
   model — no verbatim preset text is included.
 
 ### Changed — supersedes design § 6

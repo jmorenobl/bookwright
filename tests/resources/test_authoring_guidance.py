@@ -54,7 +54,7 @@ def test_changelog_records_credit_and_supersession() -> None:
     changelog = _REPO_ROOT / "CHANGELOG.md"
     assert changelog.is_file(), "CHANGELOG.md is missing at the repo root"
     text = changelog.read_text(encoding="utf-8")
-    for needle in ("fiction-book-writing", "adaumann", "MIT", "Apache-2.0", "GOLEM"):
+    for needle in ("fiction-book-writing", "adaumann", "MIT", "EUPL-1.2", "GOLEM"):
         assert needle in text, f"CHANGELOG.md is missing the credit token {needle!r}"
     assert "§ 6" in text, "CHANGELOG.md does not record the design § 6 supersession"
     assert "supersede" in text.lower(), "CHANGELOG.md does not state the § 6 supersession"

@@ -317,7 +317,7 @@ Función `resolve_template()` en `src/bookwright/core/templates.py`, idiomática
 ```
 bookwright/
 ├── README.md
-├── LICENSE                              # Apache-2.0
+├── LICENSE                              # EUPL-1.2
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── pyproject.toml
@@ -1124,7 +1124,7 @@ description: |
   Activar cuando el usuario indique que quiere iniciar un libro, defina el pacto
   narrativo, o pase un dump de conversación con su idea inicial. NO activar para
   edición de manuscrito ni para generación de capítulos.
-license: Apache-2.0
+license: EUPL-1.2
 metadata:
   author: bookwright
   version: "0.1.0"
@@ -1139,7 +1139,7 @@ metadata:
 
 - `name`: < 64 chars, lowercase alphanumeric/hyphens. Debe coincidir con el nombre del directorio padre (`bookwright-constitution/SKILL.md`).
 - `description`: < 1024 chars. Debe ser precisa con boundaries claros, porque es lo único que el agente ve antes de decidir invocar el skill. Bookwright enriquece la `description` del frontmatter del command source con triggers explícitos antes de escribirla.
-- `license`: heredado de Bookwright (Apache-2.0). Permite a usuarios redistribuir sus proyectos sin fricción.
+- `license`: heredado de Bookwright (EUPL-1.2). Permite a usuarios redistribuir sus proyectos sin fricción.
 - `metadata.version`: vinculada a la versión del CLI que generó el skill.
 
 **Reglas operativas:**
@@ -1524,7 +1524,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 - El download de templates desde GitHub releases (Bookwright empaqueta dentro del wheel).
 - La nomenclatura software-céntrica (`specify`, `plan`, `tasks`, `implement`).
 
-**Licencia de Spec Kit:** MIT. Compatible con Bookwright (Apache-2.0). No hay reutilización de código fuente sin atribución; lo que se reutiliza son patrones de diseño documentados públicamente.
+**Licencia de Spec Kit:** MIT. Compatible con Bookwright (EUPL-1.2). No hay reutilización de código fuente sin atribución; lo que se reutiliza son patrones de diseño documentados públicamente.
 
 ### 17.2 Preset `fiction-book-writing` para Spec Kit (adaumann/speckit-preset-fiction-book-writing)
 
@@ -1576,7 +1576,7 @@ Bookwright no nace en el vacío. Existen dos referencias técnicas directas cuya
 
 ### 17.4 Otras referencias menores
 
-- **GOLEM upstream** (GOLEM-lab/golem-ontology): la ontología en sí. Apache-2.0. Bookwright congela una versión y la distribuye en `resources/schemas/`.
+- **GOLEM upstream** (GOLEM-lab/golem-ontology): la ontología en sí. **CC BY 4.0** (declarada en los propios metadatos de la ontología vía `dcterms:license`; el repo upstream no incluye fichero `LICENSE`). CC BY 4.0 es permisiva (solo atribución, sin copyleft), por lo que es plenamente compatible con redistribuirla dentro de un proyecto EUPL-1.2. Bookwright congela una versión y la distribuye en `resources/schemas/` sin modificar, conservando intacta su atribución embebida (autoría "GOLEM Lab", cita bibliográfica, DOI y enlace de licencia).
 - **Grafeo** (grafeo.dev): considerado para v0 como motor de grafo, descartado por madurez. Descartado también de forma permanente: `rdflib` es el motor único (ver § 15.5). La búsqueda vectorial de v0.4 no depende de él.
 
 ---

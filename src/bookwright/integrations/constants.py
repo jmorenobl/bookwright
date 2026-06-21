@@ -24,7 +24,7 @@ SKILL_BODY_MAX_TOKENS: Final[int] = 5000
 
 #: License inherited by a materialized skill when its source declares no
 #: ``license`` (FR-005/A-002). The single source of truth for the design default.
-DEFAULT_SKILL_LICENSE: Final[str] = "Apache-2.0"
+DEFAULT_SKILL_LICENSE: Final[str] = "EUPL-1.2"
 
 #: Deny-by-default allowlist of project-file *read* commands permitted inside a
 #: `` !`…` `` dynamic-context injection (the FR-013 invariant). File-read only —

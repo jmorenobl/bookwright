@@ -7,7 +7,7 @@ authors = [
     { name = "Jorge MB", email = "jmorenobl@gmail.com" }
 ]
 requires-python = ">=3.11"
-license = "Apache-2.0"
+license = "EUPL-1.2"
 license-files = ["LICENSE", "NOTICE"]
 classifiers = [
     "Development Status :: 3 - Alpha",

@@ -124,7 +124,7 @@ def test_each_source_materializes_with_expected_frontmatter_and_body(tmp_path: P
         meta = parsed.metadata
         assert meta["name"] == name
         assert meta["description"] == SKILL_DESCRIPTIONS[name]
-        assert meta["license"] == "Apache-2.0"
+        assert meta["license"] == "EUPL-1.2"
         assert meta["metadata"] == {"author": "bookwright", "version": bookwright.__version__}
 
         source_body = parse_frontmatter(source.read_text(encoding="utf-8")).body

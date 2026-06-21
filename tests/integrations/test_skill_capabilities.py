@@ -16,7 +16,7 @@ def _write_skill(skill_dir: Path, body: str) -> None:
         "---\n"
         f"name: {skill_dir.name}\n"
         "description: trigger text\n"
-        "license: Apache-2.0\n"
+        "license: EUPL-1.2\n"
         "metadata:\n"
         "  author: bookwright\n"
         "  version: 0.0.1\n"
