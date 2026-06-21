@@ -31,18 +31,16 @@ from typing import Any
 
 import pytest
 import tomlkit
+from rdflib.namespace import RDFS
 from typer.testing import CliRunner
 
 from bookwright.cli import app
 from bookwright.commands._graph import build_project_graph
 from bookwright.core.manifest import Manifest
-from bookwright.golem import NarrativeSequence
-from bookwright.golem.namespaces import GOLEM, HAS_TYPE, PROPER_PART, REFERS_TO
+from bookwright.golem.namespaces import BW_SEQUENCE_ORDINAL, GOLEM, HAS_TYPE, PROPER_PART, REFERS_TO
 from bookwright.golem.slug import make_slug
 from bookwright.indexers import Indexer
-from bookwright.io.bible import map_bible
 from bookwright.io.frontmatter import parse_frontmatter
-from bookwright.io.outline import map_outline
 from tests.conftest import FIXTURES_DIR, copy_fixture
 
 QUEST = "tiny-quest"
@@ -114,52 +112,49 @@ def _engine(root: Path) -> Indexer:
     return build_project_graph(root, manifest).engine
 
 
-def _ordered_members(root: Path) -> list[str]:
-    """The lone sequence's member slugs in emitted ``dlp:proper-part`` order.
+def _ordered_members(engine: Indexer) -> list[str]:
+    """The lone sequence's member slugs in declared order, read from the graph (Q2).
 
-    Member order is an *emission-order* contract, never a graph fact: RDF is
-    unordered, so the graph carries no member ordinal and a SPARQL re-query cannot
-    recover the ``order``-sorted line (``ORDER BY`` would only yield the alphabetical
-    URI order, which is the wrong sequence). The slugs are therefore read from the
-    assembled :class:`NarrativeSequence` entity's emitted triples, in tuple order —
-    the iteration-029 ``_member_names`` pattern. A second deterministic mapping pass
-    (no vocabularies: typing does not touch membership) yields that entity.
+    Member order is now a *graph fact*, not an emission-order contract: each
+    membership carries a queryable ``bw:sequenceOrdinal`` (iteration 035), so a
+    single SPARQL ``ORDER BY`` over that ordinal recovers the author's declared
+    order from the graph alone (FR-008). A graph with no sequence yields no rows.
     """
-    manifest = Manifest.load(root / "manifest.toml")
-    uri_base = manifest.bookwright.uri_base
-    result = map_bible(root, root / manifest.paths.bible, uri_base)
-    map_outline(root, root / manifest.paths.outline, uri_base, result)
-    sequences = [e for e in result.entities if isinstance(e, NarrativeSequence)]
-    if not sequences:
-        return []
-    sequence = sequences[0]
-    return [
-        _last(str(obj))
-        for subj, pred, obj in sequence.to_triples()
-        if subj == sequence.uri and pred == PROPER_PART
-    ]
+    rows = engine.query(
+        f"SELECT ?u ?n WHERE {{ ?s a {_G7} . ?s <{PROPER_PART}> ?u . "
+        f"?u <{BW_SEQUENCE_ORDINAL}> ?n }} ORDER BY ?n"
+    )
+    return [_last(r["u"]) for r in rows]
 
 
 def _graph_facts(root: Path) -> dict[str, Any]:
     """The deterministic graph facts the oracle pins (Group A surface).
 
-    The set-based facts (units, functions, typings, sequence identity, role
-    cross-refs) are read from the derived graph via SPARQL — the graph the
-    validators consume. ``members`` is the one ordered fact, so it comes from the
-    entity's emitted ``dlp:proper-part`` order (:func:`_ordered_members`), not a
-    SPARQL re-query the unordered graph cannot answer deterministically. ``typed``
-    maps each typed function slug to its Propp term's last path segment; the
-    slug/role lists are sorted because they are compared as sets.
+    Every fact — units, functions, labels, typings, sequence identity, ordered
+    members, role cross-refs — is read from the derived graph via SPARQL, the graph
+    the validators consume. ``members`` is now a graph fact too: each membership
+    carries a queryable ``bw:sequenceOrdinal`` (iteration 035), so :func:`_ordered_members`
+    recovers the declared order with a single ``ORDER BY`` instead of re-reading the
+    emitter's tuple. ``typed`` maps each typed function slug to its Propp term's last
+    path segment; the slug/role lists are sorted because they are compared as sets.
     """
     engine = _engine(root)
     units = {_last(r["u"]): r["u"] for r in engine.query(f"SELECT ?u WHERE {{ ?u a {_G9} }}")}
     functions = sorted(_last(r["f"]) for r in engine.query(f"SELECT ?f WHERE {{ ?f a {_G10} }}"))
+    unit_labels = {
+        _last(r["u"]): r["l"]
+        for r in engine.query(f"SELECT ?u ?l WHERE {{ ?u a {_G9} ; <{RDFS.label}> ?l }}")
+    }
+    function_labels = {
+        _last(r["f"]): r["l"]
+        for r in engine.query(f"SELECT ?f ?l WHERE {{ ?f a {_G10} ; <{RDFS.label}> ?l }}")
+    }
     typed = {
         _last(r["f"]): _last(r["t"])
         for r in engine.query(f"SELECT ?f ?t WHERE {{ ?f a {_G10} . ?f <{HAS_TYPE}> ?t }}")
     }
     sequences = sorted(r["s"] for r in engine.query(f"SELECT ?s WHERE {{ ?s a {_G7} }}"))
-    members = _ordered_members(root) if sequences else []
+    members = _ordered_members(engine) if sequences else []
     roles: dict[str, list[str]] = {}
     for slug, uri in units.items():
         resolved = sorted(
@@ -171,6 +166,8 @@ def _graph_facts(root: Path) -> dict[str, Any]:
     return {
         "units": sorted(units),
         "functions": functions,
+        "unit_labels": unit_labels,
+        "function_labels": function_labels,
         "typed": typed,
         "sequence_slugs": [_last(s) for s in sequences],
         "members": members,
@@ -210,6 +207,14 @@ def test_build_materializes_units_and_functions(quest: Path, oracle: dict[str, A
     assert facts["units"] == sorted(oracle["units"]["slugs"])
     assert len(facts["units"]) == oracle["units"]["count"]
     assert len(facts["functions"]) == oracle["functions"]["count"]
+
+
+def test_build_labels_units_and_functions(quest: Path, oracle: dict[str, Any]) -> None:
+    """A6: every unit and function carries an ``rdfs:label`` equal to its authored
+    name, so beats and functions are name-queryable (FR-001/FR-002)."""
+    facts = _graph_facts(quest)
+    assert facts["unit_labels"] == oracle["units"]["labels"]
+    assert facts["function_labels"] == oracle["functions"]["labels"]
 
 
 def test_build_types_functions_against_propp(quest: Path, oracle: dict[str, Any]) -> None:

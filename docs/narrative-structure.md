@@ -63,6 +63,49 @@ La partida: la heroína deja el valle acompañada de su ayudante.
   unidad desempata; los miembros sin `order` van al final. El orden resultante es
   total y determinista: el mismo corpus produce la misma secuencia byte a byte.
 
+## Consultar la capa por nombre y por orden
+
+Desde la iteración 035 la capa narrativa es **consultable por contenido y por
+orden** desde el grafo, sin tocar la ontología congelada:
+
+- **`rdfs:label` en unidades y funciones.** Cada `G9_Narrative_Unit` y cada
+  `G10_Narrative_Function` emite **una** `rdfs:label` con su `name` autorado tal cual
+  (acentos, mayúsculas y espacios incluidos) — el mismo patrón de una sola etiqueta
+  que ya usan `CharacterRole` y los rasgos de personaje. La etiqueta viaja sobre la
+  aserción de identidad de la entidad: no añade un `E13` propio. Así, buscar "el beat
+  llamado X" deja de ser imposible.
+- **`bw:sequenceOrdinal` en cada membresía.** La posición resuelta de cada unidad
+  dentro de su `G7_Narrative_Sequence` se materializa como un triple por unidad
+  `(?unit bw:sequenceOrdinal "n"^^xsd:integer)`, a un salto SPARQL de la secuencia
+  (`?seq dlp:proper-part ?unit`). El ordinal es el **rango contiguo 1..k** del orden
+  total que el ensamblado ya define (ascendente por `order`, los sin `order` al final,
+  desempate por slug), de modo que es total y sin huecos aunque el `order:` autorado
+  tenga huecos, falte o se duplique. RDF no es ordenado, pero ahora SPARQL tiene algo
+  por lo que `ORDER BY`. A diferencia de la etiqueta, el ordinal **sí** se reifica con
+  su propio `E13` a nivel de fichero (es una propiedad relacional de la membresía, no
+  intrínseca a la unidad). `bw:sequenceOrdinal` se declara en
+  `resources/vocabularies/sources.ttl`, fuera de `golem.ttl` y de su cierre, igual que
+  la familia `bw:reference`.
+
+Encontrar un beat por su nombre (US1):
+
+```sparql
+SELECT ?u WHERE {
+  ?u a <https://w3id.org/golem/ontology#G9_Narrative_Unit> ;
+     <http://www.w3.org/2000/01/rdf-schema#label> "Interdiction Beat" .
+}
+```
+
+Listar una secuencia en el orden declarado (US2):
+
+```sparql
+SELECT ?u ?n WHERE {
+  ?s a <https://w3id.org/golem/ontology#G7_Narrative_Sequence> .
+  ?s <http://www.ontologydesignpatterns.org/ont/dlp/DOLCE-Lite.owl#proper-part> ?u .
+  ?u <https://bookwright.dev/vocab/bw#sequenceOrdinal> ?n .
+} ORDER BY ?n
+```
+
 ## Activar Propp y Greimas
 
 Los **vocabularios controlados** viven empaquetados como Turtle (`propp.ttl` con las

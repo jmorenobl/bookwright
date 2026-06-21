@@ -16,9 +16,13 @@ from bookwright.golem import (
     DerivedAssertion,
     NarrativeEvent,
     NarrativeFunction,
+    NarrativeSequence,
+    NarrativeUnit,
     SocialRelationship,
 )
 from bookwright.golem import namespaces as ns
+from bookwright.io._bible_builders import MappedEntity
+from bookwright.io.bible import build_provenance
 from tests.golem.conftest import B
 
 
@@ -127,6 +131,31 @@ def test_untyped_function_yields_only_identity() -> None:
     """An untyped function makes exactly its identity assertion (no type E13)."""
     func = NarrativeFunction(uri_base=B, name="Departure")
     assert list(func.derived_assertions()) == [DerivedAssertion(func.uri, func.uri, None)]
+
+
+def test_sequence_member_ordinal_reified_as_own_file_level_e13() -> None:
+    """C5/D6: each member ordinal is its own assertion (target=unit, attribute=sequence,
+    tagged ``order``), distinct from the proper-part membership E13, reified with
+    file-level provenance (``key_lines={}`` → no ``:line``)."""
+    a = NarrativeUnit(uri_base=B, name="Beat A")
+    b = NarrativeUnit(uri_base=B, name="Beat B")
+    seq = NarrativeSequence(uri_base=B, name="Quest", units=(a, b))
+
+    assertions = list(seq.derived_assertions())
+    # The base still yields identity + one proper-part membership per member …
+    assert DerivedAssertion(seq.uri, seq.uri, None) in assertions
+    assert DerivedAssertion(seq.uri, a.uri, "units") in assertions
+    # … and the override adds one ordinal assertion per member: unit → sequence.
+    assert DerivedAssertion(a.uri, seq.uri, "order") in assertions
+    assert DerivedAssertion(b.uri, seq.uri, "order") in assertions
+
+    # Reified through the standard provenance path with file-level provenance.
+    mapped = MappedEntity(entity=seq, relpath="outline/units/a.md", key_lines={})
+    ordinal_e13 = [
+        e for e in build_provenance(mapped, B) if e.attribute == seq.uri and e.target != seq.uri
+    ]
+    assert {e.target for e in ordinal_e13} == {a.uri, b.uri}
+    assert all(e.source == "outline/units/a.md" for e in ordinal_e13)  # file-level, no :line
 
 
 def test_typed_role_assertion_emitted_by_owning_character() -> None:

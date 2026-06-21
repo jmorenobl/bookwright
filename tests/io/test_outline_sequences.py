@@ -15,8 +15,11 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
+from rdflib.namespace import XSD
+from rdflib.term import Literal, URIRef
+
 from bookwright.golem import NarrativeSequence, NarrativeUnit
-from bookwright.golem.namespaces import PROPER_PART
+from bookwright.golem.namespaces import BW_SEQUENCE_ORDINAL, PROPER_PART
 from bookwright.io._bible_builders import MapResult
 from bookwright.io.bible import map_bible
 from bookwright.io.outline import map_outline
@@ -47,6 +50,12 @@ def _member_names(sequence: NarrativeSequence) -> list[str]:
 
 def _proper_part_count(sequence: NarrativeSequence) -> int:
     return sum(1 for s, p, _ in sequence.to_triples() if s == sequence.uri and p == PROPER_PART)
+
+
+def _ordinals(sequence: NarrativeSequence) -> list[tuple[str, URIRef | Literal]]:
+    """Each ``bw:sequenceOrdinal`` triple as ``(subject-uri, object-literal)``, in
+    emitted order — the subject is the **member unit** URI, never the sequence."""
+    return [(str(s), o) for s, p, o in sequence.to_triples() if p == BW_SEQUENCE_ORDINAL]
 
 
 def _card(root: Path, stem: str, name: str, *, sequence: str | None, order: int | None) -> None:
@@ -106,6 +115,31 @@ def test_missing_order_placed_last_then_slug(tmp_path: Path) -> None:
     (sequence,) = _sequences(result)
     # Explicit-`order` member first; the two order-less members last, by unit slug.
     assert _member_names(sequence) == ["Middle Beat", "Alpha Beat", "Zeta Beat"]
+
+
+# --- materialized ordinal: subject=unit, contiguous 1..k under gap/dup/missing ---
+
+
+def test_member_ordinals_are_contiguous_and_subject_is_unit(tmp_path: Path) -> None:
+    """FR-003/FR-004 (C4): under a gap, a duplicate, and a missing ``order:``, the
+    emitted ``bw:sequenceOrdinal`` objects are contiguous ``1..k`` ``xsd:integer``
+    whose subject is each member unit URI, reproducing ``_member_sort_key`` order."""
+    _card(tmp_path, "mid", "Middle Beat", sequence="Act I", order=5)  # gap (1 → 5)
+    _card(tmp_path, "first", "First Beat", sequence="Act I", order=1)
+    _card(tmp_path, "dup", "Dup Beat", sequence="Act I", order=5)  # duplicate order
+    _card(tmp_path, "tail", "Tail Beat", sequence="Act I", order=None)  # missing → last
+
+    result = _run(tmp_path)
+    (sequence,) = _sequences(result)
+
+    members = [u for u in sequence.units if isinstance(u, NarrativeUnit)]
+    expected = [(str(u.uri), Literal(i, datatype=XSD.integer)) for i, u in enumerate(members, 1)]
+    # The ordinal triples reproduce the assembled total order, subject = the unit URI.
+    assert _ordinals(sequence) == expected
+    # Contiguous 1..4 regardless of the authored gap/duplicate/missing values.
+    assert [o for _, o in _ordinals(sequence)] == [
+        Literal(i, datatype=XSD.integer) for i in range(1, 5)
+    ]
 
 
 # --- Scenario D: single-member sequence → exactly one proper-part edge ---------
