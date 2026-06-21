@@ -8,6 +8,27 @@
 
 **Input**: User description: "El validador `character_presence` marca la primera palabra de cada encabezado markdown del manuscrito como un nombre propio sin entrada en el bible. En un proyecto recién creado por `bookwright init` con un manuscrito que use `# Capítulo 1`, `## Escena`, etc., aparece `proper noun 'Capítulo' appears in the manuscript but has no bible entry (heuristic — may be a place or organization)` en cada cabecera. La causa: el heurístico de proper-noun excluye una mayúscula a inicio de línea o tras puntuación de fin de frase (`_SENTENCE_END`) por gramatical, pero no contempla la sintaxis markdown: la primera palabra de `# Capítulo 1` queda precedida por el prefijo `# ` y se trata como mitad de frase, así que se marca. Queremos que la primera palabra de un encabezado markdown reciba el mismo trato de «inicio de oración» que ya existe, sin cambiar ninguna otra regla del validador."
 
+## Clarifications
+
+### Session 2026-06-21
+
+A non-interactive ambiguity scan found the spec fully determined for
+implementation — the normalization seam, the ATX `#{1,6}␠` boundary, the
+edge-case directions, locator stability, the no-regression parity bar, and the
+frozen-ontology constraint are all pinned. One test-design decision was the only
+genuinely open, materially-impactful choice; it is recorded below.
+
+- Q: Should the FR-006/FR-007 regression tests bind to the live `bookwright init`
+  scaffold (as iteration 037 did for the constitution) or construct a synthetic
+  in-test manuscript? → A: Synthetic in-test manuscript — the scaffold ships an
+  **empty** manuscript (`resources/project/manuscript/.gitkeep` only, no
+  heading-bearing file), so there is no live scaffold artifact to bind to;
+  authoring a focused in-test manuscript with `# Capítulo 1`-style headings is the
+  only correct and non-speculative option (zero-debt doctrine §2: no plumbing
+  whose only justification is "future X"). This differs from iteration 037, where
+  the bug lived in the exact live-scaffold constitution text and binding to it was
+  load-bearing.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A manuscript with chapter headings produces no spurious proper-noun warnings (Priority: P1)
@@ -124,9 +145,13 @@ unknown-proper-noun finding for `Elena` fires.
 - **FR-005**: The reported source locator (`relpath:line`) for any finding that
   still fires MUST remain correct — removing the heading marker for analysis MUST
   NOT shift the reported line number.
-- **FR-006**: A regression test MUST start from a manuscript that uses chapter
-  headings (`# Capítulo 1`, etc.) and assert **zero** `character_presence` findings
-  caused by a heading's opening word.
+- **FR-006**: A regression test MUST start from a **synthetic in-test** manuscript
+  that uses chapter headings (`# Capítulo 1`, etc.) and assert **zero**
+  `character_presence` findings caused by a heading's opening word. The test
+  authors its own heading-bearing manuscript rather than binding to the
+  `bookwright init` scaffold, because the scaffold ships an empty manuscript
+  (`resources/project/manuscript/.gitkeep`) with no heading file to bind to
+  (Clarifications 2026-06-21).
 - **FR-007**: A complementary test MUST confirm that an out-of-roster name inside a
   heading body (e.g. `# La caída de Elena`, `Elena` not in the roster) is still
   flagged — proving the normalization strips the `#` marker, not the whole title.
