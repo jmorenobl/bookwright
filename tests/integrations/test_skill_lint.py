@@ -23,7 +23,7 @@ def _write_skill(skill_dir: Path, *, name: str, description: str, body: str) -> 
         "---\n"
         f"name: {name}\n"
         f"description: {description!r}\n"
-        "license: Apache-2.0\n"
+        "license: EUPL-1.2\n"
         "metadata:\n"
         "  author: bookwright\n"
         "  version: 0.0.1\n"

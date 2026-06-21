@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.3.2-6f42c1" alt="Version 0.3.2"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache-2.0"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License: EUPL-1.2"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Coverage ≥80%">
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white" alt="Linted with Ruff"></a>
@@ -118,7 +118,7 @@ walkthrough.
 
 ## License
 
-[Apache-2.0](LICENSE). See [NOTICE](NOTICE) for attribution.
+[EUPL-1.2](LICENSE) (European Union Public Licence v. 1.2; the `LICENSE` file carries the official Spanish and English texts). See [NOTICE](NOTICE) for attribution.
 
 This license covers the **bookwright software only**. The content you author
 with it — story bibles, outlines, manuscripts, and the derived knowledge

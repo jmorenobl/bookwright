@@ -3,12 +3,25 @@ Copyright 2026 Jorge MB
 
 This product includes software developed by Jorge MB and contributors.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed under the EUPL (European Union Public Licence), Version 1.2 (the
+"Licence"); you may not use this work except in compliance with the Licence.
+You may obtain a copy of the Licence in the LICENSE file distributed with this
+software, or at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://interoperable-europe.ec.europa.eu/collection/eupl/eupl-text-eupl-12
 
-This license covers the bookwright software only. It does not cover the
+This licence covers the bookwright software only. It does not cover the
 content authored with the tool: story bibles, outlines, manuscripts, and
 the derived knowledge graphs remain the sole property of their authors.
+
+----
+
+This product redistributes a frozen, unmodified copy of the GOLEM Ontology
+for Narrative and Fiction (resources/schemas/golem-1.1/golem.ttl), by the
+GOLEM Lab (Pianzola, F., Pannach, F., Cheng, L., Yang, X., and Scotti, L.),
+licensed under Creative Commons Attribution 4.0 International (CC BY 4.0):
+
+    https://creativecommons.org/licenses/by/4.0/
+    Source: https://github.com/GOLEM-lab/golem-ontology
+    Cite: https://doi.org/10.5281/zenodo.14911392
+
