@@ -32,6 +32,10 @@ _LEAD_EMPHASIS = re.compile(r"^\s*(?:\*\*|\*|_)+")
 # An emphasis run sitting between the label and its colon (anchored to the label
 # so the declaration *body* is never touched, FR-006).
 _CLOSE_EMPHASIS = re.compile(rf"(?i)^(?P<label>\s*{_LABEL})(?:\*\*|\*|_)+(?=\s*:)")
+# An unanswered placeholder body: *solely* a `[PENDING: …]` token (case-insensitive
+# keyword, optional surrounding whitespace). The full `^…$` anchor means real text
+# before OR after the token keeps the body a real declaration (FR-002, contract C1-C5).
+_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")
 _THIRD = re.compile(r"(?i)\b(tercera|third)\b")
 _FIRST = re.compile(r"(?i)\b(primera|first)\b")
 _LIMITED = re.compile(r"(?i)\b(limitada|limitado|limited)\b")
@@ -162,6 +166,8 @@ def _parse_declaration(text: str, character_names: list[str]) -> _Declaration | 
     if match is None:
         return None
     body = match.group("body")
+    if _PENDING_ONLY.match(body):
+        return None  # an unanswered `[PENDING: …]` placeholder is no declaration (FR-002)
     person: str | None = None
     if _THIRD.search(body):
         person = "third"
