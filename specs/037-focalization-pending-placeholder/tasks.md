@@ -36,11 +36,11 @@ tests in `tests/`. The entire production change is confined to **one file**:
 
 **Purpose**: Confirm a green baseline before touching the validator.
 
-- [ ] T001 Sync the environment (`uv sync`) and capture the baseline: run
+- [X] T001 Sync the environment (`uv sync`) and capture the baseline: run
   `uv run pytest tests/validation/test_focalization.py -q` and confirm it is green
   with the **current** `test_template_binding` (asserting the scaffold line parses
   `is not None`). This baseline is what T009 deliberately flips.
-- [ ] T002 Re-read `src/bookwright/resources/commands/references/pending-protocol.md`
+- [X] T002 Re-read `src/bookwright/resources/commands/references/pending-protocol.md`
   (the prose source of truth the local recognizer must mirror) and the live scaffold
   body in `src/bookwright/resources/project/bible/constitution.md.j2` to confirm the
   `[PENDING: ¿Quién narra y desde qué distancia (primera/tercera persona,
@@ -57,13 +57,13 @@ Phase 3/4 can pass until this is complete.
 
 **⚠️ CRITICAL**: This is the only production-code change in the iteration.
 
-- [ ] T003 Add the module-level recognizer constant to
+- [X] T003 Add the module-level recognizer constant to
   `src/bookwright/validation/validators/focalization.py` (near the existing
   `_DECLARATION` / `_LABEL` compiled patterns, ~line 26):
   `_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")` — full `^…$`
   anchor = "body is *solely* an unanswered token" (FR-002, contract C1–C3); the
   `\b` after `pending` keeps it a keyword; `(?i)` makes `PENDING` case-insensitive.
-- [ ] T004 Add the single guard inside `_parse_declaration` in
+- [X] T004 Add the single guard inside `_parse_declaration` in
   `src/bookwright/validation/validators/focalization.py`, immediately after
   `body = match.group("body")` (~line 164):
   `if _PENDING_ONLY.match(body): return None` — routes a solely-placeholder body
@@ -89,7 +89,7 @@ scaffold voice line + a manuscript scene `Halia pensó que el faro callaba.`; ru
 
 ### Tests for User Story 1
 
-- [ ] T005 [US1] Add `test_live_scaffold_constitution_yields_nothing` to
+- [X] T005 [US1] Add `test_live_scaffold_constitution_yields_nothing` to
   `tests/validation/test_focalization.py` (FR-007 / SC-001 / contract C2,V1): read
   the EXACT scaffold body via `importlib.resources` from
   `bookwright.resources.project.bible/constitution.md.j2` (placeholder intact — its
@@ -98,12 +98,12 @@ scaffold voice line + a manuscript scene `Halia pensó que el faro callaba.`; ru
   bug), write it as the project constitution plus a manuscript scene with an
   interiority verb on a named character (`Halia pensó que el faro callaba.`), run
   the validator, and assert `== []`. This test FAILS before T003/T004.
-- [ ] T006 [P] [US1] Add `test_live_scaffold_first_person_yields_nothing` to
+- [X] T006 [P] [US1] Add `test_live_scaffold_first_person_yields_nothing` to
   `tests/validation/test_focalization.py` (acceptance scenario 2): same untouched
   scaffold constitution + a first-person manuscript line outside dialogue (`Yo no
   entendía nada.`); assert `== []` (no person declared ⇒ neither first-person nor
   head-hopping rule may fire).
-- [ ] T007 [US1] Add `test_pending_recognition_boundary` (a parametrized
+- [X] T007 [US1] Add `test_pending_recognition_boundary` (a parametrized
   `_parse_declaration` unit test) to `tests/validation/test_focalization.py`
   (FR-002 / FR-004 / contract C3,C4,C5): assert the **recognition boundary** the
   `_PENDING_ONLY` regex draws — the over-match guard US2 depends on. Cover, with no
@@ -121,7 +121,7 @@ scaffold voice line + a manuscript scene `Halia pensó que el faro callaba.`; ru
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Run `uv run pytest tests/validation/test_focalization.py -q` and
+- [X] T008 [US1] Run `uv run pytest tests/validation/test_focalization.py -q` and
   confirm T005/T006/T007 now PASS on top of the T003/T004 guard. No new production
   code — the foundational change already delivers US1; this task confirms the
   increment.
@@ -144,13 +144,13 @@ SC-002).
 
 ### Tests for User Story 2
 
-- [ ] T009 [US2] Add `test_replacing_placeholder_with_real_voice_wakes_validator` to
+- [X] T009 [US2] Add `test_replacing_placeholder_with_real_voice_wakes_validator` to
   `tests/validation/test_focalization.py` (FR-008 / SC-002 / contract V2): start
   from the scaffold but replace ONLY the placeholder body with `Tercera persona
   limitada, focalizada en Halia`, keep a manuscript where a *non-focal* character
   gets an interiority verb, run the validator, and assert the head-hopping finding
   fires (and `Violation.triples == ()`, contract V4 / FR-010).
-- [ ] T010 [US2] FLIP the existing `test_template_binding` in
+- [X] T010 [US2] FLIP the existing `test_template_binding` in
   `tests/validation/test_focalization.py` from `assert _parse_declaration(...) is
   not None` to `is None` and update its comment: the live placeholder line now
   parses to `None` BY DESIGN (the anti-drift guarantee is preserved — it still binds
@@ -159,7 +159,7 @@ SC-002).
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Run `uv run pytest tests/validation/test_focalization.py -q` and
+- [X] T011 [US2] Run `uv run pytest tests/validation/test_focalization.py -q` and
   confirm the full file is green: T009 wakes, T010 flipped, and every pre-existing
   fixture (bare / English / markdown-prefixed iteration-034 forms) is byte-identical
   (FR-003 / contract V3 / SC-002 — no finding added or removed).
@@ -173,14 +173,14 @@ placeholder and wakes on any real declaration.
 
 **Purpose**: Close the debt and prove the whole change against all gates.
 
-- [ ] T012 Remove the DEBT-007 entry from `DEBT.md` (FR-009 / SC-004): delete the
+- [X] T012 Remove the DEBT-007 entry from `DEBT.md` (FR-009 / SC-004): delete the
   `### DEBT-007 …` block (~lines 46+) under "## Deuda abierta". Confirm
   `_Ninguna por ahora._` remains as the section's only content (git keeps history;
   `grep -c "DEBT-007" DEBT.md` MUST print `0`).
-- [ ] T013 Run the full quickstart validation (`specs/037-focalization-pending-placeholder/quickstart.md`):
+- [X] T013 Run the full quickstart validation (`specs/037-focalization-pending-placeholder/quickstart.md`):
   the two unit `python -c` one-liners (scaffold→`None`, real-voice→declaration), the
   focalization test run, and `grep -c "DEBT-007" DEBT.md`.
-- [ ] T014 Run all four gates (SC-003):
+- [X] T014 Run all four gates (SC-003):
   `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest`
   — all green, coverage ≥ 80 %. Confirm `focalization.py` ≤ 500 lines.
 

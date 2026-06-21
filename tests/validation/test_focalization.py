@@ -152,21 +152,100 @@ def test_scaffold_shape_wakes_validator_through_validate(project_root: Path) -> 
 
 # --- the live scaffold template and the parser stay bound (FR-007) ---
 
+# The EXACT live scaffold constitution, read once and shared by every binding test
+# below (placeholder intact — its body really contains "tercera persona"/"limitada").
+_SCAFFOLD_CONSTITUTION = (
+    importlib.resources.files("bookwright.resources.project.bible")
+    .joinpath("constitution.md.j2")
+    .read_text(encoding="utf-8")
+)
+
 
 def test_template_binding() -> None:
     # FR-007 / SC-004: read the live scaffold constitution template and assert the
     # parser recognizes its narrative-voice line. Mangling that line in the
     # template (e.g. removing the colon, or changing the label) MUST fail this test
     # — it is the durable anti-drift guarantee against template↔parser divergence.
-    template = (
-        importlib.resources.files("bookwright.resources.project.bible")
-        .joinpath("constitution.md.j2")
-        .read_text(encoding="utf-8")
-    )
-    voice_lines = [ln for ln in template.splitlines() if "Voz narrativa" in ln]
+    voice_lines = [ln for ln in _SCAFFOLD_CONSTITUTION.splitlines() if "Voz narrativa" in ln]
     assert len(voice_lines) == 1, "expected exactly one narrative-voice line in the template"
-    # Recognition (non-None); per N3 the `[PENDING: …]` body names no person.
-    assert _parse_declaration(voice_lines[0], []) is not None
+    # The live placeholder line parses to None BY DESIGN (DEBT-007): its body is
+    # *solely* an unanswered `[PENDING: …]` token, so it is no declaration. This still
+    # binds the live template body to the parser — mangling that line (e.g. removing
+    # the colon, or answering it with a real voice) flips this assertion and fails the
+    # test, the durable anti-drift guarantee against template↔parser divergence.
+    assert _parse_declaration(voice_lines[0], []) is None
+
+
+def test_live_scaffold_constitution_yields_nothing(project_root: Path) -> None:
+    # FR-007 / SC-001 / contract C2, V1: the EXACT live scaffold constitution
+    # (placeholder intact — its body really contains "tercera persona"/"limitada",
+    # unlike `test_pending_markdown_declaration_yields_nothing` which simplifies it)
+    # plus a manuscript scene with an interiority verb on a named character yields
+    # zero findings. This is DEBT-007: before the guard, the placeholder text parsed
+    # as third-person-limited and flooded head-hopping warnings.
+    write_project(
+        project_root,
+        characters=["Halia"],
+        constitution=_SCAFFOLD_CONSTITUTION,
+        manuscript={"cap-01.md": "Halia pensó que el faro callaba.\n"},
+    )
+    assert _run(project_root) == []
+
+
+def test_live_scaffold_first_person_yields_nothing(project_root: Path) -> None:
+    # Acceptance scenario 2: the same untouched scaffold constitution + a first-person
+    # line outside dialogue. No person is declared ⇒ neither the first-person nor the
+    # head-hopping rule may fire.
+    write_project(
+        project_root,
+        characters=["Halia"],
+        constitution=_SCAFFOLD_CONSTITUTION,
+        manuscript={"cap-01.md": "Yo no entendía nada.\n"},
+    )
+    assert _run(project_root) == []
+
+
+@pytest.mark.parametrize(
+    ("text", "expected_person"),
+    [
+        ("Voz narrativa:   [pending: ¿x?]  ", None),  # C3 — whitespace + lowercase keyword
+        ("Voz narrativa: Tercera persona [PENDING: ¿focal?]", "third"),  # C4 — text BEFORE
+        ("Voz narrativa: [PENDING: …] tercera persona", "third"),  # C5 — text AFTER
+        ("Narrative voice: [PENDING: who narrates?]", None),  # FR-004 — EN label, suppressed
+    ],
+)
+def test_pending_recognition_boundary(text: str, expected_person: str | None) -> None:
+    # FR-002 / FR-004 / contract C3-C5: the recognition boundary `_PENDING_ONLY` draws.
+    # A body that is *solely* the token is suppressed (→ None); a body that merely
+    # *contains* the token alongside real declared text stays a real declaration. The
+    # over-match guard the real-voice wake-up (FR-008) depends on.
+    parsed = _parse_declaration(text, _NAMES)
+    if expected_person is None:
+        assert parsed is None
+    else:
+        assert parsed is not None and parsed.person == expected_person
+
+
+def test_replacing_placeholder_with_real_voice_wakes_validator(project_root: Path) -> None:
+    # FR-008 / SC-002 / contract V2, V4: start from the scaffold but answer ONLY the
+    # placeholder with a real voice; a non-focal character with an interiority verb now
+    # fires head-hopping (the validator wakes) and the finding emits no graph triples.
+    constitution = _SCAFFOLD_CONSTITUTION.replace(
+        "[PENDING: ¿Quién narra y desde qué distancia "
+        "(primera/tercera persona, omnisciente/limitada)?]",
+        "Tercera persona limitada, focalizada en Halia",
+    )
+    write_project(
+        project_root,
+        characters=["Halia", "Peña"],
+        constitution=constitution,
+        manuscript={"cap-01.md": "Halia observó la sala.\nPeña pensó que todo acababa.\n"},
+    )
+    findings = _run(project_root)
+    hops = [f for f in findings if "head-hopping" in f.message]
+    assert len(hops) == 1
+    assert "Peña" in hops[0].message
+    assert all(f.triples == () for f in findings)  # Principle X / FR-010 — prose only
 
 
 # --- loosening recognition keeps the no-finding edge cases intact ---
