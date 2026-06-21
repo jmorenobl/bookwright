@@ -52,11 +52,11 @@ Single project (src-layout): `src/bookwright/`, `tests/` at repository root.
 ### Tests for User Story 1
 
 - [ ] T003 [US1] Create `tests/golem/test_narrative_label_order.py` with the Q1 find-by-name SPARQL test (FR-007/SC-003): feed sample entities (incl. a `NarrativeUnit` named e.g. "La traición del senescal") through `RdflibIndexer`, run `SELECT ?u WHERE { ?u a <…G9_Narrative_Unit> ; rdfs:label "…" }` with full IRIs (no PREFIX reliance, matching the E2E style in contracts §Q1), assert the matching URI is returned and a name in no entity returns the empty result.
-- [ ] T004 [US1] Add a unit-label emission assertion to `tests/golem/test_triples.py`: assert a sample `NarrativeUnit` emits exactly one `(uri, rdfs:label, Literal(name))` triple with the authored name byte-for-byte.
+- [ ] T004 [US1] Add a unit-label emission assertion to `tests/golem/test_triples.py` (FR-001): assert a sample `NarrativeUnit` emits exactly one `(uri, rdfs:label, Literal(name))` triple with the authored name byte-for-byte.
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] In `src/bookwright/golem/modules/narrative.py`, override `NarrativeUnit.to_triples()` to `yield from super().to_triples()` then `yield (self.uri, RDFS.label, Literal(self.name))` (import `RDFS`, `Literal`). No `derived_assertions()` change — the label rides the existing identity assertion (FR-006/D5).
+- [ ] T005 [US1] In `src/bookwright/golem/modules/narrative.py`, override `NarrativeUnit.to_triples()` to `yield from super().to_triples()` then `yield (self.uri, RDFS.label, Literal(self.name))` (import `RDFS`, `Literal`) — the unit-label emission required by FR-001. No `derived_assertions()` change — the label rides the existing identity assertion (FR-006/D5).
 
 **Checkpoint**: US1 complete — units are name-queryable; T003/T004 green. SC-001 satisfiable.
 
@@ -70,15 +70,15 @@ Single project (src-layout): `src/bookwright/`, `tests/` at repository root.
 
 ### Tests for User Story 2
 
-- [ ] T006 [US2] Extend `tests/golem/test_narrative_label_order.py` with the Q2 list-in-order SPARQL test (FR-008/SC-003): over a built graph, `SELECT ?u ?n WHERE { <…narrative-sequence/slug> dlp:proper-part ?u . ?u bw:sequenceOrdinal ?n } ORDER BY ?n`; assert members return in declared order, and the same query against a second sequence returns only its members in its own order (C3/C4).
+- [ ] T006 [US2] Extend `tests/golem/test_narrative_label_order.py` with the Q2 list-in-order SPARQL test (FR-003/FR-008/SC-003): over a built graph, `SELECT ?u ?n WHERE { <…narrative-sequence/slug> dlp:proper-part ?u . ?u bw:sequenceOrdinal ?n } ORDER BY ?n`; assert members return in declared order, and the same query against a second sequence returns only its members in its own order (C3/C4).
 - [ ] T007 [US2] Add the term-closure `bw:` exemption to `tests/golem/test_triples.py::test_term_closure_over_frozen_ontology` (D7): accept `predicate == RDF.type or predicate in frozen or str(predicate).startswith(str(BW))`, with a comment that `bw:` is Bookwright's own vocabulary outside the frozen GOLEM closure (same status as `bw:reference`). Leave `tests/golem/test_namespaces.py` unmodified.
 - [ ] T008 [P] [US2] Add a `NarrativeSequence` ordinal-E13 assertion to `tests/golem/test_derived_assertions.py`: assert each member yields a `DerivedAssertion(target=unit.uri, attribute=self.uri, source_field="order")` reified as its own file-level `crm:E13` (target=unit via `P140`, attribute=sequence via `P141`, file-level `P16` source, no `:line`) — distinct from the proper-part membership E13 (C5/D6).
-- [ ] T009 [P] [US2] Reinforce ordinal materialization in `tests/io/test_outline_sequences.py`: build a sequence with gap/missing/duplicate `order:` across members and assert the emitted `bw:sequenceOrdinal` objects are contiguous `1..k` `xsd:integer` with subject = each member unit URI, reproducing `_member_sort_key` order (C4, edge-case table in data-model.md).
-- [ ] T010 [US2] Rewrite `tests/e2e/test_narrative_workflow.py::_ordered_members` to query the built graph via Q2 (`?seq dlp:proper-part ?u . ?u bw:sequenceOrdinal ?n` `ORDER BY ?n`) instead of reading the emitter's tuple order; fix its docstring (drop the "the graph carries no member ordinal" assumption) and keep the determinism test comparing `_graph_facts` (D6/D8).
+- [ ] T009 [P] [US2] Reinforce ordinal materialization in `tests/io/test_outline_sequences.py` (FR-003/FR-004): build a sequence with gap/missing/duplicate `order:` across members and assert the emitted `bw:sequenceOrdinal` objects are contiguous `1..k` `xsd:integer` with subject = each member unit URI, reproducing `_member_sort_key` order (C4, edge-case table in data-model.md).
+- [ ] T010 [US2] Rewrite `tests/e2e/test_narrative_workflow.py::_ordered_members` to query the built graph via Q2 (`?seq dlp:proper-part ?u . ?u bw:sequenceOrdinal ?n` `ORDER BY ?n`) instead of reading the emitter's tuple order; fix its docstring (drop the "the graph carries no member ordinal" assumption) and keep the determinism test comparing `_graph_facts` — the byte-identical-rebuild check that verifies FR-013 (graph stays a derived cache) and SC-006 over the new labels/ordinals (D6/D8).
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] In `src/bookwright/golem/modules/narrative.py`, override `NarrativeSequence.to_triples()` to `yield from super().to_triples()` then, for each member at 1-based position `i` in `self.units`, `yield (ref_uri(unit), BW_SEQUENCE_ORDINAL, Literal(i, datatype=XSD.integer))` — subject is the **unit** URI (import `BW_SEQUENCE_ORDINAL`, `XSD`, and the existing `ref_uri` helper). The `units` tuple is already `_member_sort_key`-sorted, so `i` is the resolved contiguous rank (D3/D4).
+- [ ] T011 [US2] In `src/bookwright/golem/modules/narrative.py`, override `NarrativeSequence.to_triples()` to `yield from super().to_triples()` then, for each member at 1-based position `i` in `self.units`, `yield (ref_uri(unit), BW_SEQUENCE_ORDINAL, Literal(i, datatype=XSD.integer))` — subject is the **unit** URI (import `BW_SEQUENCE_ORDINAL`, `XSD`, and the existing `ref_uri` helper). The `units` tuple is already `_member_sort_key`-sorted, so `i` is the resolved contiguous rank — the queryable ordinal of FR-003 reproducing the total order of FR-004 (D3/D4).
 - [ ] T012 [US2] In the same file, override `NarrativeSequence.derived_assertions()` to `yield from super().derived_assertions()` then, per member, `yield DerivedAssertion(target=unit.uri, attribute=self.uri, source_field="order")` so `build_provenance` reifies each as its own file-level E13 (FR-006/D6). Depends on T011 being in place (same file).
 
 **Checkpoint**: US2 complete — sequences are order-queryable; T006–T010 green. SC-002 satisfiable. US1 + US2 both work independently.
@@ -93,7 +93,7 @@ Single project (src-layout): `src/bookwright/`, `tests/` at repository root.
 
 ### Tests for User Story 3
 
-- [ ] T013 [US3] Add a function-label assertion to `tests/golem/test_triples.py`: assert a sample `NarrativeFunction` emits exactly one `(uri, rdfs:label, Literal(name))`, and (dedup invariant FR-002/C2) a function minted once from several fiches carries exactly one label triple — coexisting with its existing `crm:P2_has_type`/`rdf:type` typing pair when `type_uri` is set.
+- [ ] T013 [US3] Add a function-label assertion to `tests/golem/test_triples.py` (FR-002): assert a sample `NarrativeFunction` emits exactly one `(uri, rdfs:label, Literal(name))`, coexisting with its existing `crm:P2_has_type`/`rdf:type` typing pair when `type_uri` is set. The **dedup invariant** (FR-002/C2 — a function named by several fiches carries exactly one label) holds because `_mint_functions` already mints exactly one `NarrativeFunction` entity per slug (existing io-layer dedup coverage); one entity ⇒ one label triple, so this entity-level assertion is sufficient and no multi-fiche test is duplicated here.
 
 ### Implementation for User Story 3
 
@@ -110,7 +110,7 @@ Single project (src-layout): `src/bookwright/`, `tests/` at repository root.
 - [ ] T015 [P] Reconcile `tests/fixtures/tiny-quest/expected-narrative.md`: add the new label facts for units and functions read from a fresh `graph build` of the committed fixture; keep the `sequence.members` ordered list unchanged (now reproducible via Q2). Do NOT back-fit any number (FR-011/data-model.md triple-count deltas).
 - [ ] T016 [P] Update `docs/narrative-structure.md` (Spanish): document `rdfs:label` on units/functions and the queryable `bw:sequenceOrdinal` order, embedding the two SPARQL snippets (find-by-name, list-in-order) from quickstart.md.
 - [ ] T017 Remove the `DEBT-005` entry from `DEBT.md` (git retains history) and update the DEBT-006 cross-reference line that points at DEBT-005 so no dangling reference remains (FR-012).
-- [ ] T018 Run the four gates from repo root and fix any fallout: `uv run ruff check && uv run ruff format --check`, `uv run mypy --strict`, `uv run pytest` (full suite, ≥80% coverage). Confirm `tests/golem/test_namespaces.py` closure list is unmodified and green (SC-005) and `narrative_structure` + all validators stay green (FR-009/SC-004). Walk `specs/035-narrative-label-order/quickstart.md` to spot-check SC-001/SC-002/SC-006.
+- [ ] T018 Run the four gates from repo root and fix any fallout: `uv run ruff check && uv run ruff format --check`, `uv run mypy --strict`, `uv run pytest` (full suite, ≥80% coverage). Confirm `tests/golem/test_namespaces.py` closure list is unmodified and green (SC-005) and `narrative_structure` + all validators stay green (FR-009/SC-004). Verify FR-010 (authoring format unchanged) by confirming the existing `tests/io/test_outline_sequences.py` and outline-parsing tests — which exercise the `name`/`functions`/`roles`/`sequence`/`order` keys (`UNIT_KEYS`) — still pass untouched, and FR-013 (graph stays a derived, reconstructible cache) via the T010 byte-identical-rebuild determinism check. Walk `specs/035-narrative-label-order/quickstart.md` to spot-check SC-001/SC-002/SC-006.
 
 ---
 
