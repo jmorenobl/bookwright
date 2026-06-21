@@ -60,11 +60,11 @@ las desglosan; el draft redacta.
 
 > **Nota:** `manuscript/` es **solo para el autor**: el scaffold lo crea, pero el
 > motor no ingiere su contenido. `outline/` está **parcialmente ingerido** desde
-> v0.4: las fichas de `outline/units/` alimentan unidades, funciones y secuencias
-> narrativas al grafo (las unidades que comparten clave `sequence` se ensamblan en
-> una secuencia, ordenadas por `order`), mientras que
-> `arcs`/`structure`/`synopsis`/`scenes` siguen siendo prosa de autor que
-> estructura tu trabajo, no el grafo derivado.
+> v0.4: las fichas de `outline/units/` alimentan unidades y funciones narrativas
+> al grafo. Si das a varias unidades una misma clave `sequence` y las numeras con
+> `order`, el motor las ensambla en una secuencia recorrible en ese orden. El
+> resto del outline (`arcs`/`structure`/`synopsis`/`scenes`) sigue siendo prosa de
+> autor que estructura tu trabajo, no el grafo derivado.
 
 ### Planificación (pre-draft)
 
@@ -83,9 +83,9 @@ las desglosan; el draft redacta.
 
 ### Investigación y verificación
 
-Las dos skills de **investigación con procedencia** (M4 / v0.2). Pueblan y vigilan
-`bible/research/`; el sistema entero es opcional y se enciende con `[research]` en el
-manifiesto. Disparan tanto con prompts en español como en inglés.
+Las dos skills de **investigación con procedencia** (opcional, disponible desde
+v0.2). Pueblan y vigilan `bible/research/`; el sistema entero es opcional y se
+enciende con `[research]` en el manifiesto. Disparan tanto con prompts en español como en inglés.
 
 | Skill | Qué hace |
 |-------|----------|

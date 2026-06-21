@@ -3,6 +3,67 @@
 Registro de versiones de Bookwright. Sigue el espíritu de
 [Keep a Changelog](https://keepachangelog.com/es/) y el versionado semántico.
 
+## v0.4.0 — Estructura narrativa: Propp/Greimas (v0.4)
+
+Da vida de extremo a extremo a la **capa de estructura narrativa** (las clases
+`G7`/`G9`/`G10`, modeladas pero sin alimentar hasta ahora): `outline/units/*.md`
+ya se ingiere, el grafo ensambla secuencias narrativas a partir de él, los
+vocabularios de Propp y Greimas tipan el resultado, y un nuevo validador de
+continuidad consume la capa. Con esto se alcanza el **norte de paridad de
+ingesta**: todo concepto autorable tiene ya una vía de ingesta. Aditivo y sin
+coste para un proyecto que no lo use; la ontología GOLEM sigue **congelada**.
+Ver [Estructura narrativa](narrative-structure.md). Consolida las iteraciones
+028–032.
+
+### Añadido
+
+- **Ingesta de `outline/units/*.md` → unidades (`G9`) y funciones (`G10`)**
+  narrativas: los beats del outline se mapean al grafo como unidades narrativas
+  con su función, el tercer espejo ingerido del patrón de `bible/` tras
+  localizaciones (G13) y objetos (G16).
+- **Ensamblado de secuencias (`G7`)**: las claves opcionales `sequence`/`order`
+  del front-matter de las unidades componen secuencias narrativas ordenadas,
+  cerrando la ingesta `G7`/`G9`/`G10`.
+- **Vocabularios de Propp y Greimas como `crm:E55_Type`** (31 funciones de Propp
+  + 6 actantes de Greimas, etiquetas ES+EN): cuando la lista `[vocabularies]
+  active` del manifiesto activa un vocabulario, las funciones narrativas (G10) y
+  los roles de personaje (G11) se tipan vía `crm:P2_has_type`, sin regresión
+  cuando no hay vocabulario activo.
+- **Validador `narrative_structure`**: el primer *consumidor* de la capa — un
+  chequeo auto-descubierto, por defecto `warning`, sin LLM, con dos reglas: beat
+  huérfano (una unidad `G9` en ninguna secuencia `G7`) y rol sin resolver. Ver
+  [Validación](validation.md).
+- **Ejemplo `tiny-quest`, E2E y docs**: un *fixture* con oráculo co-localizado
+  (Propp activo, un beat huérfano y un rol sin resolver deliberados), el test E2E
+  `build → validate`, y la página [Estructura narrativa](narrative-structure.md).
+
+### Cambiado
+
+- **Aplazamientos G6/G3 re-apuntados a `demand-pulled`**: `RelationshipRole` (G6)
+  y `PsychologicalState` (G3) pasan del destino `v0.4` al centinela de primer
+  orden `demand-pulled` — se entregan cuando se cumpla una condición de
+  activación concreta, no en una versión preasignada.
+
+### Hardening posterior (v0.4.1 – v0.4.4)
+
+Cuatro parches de pura consolidación sobre la línea v0.4, tres de ellos surgidos
+de una sesión de *dogfooding* (un libro real de principio a fin):
+
+- **v0.4.1** — elimina el concepto muerto `NarrativeRole` (sin vía de
+  materialización) y blinda el contrato de paridad de ingesta para que un
+  concepto muerto no vuelva a contarse como alcanzable.
+- **v0.4.2** — despierta el validador `focalization`, que la propia plantilla de
+  Bookwright silenciaba: ahora tolera la declaración de voz con prefijo Markdown
+  (`- **Voz narrativa**: …`) que emite el scaffold.
+- **v0.4.3** — hace la capa narrativa **consultable**: emite `rdfs:label` en
+  unidades y funciones (búsqueda por nombre) y materializa `bw:sequenceOrdinal`
+  (recorrido en orden declarado bajo RDF no ordenado).
+- **v0.4.4** — hace **accionables** los errores de carga de fuentes de
+  investigación (enumera el vocabulario aceptado y prefija cada fallo con el
+  nombre o el índice `#n` de la fuente). Incluye además el **relicenciamiento a
+  EUPL-1.2** (antes Apache-2.0) y la atribución de la ontología GOLEM como
+  CC BY 4.0.
+
 ## v0.3.0 — Orquestación de contexto (M5)
 
 Añade el **hilo conductor** (diseño § 21): un plan de trabajo en tres capas que no se

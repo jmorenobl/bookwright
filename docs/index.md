@@ -1,46 +1,40 @@
 # Bookwright
 
-**Toolkit de autoría spec-driven para novelas, ensayos y memorias.**
+**Toolkit de autoría spec-driven para novelas, ensayos y memorias.** Destilas
+tus ideas en un puñado de documentos canónicos —constitución, biblia, outline,
+escenas— y dejas que un agente de IA escriba a partir de *ellos*, no de un chat
+libre. Tu libro vive en texto plano, versionado en git y completamente
+auditable.
 
-Bookwright lleva el patrón *Spec-Driven Development* a la escritura de formato
-largo: destilas tus ideas en un conjunto reducido de documentos canónicos
-—constitución, biblia, outline, escenas— y dejas que un agente de IA escriba a
-partir de *ellos*, no de un chat libre. Tu libro vive en texto plano, versionado
-en git, completamente auditable, y sobrevive al toolkit.
+Esta es la documentación del proyecto. Para el resumen completo (el porqué, el
+loop del escritor y los principios de diseño) lee el
+[README](https://github.com/jmorenobl/bookwright/blob/main/README.md).
 
-## Por qué Bookwright
+## Empezar aquí
 
-- **El texto plano es la fuente de verdad.** Manuscrito, biblia, constitución y
-  grafo narrativo son Markdown, TOML o Turtle (RDF): auditables por humanos,
-  *diffables* en git, portables.
-- **Agnóstico de agente.** La capa de comandos se materializa como
-  [Agent Skills](https://agentskills.io) portables. v0 entrega dos
-  integraciones: `claude` (escribe en `.claude/skills/`) y `generic`
-  (escribe en `.agents/skills/`).
-- **Grafo narrativo GOLEM.** Personajes, eventos, settings, relaciones y
-  procedencia de inferencias se serializan en Turtle con la ontología
-  [GOLEM](https://github.com/GOLEM-lab/golem-ontology), consultable con SPARQL.
-- **Validación de continuidad.** `bookwright validate` comprueba presencia de
-  personajes, focalización, continuidad de settings y coherencia temporal sobre
-  el grafo derivado de tu biblia y tu manuscrito.
-- **Investigación con procedencia (opcional, v0.2).** Para obra basada en
-  hechos, documenta fuentes, hallazgos y anclas, deja que restrinjan la ficción
-  y verifica la prosa contra ellas. Ver [Investigación](research.md).
+- **[Primeros pasos](getting-started.md)** — instala, crea tu proyecto y valida
+  tu primera escena.
+- **[Autoría](authoring.md)** — el flujo de las 12 *Agent Skills*: del brief a
+  la prosa, en orden y en bucle.
 
-## El loop del escritor
+## Referencia
 
-![El loop del escritor: idea → scaffolding → destila → build y valida → edita, y vuelta a empezar](https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/loop.svg)
+- **[Comandos](commands/init.md)** — la CLI verbo a verbo (`init`, `graph
+  build`, `validate`, `status`, `focus`, …).
+- **[Validación de continuidad](validation.md)** — qué comprueba `bookwright
+  validate` sobre el grafo derivado.
+- **[Investigación con procedencia](research.md)** (opcional) — fuentes,
+  hallazgos y anclas para obra basada en hechos.
+- **[Estructura narrativa](narrative-structure.md)** — ingesta de unidades,
+  funciones y secuencias, con tipado contra Propp y Greimas.
 
-1. **Idea libremente** en tu agente o tu libreta y vuelca un brief a Markdown.
-2. **Scaffolding**: `bookwright init mi-novela --integration claude`.
-3. **Destila, en orden**: usa los *Agent Skills* (`/bookwright-constitution`,
-   `/bookwright-bible`, `/bookwright-outline`, `/bookwright-scenes`,
-   `/bookwright-draft`, …) para convertir input no estructurado en artefactos
-   versionables.
-4. **Investiga (opcional)**: para obra basada en hechos, `/bookwright-research`
-   documenta hallazgos con procedencia y `/bookwright-verify` contrasta la prosa.
-5. **Construye y consulta el grafo**: `bookwright graph build` y
-   `bookwright graph query`.
-6. **Valida la continuidad**: `bookwright validate`.
+## Más
 
-¿Listo para empezar? Ve a [Primeros pasos](getting-started.md).
+- **[FAQ](faq.md)** — preguntas frecuentes.
+- **[CHANGELOG](changelog.md)** — historial de cambios (actualmente **v0.4.4**).
+
+---
+
+Bookwright se distribuye bajo
+[EUPL-1.2](https://github.com/jmorenobl/bookwright/blob/main/LICENSE). El
+contenido que crees con la herramienta sigue siendo enteramente tuyo.

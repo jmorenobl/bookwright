@@ -11,11 +11,11 @@ es *load-bearing* y se cita aquí como `bookwright-design.md § N.M`. Esta pági
 
 | Capa | Responsabilidad | Referencia de diseño |
 |------|-----------------|----------------------|
-| CLI (`typer`) | Superficie de comandos, envoltura JSON (Principio IX) | `bookwright-design.md § 11` |
-| Manifiesto (`pydantic` + `tomlkit`) | Fuente de verdad del proyecto; *round-trip* con comentarios | `bookwright-design.md § 4` |
-| GOLEM (`rdflib`) | Modelo de dominio narrativo serializado en Turtle | `bookwright-design.md § 5` |
-| Indexer | Construcción y consulta SPARQL del grafo | `bookwright-design.md § 6` |
-| Integraciones | Materialización de *Agent Skills* (`claude`, `generic`) | `bookwright-design.md § 9` |
+| CLI (`typer`) | Superficie de comandos, envoltura JSON (Principio IX) | `bookwright-design.md § 5` |
+| Manifiesto (`pydantic` + `tomlkit`) | Fuente de verdad del proyecto; *round-trip* con comentarios | `bookwright-design.md § 8` |
+| GOLEM (`rdflib`) | Modelo de dominio narrativo serializado en Turtle | `bookwright-design.md § 4` |
+| Indexer | Construcción y consulta SPARQL del grafo | `bookwright-design.md § 12` |
+| Integraciones | Materialización de *Agent Skills* (`claude`, `generic`) | `bookwright-design.md § 11` |
 | Validación | Chequeos de continuidad sobre el grafo | `bookwright-design.md § 13` |
 
 ## Principios no negociables
@@ -37,4 +37,4 @@ Recogidos en la constitución del proyecto
 ![Flujo de datos: bible/*.md y manuscript/*.md (texto plano) → map_bible → entidades GOLEM → indexer → graph.ttl (caché RDF derivada) → bookwright validate](https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/dataflow.svg)
 
 Para el detalle de la ontología GOLEM y la procedencia CIDOC-CRM de cada
-aserción derivada, consulta `bookwright-design.md § 5` y `§ 6`.
+aserción derivada, consulta `bookwright-design.md § 4` y `§ 12`.

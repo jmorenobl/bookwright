@@ -65,8 +65,8 @@ La partida: la heroína deja el valle acompañada de su ayudante.
 
 ## Consultar la capa por nombre y por orden
 
-Desde la iteración 035 la capa narrativa es **consultable por contenido y por
-orden** desde el grafo, sin tocar la ontología congelada:
+La capa narrativa es **consultable por contenido y por orden** desde el grafo,
+sin tocar la ontología congelada:
 
 - **`rdfs:label` en unidades y funciones.** Cada `G9_Narrative_Unit` y cada
   `G10_Narrative_Function` emite **una** `rdfs:label` con su `name` autorado tal cual
@@ -128,22 +128,22 @@ active = ["propp", "greimas"]   # ambos; o ["propp"]; o [] para no tipar nada
   destinador, destinatario, ayudante, oponente) recibe su `crm:P2_has_type`.
 
 La activación es lo **único** que añade los tipados: con `active = []` ambos pasos no
-tipan nada y el grafo es idéntico al de antes de la función (garantía de no-regresión
-de la iteración 030). El enlace de tipado se reifica por el mismo camino de
+tipan nada y el grafo es idéntico al de antes de la función (garantía de no-regresión:
+con `active = []` el grafo es byte a byte el previo). El enlace de tipado se reifica por el mismo camino de
 procedencia `E13` que cualquier otra aserción; no hay clase ni propiedad nueva en la
 ontología.
 
 ## El validador `narrative_structure`
 
-`narrative_structure` (iteración 031) es el primer **consumidor** de esta capa: un
+`narrative_structure` es el primer **consumidor** de esta capa: un
 validador auto-descubierto, sin LLM y determinista, con severidad `warning` por
 defecto (nunca bloquea el gate de CI). Tiene dos reglas:
 
-- **Beat huérfano (regla a).** Una `G9_Narrative_Unit` que no es miembro de ninguna
+- **Beat huérfano.** Una `G9_Narrative_Unit` que no es miembro de ninguna
   `G7_Narrative_Sequence`. Se responde con SPARQL `NOT EXISTS` sobre `dlp:proper-part`
   en el grafo derivado. Útil para detectar un beat que olvidaste enganchar a su línea
   (le falta `sequence`).
-- **Rol sin resolver (regla c).** Un `roles:` de una tarjeta de unidad que nombra un
+- **Rol sin resolver.** Un `roles:` de una tarjeta de unidad que nombra un
   slug que ningún personaje juega. Se re-emerge de los registros de referencia sin
   resolver que la ingesta de `outline/units/` ya produce, filtrados a las tarjetas de
   unidad. Útil para detectar un rol mal escrito o un personaje que falta en la biblia.

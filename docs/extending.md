@@ -23,7 +23,8 @@ activa de un proyecto con
 ## Crear un validador personalizado
 
 1. Módulo bajo `.bookwright/validators/` con una clase que exponga `name`,
-   `severity_default` y `validate(project, indexer) -> list[Violation]`.
+   `severity_default` y
+   `validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]`.
 2. Determinista y sin escritura en disco.
 3. Declara su `name` en `[validators] custom` del `manifest.toml`.
 

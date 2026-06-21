@@ -68,7 +68,7 @@ Cada skill lee tu brief y el molde estampado por `init`, rellena lo que el
 material sostiene y marca `[PENDING: ¿…?]` lo que falta —sin inventar canon. Para
 ver qué quedó abierto, invoca `/bookwright-clarify`; para comprobar si un
 artefacto está completo, `/bookwright-checklist`. El recorrido completo, con las
-10 skills, está en [El flujo de autoría](authoring.md).
+12 skills, está en [El flujo de autoría](authoring.md).
 
 ### 3. Construye el grafo
 
