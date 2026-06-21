@@ -4,6 +4,71 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.4.3] — 2026-06-21
+
+Second patch of the **v0.4.x post-dogfooding hardening track** (iteration 035) —
+pure hardening that makes the v0.4 narrative-structure layer queryable by content
+and by order. The dogfooding run measured two structural-recall gaps: a
+`G9_Narrative_Unit` carried no `rdfs:label`, so its human name lived only in the
+URI slug and no SPARQL query could find a beat by name; and a sequence's declared
+`order:` was consumed at assembly and never materialized, so under unordered RDF
+no query could walk a `G7_Narrative_Sequence` in author order (DEBT-005). This
+release emits a single `rdfs:label` on every unit and function (reusing the
+`CharacterRole`/`CharacterFeature` one-triple shape, riding the identity
+assertion — no new provenance node), and materializes each member's resolved
+position as a per-unit `bw:sequenceOrdinal` triple (`xsd:integer`, 1-based
+contiguous rank over the already-sorted members, so it is total and gap-free
+under missing/duplicate/absent `order:`). No new CLI surface and no new runtime
+dependency. The GOLEM ontology stays **frozen** — `bw:sequenceOrdinal` is
+declared in `resources/vocabularies/sources.ttl` (the `bw:reference` home),
+outside `golem.ttl`/`CLASS_IRI` and the `test_namespaces.py` closure (Principle
+X); the graph remains a derived cache reconstructible from the plain-text source
+(Principle I).
+
+### Added
+
+- **`G9`/`G10` `rdfs:label` emission**
+  (`src/bookwright/golem/modules/narrative.py`): `NarrativeUnit.to_triples()` and
+  `NarrativeFunction.to_triples()` each yield one `(uri, rdfs:label,
+  Literal(name))` carrying the authored name verbatim (accents/casing preserved),
+  so beats and functions are name-queryable. The function is minted once per slug,
+  so exactly one label triple exists even when several fiches name it.
+- **`bw:sequenceOrdinal` queryable order**
+  (`src/bookwright/golem/modules/narrative.py`,
+  `src/bookwright/golem/namespaces.py`): `NarrativeSequence.to_triples()` emits a
+  per-member `(unit, bw:sequenceOrdinal, Literal(rank, xsd:integer))` triple, and
+  `derived_assertions()` reifies each ordinal as its own file-level
+  `crm:E13_Attribute_Assignment` (target = unit, attribute = sequence, keyed to
+  `order`). A single SPARQL `ORDER BY ?n` now recovers the declared order from the
+  graph alone.
+- **`bw:sequenceOrdinal` vocabulary declaration**
+  (`src/bookwright/resources/vocabularies/sources.ttl`): declared as an
+  `rdf:Property` with `rdfs:label`/`rdfs:comment`, outside the frozen GOLEM
+  closure.
+- **Two demonstrative SPARQL queries as tests**
+  (`tests/golem/test_narrative_label_order.py`): Q1 resolves a unit by its
+  `rdfs:label`; Q2 lists a sequence's members in declared order via the ordinal,
+  proving the query isolates one sequence line. The E2E
+  `tests/e2e/test_narrative_workflow.py` `_ordered_members` is rewritten to read
+  member order from the graph by `ORDER BY` — overturning its prior "the graph
+  carries no member ordinal" assumption — and a new test asserts every unit/
+  function label against the `tiny-quest` oracle.
+
+### Changed
+
+- **Term-closure test exempts the one new `bw:` term**
+  (`tests/golem/test_triples.py`): the frozen-ontology closure check now exempts
+  `bw:sequenceOrdinal` specifically — *not* the whole `bw:` namespace — so any
+  other stray `bw:` emission still fails the gate. The `test_namespaces.py`
+  closure list is **unmodified** and `golem.ttl`/`CLASS_IRI` are untouched.
+
+### Removed
+
+- **DEBT-005 entry** (`DEBT.md`): the narrative-recall gap is closed and removed
+  (git keeps the history); the dogfooding-intro count drops to one entry and
+  DEBT-006's cross-reference is repointed to "the narrative-recall gap of
+  iteration 035".
+
 ## [0.4.2] — 2026-06-21
 
 First patch of the **v0.4.x post-dogfooding hardening track** (iteration 034) —
