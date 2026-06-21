@@ -8,18 +8,21 @@
 > `bookwright-design.md` en el root del repo).
 
 > **Hito en curso: track de endurecimiento post-dogfooding `v0.4.x`** (iteraciones
-> **034–037**). Salió de un **ejercicio de dogfooding** sobre un libro real
+> **034–038**). Salió de un **ejercicio de dogfooding** sobre un libro real
 > ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples, 2026-06-21)
 > que destapó tres hallazgos concretos —un bug de validador, un gap de recall medido
 > y fricción de mensajes de error— hoy registrados como **DEBT-004/005/006** en
 > `DEBT.md`; un **segundo dogfooding** ("El Faro de Halia", 2026-06-21) destapó un
 > cuarto, **DEBT-007** (el placeholder `[PENDING]` de la constitución se parsea como
-> voz declarada). Cada iteración cierra una entrada de deuda y corta su **patch**
-> propio (`v0.4.2`, `v0.4.3`, `v0.4.4`, `v0.4.5`). No es trabajo especulativo: dos
-> bugs, un gap *medido* y UX — todos pasan la disciplina de scope. Las iteraciones
-> 1–36 (M0–M5, el tramo `v0.3.1`…`v0.3.4`, `v0.4.0`, el patch `v0.4.1` y los patches
-> `v0.4.2`…`v0.4.4`) están **mergeadas en `main`**; su detalle vive en el historial
-> git, en `specs/001-…` … `specs/036-…` y en el `CHANGELOG`. El horizonte
+> voz declarada); un **tercer dogfooding** sobre la `v0.4.5` ya liberada (2026-06-21)
+> destapó un quinto, **DEBT-008** (el heurístico de proper-noun de `character_presence`
+> marca la primera palabra de cada encabezado markdown `# Capítulo …`). Cada iteración
+> cierra una entrada de deuda y corta su **patch** propio (`v0.4.2`, `v0.4.3`,
+> `v0.4.4`, `v0.4.5`, `v0.4.6`). No es trabajo especulativo: tres bugs, un gap
+> *medido* y UX — todos pasan la disciplina de scope. Las iteraciones
+> 1–37 (M0–M5, el tramo `v0.3.1`…`v0.3.4`, `v0.4.0`, el patch `v0.4.1` y los patches
+> `v0.4.2`…`v0.4.5`) están **mergeadas en `main`**; su detalle vive en el historial
+> git, en `specs/001-…` … `specs/037-…` y en el `CHANGELOG`. El horizonte
 > demand-pulled (búsqueda vectorial, export, G6/G3) sigue en `bookwright-roadmap.md`
 > § 4, **no** aquí.
 
@@ -72,9 +75,9 @@ como referencia de lo que el workflow corre por dentro.
 
 ### 0.3 Numeración
 
-Los `specs/` van por `001`…`033`. Este track arranca en **034** y continúa la
-secuencia (034, 035, 036). Cada iteración es un branch `NNN-<short-name>` con su
-propio `specs/`.
+Los `specs/` van por `001`…`037`. Este track arranca en **034** y continúa la
+secuencia (034, 035, 036, 037, 038). Cada iteración es un branch `NNN-<short-name>`
+con su propio `specs/`.
 
 ### 0.4 Versionado de este track — **un patch por iteración**
 
@@ -379,45 +382,102 @@ specify workflow run bookwright-quality \
 
 ---
 
-## 6. Notas operativas
+## 6. Iteración 038 — `character_presence` no marca los encabezados markdown (`v0.4.6`, DEBT-008)
 
-### 6.1 Manejo de spec rechazadas
+**Problema.** Tercer ejercicio de dogfooding, esta vez sobre la `v0.4.5` ya
+liberada (proyecto recién creado por `bookwright init` + un manuscrito con
+encabezados de capítulo, 2026-06-21): el validador `character_presence` marca
+`proper noun 'Capítulo' appears in the manuscript but has no bible entry` en cada
+`# Capítulo N`. La causa: el heurístico de proper-noun excluye una mayúscula a
+inicio de línea o tras puntuación de fin de frase (es gramatical, no un nombre
+propio), pero **no salta el prefijo de encabezado markdown** (`# `, `## `, …)
+(`src/bookwright/validation/validators/character_presence.py`, regla `_CANDIDATE`
++ exclusión por `_SENTENCE_END`/inicio de línea). La primera palabra de todo
+`# Capítulo 1` queda precedida por `# ` y se trata como mitad de frase, así que se
+marca. Es `warning` (no rompe CI) pero es ruido recurrente en **cualquier**
+manuscrito con encabezados — exactamente la fricción de primer arranque que el
+dogfooding existe para cazar. Clase distinta a la de focalización (DEBT-004/007):
+es su propia iteración. Registrado como **DEBT-008** en `DEBT.md`.
+
+**Comando del workflow:**
+
+```bash
+SPEC=$(cat <<'EOF'
+Necesidad: el validador `character_presence` marca la primera palabra de cada encabezado markdown del manuscrito como un nombre propio sin entrada en el bible. En un proyecto recién creado por `bookwright init` con un manuscrito que use `# Capítulo 1`, `## Escena`, etc., aparece `proper noun 'Capítulo' appears in the manuscript but has no bible entry (heuristic — may be a place or organization)` en cada cabecera. La causa: el heurístico de proper-noun (`src/bookwright/validation/validators/character_presence.py`) excluye una mayúscula a inicio de línea o tras puntuación de fin de frase (`_SENTENCE_END`) por ser gramatical, pero no contempla la sintaxis markdown: la primera palabra de `# Capítulo 1` queda precedida por el prefijo `# ` y se trata como mitad de frase, así que se marca. Es un falso positivo recurrente en cualquier manuscrito con encabezados (todos los tienen). Queremos que la primera palabra de un encabezado markdown reciba el mismo trato de "inicio de oración" que ya existe, sin cambiar ninguna otra regla del validador.
+
+Comportamiento esperado:
+
+- La primera palabra de una línea de encabezado markdown (`#`…`######` seguido de espacio) NO se marca como proper noun (recibe el trato de inicio de oración que ya tiene una palabra a inicio de línea). El resto de la línea de encabezado se sigue analizando con normalidad: un nombre propio real DENTRO de un título (p. ej. `# La caída de Elena`) sí se sigue evaluando contra el roster.
+- Los nombres propios reales en prosa normal siguen marcándose exactamente como hoy: sin regresión sobre las fixtures existentes ni sobre el stop-set pinneado.
+- Un test parte de un manuscrito con encabezados de capítulo (`# Capítulo 1`, etc.) y exige cero hallazgos `character_presence` por la palabra de cabecera; otro test confirma que un nombre fuera-de-roster dentro del cuerpo de un encabezado SÍ se marca (la normalización quita el marcador `#`, no silencia el título entero).
+- Se borra la entrada DEBT-008 de DEBT.md (git conserva el historial).
+
+Validaciones / no-regresión:
+
+- `uv run pytest` verde; los cuatro gates (ruff check, ruff format --check, mypy --strict, pytest ≥80%) pasan.
+
+Fuera de scope (NO reabrir en clarify):
+
+- Sustituir el heurístico pinneado por NER o por un parser markdown completo: la corrección es quitar el marcador de encabezado antes de aplicar la regla de inicio-de-oración existente, no rehacer el detector.
+- Cambiar otras reglas de character_presence (la dirección inversa bible→manuscrito, el stop-set, la severidad warning) ni las de otros validadores.
+- Tocar la ontología congelada (Principio X): es un validador sobre prosa, no toca el grafo.
+
+Referencia: src/bookwright/validation/validators/character_presence.py (`_CANDIDATE`, `_SENTENCE_END`, la exclusión de inicio de línea). DEBT-008 en DEBT.md. Principio VIII (test discipline).
+EOF
+)
+PLAN_HINT=$(cat <<'EOF'
+En `src/bookwright/validation/validators/character_presence.py`, normaliza cada línea antes de aplicar el heurístico: quita un prefijo de encabezado markdown de apertura (`^\s*#{1,6}\s+`) de modo que la palabra que le sigue quede en posición de inicio de línea y reciba la exclusión de inicio-de-oración que el validador ya implementa (no inventes una excepción nueva: reusa la lógica de `_SENTENCE_END`/inicio de línea). El resto de la línea se analiza igual, así que un nombre real dentro del título se sigue evaluando. No toques la dirección inversa, el stop-set ni la severidad. Añade un test con un manuscrito con encabezados de capítulo (`# Capítulo 1`) que verifique cero findings por la palabra de cabecera, y otro que confirme que un nombre fuera-de-roster dentro del cuerpo de un encabezado sí se marca. Sin clases nuevas (Principio X): validador sobre prosa, no toca el grafo. Borra la entrada DEBT-008 de DEBT.md. Verifica `uv run pytest` y los cuatro gates.
+EOF
+)
+specify workflow run bookwright-quality \
+  -i spec="$SPEC" -i plan_hint="$PLAN_HINT" -i integration=claude
+```
+
+**Cierre:** ciclo § 0.5 → merge + `record iteration 038` + `bookwright-release` →
+`v0.4.6`. DEBT-008 ya borrada por el workflow; verifícalo. Con DEBT-008 cerrada,
+`DEBT.md` vuelve a quedar vacío.
+
+---
+
+## 7. Notas operativas
+
+### 7.1 Manejo de spec rechazadas
 
 Si tras `/speckit-analyze` aparecen issues de consistencia entre spec/plan/tasks,
 vuelve a `/speckit-clarify` o edita `spec.md` directamente, regenera plan y tasks, y
 vuelve a analizar. No fuerces `/speckit-implement` con análisis con errores. (En el
 workflow headless, el paso `analyze-resolve` lo hace solo contra la constitución.)
 
-### 6.2 Iteraciones que se complican
+### 7.2 Iteraciones que se complican
 
 Si una iteración crece más de lo previsto durante `/speckit-tasks` (más de ~10
 tareas), divídela en dos specs. En este track, la candidata clara a split es la **035**
 (labels + orden): si el mecanismo de orden bajo RDF se complica, sepáralo de los
 labels.
 
-### 6.3 Cambios en el documento de diseño
+### 7.3 Cambios en el documento de diseño
 
 El diseño es la fuente de verdad técnica. Si durante la implementación algo del diseño
 no encaja con la realidad técnica, actualiza `bookwright-design.md` **antes** de
 divergir el código, y registra el cambio en `CHANGELOG` bajo "Design decisions revised
 during implementation". Las decisiones de § 16 son inmutables.
 
-### 6.4 Cuándo pedir ayuda al humano
+### 7.4 Cuándo pedir ayuda al humano
 
 Spec Kit genera bien spec/plan/tasks pero puede divagar en decisiones de diseño no
 triviales — en este track, **el mecanismo de orden consultable de la 035** es la
 decisión sensible (cómo materializar orden bajo RDF sin clase nueva). Cuando dudes,
 ejecuta `/speckit-clarify` o intervén manualmente; redirige al diseño / roadmap.
 
-### 6.5 Tras este track
+### 7.5 Tras este track
 
-Cuando 034–036 estén mergeadas y liberadas (`v0.4.2`…`v0.4.4`) y `DEBT.md` vacío, no
+Cuando 034–038 estén mergeadas y liberadas (`v0.4.2`…`v0.4.6`) y `DEBT.md` vacío, no
 hay siguiente hito con número de versión asignado: vuelve el **horizonte
 demand-pulled** (`bookwright-roadmap.md` § 4 y `DEBT.md`) — búsqueda vectorial (ahora
 desbloqueada por los labels de 035, pero con trigger real = corpus multi-libro),
 export (cerca: el flujo end-to-end ya converge), y G6/G3. Cuando un disparador active
 el siguiente hito, asígnale versión, **vacía y redacta de nuevo este plan** (arrancando
-en `specs/037-…`) y mantén `bookwright-roadmap.md` como la intención durable. Quedan
+en `specs/039-…`) y mantén `bookwright-roadmap.md` como la intención durable. Quedan
 descartados: presets, GrafeoIndexer/Grafeo, multi-integración y extension system; ver
 `bookwright-design.md` § 15.5.
 
