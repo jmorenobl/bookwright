@@ -103,11 +103,16 @@ head-hopping finding.
   an unanswered `[PENDING: …]` placeholder token, the validator MUST treat the
   declaration as absent — i.e. produce zero `focalization` findings, exactly as
   when no `Voz narrativa` / `Narrative voice` line exists at all.
-- **FR-002**: The placeholder recognition MUST match the scaffold token shape: a
-  body that is a single `[PENDING: …]` token (square-bracketed, keyword `PENDING`
-  case-insensitive, optional `: …` continuation), allowing surrounding
-  whitespace, and MUST NOT match a body that merely *contains* a `[PENDING]`
-  fragment alongside real declared text.
+- **FR-002**: The placeholder recognition MUST match the canonical marker defined
+  in `src/bookwright/resources/commands/references/pending-protocol.md` (the single
+  source of truth for the token): a body that is a single `[PENDING: …]` token
+  (square-bracketed, keyword `PENDING`, optional `: …` continuation), allowing
+  surrounding whitespace, and MUST NOT match a body that merely *contains* a
+  `[PENDING]` fragment alongside real declared text. The protocol mandates the
+  keyword in uppercase English; recognition is nonetheless case-insensitive on
+  `PENDING`, deliberately matching iteration 034's tolerance philosophy — leniency
+  here only ever suppresses an *un*answered body, never a real one, so it is the
+  conservative direction.
 - **FR-003**: A body containing a real declaration (any non-placeholder text, in
   Spanish or English) MUST continue to parse exactly as today — same declared
   person, same `limited` flag, same focal character — with no regression on the
@@ -164,9 +169,11 @@ head-hopping finding.
 ## Assumptions
 
 - The `[PENDING]` token is the single, canonical "unanswered prompt" marker across
-  every scaffolded plain-text file in the project (the constitution template's own
-  guidance instructs authors to "Responde cada prompt `[PENDING: …]`"), so keying
-  suppression on it is faithful to the established convention — not a new concept.
+  every scaffolded plain-text file in the project — its shape and rules are fixed
+  once in `references/pending-protocol.md`, and the constitution template's own
+  guidance instructs authors to "Responde cada prompt `[PENDING: …]`". Keying
+  suppression on it is therefore faithful to an established repo-wide convention,
+  not a new concept the validator invents.
 - "Solely a placeholder" is judged on the parsed declaration *body* (the text after
   the `:` colon), after iteration 034's markdown normalization — not on the raw
   line.
