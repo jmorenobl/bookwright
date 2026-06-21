@@ -14,6 +14,8 @@ import textwrap
 from pathlib import Path
 
 import pytest
+from rdflib.namespace import RDF, RDFS
+from rdflib.term import Literal
 
 from bookwright.golem import NarrativeFunction, NarrativeUnit
 from bookwright.golem.namespaces import HAS_TYPE, REFERS_TO
@@ -139,9 +141,12 @@ def test_prose_body_not_ingested(tmp_path: Path) -> None:
     result = _run(tmp_path)
 
     (unit,) = _units(result)
-    # Only the rdf:type triple — no edge from prose, no extra entity.
-    assert list(unit.to_triples()) == [next(iter(unit.to_triples()))]
-    assert len(list(unit.to_triples())) == 1
+    # Only the identity (rdf:type) and the rdfs:label triple — both from the `name`
+    # front-matter (iteration 035). The prose body contributes no triple, no entity.
+    assert list(unit.to_triples()) == [
+        (unit.uri, RDF.type, unit.golem_class),
+        (unit.uri, RDFS.label, Literal("Opening")),
+    ]
 
 
 # --- (e) no front-matter / malformed YAML → skipped, build continues (R1) ----

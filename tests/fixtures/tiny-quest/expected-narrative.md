@@ -22,10 +22,24 @@ units:                         # G9 NarrativeUnit — one per unit card
     - return-beat
     - struggle-beat
     - villainy-beat
+  labels:                      # slug -> authored `name` on rdfs:label (iteration 035)
+    departure-beat: "Departure Beat"
+    interdiction-beat: "Interdiction Beat"
+    omen-beat: "Omen Beat"
+    return-beat: "Return Beat"
+    struggle-beat: "Struggle Beat"
+    villainy-beat: "Villainy Beat"
 
 functions:                     # G10 NarrativeFunction — one per distinct function slug
   count: 6
   typed:                       # function slug -> matched Propp term (with Propp active)
+    departure: departure
+    interdiction: interdiction
+    return: return
+    struggle: struggle
+    victory: victory
+    villainy: villainy
+  labels:                      # slug -> authored `name` on rdfs:label (iteration 035)
     departure: departure
     interdiction: interdiction
     return: return

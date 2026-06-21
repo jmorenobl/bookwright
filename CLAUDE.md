@@ -402,21 +402,32 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/034-focalization-markdown-voice/plan.md` (iteration 034 — make the
-`focalization` validator tolerate markdown-prefixed voice declarations and close
-DEBT-004: the parser anchors `voz narrativa|narrative voice` at line start, so it
-silently ignores the `- **Voz narrativa**: …` shape its own scaffold emits and is
-dormant on all five voice-bearing fixtures. Fix by *normalizing* the candidate
-line before matching — strip one line-leading bullet/blockquote marker
-(`-`/`*`/`+`/`>`) + whitespace, then strip the emphasis markers (`*`/`**`/`_`)
-*independently* on each side of the label (no balance guard, per spec
-clarification) — leaving the body-extraction (person/limited/focal) untouched so
-the scaffold shape parses byte-identically to the bare form. Add a binding test
-that reads the live `constitution.md.j2` voice line and asserts the parser accepts
-it (anti-drift), plus marker-by-marker unit coverage. Reconcile the whole fixture
-suite: only `tiny-historical`'s `expected-status.md` `validation.counts` shifts —
-read the awake `warning` total from the validator, don't back-fit; `tiny-novel`
-must still `validate` clean; `tiny-quest`/`tiny-essay`/`tiny-memoir` oracles
-unaffected. Delete the DEBT-004 entry. No GOLEM/ontology/graph change — prose
-validator only (`triples=()`, Principle X); ships as `v0.4.2`.
+`specs/035-narrative-label-order/plan.md` (iteration 035 — make the v0.4 narrative
+layer queryable by content and by order, closing DEBT-005, all in
+`src/bookwright/golem/modules/narrative.py`. (1) Labels: `NarrativeUnit` and
+`NarrativeFunction` each emit a single `(uri, rdfs:label, Literal(name))` triple
+reusing the `CharacterRole`/`CharacterFeature` one-triple label shape; the label
+rides the entity's identity assertion (no new E13). (2) Order under unordered RDF,
+no new ontology class (Principle X): each member unit's resolved position in its
+`G7_Narrative_Sequence` is materialized as a per-unit predicate triple
+`(unit, bw:sequenceOrdinal, Literal(rank, xsd:integer))` — chosen over a reified
+membership node because a unit declares at most one `sequence:` (YAGNI). The rank
+is the member's 1-based contiguous index in the already-sorted `units` tuple
+(`_member_sort_key`), so it is total/gap-free under missing/duplicate/absent
+`order:`. Emitted from `NarrativeSequence.to_triples()` (the only place that knows
+the resolved order; subject = the unit URI, one hop from the sequence), reified
+through its own file-level `crm:E13` (target=unit, attribute=sequence) on the
+assembly path. `bw:sequenceOrdinal` is declared in
+`resources/vocabularies/sources.ttl` (the `bw:reference` home) with
+`rdfs:label`/`rdfs:comment`, outside `golem.ttl`/`CLASS_IRI`/the
+`test_namespaces.py` closure (SC-005). One justified test refinement:
+`test_triples.py::test_term_closure_over_frozen_ontology` gains an explicit `bw:`
+namespace exemption (the sample `NarrativeSequence` now emits a `bw:` term —
+the same tolerance research entities already get by exclusion). Reconcile the
+`tiny-quest` oracle (add label facts; members list unchanged) and rewrite the E2E
+`_ordered_members` to query the graph by ordinal (`ORDER BY ?n`), overturning its
+"the graph carries no member ordinal" assumption. Ship the two demonstrative SPARQL
+queries (find-by-label, list-in-order) as tests. Delete DEBT-005. `uv run pytest`
+and the four gates green; ships as `v0.4.3`. If `/speckit-tasks` exceeds ~10 tasks,
+split labels / order.
 <!-- SPECKIT END -->

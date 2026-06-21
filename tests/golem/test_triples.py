@@ -5,7 +5,7 @@ FR-008/015, SC-003.
 
 from __future__ import annotations
 
-from rdflib.namespace import RDF, XSD
+from rdflib.namespace import RDF, RDFS, XSD
 from rdflib.term import Literal, URIRef
 
 from bookwright.golem import (
@@ -165,6 +165,25 @@ def test_interval_terms_are_in_frozen_closure() -> None:
             assert obj in frozen, f"class {obj} not frozen"
 
 
+def test_narrative_unit_emits_single_label(uri_base: str) -> None:
+    """FR-001: a ``NarrativeUnit`` emits exactly one ``rdfs:label`` carrying its
+    authored name byte-for-byte (accents/casing/spacing preserved)."""
+    unit = NarrativeUnit(uri_base=B, name="La traición del senescal")
+    labels = [o for _, p, o in unit.to_triples() if p == RDFS.label]
+    assert labels == [Literal("La traición del senescal")]
+
+
+def test_narrative_function_emits_single_label_alongside_typing(uri_base: str) -> None:
+    """FR-002: a function emits exactly one ``rdfs:label`` with its name, coexisting
+    with the ``crm:P2_has_type``/``rdf:type`` typing pair when ``type_uri`` is set."""
+    term = URIRef("https://bookwright.dev/vocab/propp#function/interdiction")
+    func = NarrativeFunction(uri_base=B, name="Interdicción", type_uri=term)
+    triples = list(func.to_triples())
+    assert [o for _, p, o in triples if p == RDFS.label] == [Literal("Interdicción")]
+    assert (func.uri, ns.HAS_TYPE, term) in triples
+    assert (term, RDF.type, ns.CLASS_IRI["Type"]) in triples
+
+
 def test_typed_narrative_function_emits_p2_has_type_and_e55(uri_base: str) -> None:
     """C6 (golem layer): a ``NarrativeFunction`` with ``type_uri`` set emits both
     the ``crm:P2_has_type`` link and the term's ``rdf:type crm:E55_Type``."""
@@ -206,7 +225,15 @@ def test_term_closure_over_frozen_ontology() -> None:
     frozen = ns.frozen_terms()
     for entity in _sample_entities():
         for subject, predicate, obj in entity.to_triples():
-            assert predicate == RDF.type or predicate in frozen, f"predicate {predicate} not frozen"
+            # ``bw:sequenceOrdinal`` is Bookwright's own vocabulary, declared in
+            # ``sources.ttl`` and intentionally outside the frozen GOLEM closure — the
+            # same status the ``bw:reference`` family has (which is why research entities
+            # are excluded from ``_sample_entities``). ``NarrativeSequence`` now emits it,
+            # so the closure check exempts that one term — *not* the whole ``bw:``
+            # namespace, so any other stray ``bw:`` emission still fails this gate.
+            assert (
+                predicate == RDF.type or predicate in frozen or predicate == ns.BW_SEQUENCE_ORDINAL
+            ), f"predicate {predicate} not frozen"
             if predicate == RDF.type:
                 assert obj in frozen, f"class {obj} not frozen"
             # Literals (verbatim source paths) are exempt from class closure.

@@ -35,6 +35,7 @@ __all__ = [
     "BW_REFERENCE",
     "BW_RELIABILITY",
     "BW_RELIABILITY_JUSTIFICATION",
+    "BW_SEQUENCE_ORDINAL",
     "BW_SUPPORTED_BY",
     "BW_TRANSLATION",
     "CLASS_IRI",
@@ -238,6 +239,8 @@ BW_PROMOTES = BW["promotes"]
 """Anchor → the Finding it promotes into a binding constraint."""
 BW_CONSTRAINS = BW["constrains"]
 """Anchor → the narrative entity (or the timeline) the constraint bears on."""
+BW_SEQUENCE_ORDINAL = BW["sequenceOrdinal"]
+"""A narrative unit's 1-based position within its sequence; ``xsd:integer`` (iteration 035)."""
 
 SOURCE_TYPE_IRI: dict[str, URIRef] = {
     "primaria": BW["source-type/primaria"],

@@ -43,35 +43,11 @@
 
 ## Deuda abierta
 
-> Las dos entradas siguientes salieron del **ejercicio de dogfooding** sobre un
-> libro real ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples,
-> 2026-06-21). Cada una tiene su iteración asignada en
-> `bookwright-implementation-plan.md` y se **borra** al cerrar esa iteración.
-
-### DEBT-005 — la capa narrativa (G9) no es consultable por contenido ni por orden
-- **Estado:** abierta
-- **Detectada en:** dogfooding post-`v0.4.1` (2026-06-21)
-- **Ubicación:** `src/bookwright/golem/modules/narrative.py` (`NarrativeUnit` sin
-  `rdfs:label`; `NarrativeSequence`: el orden vive solo como orden de tupla del
-  emisor, FR-015, no como triple — líneas 67-68).
-- **Clase de deuda:** gap de recall estructural / información de autoría no
-  materializada en el grafo.
-- **Descripción:** (a) las `G9_Narrative_Unit` no emiten `rdfs:label`; su nombre
-  humano vive **solo** en el slug de la URI, así que ninguna consulta SPARQL por
-  nombre/contenido de beat es posible. (b) El `order:` declarado se consume al
-  ensamblar la secuencia y **no se materializa**: RDF es no-ordenado, así que SPARQL
-  no puede recuperar el orden de los beats. Medido en dogfooding: las sondas "lista
-  las funciones en orden de la secuencia X" y "beats sobre <tema>" fallan
-  estructuralmente. Es el **prerequisito** antes de evaluar búsqueda vectorial
-  (horizonte demand-pulled): primero hay que poder hacer match por label/orden.
-- **Por qué se difiere:** añade triples a la capa narrativa y exige decidir el
-  mecanismo de orden bajo RDF respetando Principio X — es su propia iteración, no
-  material del fix de `focalization`.
-- **Resolución sugerida / versión objetivo:** emitir `rdfs:label` en `NarrativeUnit`
-  (y `NarrativeFunction` si aplica) con su `name`, siguiendo el patrón de
-  `CharacterRole`/`E55_Type`; y materializar un ordinal **consultable** de la
-  membresía de secuencia, **sin clase de ontología nueva** (Principio X). Verificar
-  con dos consultas SPARQL (por label y units en orden). **Iteración 035 → `v0.4.3`.**
+> La entrada siguiente salió del **ejercicio de dogfooding** sobre un libro real
+> ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples, 2026-06-21).
+> Tiene su iteración asignada en `bookwright-implementation-plan.md` y se **borra**
+> al cerrar esa iteración. (DEBT-005 — el gap de recall narrativo G9 — se cerró en
+> la iteración 035 / `v0.4.3` y se borró de aquí; git conserva el historial.)
 
 ### DEBT-006 — mensajes de error de autoría ciegan al autor (research sources)
 - **Estado:** abierta
@@ -87,8 +63,8 @@
   falló ni que la causa son las comillas. (Footgun relacionado, fuera de fix de
   mensaje: un typo de clase/predicado en `graph query` devuelve resultado vacío
   indistinguible de "no hay datos" — se **documenta**, no se arregla con un mensaje.)
-- **Por qué se difiere:** clase distinta (UX de errores) a DEBT-005; agrupable en
-  su propia pasada de endurecimiento.
+- **Por qué se difiere:** clase distinta (UX de errores) al gap de recall narrativo
+  de la iteración 035; agrupable en su propia pasada de endurecimiento.
 - **Resolución sugerida / versión objetivo:** enumerar los valores válidos en el
   error de `type`; anteponer el `name` (o índice 1-based) de la fuente a los errores
   por-fuente; tests para ambos mensajes; nota de documentación para el footgun de

@@ -80,3 +80,9 @@ bw:promotes a rdf:Property ;
 bw:constrains a rdf:Property ;
     rdfs:label "constrains"@en ;
     rdfs:comment "The narrative entity (or timeline) an anchor constrains."@en .
+
+# --- Narrative-sequence ordinal (iteration 035, contracts/narrative-label-order.md) --
+
+bw:sequenceOrdinal a rdf:Property ;
+    rdfs:label "sequenceOrdinal"@en ;
+    rdfs:comment "A narrative unit's 1-based position within its narrative sequence (xsd:integer)."@en .
