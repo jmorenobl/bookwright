@@ -14,7 +14,6 @@ from bookwright.golem import (
     NarrativeEvent,
     NarrativeFunction,
     NarrativeLocation,
-    NarrativeRole,
     NarrativeSequence,
     NarrativeUnit,
     Object,
@@ -25,7 +24,9 @@ from bookwright.golem import (
 )
 from tests.golem.conftest import B
 
-# (class, expected FR-004 segment) for all 12 slugged concepts.
+# (class, expected FR-004 segment) for all 11 slugged concepts. G11's URI
+# pattern is covered via the character-scoped ``CharacterRole`` node in
+# ``test_character_scoped_node_uri_patterns``, not a top-level concept segment.
 SEGMENTS = [
     (Character, "character"),
     (Object, "object"),
@@ -37,7 +38,6 @@ SEGMENTS = [
     (NarrativeLocation, "location"),
     (NarrativeUnit, "narrative-unit"),
     (NarrativeFunction, "narrative-function"),
-    (NarrativeRole, "narrative-role"),
     (NarrativeSequence, "narrative-sequence"),
 ]
 

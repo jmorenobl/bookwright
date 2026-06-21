@@ -56,11 +56,14 @@ def test_attribute_carrier_class_iris_present() -> None:
         assert name in ns.CLASS_IRI
 
 
-def test_class_iri_maps_thirteen_concepts_plus_attribute_carriers() -> None:
-    """The 13 narrative concepts (the SC-001 guarantee, also pinned in the
-    CONCEPTS registry) plus the 3 character-scoped attribute-carrier classes
-    (G17 / E54 / E55) and the temporal ``TimeInterval`` (DOLCE-Lite, added by the
-    validation system's interval model, research D11) — 17 class IRIs in all."""
+def test_class_iri_maps_twelve_concepts_plus_attribute_carriers() -> None:
+    """The 12 narrative concepts (the SC-001 guarantee, also pinned in the
+    CONCEPTS registry) plus the character-scoped carrier-only classes — G17 /
+    E54 / E55, the temporal ``TimeInterval`` (DOLCE-Lite, added by the validation
+    system's interval model, research D11), and ``G11_Narrative_Role`` (whose only
+    materialization is the non-``CONCEPTS`` ``CharacterRole`` carrier) — 17 class
+    IRIs in all. G11's IRI lives in the carrier bucket, not the concept bucket:
+    no top-level role concept exists, yet the frozen 17-IRI closure is unchanged."""
     concepts = {
         "Character",
         "Object",
@@ -72,11 +75,10 @@ def test_class_iri_maps_thirteen_concepts_plus_attribute_carriers() -> None:
         "NarrativeLocation",
         "NarrativeUnit",
         "NarrativeFunction",
-        "NarrativeRole",
         "NarrativeSequence",
         "AttributeAssignment",
     }
-    carriers = {"CharacterFeature", "Dimension", "Type", "TimeInterval"}
+    carriers = {"CharacterFeature", "Dimension", "Type", "TimeInterval", "NarrativeRole"}
     assert concepts <= set(ns.CLASS_IRI)
     assert carriers <= set(ns.CLASS_IRI)
     assert len(ns.CLASS_IRI) == len(concepts) + len(carriers) == 17

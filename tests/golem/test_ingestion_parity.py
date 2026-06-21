@@ -1,7 +1,7 @@
 """Ingestion-parity guard: the *modelled* set minus the *fed* set must equal the
 deferral registry, observed against a real graph build (iteration 024).
 
-Eleven of the thirteen :data:`~bookwright.golem.CONCEPTS` materialize from authored
+Ten of the twelve :data:`~bookwright.golem.CONCEPTS` materialize from authored
 text today; the other two are orphans — modelled but unfed. This module builds
 the GOLEM graph from the dedicated ``parity-exercise`` fixture through the real
 pipeline (:func:`build_project_graph`), reads back the concept-level ``rdf:type``
@@ -31,7 +31,7 @@ from tests.conftest import copy_fixture
 
 PARITY_FIXTURE = "parity-exercise"
 
-#: The eleven concepts the fixture's authored text materializes (FR-004 reachable-set pin).
+#: The ten concepts the fixture's authored text materializes (FR-004 reachable-set pin).
 EXPECTED_REACHABLE: set[str] = {
     "Character",
     "Setting",
@@ -39,7 +39,6 @@ EXPECTED_REACHABLE: set[str] = {
     "Object",
     "NarrativeEvent",
     "SocialRelationship",
-    "NarrativeRole",
     "AttributeAssignment",
     "NarrativeUnit",
     "NarrativeFunction",
@@ -59,7 +58,29 @@ EXPECTED_VERSIONS: dict[str, str] = {
 }
 
 #: Carrier IRIs in ``CLASS_IRI`` but deliberately outside ``CONCEPTS`` (FR-010).
-CARRIER_NAMES: set[str] = {"CharacterFeature", "Dimension", "Type", "TimeInterval"}
+#: ``NarrativeRole`` (G11) is here, not in ``CONCEPTS``: its only materialization
+#: is the character-scoped ``CharacterRole`` carrier — there is no top-level role
+#: concept (DEBT-001 closed). Re-adding it to ``CONCEPTS`` is named a parity
+#: failure by ``carrier_iri_collisions`` below.
+CARRIER_NAMES: set[str] = {
+    "CharacterFeature",
+    "Dimension",
+    "Type",
+    "TimeInterval",
+    "NarrativeRole",
+}
+
+
+def carrier_iri_collisions(concepts: set[str]) -> set[str]:
+    """Concept names whose ``CLASS_IRI`` equals a carrier-only IRI (the DEBT-001
+    pattern). Empty for a healthy registry. Pure: no I/O, no registry mutation.
+
+    A concept here is one that masquerades as "reachable" purely because a
+    non-``CONCEPTS`` carrier mints its class IRI — exactly how the dead
+    ``NarrativeRole`` concept escaped the deferral contract before iteration 033.
+    """
+    carrier_iris = {str(CLASS_IRI[k]) for k in CARRIER_NAMES}
+    return {c for c in concepts if str(CLASS_IRI[c]) in carrier_iris}
 
 
 # --- liveness probe (FR-003, research D2/D3) --------------------------------
@@ -116,7 +137,7 @@ def parity_outcome(parity_project: tuple[Path, Manifest]) -> BuildOutcome:
 
 
 def test_reachable_set_pin(parity_outcome: BuildOutcome) -> None:
-    """Exactly the eleven reachable concepts materialize; no orphan IRI appears (FR-004)."""
+    """Exactly the ten reachable concepts materialize; no orphan IRI appears (FR-004)."""
     types = _observed_types(parity_outcome)
     assert _reachable(types) == EXPECTED_REACHABLE
     orphan_iris = {str(CLASS_IRI[name]) for name in ORPHAN_NAMES}
@@ -130,10 +151,13 @@ def test_reachable_set_pin(parity_outcome: BuildOutcome) -> None:
 
 def test_registry_well_formed() -> None:
     """The registry's shape and the full version mapping are a contract (FR-002, SC-002)."""
+    assert len(CONCEPTS) == 12
+    assert "NarrativeRole" not in CONCEPTS
     assert set(DEFERRED_CONCEPTS) <= set(CONCEPTS)
     assert len(DEFERRED_CONCEPTS) == 2
     assert set(DEFERRED_CONCEPTS) == ORPHAN_NAMES
     assert all(note.reason for note in DEFERRED_CONCEPTS.values())
+    assert CARRIER_NAMES.isdisjoint(set(CONCEPTS)), "a carrier name leaked into CONCEPTS"
     assert CARRIER_NAMES.isdisjoint(DEFERRED_CONCEPTS), "a non-concept carrier was deferred"
     assert {
         name: note.target_version for name, note in DEFERRED_CONCEPTS.items()
@@ -141,6 +165,19 @@ def test_registry_well_formed() -> None:
     # No entry may carry the eliminated "undecided" verdict (FR-011, SC-003) — so
     # the literal can never silently return to the registry.
     assert all(note.target_version != "undecided" for note in DEFERRED_CONCEPTS.values())
+
+
+def test_no_carrier_iri_collision_in_real_registry() -> None:
+    """No live concept's class IRI is minted only by a non-``CONCEPTS`` carrier
+    (FR-006) — the DEBT-001 loophole that let the dead ``NarrativeRole`` concept
+    pass as reachable is provably closed for the real registry."""
+    assert carrier_iri_collisions(set(CONCEPTS)) == set()
+
+
+def test_drift_carrier_iri_collision_is_named() -> None:
+    """Re-introducing a carrier-only-IRI concept (re-adding ``NarrativeRole`` to a
+    local copy of the registry) is *named* as a collision failure (SC-004)."""
+    assert "NarrativeRole" in carrier_iri_collisions(set(CONCEPTS) | {"NarrativeRole"})
 
 
 # --- the live guard (FR-005, SC-001) ----------------------------------------

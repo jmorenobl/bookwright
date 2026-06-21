@@ -14,7 +14,6 @@ from bookwright.golem import (
     NarrativeEvent,
     NarrativeFunction,
     NarrativeLocation,
-    NarrativeRole,
     NarrativeSequence,
     NarrativeUnit,
     Object,
@@ -25,6 +24,7 @@ from bookwright.golem import (
 )
 from bookwright.golem import namespaces as ns
 from bookwright.golem.base import GolemEntity
+from bookwright.golem.modules.feature import CharacterRole
 from tests.golem.conftest import B
 
 
@@ -39,8 +39,11 @@ def _sample_entities() -> list[GolemEntity]:
     event = NarrativeEvent(uri_base=B, name="La caída", participants=(aparici, obj))
     state = PsychologicalState(uri_base=B, name="Miedo", bearer=aparici)
     func = NarrativeFunction(uri_base=B, name="Villanía")
-    nrole = NarrativeRole(uri_base=B, name="Héroe")
-    unit = NarrativeUnit(uri_base=B, name="Apertura", functions=(func,), roles=(nrole,))
+    # G11 is materialized solely by the character-scoped ``CharacterRole`` carrier
+    # (there is no top-level role concept); the unit's role cross-ref links to that
+    # node by bare URI.
+    crole = CharacterRole(uri_base=B, character_uri=aparici.uri, label="Héroe")
+    unit = NarrativeUnit(uri_base=B, name="Apertura", functions=(func,), roles=(crole.uri,))
     seq = NarrativeSequence(uri_base=B, name="Acto I", units=(unit,))
     note = AttributeAssignment(uri_base=B, target=aparici, attribute=func, source="bible/x.md:1")
     # An attributed Character drags G17/E54/E55/GP0_has_feature/edns:plays/
@@ -65,7 +68,7 @@ def _sample_entities() -> list[GolemEntity]:
         event,
         state,
         func,
-        nrole,
+        crole,
         unit,
         seq,
         note,

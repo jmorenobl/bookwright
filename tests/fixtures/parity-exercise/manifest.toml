@@ -2,9 +2,11 @@
 #
 # A single-purpose corpus whose only reason to exist is the ingestion-parity
 # guard (tests/golem/test_ingestion_parity.py, iteration 024). It drives exactly
-# the six reachable authored-text ingestion paths — Character, NarrativeRole and
-# the CharacterFeature/AttributeAssignment carriers (a character with
-# narrative_roles + born/features), Setting, NarrativeEvent (timeline.md) and
+# the reachable authored-text ingestion paths — Character with the
+# CharacterFeature/AttributeAssignment carriers and the character-scoped
+# CharacterRole carrier that solely materializes golem:G11_Narrative_Role (a
+# character with narrative_roles + born/features; there is no top-level role
+# concept), Setting, NarrativeEvent (timeline.md) and
 # SocialRelationship (relationships.md, the one path no other committed fixture
 # exercises). Shipped source-only; bible/graph.ttl is rebuilt in a tmp copy.
 

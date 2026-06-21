@@ -1,6 +1,6 @@
 """The deferral registry: which GOLEM concepts are modelled but not yet fed.
 
-Two of the thirteen :data:`bookwright.golem.CONCEPTS` have no authored-text
+Two of the twelve :data:`bookwright.golem.CONCEPTS` have no authored-text
 ingestion path today — they are *modelled* (a frozen class, a ``CLASS_IRI``
 entry) but never *materialized* by any builder over the ingested source trees
 (``bible/*.md`` and, since iteration 028, ``outline/units/*.md`` — which also

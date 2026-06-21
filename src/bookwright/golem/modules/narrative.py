@@ -61,13 +61,6 @@ class NarrativeFunction(SluggedEntity):
             yield DerivedAssertion(self.uri, self.type_uri, "functions")
 
 
-class NarrativeRole(SluggedEntity):
-    """A narrative role (``golem:G11_Narrative_Role``). Identity only."""
-
-    golem_class: ClassVar[URIRef] = CLASS_IRI["NarrativeRole"]
-    path_segment: ClassVar[str] = "narrative-role"
-
-
 class NarrativeSequence(SluggedEntity):
     """A narrative sequence (``golem:G7_Narrative_Sequence``).
 

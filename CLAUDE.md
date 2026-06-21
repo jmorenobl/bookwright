@@ -385,13 +385,18 @@ Grafeo engine; multi-integration beyond `claude` / `generic` and the
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/032-v04-close/plan.md` (iteration 032 — close v0.4: a new source-only
-`tests/fixtures/tiny-quest/` (Propp active, a deliberate orphan beat + unresolved
-role) with a co-located oracle, an E2E `tests/e2e/test_narrative_workflow.py`
-(build → validate, oracle-sourced, non-regression toggle, modelled on the 023
-orchestration test), the Spanish `docs/narrative-structure.md`, the honest
-deferral re-target (`deferrals.py` + parity `EXPECTED_VERSIONS` + DEBT-001/002
-targets: `"v0.4"` → `"demand-pulled"` sentinel), roadmap §1/§2, and the `v0.4.0`
-release metadata driven by the `bookwright-release` skill — no new mechanism, no
-ontology change, G6/G3 stay deferred).
+`specs/033-remove-dead-narrativerole/plan.md` (iteration 033 — remove the dead
+top-level `NarrativeRole` concept and close DEBT-001: delete the unreachable
+`NarrativeRole` class from `golem/modules/narrative.py` + its three references in
+`golem/__init__.py` (import, `CONCEPTS` entry → 12 concepts, `__all__`), sweep
+every live "thirteen concepts" count to "twelve"/"ten reachable"
+(`__init__.py`/`deferrals.py`/parity + namespaces/uri tests; CHANGELOG history
+untouched), harden the ingestion-parity contract so a concept whose class IRI is
+carried only by a non-`CONCEPTS` carrier is *named* as a failure (widen
+`CARRIER_NAMES` with `NarrativeRole`, add a pure `carrier_iri_collisions` invariant
++ drift sim), relocate G11 triple/URI coverage onto the real carrier
+`CharacterRole` (already covered in `test_character_attributes.py`), and delete the
+DEBT-001 ledger entry + its roadmap §4 cross-reference — zero triple regression, no
+ontology change (`golem:G11_Narrative_Role` and `golem.ttl` frozen, `CLASS_IRI`
+stays 17 = 12 concept + 5 carrier), G6/G3 deferrals untouched).
 <!-- SPECKIT END -->
