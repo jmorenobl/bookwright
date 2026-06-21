@@ -189,6 +189,7 @@ was correct) and corrupts the run's audit trail.
 | 030 | Propp/Greimas vocabularies as `E55_Type` + references | v0.4 | ✅ merged |
 | 031 | Narrative-structure continuity validator | v0.4 | ✅ merged |
 | 032 | v0.4 close: E2E + docs + re-target G6/G3 + `v0.4.0` | v0.4 | ✅ merged |
+| 033 | Remove dead `NarrativeRole` from `CONCEPTS` + harden parity (DEBT-001) | v0.4.1 | 🚧 in progress |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the

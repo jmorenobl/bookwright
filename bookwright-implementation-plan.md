@@ -84,7 +84,7 @@ propio `specs/`.
 
 ---
 
-## 1. v0.4 entregado — sin hito en curso
+## 1. v0.4 entregado — patch de cierre `v0.4.1` en curso (iteración 033)
 
 v0.4 (la capa estructural narrativa: Propp/Greimas G7/G9/G10 + ingesta de
 `outline/`) está **entregada y cerrada** (`v0.4.0`, 2026-06-21, iteraciones
@@ -95,8 +95,14 @@ que se vació el de 001–027): vive en el historial git, en `specs/028-…` …
 `specs/032-…`, en el `CHANGELOG` (`[0.4.0]`) y en la tabla de iteraciones de
 `CLAUDE.md`.
 
-**No hay un siguiente hito con número de versión.** Lo que queda es el
-**horizonte demand-pulled** (sin versión asignada), que vive en
+**Hay un patch estructural en curso: `v0.4.1` (iteración 033, § 2)**, que cierra
+DEBT-001 — el concepto muerto `NarrativeRole` que evade el registro de diferidos
+por colisión de IRI con su carrier `CharacterRole`. Es un patch de un solo delta
+observable (un concepto menos, paridad endurecida), sin ontología nueva y con cero
+pérdida de información; encaja en el mismo molde que el track de hardening v0.3.x.
+
+Más allá de ese patch **no hay un siguiente hito mayor con número de versión**. Lo
+que queda es el **horizonte demand-pulled** (sin versión asignada), que vive en
 `bookwright-roadmap.md` § 4 y en `DEBT.md`, no aquí:
 
 - **Búsqueda vectorial** (ChromaDB sobre rdflib, desacoplada) — activa ante un
@@ -106,13 +112,83 @@ que se vació el de 001–027): vive en el historial git, en `specs/028-…` …
 - **RelationshipRole (G6) + PsychologicalState (G3)** — el subsistema de
   roles/estados tipados con superficie autoral propia (siguen en el registro de
   diferidos).
-- **Decisión estructural sobre `NarrativeRole`** (DEBT-001) — eliminarlo de
-  `CONCEPTS` o darle superficie de autoría propia, en una iteración estructural
-  posterior.
 
-Cuando un disparador active el siguiente hito, se le asigna número de versión y
-**este plan se redacta de nuevo** para él (arrancando en `specs/033-…`),
+Cuando un disparador active el siguiente hito mayor, se le asigna número de versión
+y **este plan se redacta de nuevo** para él (arrancando en `specs/034-…`),
 manteniendo `bookwright-roadmap.md` como la intención durable.
+
+---
+
+## 2. Iteración 033 — eliminar `NarrativeRole` muerto + endurecer paridad (`v0.4.1`)
+
+**Problema.** El concepto GOLEM de nivel superior `NarrativeRole`
+(`golem/modules/narrative.py`, registrado en `CONCEPTS`) es **código muerto
+inalcanzable por diseño**: ningún builder lo instancia y no existe ruta de autoría
+que pueda crearlo. La única encarnación real de `golem:G11_Narrative_Role` es el
+nodo inlined `CharacterRole` (`golem/modules/feature.py`, fuera de `CONCEPTS`), que
+se materializa desde `narrative_roles:` en `bible/characters/*.md`; los `roles:` de
+`outline/units/` resuelven por slug contra ese índice de personajes y **nunca
+acuñan** (`outline.py` `_resolve_roles`, design § 7.4). Como ambas clases comparten
+`CLASS_IRI["NarrativeRole"]`, el test de paridad ve G11 materializado y por eso
+`NarrativeRole` **no** aparece en `DEFERRED_CONCEPTS`: un concepto muerto que se
+escapa del contrato de diferimiento por colisión de IRI con un carrier (DEBT-001).
+
+**Decisión (dueño, doble-verificada con agente independiente).** Se **elimina**
+`NarrativeRole` de `CONCEPTS` — no se le da superficie de autoría. El diseño define
+G11 como "rol **de un personaje**" (design línea 1603) y no concibe roles
+independientes de personaje; `CharacterRole` ya cubre el 100 % de lo expresable
+sobre roles. **Cero pérdida de información**: el grafo emite exactamente los mismos
+triples G11 que antes. Darle superficie propia (`outline/roles/*.md`) queda
+**rechazado**: fabricaría una capacidad que el diseño no pide e introduciría una
+segunda fuente de verdad para G11.
+
+**Prompt:**
+
+````
+/speckit-specify
+
+Necesidad: el concepto GOLEM de nivel superior `NarrativeRole` (golem/modules/narrative.py, registrado en CONCEPTS) es código muerto inalcanzable por diseño: ningún builder lo instancia y no existe ninguna ruta de autoría que pueda crearlo. La única encarnación real de la clase RDF golem:G11_Narrative_Role es el nodo inlined `CharacterRole` (golem/modules/feature.py, fuera de CONCEPTS), que se materializa desde `narrative_roles:` en bible/characters/*.md; los `roles:` de outline/units/ resuelven por slug contra ese índice de personajes y nunca acuñan (outline.py `_resolve_roles`, design § 7.4). Como CharacterRole y NarrativeRole comparten CLASS_IRI["NarrativeRole"], el test de paridad de ingestión ve G11 materializado y por eso NarrativeRole NO aparece en DEFERRED_CONCEPTS: un concepto muerto que se escapa del contrato de diferimiento por colisión de IRI con un carrier (DEBT-001). Queremos eliminar `NarrativeRole` de CONCEPTS y endurecer el contrato de paridad para que un concepto muerto que comparta IRI con un carrier no pueda volver a colarse, SIN perder ninguna información: G11 sigue vivo y materializado vía CharacterRole, el diseño define G11 como "rol de un personaje" (design línea 1603) y no concibe roles independientes de personaje, así que no se recorta ninguna capacidad de crear/auditar/verificar libros.
+
+Comportamiento esperado:
+
+- Se elimina la clase NarrativeRole de golem/modules/narrative.py y sus referencias en golem/__init__.py (import, entrada del dict CONCEPTS, __all__). El recuento de conceptos baja de trece a doce.
+- CharacterRole (golem/modules/feature.py) sigue siendo la materialización real de G11 y permanece fuera de CONCEPTS; no se toca salvo para confirmarlo.
+- deferrals.py ajusta el conteo "thirteen concepts"→"twelve" y su prosa; DEFERRED_CONCEPTS NO cambia (G6/G3 siguen diferidos).
+- El test de paridad de ingestión (tests/golem/test_ingestion_parity.py) se endurece para reconocer explícitamente que G11 se materializa vía el carrier CharacterRole (fuera de CONCEPTS), cerrando por construcción el agujero de DEBT-001; el set de conceptos alcanzables baja en uno y sigue verde.
+- Se arreglan los asserts sobre NarrativeRole en tests/golem/test_namespaces.py, test_triples.py y test_uri.py en consecuencia.
+- Se borra la entrada DEBT-001 de DEBT.md (git conserva el historial).
+
+Validaciones / no-regresión:
+
+- `uv run pytest` sigue verde: el grafo emite exactamente los mismos triples G11 que antes (la prueba que verifica la materialización de G11 vía CharacterRole sigue pasando).
+- Los cuatro gates (ruff check, ruff format --check, mypy --strict, pytest ≥80%) pasan.
+
+Fuera de scope (decisión del dueño, NO reabrir en clarify):
+
+- Darle a NarrativeRole una superficie de autoría propia (outline/roles/*.md): rechazado.
+- Tocar los diferidos G6 (RelationshipRole) / G3 (PsychologicalState).
+- Cualquier cambio en la ontología congelada: la clase RDF golem:G11_Narrative_Role y golem.ttl NO cambian (Principio X).
+
+Referencia: bookwright-design.md § 7.4 (los roles no acuñan, resuelven contra roles de personaje) y línea 1603 (G11 = rol de un personaje). DEBT-001 en DEBT.md. Principio I (texto plano), Principio X (ontología congelada), Principio IV (≤ 500 líneas).
+````
+
+**Pista para `/speckit-plan`:** *"Iteración estructural de limpieza, sin ontología
+nueva (Principio X: `golem:G11_Narrative_Role` y `golem.ttl` no cambian). Elimina la
+clase `NarrativeRole` de `src/bookwright/golem/modules/narrative.py` y sus
+referencias en `src/bookwright/golem/__init__.py` (import, entrada del dict
+`CONCEPTS`, `__all__`). `CharacterRole` (`src/bookwright/golem/modules/feature.py`)
+ya define `golem_class = CLASS_IRI["NarrativeRole"]` y es la materialización real de
+G11 — no la toques salvo para confirmar que sigue fuera de `CONCEPTS`. Actualiza el
+conteo `"thirteen concepts"`→`"twelve"` y la prosa de
+`src/bookwright/golem/deferrals.py` (`DEFERRED_CONCEPTS` no cambia: G6/G3 siguen).
+Endurece `tests/golem/test_ingestion_parity.py`: el set de conceptos alcanzables
+baja en uno y el test debe reconocer explícitamente que G11 se materializa vía el
+carrier `CharacterRole` (fuera de `CONCEPTS`), de modo que el agujero de DEBT-001
+quede cerrado por construcción; arregla en consecuencia los asserts sobre
+`NarrativeRole` en `tests/golem/test_namespaces.py`, `test_triples.py` y
+`test_uri.py`. Apóyate en design § 7.4 y la línea 1603. Borra la entrada DEBT-001 de
+`DEBT.md`. Verifica que `uv run pytest` sigue verde (mismos triples G11) y que los
+cuatro gates pasan."*
 
 ---
 
@@ -147,11 +223,11 @@ vocabularios, o el subconjunto de reglas del validador). Cuando dudes, ejecuta
 
 ### 4.5 El siguiente hito
 
-No hay hito en curso (§ 1). El horizonte demand-pulled vive en
-`bookwright-roadmap.md` § 4 y en `DEBT.md`. Cuando un disparador active el
-siguiente hito, asígnale número de versión, **vacía y redacta de nuevo este plan**
-para él (arrancando en `specs/033-…`), y mantén `bookwright-roadmap.md` como la
-intención durable. Quedan descartados: presets, GrafeoIndexer/Grafeo,
+El único trabajo versionado en curso es el patch de cierre `v0.4.1` (iteración 033,
+§ 2). El horizonte demand-pulled vive en `bookwright-roadmap.md` § 4 y en `DEBT.md`.
+Cuando un disparador active el siguiente hito mayor, asígnale número de versión,
+**vacía y redacta de nuevo este plan** para él (arrancando en `specs/034-…`), y
+mantén `bookwright-roadmap.md` como la intención durable. Quedan descartados: presets, GrafeoIndexer/Grafeo,
 multi-integración y extension system; ver `bookwright-design.md` § 15.5.
 
 ---
