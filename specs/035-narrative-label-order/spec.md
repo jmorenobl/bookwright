@@ -142,26 +142,43 @@ query functions by `rdfs:label`; assert the function URI is returned.
 ### Functional Requirements
 
 - **FR-001**: Every `G9_Narrative_Unit` MUST emit an `rdfs:label` literal carrying its
-  authored `name` verbatim, following the same two-triple label shape already used by
-  `CharacterRole` / the `E55_Type` typing path (no new mechanism invented).
+  authored `name` verbatim, following the **single `rdfs:label` triple** shape
+  `CharacterRole` (`feature.py:169`) and the free-text `CharacterFeature`
+  (`feature.py:140`) already emit — `(uri, rdfs:label, Literal(name))`, no new
+  mechanism invented. (This is the one-triple label pattern, distinct from the
+  two-triple `crm:P2_has_type` + `rdf:type` *typing* path used for Propp/Greimas.)
 - **FR-002**: Every `G10_Narrative_Function` node MUST emit an `rdfs:label` literal
-  carrying its authored `name` verbatim, via the identical label shape; a function
-  deduplicated across fiches MUST carry exactly one label triple.
-- **FR-003**: Each sequence membership (`dlp:proper-part` from a `G7_Narrative_Sequence`
-  to a member `G9_Narrative_Unit`) MUST gain a **queryable** integer ordinal that
-  encodes the member's position within that sequence.
+  carrying its authored `name` verbatim, via the identical single-triple label shape;
+  a function deduplicated across fiches by slug MUST carry exactly one label triple
+  (the dedup happens once at mint time in `_mint_functions`, so the label rides the
+  single minted entity).
+- **FR-003**: Each member unit's position within its `G7_Narrative_Sequence` (the
+  `dlp:proper-part` membership) MUST be materialized as a **queryable** integer ordinal —
+  reachable from the sequence in a single SPARQL hop so members can be `ORDER BY`-ed,
+  whether the ordinal is attached to the member unit or to a reified membership node.
 - **FR-004**: The materialized ordinal MUST reproduce the total order the existing
   assembly already defines for a sequence's members — ascending by declared `order:`,
   a missing `order:` placed last, ties broken by slug — so that sorting members by the
   ordinal yields the author's declared order and is byte-identical across rebuilds.
-- **FR-005**: The feature MUST NOT add any class or property to the frozen `golem.ttl`
-  ontology (Principle X). The label uses `rdfs:label`; the ordinal MUST use an existing
-  or otherwise permitted term/shape (e.g. reifying the membership with an integer index,
-  or an allowed ordering predicate) — never a newly minted GOLEM class.
-- **FR-006**: The label and ordinal assertions MUST carry provenance through the
-  existing `crm:E13_Attribute_Assignment` path where it applies, consistent with the
-  rest of the GOLEM model — file-level (no `:line`) where the source is an assembled
-  sequence, mirroring how minted functions already record provenance.
+- **FR-005**: The feature MUST NOT add any class or predicate to the frozen GOLEM
+  ontology — concretely, it adds nothing to `golem.ttl`, nothing to `CLASS_IRI`, and
+  nothing to the closure-checked predicate list in `test_namespaces.py` (Principle X).
+  The label uses `rdfs:label`, which already sits outside that closure by design (it is
+  emitted today and is in neither checked list). The ordinal MUST likewise use a term
+  outside the frozen GOLEM closure — either a predicate in Bookwright's own `bw:`
+  namespace (the same place `bw:reference` etc. live, declared in a `resources/
+  vocabularies/*.ttl`, never in `golem.ttl`) or a standard `rdf:`/`rdfs:` ordering term
+  — never a newly minted GOLEM class or predicate. The exact predicate is a
+  `/speckit-plan` decision; whatever it is, the closure test in `test_namespaces.py`
+  MUST stay unmodified and green (SC-005).
+- **FR-006**: The label assertions MUST NOT invent a new `crm:E13_Attribute_Assignment`:
+  an `rdfs:label` rides the entity's already-emitted identity assertion (which carries
+  the unit/function's `file:line` via the existing `DerivedAssertion(uri, uri, None)`),
+  exactly as `CharacterRole`/`CharacterFeature` labels do today — adding a dedicated E13
+  per label would be unjustified plumbing. The ordinal assertion, when it introduces a
+  genuinely new attribution on the assembled sequence, MUST carry file-level provenance
+  (no `:line`, since a sequence has no single source line), mirroring how minted
+  functions and assembled sequences already record provenance (`key_lines={}`).
 - **FR-007**: A SPARQL query MUST be able to find a narrative unit by matching its
   `rdfs:label`; this query ships as a test.
 - **FR-008**: A SPARQL query MUST be able to list a sequence's member units in their
@@ -226,14 +243,16 @@ query functions by `rdfs:label`; assert the function URI is returned.
   resolves to. The exact base (0- vs 1-indexed) and the literal datatype are left to
   `/speckit-plan`. *(Open to confirmation in `/speckit-clarify`.)*
 - **The concrete ordinal mechanism is a planning decision.** The spec requires only a
-  queryable ordinal under Principle X; whether it is a reified membership node carrying
-  an integer index or an allowed per-membership ordering predicate is chosen and
-  justified against Principle X in `/speckit-plan` (per the implementation-plan risk
-  note for iteration 035; split into separate label/order tasks is permitted if tasks
-  inflate beyond ~10).
+  queryable integer ordinal under Principle X. Because a unit declares **at most one**
+  `sequence:` (single optional key, `outline.py:195-206`), its membership is unique, so
+  a per-unit ordinal predicate (e.g. `?unit <bw:order> ?n`) and a reified-membership
+  node are both viable; the choice — and the predicate term, base index, and literal
+  datatype — is made and justified against Principle X in `/speckit-plan` (per the
+  implementation-plan risk note for iteration 035; splitting into separate label/order
+  tasks is permitted if tasks inflate beyond ~10).
 - **G10 functions get labels too.** The user's "si encaja / si aplica" is read as
   *yes*: functions are slugged entities with an authored `name`, so the identical
-  two-triple pattern applies cleanly; included as P2.
+  single-`rdfs:label`-triple pattern applies cleanly; included as P2.
 - **Provenance for assembled-sequence ordinals is file-level**, mirroring the existing
   file-level provenance of minted functions and assembled sequences (no `:line`, since
   a sequence has no single source line).
