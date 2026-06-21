@@ -185,19 +185,47 @@ def _map_sources(acc: _Accumulator, path: Path) -> None:
     raw_sources = metadata.get("sources", [])
     if not isinstance(raw_sources, list):
         raise ResearchError(relpath, f"`sources` must be a list in {relpath}")
-    for raw in raw_sources:
-        if not isinstance(raw, dict):
-            raise ResearchError(relpath, f"each `sources` item must be a mapping in {relpath}")
-        source = _build_source(acc, raw, relpath)
-        slug = make_slug(source.name)
-        if slug in acc.source_index:
+    for index, raw in enumerate(raw_sources, start=1):
+        try:
+            _map_one_source(acc, raw, relpath)
+        except ResearchError as exc:
             raise ResearchError(
-                relpath,
-                f"duplicate source name {source.name!r} (slug {slug!r}) in {relpath}",
-                source.name,
-            )
-        acc.source_index[slug] = source.uri
-        acc.sources.append(source)
+                exc.relpath,
+                f"source {_source_id(raw, index)}: {exc.message}",
+                exc.value,
+            ) from exc
+
+
+def _map_one_source(acc: _Accumulator, raw: Any, relpath: str) -> None:
+    """Validate and register one raw source mapping (the locator-naked inner pass)."""
+    if not isinstance(raw, dict):
+        raise ResearchError(relpath, f"each `sources` item must be a mapping in {relpath}")
+    source = _build_source(acc, raw, relpath)
+    slug = make_slug(source.name)
+    if slug in acc.source_index:
+        raise ResearchError(
+            relpath,
+            f"duplicate source name (slug {slug!r}) in {relpath}",
+            source.name,
+        )
+    acc.source_index[slug] = source.uri
+    acc.sources.append(source)
+
+
+def _source_id(raw: Any, index: int) -> str:
+    """A source's locator for error prefixes: its quoted ``name`` when usable, else ``#n``.
+
+    ``index`` is the 1-based position in the ``sources`` list — the fallback when the
+    ``name`` facet is absent, not a non-empty ``str``, or unsluggable (FR-005).
+    """
+    name = raw.get("name") if isinstance(raw, dict) else None
+    if isinstance(name, str) and name.strip():
+        try:
+            make_slug(name)
+        except EmptySlugError:
+            return f"#{index}"
+        return f"'{name}'"
+    return f"#{index}"
 
 
 def _build_source(acc: _Accumulator, raw: dict[str, Any], relpath: str) -> Source:
@@ -224,12 +252,18 @@ def _reject_unknown_vocab(raw: dict[str, Any], relpath: str) -> None:
     type_value = raw.get("type")
     if type_value not in SOURCE_TYPE_IRI:
         raise ResearchError(
-            relpath, f"unknown source type {type_value!r} in {relpath}", str(type_value)
+            relpath,
+            f"unknown source type {type_value!r} in {relpath}; "
+            f"one of: {', '.join(SOURCE_TYPE_IRI)}",
+            str(type_value),
         )
     reliability = raw.get("reliability")
     if reliability not in RELIABILITY_IRI:
         raise ResearchError(
-            relpath, f"unknown reliability {reliability!r} in {relpath}", str(reliability)
+            relpath,
+            f"unknown reliability {reliability!r} in {relpath}; "
+            f"one of: {', '.join(RELIABILITY_IRI)}",
+            str(reliability),
         )
 
 
@@ -243,8 +277,8 @@ def _apply_translation_rule(acc: _Accumulator, source: Source, relpath: str) -> 
         if source.translation is None or not source.translation.strip():
             raise ResearchError(
                 relpath,
-                f"source {source.name!r} needs a `translation` (language "
-                f"{source.original_language!r} ≠ book {acc.book_language!r}) in {relpath}",
+                f"needs a translation (language {source.original_language!r} ≠ book "
+                f"{acc.book_language!r}) in {relpath}",
                 source.name,
             )
         return source

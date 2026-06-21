@@ -24,5 +24,9 @@ bookwright graph query "SELECT (COUNT(?e) AS ?n) WHERE { ?e a golem:G5_Narrative
 | 2 | Proyecto/grafo ausente o motor desconocido. |
 | 3 | SPARQL malformado (sin filas parciales). |
 
+> **Nota:** una consulta que referencia un IRI inexistente o mal escrito devuelve
+> cero resultados, no un error. Revisa el IRI si esperabas filas y obtuviste un
+> conjunto vacío.
+
 Construye el grafo primero con
 [`bookwright graph build`](graph-build.md).

@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from rdflib.term import URIRef
 
-from bookwright.golem.namespaces import timeline_uri
+from bookwright.golem.namespaces import RELIABILITY_IRI, SOURCE_TYPE_IRI, timeline_uri
 from bookwright.io.errors import ResearchError
 from bookwright.io.research import ResearchResult, map_research
 
@@ -108,6 +108,28 @@ def test_out_of_vocabulary_aborts_naming_value(tmp_path: Path, field: str, value
     assert value in str(exc.value)
 
 
+def test_out_of_vocabulary_type_enumerates_accepted_values(tmp_path: Path) -> None:
+    bad = SOURCES_OK.replace("type: oficial", "type: primario")
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad)
+    message = exc.value.message
+    assert "primario" in message  # the offending value is still named
+    assert f"one of: {', '.join(SOURCE_TYPE_IRI)}" in message
+    assert "one of: primaria, secundaria, oficial, académica, periodística, testimonial" in message
+    assert exc.value.code == "invalid_research"
+
+
+def test_out_of_vocabulary_reliability_enumerates_accepted_values(tmp_path: Path) -> None:
+    bad = SOURCES_OK.replace("reliability: alta", "reliability: altísima")
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad)
+    message = exc.value.message
+    assert "altísima" in message
+    assert f"one of: {', '.join(RELIABILITY_IRI)}" in message
+    assert "one of: alta, media, baja" in message
+    assert exc.value.code == "invalid_research"
+
+
 def test_missing_required_facet_aborts(tmp_path: Path) -> None:
     bad = "\n".join(
         line for line in SOURCES_OK.splitlines() if not line.strip().startswith("author:")
@@ -141,6 +163,89 @@ def test_translation_dropped_when_language_matches(tmp_path: Path) -> None:
     )
     result = _run(tmp_path, sources=with_tr, book_language="es")
     assert result.sources[0].translation is None
+
+
+# --- per-source locator (FR-004/005/006/011) --------------------------------
+
+# A second valid source (a list item at 2-space indent, keys at 4), so the
+# locator/index in a failure on it is meaningful. Inserted after the first source's
+# last line; the indentation must match the first source exactly (no dedent).
+_SECOND_SOURCE = (
+    '  - name: "Boletín Oficial"\n'
+    '    reference: "https://www.boe.es"\n'
+    '    author: "BOE"\n'
+    "    original_language: es\n"
+    "    type: oficial\n"
+    "    reliability: alta\n"
+    '    reliability_justification: "Diario oficial del Estado."\n'
+    "    access_date: 2026-05-31\n"
+    '    original_quote: "Disposición publicada."\n'
+)
+_FIRST_LAST_LINE = '    original_quote: "El detective privado requiere la TIP."\n'
+# Two valid sources: append the second list item before the closing `---`.
+SOURCES_TWO = SOURCES_OK.replace(_FIRST_LAST_LINE, _FIRST_LAST_LINE + _SECOND_SOURCE, 1)
+
+
+def test_named_source_error_is_prefixed_with_name(tmp_path: Path) -> None:
+    bad = SOURCES_TWO.replace("access_date: 2026-05-31", 'access_date: "1937-04-26"')
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad)
+    message = exc.value.message
+    assert message.startswith("source 'Boletín Oficial': ")  # the failing source is named
+    assert "Input should be a valid date" in message  # underlying pydantic reason preserved
+    assert exc.value.code == "invalid_research"
+    assert exc.value.details is not None
+    assert set(exc.value.details) == {"relpath", "value"}  # envelope shape unchanged
+
+
+def test_unnamed_source_error_falls_back_to_index(tmp_path: Path) -> None:
+    # Drop the `name` facet of the second source: the failure precedes a usable name.
+    bad = SOURCES_TWO.replace('  - name: "Boletín Oficial"\n', "  - reference: x\n", 1).replace(
+        '    reference: "https://www.boe.es"\n', "", 1
+    )
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad)
+    assert exc.value.message.startswith("source #2: ")  # 1-based position, no name available
+
+
+def test_unsluggable_name_error_falls_back_to_index(tmp_path: Path) -> None:
+    # A present-but-unsluggable name (strips to non-empty, slugs to empty) on the
+    # second source: `_source_id` cannot quote it, so it falls back to #2 (FR-005).
+    bad = SOURCES_TWO.replace('name: "Boletín Oficial"', 'name: "!!!"', 1)
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad)
+    message = exc.value.message
+    assert message.startswith("source #2: ")  # unsluggable name → index, not a quoted name
+    assert "empty or unsluggable" in message  # underlying reason preserved
+
+
+def test_non_mapping_source_item_falls_back_to_index(tmp_path: Path) -> None:
+    # A scalar list item (not a mapping) as the second source: `_source_id` sees a
+    # non-dict and falls back to #2 rather than indexing into it (FR-005).
+    bad = SOURCES_TWO.replace(_SECOND_SOURCE, "  - 42\n", 1)
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad)
+    message = exc.value.message
+    assert message.startswith("source #2: ")
+    assert "must be a mapping" in message
+
+
+def test_duplicate_name_is_located_once_with_slug_retained(tmp_path: Path) -> None:
+    dup = SOURCES_TWO.replace("Boletín Oficial", "Registro TIP")
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=dup)
+    message = exc.value.message
+    assert message.count("source 'Registro TIP':") == 1  # named exactly once (FR-011)
+    assert "slug 'registro-tip'" in message  # slug retained as the semantic subject
+
+
+def test_translation_rule_is_located_once(tmp_path: Path) -> None:
+    bad = SOURCES_OK.replace("original_language: es", "original_language: fr")
+    with pytest.raises(ResearchError) as exc:
+        _run(tmp_path, sources=bad, book_language="es")
+    message = exc.value.message
+    assert message.count("source 'Registro TIP':") == 1
+    assert "source 'Registro TIP': needs a translation (language 'fr' ≠ book 'es')" in message
 
 
 # --- findings ---------------------------------------------------------------

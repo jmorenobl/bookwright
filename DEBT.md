@@ -43,32 +43,12 @@
 
 ## Deuda abierta
 
-> La entrada siguiente salió del **ejercicio de dogfooding** sobre un libro real
-> ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples, 2026-06-21).
-> Tiene su iteración asignada en `bookwright-implementation-plan.md` y se **borra**
-> al cerrar esa iteración. (DEBT-005 — el gap de recall narrativo G9 — se cerró en
-> la iteración 035 / `v0.4.3` y se borró de aquí; git conserva el historial.)
-
-### DEBT-006 — mensajes de error de autoría ciegan al autor (research sources)
-- **Estado:** abierta
-- **Detectada en:** dogfooding post-`v0.4.1` (2026-06-21)
-- **Ubicación:** el loader/modelo de fuentes de research (p. ej. `src/bookwright/io/research.py`
-  + el modelo Pydantic `Source`).
-- **Clase de deuda:** calidad de diagnósticos de error (UX de autoría).
-- **Descripción:** (F1) cuando una fuente declara un `type` fuera del vocabulario
-  cerrado (`primaria|secundaria|oficial|académica|periodística|testimonial`), el
-  error nombra el valor inválido pero **no enumera los aceptados** → el autor itera a
-  ciegas. (F2) cuando `access_date` se escribe entrecomillado (string en vez de fecha
-  YAML), el error `Input should be a valid date` **no nombra qué fuente** de la lista
-  falló ni que la causa son las comillas. (Footgun relacionado, fuera de fix de
-  mensaje: un typo de clase/predicado en `graph query` devuelve resultado vacío
-  indistinguible de "no hay datos" — se **documenta**, no se arregla con un mensaje.)
-- **Por qué se difiere:** clase distinta (UX de errores) al gap de recall narrativo
-  de la iteración 035; agrupable en su propia pasada de endurecimiento.
-- **Resolución sugerida / versión objetivo:** enumerar los valores válidos en el
-  error de `type`; anteponer el `name` (o índice 1-based) de la fuente a los errores
-  por-fuente; tests para ambos mensajes; nota de documentación para el footgun de
-  SPARQL. **Iteración 036 → `v0.4.4`.**
+_Ninguna por ahora._ Las tres entradas del **ejercicio de dogfooding** sobre un
+libro real ("El Cerco de Almenara", 49 ficheros / 90 entidades / 1550 triples,
+2026-06-21) están cerradas y borradas de aquí (git conserva el historial): el
+validador `focalization` dormido (DEBT-004) en la iteración 034 / `v0.4.2`, el gap
+de recall narrativo G9 (DEBT-005) en la iteración 035 / `v0.4.3`, y los mensajes de
+error de research ciegos en la iteración 036 / `v0.4.4`.
 
 ---
 

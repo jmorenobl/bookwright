@@ -34,7 +34,13 @@ EXIT_INVALID_QUERY = 3
 
 @app.command("query")
 def run(
-    sparql: str = typer.Argument(..., help="The SPARQL query to run against the graph."),
+    sparql: str = typer.Argument(
+        ...,
+        help=(
+            "The SPARQL query to run against the graph. Note: a query referencing a "
+            "non-existent or misspelled IRI returns an empty result set, not an error."
+        ),
+    ),
     json_output: bool = typer.Option(
         False, "--json", help="Emit results as one JSON document on stdout."
     ),

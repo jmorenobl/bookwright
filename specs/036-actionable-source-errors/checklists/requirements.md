@@ -1,0 +1,44 @@
+# Specification Quality Checklist: Actionable research-source error messages
+
+**Purpose**: Validate specification completeness and quality before proceeding to planning
+**Created**: 2026-06-21
+**Feature**: [spec.md](../spec.md)
+
+## Content Quality
+
+- [x] No implementation details (languages, frameworks, APIs)
+- [x] Focused on user value and business needs
+- [x] Written for non-technical stakeholders
+- [x] All mandatory sections completed
+
+## Requirement Completeness
+
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
+- [x] Success criteria are measurable
+- [x] Success criteria are technology-agnostic (no implementation details)
+- [x] All acceptance scenarios are defined
+- [x] Edge cases are identified
+- [x] Scope is clearly bounded
+- [x] Dependencies and assumptions identified
+
+## Feature Readiness
+
+- [x] All functional requirements have clear acceptance criteria
+- [x] User scenarios cover primary flows
+- [x] Feature meets measurable outcomes defined in Success Criteria
+- [x] No implementation details leak into specification
+
+## Notes
+
+- Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
+- The clarify pass (Session 2026-06-21) deliberately pins the *observable* message
+  shapes — the `one of: …` vocabulary enumeration and the `source <id>: …` locator
+  prefix — because those strings are the product's user-facing UX for this DX
+  iteration and FR-003/FR-004 demand exact-string tests. This is observable
+  behaviour, not a language/framework/API detail, so the "no implementation details"
+  items stay satisfied; code-internal grounding (file/symbol names) is confined to
+  the Clarifications rationale log, not the requirement prose.
+- One scope-expanding assumption (reliability swept alongside type) is documented
+  in Assumptions and justified by the project's same-class-debt sweep rule, not
+  left implicit.

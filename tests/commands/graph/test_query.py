@@ -113,6 +113,24 @@ def test_query_unknown_indexer(project_factory: Callable[..., Path], runner: Cli
     assert json.loads(result.stdout)["code"] == "unknown_indexer"
 
 
+def test_query_help_notes_unknown_iri_returns_empty(runner: CliRunner) -> None:
+    """The ``sparql`` argument help warns that an unknown IRI yields no rows (FR-008)."""
+    result = runner.invoke(app, ["graph", "query", "--help"])
+    assert result.exit_code == 0
+    # Collapse the rich/typer line-wrapping before matching the note.
+    text = " ".join(result.stdout.split())
+    assert "non-existent or misspelled IRI" in text
+    assert "empty result set, not an error" in text
+
+
+def test_docs_note_unknown_iri_returns_empty() -> None:
+    """The Spanish docs page carries the same empty-result note (FR-008, docs in ES)."""
+    docs = Path(__file__).parents[3] / "docs" / "commands" / "graph-query.md"
+    body = " ".join(docs.read_text(encoding="utf-8").split())
+    assert "IRI inexistente o mal escrito devuelve" in body
+    assert "cero resultados, no un error" in body
+
+
 def test_query_human_error_goes_to_stderr(tiny_novel: Path, runner: CliRunner) -> None:
     """``graph query`` without ``--json`` and no graph built → human error on stderr.
 
