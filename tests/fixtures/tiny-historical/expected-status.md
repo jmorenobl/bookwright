@@ -12,13 +12,18 @@
 #
 # NOTE ON `validation.counts`: `status` aggregates ALL validators (character_presence,
 # factual_anchor, focalization, setting_continuity, temporal), so its warning count
-# (4) is the project-wide total — NOT the factual_anchor-scoped {error:1, warning:1}
-# that `expected-findings.md` pins for the M4 validator test. Both are correct for their
-# own consumer; this file records what `status` actually emits. (Iteration 038 dropped
-# this from 6 to 5: `character_presence` no longer mis-flags `Capítulo`, the first word
-# of the manuscript's ATX heading `# Capítulo 1 — El telar nuevo`, as a proper noun.
-# Iteration 041 dropped it from 5 to 4: `character_presence` no longer mis-flags the
-# first spoken word `Esto` after the leading dialogue dash `—`, now stripped at the seam.)
+# (1) is the project-wide total. It now coincides with the factual_anchor-scoped
+# {error:1, warning:1} that `expected-findings.md` pins for the M4 validator test, but
+# they remain independent oracles; this file records what `status` actually emits.
+# (Iteration 038 dropped this from 6 to 5: `character_presence` no longer mis-flags
+# `Capítulo`, the first word of the manuscript's ATX heading `# Capítulo 1 — El telar
+# nuevo`, as a proper noun. Iteration 041 dropped it from 5 to 4: `character_presence`
+# no longer mis-flags the first spoken word `Esto` after the leading dialogue dash `—`,
+# now stripped at the seam. Iteration 042 dropped it from 4 to 1: `character_presence`
+# now cross-checks proper-noun candidates against the UNION of the character, setting,
+# location and object rosters, so the three tokens `Real`/`Fábrica`/`Paños` of the
+# declared setting "la Real Fábrica de Paños" stop being mis-flagged — only the lone
+# `factual_anchor` warning remains. DEBT-010.)
 
 # The authored focus the E2E (re)stamps via `bookwright focus set` at the loop's start.
 focus:
@@ -63,7 +68,7 @@ low_reliability_findings:
 validation:
   counts:
     error: 1
-    warning: 4
+    warning: 1
     info: 0
 
 # The three firing rules, in priority order (research D2 / data-model § 3). `research_queue`
@@ -88,7 +93,7 @@ un *anchor* infrasostenido permanente y un hallazgo de fiabilidad baja permanent
 
 1. **Primer `status`.** Dos preguntas abiertas (`q-libro-de-jornales`, `q-origen-telares`),
    un *anchor gap* (`rumor-incendio → El almacén viejo`), un hallazgo de baja fiabilidad
-   (`rumor-incendio`) y la cuenta de validación `{error: 1, warning: 4, info: 0}`.
+   (`rumor-incendio`) y la cuenta de validación `{error: 1, warning: 1, info: 0}`.
    `next_actions` enumera **tres** workstreams: `bookwright-research`, `bookwright-verify`,
    `bookwright-continuity`.
 

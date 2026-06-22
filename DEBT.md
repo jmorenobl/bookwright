@@ -43,15 +43,6 @@
 
 ## Deuda abierta
 
-### DEBT-010 — `character_presence` marca tokens de settings multi-palabra como nombres propios sin entrada
-- **Estado:** abierta
-- **Detectada en:** dogfood v0.5.0 (2026-06-22) — fixture `tiny-historical`
-- **Ubicación:** `src/bookwright/validation/validators/character_presence.py:107` (`roster = project.character_names()` — solo personajes, no settings/locations/objects).
-- **Clase de deuda:** roster de cruce incompleto (el heurístico solo conoce el roster de personajes).
-- **Descripción:** `la Real Fábrica de Paños` es un setting declarado (`bible/settings/la-real-fabrica-de-panos.md`), pero `character_presence` solo cruza contra `character_names()`, así que sus tokens `Real`, `Fábrica`, `Paños` se marcan como nombres propios «sin entrada en la bible» — cuando la entrada existe, solo que en `settings/` en vez de `characters/`. El texto del warning es honesto («heuristic — may be a place or organization»), pero sobre una novela terminada el ruido es alto y el diagnóstico engañoso.
-- **Por qué se difiere:** es una cuestión de diseño (¿debe `character_presence` consultar también settings/locations/objects, o crearse un validador de presencia de entornos?), mayor que un fix puntual; fuera del scope de v0.5.0.
-- **Resolución sugerida / versión objetivo:** **iteración 042 → `v0.5.2`** (ver `bookwright-implementation-plan.md` § 1+). La regla de menciones-desconocidas suprime candidatos cuyo slug (o tokens) casen la UNIÓN de los rosters de personajes + settings + locations + objects (nuevos accesores `location_names()`/`object_names()` en `ValidationContext`, espejo de `setting_names()`); la regla de huérfanos (`error`, protege el gate) y el guard `NotEvaluated` de 040 no cambian.
-
 ### DEBT-011 — `character_presence` marca el primer término tras una comilla-líder de apertura (`«` U+00AB, `"` U+201C, `'` U+2018, `"` ASCII)
 - **Estado:** abierta
 - **Detectada en:** auditoría de `spec-041` (2026-06-22) — al cerrar DEBT-009 (la raya de diálogo `—`/`–`/`―`) se verificó **empíricamente** que la *misma clase* de fallo persiste para los marcadores de comilla líder.

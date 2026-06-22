@@ -501,38 +501,42 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/041-prose-dialogue-dash/plan.md` (iteration 041, the first post-`v0.5.0`
-patch, closing DEBT-009 — detected by the `tiny-historical` dogfood). In Spanish
-prose, dialogue opens with the typographic em dash `—` (U+2014; en dash `–` U+2013
-is a variant). The single prose seam (`io/prose.py`, iteration 039) normalizes ASCII
-block markers (`#{1,6}␠`, `[-*+>]␠`) but NOT the dialogue dash, so `character_presence`
-sees `—Esto es el porvenir` with the `—` glued to `Esto`: the word is not at offset 0,
-`_is_sentence_initial` returns `False`, and the demonstrative `Esto` is reported as an
-unknown proper noun — one spurious `warning` on the FIRST capitalized word of EVERY
-dialogue line, drowning the real findings. THE LOAD-BEARING DECISION (issue #1
-doctrine, research D2): close the class at the SEAM, never the validator. Add
-`_DIALOGUE_MARKER = re.compile(r"^\s*[—–]\s*")` to `io/prose.py` and strip it inside
-the EXISTING iterative `_normalize` loop as a third `elif` branch (`sub(count=1)`,
-one pass per marker), so only the LEADING dash is removed and internal incise dashes
-(`—dijo Arnela—`) stay intact. Trailing `\s*` (NOT `\s+`) because Spanish glues the
-dash to the word (`—Esto`); a leading typographic dash is unambiguous so no
-bullet-vs-emphasis guard is needed. After normalization the first content word lands
-at offset 0 and inherits `character_presence`'s EXISTING sentence-initial exemption —
-the SAME mechanism DEBT-008 (iteration 038) used for the ATX heading. NO validator is
-edited (SC-004 — the diff to validators is empty). Code points: em `—`/en `–` ONLY;
-ASCII hyphen bullet `- ` stays owned by `_BULLET_MARKER`; the horizontal bar `―`
-(U+2015) and leading quotes (`«`/`"`/`'`) are the SAME class but a distinct design,
-RECORDED as DEBT-011 (not swept here). PARITY (verified empirically during planning):
-today the seam yields `[Real, Fábrica, Paños, Esto]` on `tiny-historical`, with the
-marker `[Real, Fábrica, Paños]` — one fewer (`Esto`). The ONLY pinned-count oracle
-that shifts is `tiny-historical/expected-status.md` (`validation.counts.warning 5 → 4`,
-fixture manuscript UNTOUCHED, as 038 did `6 → 5`); `tiny-novel`/`tiny-memoir` carry
-leading-dash dialogue too but their tests assert only `error == 0` (warnings
-tolerated, no pinned count) so they need no edit. New tests: C2 seam rows
-(glued/spaced/indented/internal-intact/dash-only/composed) + a `character_presence`
-both-directions test (`—Esto` not flagged; mid-line `—Pregúntale a Quirón —dijo.`
-flagged). stdlib `re` only — no new dep, no Markdown parser (Constitution II); prose
-validator, `triples=()`, frozen ontology untouched (Principle X / FR-012); every
-changed file ≤ 500 lines (`io/prose.py` 81 → ~87). Remove DEBT-009 from `DEBT.md`.
-Design § 13. `uv run pytest` and the four gates green.
+`specs/042-character-presence-roster/plan.md` (iteration 042, `v0.5.2`, the
+second post-`v0.5.0` patch, closing DEBT-010 — detected by the `tiny-historical`
+dogfood). The `character_presence` validator has two rules split by severity: an
+orphan rule (`error`, protects the gate — every bible CHARACTER must be mentioned)
+and an unknown-mention rule (`warning` — a prose proper noun with «no bible entry»).
+The unknown-mention rule cross-checks proper-noun candidates against the CHARACTER
+roster ONLY, so the capitalized tokens of a declared multi-word environment —
+`Real`, `Fábrica`, `Paños` of the bible setting "la Real Fábrica de Paños" under
+`bible/settings/` — each fire a spurious "no bible entry" warning even though the
+entry EXISTS (just under `settings/`, not `characters/`). THE FIX (issue #1
+doctrine, per-class, no NER): widen the rule's known-names set to the UNION of the
+character, setting, LOCATION and OBJECT rosters. Two new cached accessors on
+`ValidationContext` — `location_names()` (GOLEM class `NarrativeLocation`,
+`bible/locations/`, G13) and `object_names()` (GOLEM class `Object`,
+`bible/objects/`, G16) — each a byte-for-byte mirror of `setting_names()`: the same
+generic `_names_of(concept_cls)` helper and `_UNSET`-sentinel memoization, NO new
+helper (there is no class literally named `Location`). In
+`CharacterPresence.validate`, `_orphans` KEEPS feeding from `character_names()` alone
+(the `error` gate is untouched, FR-004/FR-006), but the slug set `_unknown_mentions`
+consumes is built from the CONCATENATION of the four roster tuples passed once
+through the EXISTING module-level `_roster_slugs` (unchanged). The `NotEvaluated`
+guard stays clavado on `not roster and not files` (CHARACTER roster only) with the
+identical reason string (FR-007); the `Violation` shape, `triples=()`, and frozen
+ontology are untouched (FR-005/FR-008/FR-009/FR-010). File-based, NOT SPARQL — the
+rosters ride the cached `bible()` map, no extra disk read, no built graph. The ONLY
+pinned-count oracle that shifts is `tiny-historical/expected-status.md`
+(`validation.counts.warning 4 → 1`: the three setting tokens removed, the lone
+`factual_anchor` warning remains; `error` stays 1; fixture manuscript/bible
+UNTOUCHED, the same oracle-only shape 041 did `5 → 4` and 038 did `6 → 5`).
+`tiny-novel`/`tiny-memoir` assert only `error == 0` (warnings tolerated, no pinned
+count) so they need no edit. The location/object union arms + both new accessors are
+proven by SYNTHETIC-PROJECT tests on `tests/validation/conftest.py`'s `write_project`
+(extended with `locations=`/`objects=` knobs mirroring `settings=` byte-for-byte,
+both defaulting to `()`), NOT by editing any pinned fixture (FR-011/FR-015). DEBT-011
+(paired leading quotes `«`/`"`/`'`) is a distinct design, already recorded, NOT swept
+here. stdlib `re` only — no new dep (Constitution II); every changed file ≤ 500
+lines (`base.py` 322 → ~350, `character_presence.py` 215 → ~218). Remove DEBT-010
+from `DEBT.md`. Design § 13. `uv run pytest` and the four gates green.
 <!-- SPECKIT END -->

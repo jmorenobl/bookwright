@@ -113,7 +113,15 @@ class CharacterPresence:
         # An empty manuscript with a non-empty roster STAYS evaluated and still emits its
         # error-level orphan findings byte-for-byte — the rule that protects the gate
         # (FR-004/FR-012).
-        roster_slugs = _roster_slugs(roster)
+        #
+        # The unknown-mention rule suppresses a candidate whose slug is in ANY bible
+        # roster, not just characters: the capitalized tokens of a declared environment
+        # (e.g. `Real`/`Fábrica`/`Paños` of the setting "la Real Fábrica de Paños") have a
+        # bible entry — only under settings/locations/objects, not characters (DEBT-010).
+        # The `_orphans` (error) gate keeps deriving from `roster` (characters) ALONE.
+        roster_slugs = _roster_slugs(
+            roster + project.setting_names() + project.location_names() + project.object_names()
+        )
 
         out: list[Violation] = []
         out.extend(self._orphans(roster, files))
