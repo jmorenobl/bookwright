@@ -1,9 +1,34 @@
-"""``ValidationReport`` filtering, gate, and JSON shape (D13.3)."""
+"""``ValidationReport`` filtering, gate, and JSON shape (D13.3).
+
+Also covers the additive ``not_evaluated`` channel + the documented green predicate
+(iteration 040, SC-002): a non-empty channel makes a run non-green even when
+``status == "ok"``.
+"""
 
 from __future__ import annotations
 
-from bookwright.validation.base import Severity, ValidatorError, Violation
+import io
+
+from rich.console import Console
+
+from bookwright.validation.base import (
+    NotEvaluatedResult,
+    Severity,
+    ValidatorError,
+    Violation,
+)
 from bookwright.validation.report import ScopeFilter, ValidationReport
+
+
+def _is_green(payload: dict[str, object]) -> bool:
+    """The single documented predicate (SC-002): ok AND nothing not-evaluated."""
+    return payload["status"] == "ok" and payload["not_evaluated"] == []
+
+
+def _render(report: ValidationReport) -> str:
+    console = Console(file=io.StringIO(), width=200)
+    report.render(console, scope=None, severity=None)
+    return console.file.getvalue()  # type: ignore[attr-defined]
 
 _ERR = Violation("temporal", Severity.error, "cycle", None)
 _WARN_A = Violation("character_presence", Severity.warning, "w-a", "manuscript/cap-01.md:3")
@@ -95,3 +120,46 @@ def test_errors_surface_in_json() -> None:
     assert payload["errors"] == [
         {"validator": ".bookwright/validators/broken.py", "phase": "load", "message": "SyntaxError"}
     ]
+
+
+_SKIP = NotEvaluatedResult("focalization", "the constitution does not declare a narrative voice")
+
+
+def test_to_json_carries_not_evaluated_sibling_key() -> None:
+    report = ValidationReport(violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,))
+    payload = report.to_json(scope=None, severity=None)
+    assert payload["not_evaluated"] == [
+        {"validator": "focalization", "reason": "the constitution does not declare a narrative voice"}
+    ]
+    # The channel is additive: violations/errors keep their shapes, status untouched.
+    assert payload["status"] == "ok"
+    assert payload["violations"] == []
+    assert payload["errors"] == []
+
+
+def test_green_predicate_false_for_solely_not_evaluated_run() -> None:
+    # status == "ok" and violations == [], yet not green because the channel is non-empty.
+    report = ValidationReport(violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,))
+    payload = report.to_json(scope=None, severity=None)
+    assert payload["status"] == "ok"
+    assert payload["failed"] is False  # never gates (FR-004)
+    assert _is_green(payload) is False  # SC-002
+
+
+def test_green_predicate_true_for_evaluated_and_clean_run() -> None:
+    report = ValidationReport(violations=(), errors=(), ran=("temporal",))
+    payload = report.to_json(scope=None, severity=None)
+    assert _is_green(payload) is True
+
+
+def test_render_prints_not_evaluated_section_instead_of_clean_line() -> None:
+    report = ValidationReport(violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,))
+    out = _render(report)
+    assert "not evaluated:" in out
+    assert "focalization: the constitution does not declare a narrative voice" in out
+    assert "no violations found" not in out  # the clean line is suppressed (SC-002)
+
+
+def test_render_clean_line_only_when_all_channels_empty() -> None:
+    report = ValidationReport(violations=(), errors=(), ran=("temporal",))
+    assert "no violations found" in _render(report)

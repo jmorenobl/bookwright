@@ -12,7 +12,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from bookwright.validation.base import Severity, ValidatorError, Violation, split_source
+from bookwright.validation.base import (
+    NotEvaluatedResult,
+    Severity,
+    ValidatorError,
+    Violation,
+    split_source,
+)
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -39,15 +45,25 @@ class ScopeFilter:
 
 @dataclass
 class ValidationReport:
-    """A full run: all (deduped, pre-filter) violations, run/load errors, run names."""
+    """A full run: all (deduped, pre-filter) violations, run/load errors, run names.
+
+    A run is **green/clean** iff ``status == "ok"`` AND ``not_evaluated == []`` — the
+    single documented predicate (SC-002). ``not_evaluated`` is the additive third state
+    (a validator that consciously did not look); it never gates (FR-004) and is a
+    channel distinct from ``errors`` (which is for validators that crashed, FR-005).
+    """
 
     violations: tuple[Violation, ...]
     errors: tuple[ValidatorError, ...]
     ran: tuple[str, ...]
+    not_evaluated: tuple[NotEvaluatedResult, ...] = ()
 
     @property
     def failed(self) -> bool:
-        """The gate: any violation at ``error`` severity, ignoring filters (FR-013)."""
+        """The gate: any violation at ``error`` severity, ignoring filters (FR-013).
+
+        ``not_evaluated`` never affects the gate (FR-004) — it is not a finding.
+        """
         return any(v.severity == Severity.error for v in self.violations)
 
     def reported(self, *, scope: ScopeFilter | None, severity: Severity | None) -> list[Violation]:
@@ -69,6 +85,7 @@ class ValidationReport:
             "failed": self.failed,
             "violations": [v.to_json() for v in reported],
             "errors": [e.to_json() for e in self.errors],
+            "not_evaluated": [r.to_json() for r in self.not_evaluated],
             "summary": {
                 "ran": list(self.ran),
                 "total": len(self.violations),
@@ -87,9 +104,16 @@ class ValidationReport:
     def render(
         self, console: Console, *, scope: ScopeFilter | None, severity: Severity | None
     ) -> None:
-        """Render the human report (grouped by validator) to ``console`` (FR-012)."""
+        """Render the human report (grouped by validator) to ``console`` (FR-012).
+
+        The "no violations found" clean line prints **only** when there are no reported
+        violations, no errors, AND no not-evaluated validators — so a run that is solely
+        not-evaluated shows the ``not evaluated:`` section instead of reading as clean
+        (SC-002). ``not_evaluated`` is unfiltered by ``--scope`` / ``--severity`` (it
+        carries no location and no severity).
+        """
         reported = self.reported(scope=scope, severity=severity)
-        if not reported and not self.errors:
+        if not reported and not self.errors and not self.not_evaluated:
             console.print("no violations found", markup=False)
             return
         for validator in sorted({v.validator for v in reported}):
@@ -100,6 +124,10 @@ class ValidationReport:
                     f"  {violation.severity.value}: {violation.message} — {location}",
                     markup=False,
                 )
+        if self.not_evaluated:
+            console.print("not evaluated:", markup=False)
+            for result in self.not_evaluated:
+                console.print(f"  {result.validator}: {result.reason}", markup=False)
         if self.errors:
             console.print("validator errors:", markup=False)
             for error in self.errors:

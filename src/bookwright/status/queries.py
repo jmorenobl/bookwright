@@ -188,9 +188,11 @@ def validation_summary(root: Path, manifest: Manifest, indexer: Indexer) -> Vali
     """Run the existing validation runner and summarize it (FR-007, research D8).
 
     Counts per severity (zero-filled, the ``ValidationReport._by_severity``
-    shape) plus the runner's sorted ``ran`` list. Violation *messages* stay out:
-    they embed minted-URI labels (research D2). Discovery/run errors never
-    affect the counts — exactly as they never affect ``validate``'s gate.
+    shape) plus the runner's sorted ``ran`` list and its ``not_evaluated``
+    channel (the third-state validators, sorted by name — iteration 040).
+    Violation *messages* stay out: they embed minted-URI labels (research D2).
+    Discovery/run errors never affect the counts — exactly as they never affect
+    ``validate``'s gate.
 
     Raises :class:`~bookwright.validation.base.UnknownValidatorError` when the
     manifest names an undiscovered validator — a config fault the command maps
@@ -198,10 +200,12 @@ def validation_summary(root: Path, manifest: Manifest, indexer: Indexer) -> Vali
     """
     builtins, customs, _load_errors = discover_validators(root.joinpath(*CUSTOM_VALIDATORS_SUBPATH))
     active = resolve_active(builtins, customs, manifest.validators)
-    violations, _run_errors, ran = run_validators(
+    violations, _run_errors, not_evaluated, ran = run_validators(
         active, ValidationContext(root=root, manifest=manifest), indexer
     )
     counts = {level.value: 0 for level in Severity}
     for violation in violations:
         counts[violation.severity.value] += 1
-    return ValidationSummary(counts=counts, ran=tuple(ran))
+    return ValidationSummary(
+        counts=counts, ran=tuple(ran), not_evaluated=tuple(not_evaluated)
+    )

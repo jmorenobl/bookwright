@@ -75,9 +75,10 @@ def test_no_outline_units_directory_is_inert(project_root: Path) -> None:
     builtins, customs, _ = discover_validators(project_root / ".bookwright" / "validators")
     active = resolve_active(builtins, customs, ValidatorsBlock(enabled=["narrative_structure"]))
     indexer = build_indexer(project_root, outline=True)
-    violations, errors, ran = run_validators(active, project, indexer)
+    violations, errors, not_evaluated, ran = run_validators(active, project, indexer)
     assert violations == []
     assert errors == []
+    assert not_evaluated == []
     assert ran == ["narrative_structure"]
 
 
