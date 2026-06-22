@@ -6,8 +6,8 @@ Registro de versiones de Bookwright. Sigue el espíritu de
 ## v0.5.0 — Robustez de la validación
 
 El *minor* de **robustez de la validación** (issue #1), que entrega **dos**
-iteraciones a la vez al cierre del hito (039 y 040), como ya hicieran M4→`v0.2.0`
-y M5→`v0.3.0`. El *dogfooding* de la línea v0.4 había parcheado DEBT-004, DEBT-007
+iteraciones a la vez al cierre del hito (039 y 040), como ya ocurrió con `v0.2.0`
+y `v0.3.0`. El *dogfooding* de la línea v0.4 había parcheado DEBT-004, DEBT-007
 y DEBT-008 caso por caso, pero dejó claro que eran **una sola clase** de defecto,
 no tres bugs: cada validador de prosa reimplementaba cómo «ver más allá del
 Markdown que la propia herramienta emite», y un resultado `[]` no podía
@@ -61,7 +61,7 @@ la puerta de CI no cambia — solo los hallazgos `error` bloquean, como antes.
   migrado solo ocurre sobre entradas que ya devolvían `[]`, así que **cero**
   ediciones a los oráculos de hallazgos existentes.
 
-## v0.4.0 — Estructura narrativa: Propp/Greimas (v0.4)
+## v0.4.0 — Estructura narrativa: Propp/Greimas
 
 Da vida de extremo a extremo a la **capa de estructura narrativa** (las clases
 `G7`/`G9`/`G10`, modeladas pero sin alimentar hasta ahora): `outline/units/*.md`
@@ -131,14 +131,14 @@ destapó la clase de defecto que `v0.5.0` cerró de raíz:
   (`#␠`) antes de su heurística de nombres propios, de modo que un título como
   `# Capítulo 1` ya no marca `Capítulo` como nombre propio sin ficha.
 
-## v0.3.0 — Orquestación de contexto (M5)
+## v0.3.0 — Orquestación de contexto
 
 Añade el **hilo conductor** (diseño § 21): un plan de trabajo en tres capas que no se
 pisan —**autorada** (el bloque `[focus]`), **derivada** (`bookwright status`) y de
 **juicio** (las skills)— que responde *en qué trabajo y qué hago a continuación* sin un
 TODO escrito a mano que envejece. El plan es una **función** del texto plano: borra el
 grafo, reconstruye y obtienes el mismo estado. Opcional y aditivo: un proyecto que no lo
-usa se comporta como en v0.2. Ver [Orquestación](concepts/orchestration.md).
+usa se comporta como si la orquestación no existiera. Ver [Orquestación](concepts/orchestration.md).
 
 ### Añadido
 
@@ -162,10 +162,10 @@ usa se comporta como en v0.2. Ver [Orquestación](concepts/orchestration.md).
   corpus), el test E2E `test_orchestration_workflow.py` que recorre
   `focus → build → status → resolver → build → status` y asevera la **convergencia de
   estado** más las rutas de inercia y degradación, y la página
-  [Orquestación](concepts/orchestration.md). Las expectativas de `factual_anchor` (M4) quedan
+  [Orquestación](concepts/orchestration.md). Las expectativas de `factual_anchor` quedan
   byte-estables.
 
-## v0.2.0 — Investigación y procedencia (M4)
+## v0.2.0 — Investigación y procedencia
 
 Añade el sistema de **investigación con procedencia**, opcional y aditivo: una obra
 puede documentar qué sabe, de dónde y con qué fiabilidad, y dejar que esa investigación
@@ -197,7 +197,7 @@ restrinja la ficción de forma verificable. Un proyecto que no lo usa no paga na
   `factual_anchor` en [Validación](validation.md) y las skills de investigación en
   [El flujo de autoría](concepts/authoring.md).
 
-## v0.1.0 — Toolkit base (M0–M3)
+## v0.1.0 — Toolkit base
 
 Primera versión del toolkit de autoría *spec-driven*.
 

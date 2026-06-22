@@ -67,8 +67,8 @@ resolver → `bookwright-research`; ③ hallazgos de baja fiabilidad →
 
 ## Degradación elegante
 
-La información **ausente** nunca es un error: un proyecto v0.2 (sin `[focus]`,
-sin `bible/research/`) sale con 0 y hechos de investigación vacíos; un proyecto
+La información **ausente** nunca es un error: un proyecto sin `[focus]` ni
+`bible/research/` sale con 0 y hechos de investigación vacíos; un proyecto
 sin nada que indexar informa `graph.available: false` y, como mucho, la acción
 de arranque. La información **corrupta** falla exactamente como `graph build`
 sobre el mismo corpus.

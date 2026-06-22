@@ -1,6 +1,6 @@
 # Orquestación
 
-El **hilo conductor** (M5 / v0.3, diseño § 21) es la respuesta de Bookwright a una
+El **hilo conductor** (diseño § 21) es la respuesta de Bookwright a una
 pregunta que toda obra larga acaba planteando: *¿en qué trabajo ahora y qué debería
 hacer a continuación?* En vez de un TODO escrito a mano que envejece en silencio, el
 hilo conductor se compone de tres capas que nunca se pisan —una **autorada**, una
@@ -8,7 +8,7 @@ hilo conductor se compone de tres capas que nunca se pisan —una **autorada**, 
 reconstruible desde el texto plano y verificable en CI.
 
 Es **opcional y aditivo**: un proyecto que no define foco ni investigación se comporta
-exactamente como en v0.2 (ver [Inercia](#inercia-cuando-no-se-usa)).
+exactamente como si la orquestación no existiera (ver [Inercia](#inercia-cuando-no-se-usa)).
 
 ## Las tres capas
 
@@ -103,7 +103,7 @@ lee de la única fuente que lo calcula.
 
 ## Inercia cuando no se usa
 
-Un proyecto sin bloque `[focus]` y sin `bible/research/` se comporta como en v0.2:
+Un proyecto sin bloque `[focus]` y sin `bible/research/` se comporta como si la orquestación no existiera:
 `bookwright status` sale con código 0, reporta `focus: null`, hechos de investigación
 vacíos y, a lo sumo, las acciones de arranque genéricas (① o ⑤); `build` y `validate`
 no cambian. Y si faltan los prerrequisitos de construcción, `status` **degrada con

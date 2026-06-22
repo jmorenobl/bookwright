@@ -1,6 +1,6 @@
 # Estructura narrativa
 
-La **capa estructural narrativa** (v0.4, diseño § 7) es la respuesta de Bookwright
+La **capa estructural narrativa** (diseño § 7) es la respuesta de Bookwright
 a la pregunta *¿qué forma tiene la trama, más allá de quién aparece y dónde?* Donde
 la biblia modela personajes, settings y eventos, esta capa modela los **beats** de
 la historia, las **funciones** que cumplen (en el sentido de Propp) y las
@@ -8,9 +8,9 @@ la historia, las **funciones** que cumplen (en el sentido de Propp) y las
 sin tocar la ontología congelada de GOLEM.
 
 Es **opcional y aditiva**: un proyecto sin `outline/units/` construye exactamente el
-mismo grafo que antes de v0.4. Y los **vocabularios** (Propp, Greimas) solo tipan
-cuando los activas: con `[vocabularies] active = []` el grafo es byte a byte el de
-v0.3.
+mismo grafo que sin esta capa. Y los **vocabularios** (Propp, Greimas) solo tipan
+cuando los activas: con `[vocabularies] active = []` el grafo es byte a byte el
+mismo.
 
 ## De `outline/units/` al grafo
 

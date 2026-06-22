@@ -59,8 +59,8 @@ reglas; la biblia puebla las entidades; el outline las estructura; las escenas
 las desglosan; el draft redacta.
 
 > **Nota:** `manuscript/` es **solo para el autor**: el scaffold lo crea, pero el
-> motor no ingiere su contenido. `outline/` está **parcialmente ingerido** desde
-> v0.4: las fichas de `outline/units/` alimentan unidades y funciones narrativas
+> motor no ingiere su contenido. `outline/` está **parcialmente ingerido**:
+> las fichas de `outline/units/` alimentan unidades y funciones narrativas
 > al grafo. Si das a varias unidades una misma clave `sequence` y las numeras con
 > `order`, el motor las ensambla en una secuencia recorrible en ese orden. El
 > resto del outline (`arcs`/`structure`/`synopsis`/`scenes`) sigue siendo prosa de
@@ -83,8 +83,8 @@ las desglosan; el draft redacta.
 
 ### Investigación y verificación
 
-Las dos skills de **investigación con procedencia** (opcional, disponible desde
-v0.2). Pueblan y vigilan `bible/research/`; el sistema entero es opcional y se
+Las dos skills de **investigación con procedencia** (opcional). Pueblan y vigilan
+`bible/research/`; el sistema entero es opcional y se
 enciende con `[research]` en el manifiesto. Disparan tanto con prompts en español como en inglés.
 
 | Skill | Qué hace |

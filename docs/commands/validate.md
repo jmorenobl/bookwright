@@ -51,7 +51,7 @@ Los tres canales son **distintos** y no se solapan:
   `severity`, `message`, `source` (`archivo:línea`) y `triples`.
 - **`errors[]`** — fallos del **propio validador** (excepciones), no del canon.
 - **`not_evaluated[]`** — validadores que **no pudieron evaluar**, cada uno con su
-  `validator` y un `reason`. Aditivo desde v0.5.0; **no bloquea**, pero un
+  `validator` y un `reason`. Aditivo; **no bloquea**, pero un
   `not_evaluated` no vacío significa que el verde no es completo
   (`status == "ok" AND not_evaluated == []`).
 

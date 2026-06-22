@@ -1,6 +1,6 @@
 # Investigación
 
-El sistema de **investigación con procedencia** (M4 / v0.2) deja que una novela
+El sistema de **investigación con procedencia** deja que una novela
 histórica —o cualquier obra que se apoye en hechos— documente *qué sabe, de dónde lo
 sabe y con qué grado de confianza*, y que esa investigación **restrinja** la ficción
 de forma verificable. Es **opcional**: un proyecto que no la usa no paga nada por ella
@@ -122,5 +122,5 @@ puede comprobarse en CI), solo las precondiciones del paso de verificación.
 
 Si un proyecto no tiene `bible/research/`, o si fija `[research].enabled = false`, el
 sistema **no emite ningún triple `bw:`** y `factual_anchor` devuelve cero hallazgos: la
-validación se comporta exactamente como en v0.1. La investigación es aditiva y
+validación se comporta exactamente como si la investigación no existiera. Es aditiva y
 opcional, nunca un coste impuesto.
