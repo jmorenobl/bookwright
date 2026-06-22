@@ -171,9 +171,13 @@ líder de superficie que el heurístico no "ve". El arreglo vive **solo en la co
 compartida** (`io/prose.py`), no en un stripper local — meterlo en `character_presence`
 reintroduciría exactamente la deuda que 039 saldó.
 
-**Necesidad (`SPEC`)** — pega verbatim como `spec`:
+El `SPEC` (Necesidad) y el `PLAN_HINT` (Pista para `/speckit-plan`) van **rellenos
+verbatim** dentro del comando de copia-pega de abajo (fuente única, sin duplicar).
 
-```text
+**Comando del workflow** (desde `main` limpio) — **copia-pega completo en la terminal**:
+
+```bash
+SPEC=$(cat <<'EOF'
 Necesidad: en prosa española el diálogo se abre con la raya tipográfica `—` (U+2014; y
 a veces la semirraya `–`, U+2013). La costura de prosa única de Bookwright
 (`io/prose.py`, iteración 039) normaliza los marcadores de bloque ASCII —encabezado ATX
@@ -227,11 +231,9 @@ Fuera de scope: el roster de cruce incompleto de settings/locations/objects (eso
 DEBT-010 / iteración 042); convertir el heurístico de nombres propios en juicio semántico
 (movimiento 3 de issue #1, demand-pulled); cualquier validador que no escanee prosa de
 superficie (`factual_anchor`, `temporal`, `narrative_structure`).
-```
-
-**Pista para `/speckit-plan` (`PLAN_HINT`)** — pega verbatim como `plan_hint`:
-
-```text
+EOF
+)
+PLAN_HINT=$(cat <<'EOF'
 Apóyate en `io/prose.py` (la costura de 039): `_normalize` retira iterativamente los
 prefijos de bloque vía `_HEADING_MARKER` (`^#{1,6}\s+`) y `_BULLET_MARKER`
 (`^\s*[-*+>]\s+`). Añade un `_DIALOGUE_MARKER` —p. ej. `^\s*[—–]\s*` (raya U+2014 /
@@ -245,17 +247,6 @@ empíricamente qué oráculos cambian (`uv run pytest`) y corrige solo los conte
 positivos de raya (sin tocar manuscritos de fixture). Añade un caso de prosa que pruebe
 que una mención MID-línea de diálogo sigue disparando. Diseño § 13. Sin librería de
 markdown (Constitución II).
-```
-
-**Comando del workflow** (desde `main` limpio):
-
-```bash
-SPEC=$(cat <<'EOF'
-…  # la Necesidad de 041, verbatim del bloque de arriba
-EOF
-)
-PLAN_HINT=$(cat <<'EOF'
-…  # la Pista de 041, verbatim del bloque de arriba
 EOF
 )
 specify workflow run bookwright-quality \
@@ -275,9 +266,14 @@ que SÍ está declarado (p. ej. `Real`, `Fábrica`, `Paños` de "la Real Fábric
 se marcan como sin entrada. El mensaje dice literalmente "no bible entry": debe consultar
 TODA la bible, no solo `characters/`.
 
-**Necesidad (`SPEC`)** — pega verbatim como `spec`:
+El `SPEC` (Necesidad) y el `PLAN_HINT` (Pista para `/speckit-plan`) van **rellenos
+verbatim** dentro del comando de copia-pega de abajo (fuente única, sin duplicar).
 
-```text
+**Comando del workflow** (desde `main` limpio, con 041 ya liberada) — **copia-pega
+completo en la terminal**:
+
+```bash
+SPEC=$(cat <<'EOF'
 Necesidad: el validador `character_presence` tiene dos reglas. La regla de huérfanos
 (severidad `error`, protege el gate) verifica que cada PERSONAJE de la bible se mencione
 en el manuscrito. La regla de menciones-desconocidas (severidad `warning`) marca todo
@@ -328,11 +324,9 @@ Comportamiento esperado / criterios:
 Fuera de scope: la raya de diálogo (DEBT-009 / iteración 041); crear un validador de
 presencia de entornos/objetos aparte (no hace falta: basta ampliar el roster de cruce);
 convertir el heurístico en juicio semántico (movimiento 3 de issue #1, demand-pulled).
-```
-
-**Pista para `/speckit-plan` (`PLAN_HINT`)** — pega verbatim como `plan_hint`:
-
-```text
+EOF
+)
+PLAN_HINT=$(cat <<'EOF'
 Apóyate en `validation/base.py`: el helper genérico `_names_of(concept_cls)` y el accesor
 `setting_names()` (clase `Setting`) son el patrón exacto a replicar para
 `location_names()` (clase `NarrativeLocation`) y `object_names()` (clase `Object`), ambas
@@ -344,17 +338,6 @@ sepáralo: `_orphans` sigue con `character_names()`, pero el conjunto de slugs q
 (sigue clavado en `not character_names and not files`) ni la firma/forma de `Violation`.
 Verifica empíricamente qué oráculos cambian y corrige solo conteos de warnings de
 entidades ya declaradas. Diseño § 13. File-based (no SPARQL), sin dependencia nueva.
-```
-
-**Comando del workflow** (desde `main` limpio, con 041 ya liberada):
-
-```bash
-SPEC=$(cat <<'EOF'
-…  # la Necesidad de 042, verbatim del bloque de arriba
-EOF
-)
-PLAN_HINT=$(cat <<'EOF'
-…  # la Pista de 042, verbatim del bloque de arriba
 EOF
 )
 specify workflow run bookwright-quality \
