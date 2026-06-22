@@ -116,14 +116,32 @@ hardening pattern), record it **in Spanish** (the design doc is Spanish):
 If the iteration touched no canonical design (e.g. a pure JSON-envelope
 cleanup), skip this file.
 
-### 7. Re-verify
+### 7. README.md + README.es.md — version badge + status line (editorial)
+
+Both READMEs ship together (English + Spanish, mirror images) and carry the
+version in **two** places each: the shields.io **version badge**
+(`badge/version-X.Y.Z-…` + the `alt="Version X.Y.Z"` / `alt="Versión X.Y.Z"`
+text) and the **`> Status:` / `> Estado:`** blockquote near the top. Bump both:
+
+- Update all four references (badge URL + alt text in each file) to the new
+  `X.Y.Z`.
+- Refresh the status-line prose **only when the release changes a user-visible
+  capability** (a new verb, a changed validation/output behaviour) — keep
+  README.md in English and README.es.md in Spanish, as mirror translations. A
+  pure-internal patch (no observable delta) bumps the version numbers and leaves
+  the prose as-is.
+
+These are easy to forget (the badge lagged a release before this step existed)
+— treat them as **always** part of the release, like CLAUDE.md.
+
+### 8. Re-verify
 
 ```
 uv run bookwright version    # must print the new X.Y.Z
 uv run pytest -q             # still green
 ```
 
-### 8. Release commit on `main`
+### 9. Release commit on `main`
 
 ```
 git add -A
@@ -134,13 +152,13 @@ Body: one paragraph on what shipped + one paragraph on the release-metadata
 changes (version bump, CHANGELOG, deferral-registry delta, CLAUDE.md/design
 updates). End with the project's `Co-Authored-By` trailer.
 
-### 9. Annotated tag
+### 10. Annotated tag
 
 ```
 git tag -a vX.Y.Z -m "Release vX.Y.Z: <title> (iteration NNN)"
 ```
 
-### 10. Stop — do not push
+### 11. Stop — do not push
 
 Per project rule, **commit and tag only; never `git push` unless the user asks.**
 Report the new commit, the tag, and how far `main` is ahead of `origin/main`,
@@ -153,6 +171,7 @@ and offer to push (`git push && git push --tags`).
 | `src/bookwright/__init__.py` | yes | mechanical (1 line) |
 | `CHANGELOG.md` | yes | editorial |
 | `CLAUDE.md` | yes | editorial |
+| `README.md` + `README.es.md` | yes | mechanical badge/status bump (+ editorial prose if a capability changed) |
 | `bookwright-design.md` | only if a concept was wired / a design decision recorded | editorial |
 | git tag `vX.Y.Z` | yes | mechanical |
 
