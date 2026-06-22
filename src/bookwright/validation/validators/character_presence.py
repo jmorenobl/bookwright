@@ -18,6 +18,7 @@ from typing import ClassVar
 
 from bookwright.golem.slug import make_slug
 from bookwright.indexers import Indexer
+from bookwright.io.prose import ProseView
 from bookwright.validation.base import Severity, ValidationContext, Violation
 
 # Pinned proper-noun candidate: a capitalized word of ≥3 letters (D3). Accent-aware
@@ -26,9 +27,6 @@ _CANDIDATE = re.compile(r"[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,}")
 # Sentence-ending punctuation: a capital right after one of these (or at line start)
 # is grammatical, not necessarily a proper noun — excluded (conservative, D3).
 _SENTENCE_END = frozenset(".!?¿¡")
-# ATX heading opening marker, anchored at ``^`` with no leading whitespace (research D2):
-# stripped before the heuristic so a heading's first content word lands at offset 0.
-_HEADING_MARKER = re.compile(r"^#{1,6}\s+")
 _MIN_TOKEN_LEN = 3  # shortest name token worth matching as a standalone word.
 # Common capitalized non-names we never treat as a character mention (pinned stop-set).
 _STOP_WORDS = frozenset(
@@ -112,7 +110,7 @@ class CharacterPresence:
 
         out: list[Violation] = []
         out.extend(self._orphans(roster, files))
-        out.extend(self._unknown_mentions(files, roster_slugs))
+        out.extend(self._unknown_mentions(project.manuscript_view(), roster_slugs))
         return out
 
     def _orphans(
@@ -139,16 +137,17 @@ class CharacterPresence:
 
     def _unknown_mentions(
         self,
-        files: tuple[tuple[str, str], ...],
+        view: tuple[tuple[str, ProseView], ...],
         roster_slugs: frozenset[str],
     ) -> list[Violation]:
         # slug → (display name, first "relpath:line"); first occurrence wins.
         first_seen: dict[str, tuple[str, str]] = {}
-        for relpath, text in files:
-            for lineno, line in enumerate(text.splitlines(), start=1):
-                # Strip a single leading ATX heading marker so the title's first word
-                # is line-initial (and thus exempt); the rest of the line is unchanged.
-                scan = _HEADING_MARKER.sub("", line, count=1)
+        for relpath, prose in view:
+            for line in prose:
+                # The seam's ``normalized`` has stripped any leading block prefix (e.g.
+                # an ATX heading marker), so the title's first word is line-initial (and
+                # thus exempt); the scan runs over that normalized text.
+                scan = line.normalized
                 for match in _CANDIDATE.finditer(scan):
                     token = match.group(0)
                     slug = make_slug(token)
@@ -159,7 +158,7 @@ class CharacterPresence:
                         or _is_sentence_initial(scan, match.start())
                     ):
                         continue
-                    first_seen[slug] = (token, f"{relpath}:{lineno}")
+                    first_seen[slug] = (token, f"{relpath}:{line.number}")
         out: list[Violation] = []
         for _, (token, source) in sorted(first_seen.items()):
             out.append(

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from bookwright.core.manifest import Manifest
     from bookwright.golem.base import SluggedEntity
     from bookwright.io.bible import MapResult
+    from bookwright.io.prose import ProseView
 
 __all__ = [
     "Severity",
@@ -163,6 +164,8 @@ class ValidationContext:
     _setting_names: Any = field(default=_UNSET, repr=False, compare=False)
     _manuscript_files: Any = field(default=_UNSET, repr=False, compare=False)
     _constitution_text: Any = field(default=_UNSET, repr=False, compare=False)
+    _manuscript_view: Any = field(default=_UNSET, repr=False, compare=False)
+    _constitution_view: Any = field(default=_UNSET, repr=False, compare=False)
 
     @property
     def uri_base(self) -> str:
@@ -254,3 +257,27 @@ class ValidationContext:
             except (OSError, UnicodeDecodeError):
                 self._constitution_text = None
         return cast("str | None", self._constitution_text)
+
+    def manuscript_view(self) -> tuple[tuple[str, ProseView], ...]:
+        """Sorted ``(relpath, ProseView)`` parallel to :meth:`manuscript_files`.
+
+        Built from the already-cached files (no second disk read), so the prose
+        seam splits each manuscript file exactly once per run and every prose
+        validator shares the result (C5.1/C5.3, FR-006).
+        """
+        if self._manuscript_view is _UNSET:
+            from bookwright.io.prose import prose_view  # noqa: PLC0415
+
+            self._manuscript_view = tuple(
+                (relpath, prose_view(text)) for relpath, text in self.manuscript_files()
+            )
+        return cast("tuple[tuple[str, ProseView], ...]", self._manuscript_view)
+
+    def constitution_view(self) -> ProseView:
+        """The constitution's :class:`ProseView`, or ``()`` when it is absent (C5.2)."""
+        if self._constitution_view is _UNSET:
+            from bookwright.io.prose import prose_view  # noqa: PLC0415
+
+            text = self.constitution_text()
+            self._constitution_view = () if text is None else prose_view(text)
+        return cast("ProseView", self._constitution_view)

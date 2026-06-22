@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from bookwright.indexers import RdflibIndexer
+from bookwright.io.prose import prose_view
 from bookwright.validation.base import Severity, Violation
 from bookwright.validation.validators.character_presence import CharacterPresence
 from tests.validation.conftest import load_context, write_project
@@ -106,3 +107,38 @@ def test_name_in_heading_body_is_still_flagged(project_root: Path) -> None:
     assert elena[0].source == "manuscript/cap-01.md:1"
     # Prose validator — no graph, no triples on the emitted finding (FR-009 / Principle X).
     assert elena[0].triples == ()
+
+
+def test_blockquote_off_roster_mention_is_not_flagged(project_root: Path) -> None:
+    # Story 2 / FR-011 / SC-003: the class-closure proof. A `> blockquote` off-roster
+    # mention is handled by the SEAM's existing `[-*+>]` recognizer with NO
+    # validator-code change — `Quevedo` is line-initial after the `> ` strip and so
+    # inherits the sentence-initial exemption.
+    # First, the seam itself strips the marker (so the name lands at offset 0):
+    assert prose_view("> Quevedo lo dijo")[0].normalized == "Quevedo lo dijo"
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        manuscript={"cap-01.md": "Aparici escuchó.\n> Quevedo lo dijo, sentenció.\n"},
+    )
+    findings = _run(project_root)
+    # `Quevedo` opens the blockquote line → exempt; only the roster `Aparici` appears,
+    # so there is no unknown mention. Contrast with the raw `> Quevedo …`, where
+    # `Quevedo` would be non-initial (after `> `) and would fire.
+    assert all("Quevedo" not in f.message for f in findings)
+
+
+def test_locator_is_source_line_not_match_offset(project_root: Path) -> None:
+    # Story 3 / FR-010 / SC-004: a finding on a marker-bearing line reports the line's
+    # 1-based source number, never the offset of the match within the stripped text.
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        manuscript={"cap-01.md": "Aparici miró.\n\n## La sombra de Quevedo\n"},
+    )
+    findings = _run(project_root)
+    quevedo = [f for f in findings if "Quevedo" in f.message]
+    assert len(quevedo) == 1
+    # `Quevedo` sits mid-heading on source line 3 → cited as `:3` (not the offset 0
+    # the stripped "La sombra de Quevedo" would imply for the line's first word).
+    assert quevedo[0].source == "manuscript/cap-01.md:3"

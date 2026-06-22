@@ -51,3 +51,24 @@ def test_same_file_two_terms_does_not_warn(project_root: Path) -> None:
         manuscript={"cap-01.md": "Ayelo era coastal, casi inland.\n"},
     )
     assert _run(project_root) == []
+
+
+def test_block_prefixed_lines_keep_findings_and_line_numbers(project_root: Path) -> None:
+    # FR-009 / Story 1: leading bullet/blockquote markers on the descriptor lines do not
+    # move the findings or their line numbers — the per-line scan reads RAW, so the
+    # `\bterm\b` matching (and `.number` locator) is identical to the bare form.
+    write_project(
+        project_root,
+        settings=["Ayelo"],
+        manuscript={
+            "cap-01.md": "# Capítulo 1\n> Ayelo es una villa coastal y luminosa.\n",
+            "cap-02.md": "- Ayelo, inland y polvorienta, dormía.\n",
+        },
+    )
+    findings = _run(project_root)
+    assert len(findings) == 1
+    finding = findings[0]
+    assert "coastal" in finding.message and "inland" in finding.message
+    # `coastal` is on line 2 of cap-01 (after the heading), `inland` on line 1 of cap-02.
+    assert finding.source == "manuscript/cap-01.md:2"
+    assert "cap-01.md:2" in finding.message and "cap-02.md:1" in finding.message

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from bookwright.indexers import RdflibIndexer
+from bookwright.io.prose import prose_view
 from bookwright.validation.base import Severity, Violation
 from bookwright.validation.validators.focalization import Focalization, _parse_declaration
 from tests.validation.conftest import load_context, write_project
@@ -79,7 +80,7 @@ def test_no_parsable_declaration_yields_nothing(project_root: Path) -> None:
 # The body shared by every parity case; `Elena Vidal` is the named focal character.
 _BODY = "Tercera persona limitada, centrada en Elena Vidal"
 _NAMES = ["Elena Vidal"]
-_BARE = _parse_declaration(f"Voz narrativa: {_BODY}", _NAMES)
+_BARE = _parse_declaration(prose_view(f"Voz narrativa: {_BODY}"), _NAMES)
 
 
 @pytest.mark.parametrize(
@@ -88,7 +89,7 @@ _BARE = _parse_declaration(f"Voz narrativa: {_BODY}", _NAMES)
 )
 def test_bullet_marker_parses_like_bare_form(marker: str) -> None:
     # Acceptance Scenario 4 / contract C2-C5: each bullet marker (+ space) is stripped.
-    parsed = _parse_declaration(f"{marker} Voz narrativa: {_BODY}", _NAMES)
+    parsed = _parse_declaration(prose_view(f"{marker} Voz narrativa: {_BODY}"), _NAMES)
     assert parsed == _BARE
     assert parsed is not None and parsed.person == "third"
 
@@ -106,13 +107,13 @@ def test_bullet_marker_parses_like_bare_form(marker: str) -> None:
 def test_emphasis_run_parses_like_bare_form(line: str) -> None:
     # Acceptance Scenario 4 / contract C6-C8, C10: each emphasis run is stripped
     # independently on each side of the label.
-    parsed = _parse_declaration(line + _BODY, _NAMES)
+    parsed = _parse_declaration(prose_view(line + _BODY), _NAMES)
     assert parsed == _BARE
 
 
 def test_scaffold_shape_parses_to_concrete_values() -> None:
     # FR-003 / FR-004 / contract C9: the exact shape the scaffold emits.
-    parsed = _parse_declaration(f"- **Voz narrativa**: {_BODY}", _NAMES)
+    parsed = _parse_declaration(prose_view(f"- **Voz narrativa**: {_BODY}"), _NAMES)
     assert parsed is not None
     assert parsed.person == "third"
     assert parsed.limited is True
@@ -122,7 +123,8 @@ def test_scaffold_shape_parses_to_concrete_values() -> None:
 def test_english_scaffold_shape_parses() -> None:
     # SC-002 / contract C11: the English label under the scaffold markup.
     parsed = _parse_declaration(
-        "- **Narrative voice**: third person limited, focused on Elena Vidal", _NAMES
+        prose_view("- **Narrative voice**: third person limited, focused on Elena Vidal"),
+        _NAMES,
     )
     assert parsed is not None
     assert parsed.person == "third"
@@ -132,7 +134,7 @@ def test_english_scaffold_shape_parses() -> None:
 
 def test_indented_scaffold_shape_parses() -> None:
     # contract C12: leading indentation before the bullet is tolerated.
-    parsed = _parse_declaration(f"   - **Voz narrativa**: {_BODY}", _NAMES)
+    parsed = _parse_declaration(prose_view(f"   - **Voz narrativa**: {_BODY}"), _NAMES)
     assert parsed == _BARE
 
 
@@ -173,7 +175,7 @@ def test_template_binding() -> None:
     # binds the live template body to the parser — mangling that line (e.g. removing
     # the colon, or answering it with a real voice) flips this assertion and fails the
     # test, the durable anti-drift guarantee against template↔parser divergence.
-    assert _parse_declaration(voice_lines[0], []) is None
+    assert _parse_declaration(prose_view(voice_lines[0]), []) is None
 
 
 def test_live_scaffold_constitution_yields_nothing(project_root: Path) -> None:
@@ -219,7 +221,7 @@ def test_pending_recognition_boundary(text: str, expected_person: str | None) ->
     # A body that is *solely* the token is suppressed (→ None); a body that merely
     # *contains* the token alongside real declared text stays a real declaration. The
     # over-match guard the real-voice wake-up (FR-008) depends on.
-    parsed = _parse_declaration(text, _NAMES)
+    parsed = _parse_declaration(prose_view(text), _NAMES)
     if expected_person is None:
         assert parsed is None
     else:
@@ -266,4 +268,35 @@ def test_pending_markdown_declaration_yields_nothing(project_root: Path) -> None
 def test_label_mid_sentence_is_not_a_declaration() -> None:
     # contract N4: a line merely mentioning the label with no colon-delimited body
     # is not a declaration (no false widening, R2).
-    assert _parse_declaration("La voz narrativa de la obra es lírica.", _NAMES) is None
+    assert _parse_declaration(prose_view("La voz narrativa de la obra es lírica."), _NAMES) is None
+
+
+# --- the seam: per-line scans read RAW, locators are the source line number ---
+
+
+def test_first_person_locator_is_source_line_over_raw(project_root: Path) -> None:
+    # Story 3 / FR-010 / C6.2: the first-person scan reads `.raw` and the finding is
+    # located by the line's 1-based source `number` — a leading heading shifts the
+    # break to line 3, which the locator reflects exactly.
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        constitution="Voz narrativa: tercera persona\n",
+        manuscript={"cap-01.md": "# Capítulo 1\n\nYo no entendía nada.\n"},
+    )
+    findings = _run(project_root)
+    breaks = [f for f in findings if "first-person" in f.message]
+    assert len(breaks) == 1
+    assert breaks[0].source == "manuscript/cap-01.md:3"
+
+
+def test_bullet_prefixed_line_stays_dialogue_exempt(project_root: Path) -> None:
+    # C6.2: reading `.raw` keeps the dialogue exemption byte-for-byte — a `- `-led
+    # line is a dialogue prefix, so its first-person pronoun is NOT a break (unchanged).
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        constitution="Voz narrativa: tercera persona\n",
+        manuscript={"cap-01.md": "Aparici asintió.\n- Yo me marcho.\n"},
+    )
+    assert all("first-person" not in f.message for f in _run(project_root))

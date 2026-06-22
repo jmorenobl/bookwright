@@ -195,6 +195,15 @@ the same 1-based line numbers as the raw-text scan does today.
   left-to-right (pass 1 strips `> `, pass 2 strips `- `), until none remains —
   `> - text` → `text` (Clarifications 2026-06-22). No third-party Markdown parse.
   Inline emphasis is never stripped by the seam and never triggers a pass.
+- **Shared seam widens recognition uniformly across validators**: because every
+  prose validator now reads the *same* normalized view, a block prefix the old
+  per-validator strippers did not handle is now stripped for *all* of them — e.g.
+  `focalization` reads its declaration over `normalized`, so a heading- or
+  nested-prefixed voice line (`# Voz narrativa: …`, `> - Voz narrativa: …`) parses
+  as a declaration where its old single-bullet stripper would have missed it. This
+  is the intended class-closure (one recognizer, no per-validator drift), not a
+  regression: it is inert on every live fixture (none carry such a prefix on a
+  declaration), so byte-for-byte suite parity (SC-001) holds.
 - **A leading block marker on a dialogue line**: A dialogue line carrying a
   leading `- ` or `> ` is stripped in the *normalized* view but its *raw* form is
   retained; `focalization`'s dialogue / first-person / head-hopping scans read the
