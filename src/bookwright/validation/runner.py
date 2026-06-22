@@ -11,6 +11,8 @@ from __future__ import annotations
 from bookwright.indexers import Indexer
 from bookwright.validation.base import (
     _RANK,
+    NotEvaluated,
+    NotEvaluatedResult,
     ValidationContext,
     Validator,
     ValidatorError,
@@ -19,8 +21,14 @@ from bookwright.validation.base import (
 
 __all__ = ["RunResult", "run_validators", "sort_key"]
 
-RunResult = tuple[list[Violation], list[ValidatorError], list[str]]
-"""``(violations, errors, ran)`` — deduped/sorted findings, run errors, run names."""
+RunResult = tuple[
+    list[Violation],
+    list[ValidatorError],
+    list[NotEvaluatedResult],
+    list[str],
+]
+"""``(violations, errors, not_evaluated, ran)`` — findings, run errors, conscious
+skips (sorted by validator name), run names."""
 
 
 def sort_key(violation: Violation) -> tuple[str, int, str, str, tuple[tuple[str, str, str], ...]]:
@@ -41,18 +49,25 @@ def run_validators(
 
     Collects each validator's ``Violation`` list, deduplicates identical findings
     across the whole run (D8), and returns them sorted by :func:`sort_key`. A
-    validator that raises contributes a ``ValidatorError(phase="run")`` and no
-    findings; the rest still run. ``ran`` lists every invoked validator name, sorted.
+    validator that raises :class:`NotEvaluated` contributes a ``NotEvaluatedResult``
+    (and no findings) to the ``not_evaluated`` channel; any other exception
+    contributes a ``ValidatorError(phase="run")`` (FR-005). The rest still run.
+    ``not_evaluated`` is sorted by validator name (FR-013); ``ran`` lists every
+    invoked validator name, sorted.
     """
     seen: set[Violation] = set()
     violations: list[Violation] = []
     errors: list[ValidatorError] = []
+    not_evaluated: list[NotEvaluatedResult] = []
     ran: list[str] = []
 
     for validator in active:
         ran.append(validator.name)
         try:
             found = validator.validate(project, indexer)
+        except NotEvaluated as skip:  # conscious skip → not_evaluated channel (FR-005)
+            not_evaluated.append(NotEvaluatedResult(validator.name, skip.reason))
+            continue
         except Exception as exc:  # per-validator isolation (FR-014) — never abort the run
             errors.append(ValidatorError(validator.name, f"{type(exc).__name__}: {exc}", "run"))
             continue
@@ -62,4 +77,5 @@ def run_validators(
                 violations.append(violation)
 
     violations.sort(key=sort_key)
-    return violations, errors, sorted(ran)
+    not_evaluated.sort(key=lambda r: r.validator)
+    return violations, errors, not_evaluated, sorted(ran)

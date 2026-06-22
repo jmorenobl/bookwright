@@ -475,54 +475,51 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/039-prose-structure-seam/plan.md` (iteration 039, first of two in the
-`v0.5.0` "validation robustness" minor (issue #1, facet A — surface coupling) —
-close the *class* behind DEBT-004/007/008 instead of patching a fourth instance.
-Today three prose validators each re-implement how to "see past" the Markdown
-their own scaffold emits; the next surface (a `> blockquote`, an epigraph) reopens
-the crack in whichever validator meets it first. The fix: one shared,
-Markdown-aware **prose/structure seam** in a NEW `src/bookwright/io/prose.py`
-(modelled on `io/frontmatter.py`'s line-tracking). It exposes `ProseLine`
-(frozen dataclass: `number` 1-based, `raw` original, `normalized` = leading
-structural block prefix(es) stripped), `prose_view(text) -> tuple[ProseLine, ...]`,
-and `is_placeholder(body)`. `normalized` strips ITERATIVELY — one block prefix per
-`count=1` pass, left-to-right, until none remains (`> - text` → `text`); two
-recognizers keep the deleted strippers' asymmetric anchors EXACTLY:
-`_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` (strict col 0, mirrors
-`character_presence`) and `_BULLET_MARKER = re.compile(r"^\s*[-*+>]\s+")` (tolerates
-leading whitespace, mirrors `focalization._BULLET`). Inline emphasis is NEVER a
-block prefix (never triggers a pass); `is_placeholder` mirrors `_PENDING_ONLY`
-(`r"(?i)^\s*\[pending\b[^\]]*\]\s*$"`). NO new dependency, NO Markdown AST
-(Constitution II / FR-012). `ValidationContext` gains two cached accessors via the
-existing `_UNSET`/memo pattern: `manuscript_view()` (sorted `(relpath, view)`,
-built from `manuscript_files()` — no second disk read) and `constitution_view()`
-(`()` when the constitution is absent) — each source split ONCE per run (FR-006).
-Then rewrite the three validators and DELETE their local strippers: (a)
-`character_presence` runs its proper-noun scan over each line's `normalized`,
-deleting `_HEADING_MARKER` (keeps `manuscript_files()` for the orphan/`_is_mentioned`
-whole-file checks); (b) `focalization` locates its declaration over `normalized`
-with `_DECLARATION` WIDENED to tolerate optional emphasis around the label
-(`(?i)^\s*(?:\*\*|\*|_)*\s*(?:voz narrativa|narrative voice)(?:\*\*|\*|_)*\s*:\s*(?P<body>.+)$`),
-so `_BULLET`/`_LEAD_EMPHASIS`/`_CLOSE_EMPHASIS`/`_normalize_declaration_line` are
-DELETED (folded into the one pattern, not relocated to the seam — emphasis is this
-validator's vocabulary), consults the seam's `is_placeholder` (deleting local
-`_PENDING_ONLY`), and runs its dialogue/first-person/head-hopping scans over each
-line's `raw` (dialogue exemption byte-for-byte unchanged); (c) `setting_continuity`
-iterates `manuscript_view()` reading `.raw` (block-prefix stripping is inert for
-its `\bterm\b` matching) while its whole-file `name_re.search(text)` gate stays over
-the full text. NO validator calls `splitlines()` any longer (SC-002). Locators
-unchanged — the line number is `ProseLine.number`, never a match offset (FR-010).
-The class-closure proof (FR-011/SC-003/US2): a NEW fixture with a `> blockquote`
-off-roster mention (`> Quevedo lo dijo`, `Quevedo` line-initial after the strip) is
-handled correctly with ZERO validator-code change — the seam's existing `[-*+>]`
-recognizer strips it. US1/SC-001: the ENTIRE existing suite passes with ZERO oracle
-edits (byte-for-byte parity — the loop runs exactly one pass on every live input;
-verify empirically, never loosen the seam to pass a test — research D10). Tests: new
-`tests/io/test_prose.py` (the `contracts/prose-seam.md` tables) + extended
-`tests/validation/test_{character_presence,focalization,setting_continuity}.py`.
-Prose validators stay graph-free, LLM-free, `triples=()`, frozen ontology untouched
-(Principle X / FR-013); severities + the `error`-only CI gate unchanged. Every
-changed/new file ≤ 500 lines (`base.py` 256 → ~285; new module ~80). Facet B (the
-tri-valued `evaluated`/`not-evaluated(reason)` result) is iteration 040, explicitly
-OUT OF SCOPE here. Design § 13.4. `uv run pytest` and the four gates green.
+`specs/040-tri-valued-validator-result/plan.md` (iteration 040, second of two in
+the `v0.5.0` "validation robustness" minor (issue #1, facet B — false confidence)
+and the one that CLOSES the milestone; 039, the prose seam, is merged. A validator
+returns `list[Violation]` and `[]` is INDISTINGUISHABLE between "evaluated and
+clean" and "had nothing to look at" — the bug that kept `focalization`
+asleep-and-green for the whole `v0.4` line (DEBT-004). This iteration makes a
+validator's per-run verdict TRI-VALUED: `evaluated` (with or without findings) vs
+`not-evaluated(reason)`, so GREEN means "evaluated and clean," never "did not look."
+THE LOAD-BEARING DECISION (research D1): a validator signals not-evaluated by
+RAISING a dedicated `NotEvaluated(reason)` exception (a plain `Exception`, NOT a
+`BookwrightError`) that the runner — already the per-validator isolation boundary —
+catches in a clause BEFORE its generic `except Exception` and records as
+`NotEvaluatedResult(validator, reason)`. `Validator.validate` keeps its return type
+`list[Violation]` UNCHANGED: no dual-shape `list | Outcome` return, no return-type
+sniffing — so the smell FR-001 forbids never materializes, and a custom validator
+returning a bare list keeps working as EVALUATED (FR-014). The explicit-Outcome and
+sentinel-`info`-`Violation` alternatives were rejected for exactly that residue. The
+new state flows ADDITIVELY: `runner.RunResult` gains a 4th element
+`not_evaluated: list[NotEvaluatedResult]` (sorted by name, FR-013) → `ValidationReport`
+gains `not_evaluated` + a `not_evaluated[]` envelope key (sibling of
+`violations`/`errors`) + a human "not evaluated:" section → `status`'s
+`ValidationSummary` gains `not_evaluated` under `state.validation` → a new pure
+`activate_dormant_validators` rule (with a static `_REMEDIES` map, after
+`review_continuity`/before `define_focus`) names the focalization remedy in
+`next_actions` (SC-004) → `resources/commands/bookwright-research.md` lists the raw
+`state.validation` not-evaluated facts at startup (FR-011). GREEN is the single
+documented predicate `status == "ok" AND not_evaluated == []` (SC-002), pinned in
+`report.py`. The CI gate is UNCHANGED — only `error`-severity `Violation`s gate;
+not-evaluated never gates (FR-004) and is a channel DISTINCT from `errors[]` (crashes
+stay `ValidatorError`, FR-005). Migration set (3 of 5): `focalization` routes ALL
+FOUR early "no usable voice" returns to `NotEvaluated` with distinct reasons —
+(i) no constitution, (ii) no parseable declaration, (iii) `[PENDING]` placeholder
+(reusing 039's `is_placeholder`), (iv) no grammatical person resolved; a usable
+first/third person stays EVALUATED (FR-008). `setting_continuity` → not-evaluated
+when the manuscript is empty (FR-009). `character_presence` → not-evaluated ONLY when
+BOTH inputs are empty (no prose AND empty roster); an empty manuscript with a
+non-empty roster STAYS EVALUATED and still emits its `error`-level orphan findings
+byte-for-byte (the rule that protects the gate, FR-004/FR-012). `temporal` /
+`factual_anchor` only conform to the backward-compatible contract. Parity (SC-003/
+FR-012): every migrated trigger fires only on inputs that already returned `[]`, so
+ZERO existing finding-oracle edits — verify empirically. `bookwright-design.md § 13.1`
+is updated to the tri-valued contract as the FIRST task, BEFORE `base.py` diverges
+(plan § 7.3). Prose validators stay graph-free, LLM-free, `triples=()`, frozen
+ontology untouched (Principle X / FR-015). Every changed/new file ≤ 500 lines
+(`base.py` ~284 → ~305). After this merges, `v0.5.0` releases ONCE for 039+040 via
+the `bookwright-release` skill. Design § 13.1 / § 13.4. `uv run pytest` and the four
+gates green.
 <!-- SPECKIT END -->

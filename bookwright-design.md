@@ -1276,13 +1276,53 @@ class Violation:
     source: str | None  # ej. "manuscript/cap-04.md:42"
     triples: list[tuple[str, str, str]] | None  # triples implicados
 
+class NotEvaluated(Exception):
+    """Señal (no error) de que un validador NO evaluó por falta de entrada.
+
+    Es un `Exception` plano —NO un `BookwrightError`—; no es un fallo. El runner
+    la captura en una cláusula **antes** de su `except Exception` genérico y la
+    anota en el canal `not_evaluated`, nunca en `errors[]`.
+    """
+    def __init__(self, reason: str) -> None: ...
+
 class Validator(Protocol):
     name: str
     severity_default: Severity
 
     def validate(self, project, indexer) -> list[Violation]:
-        """Devuelve lista de violaciones. Vacía si OK."""
+        """Devuelve lista de violaciones. Vacía = evaluado y limpio.
+
+        El tipo de retorno NO cambia (`list[Violation]`). Un validador que no
+        tiene entrada para NINGUNA de sus comprobaciones PUEDE
+        `raise NotEvaluated(motivo)` para declararlo; la lista vacía sigue
+        significando "evaluado, sin hallazgos" (un verde legítimo). Un validador
+        custom que devuelve una lista pelada y nunca lanza sigue funcionando y
+        cuenta siempre como **evaluado** (compatibilidad hacia atrás).
+        """
 ```
+
+**Resultado tri-valor (issue #1 cara B, § 13.4).** El veredicto por validador y
+por ejecución tiene tres estados, **a nivel de validador entero** (no por
+sub-comprobación):
+
+| Veredicto | Cómo lo expresa el validador | Dónde aflora | ¿Gatea CI? |
+|---|---|---|---|
+| **evaluado, sin hallazgos** | `return []` | en ningún sitio (cuenta como limpio) | no |
+| **evaluado, con hallazgos** | `return [Violation, …]` | `violations[]` | sí, si hay algún `error` |
+| **no-evaluado(motivo)** | `raise NotEvaluated(motivo)` | `not_evaluated[]` | no |
+| **petó (load/run)** | lanza cualquier otra excepción | `errors[]` (`ValidatorError`) | no |
+
+El motivo es texto fijo en **inglés** (sin datos minteados), determinista. El
+nuevo estado fluye de forma **aditiva**: `runner.RunResult` gana un 4.º elemento
+`not_evaluated` (ordenado por nombre) → `ValidationReport` gana una clave
+hermana `not_evaluated[]` en el sobre `--json` y una sección "not evaluated:" en
+el informe humano → `status` lo expone en `state.validation.not_evaluated` y una
+regla `activate_dormant_validators` lo nombra en `next_actions`. El gate sigue
+clavado **solo** en hallazgos `Violation` de severidad `error`; `no-evaluado`
+nunca gatea y es un canal **distinto** de `errors[]` (que es para validadores que
+petan). El predicado de verde queda fijado en un único sitio (`report.py`):
+
+> Una ejecución es **verde/limpia** ⟺ `status == "ok"` **y** `not_evaluated == []`.
 
 ### 13.2 Validators built-in en v0
 

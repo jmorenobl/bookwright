@@ -105,11 +105,12 @@ def _validate(scope: Path | None) -> tuple[ValidationReport, ScopeFilter | None]
 
     scope_filter = _resolve_scope(scope, root)
 
-    violations, run_errors, ran = run_validators(active, project, indexer)
+    violations, run_errors, not_evaluated, ran = run_validators(active, project, indexer)
     report = ValidationReport(
         violations=tuple(violations),
         errors=(*load_errors, *run_errors),
         ran=tuple(ran),
+        not_evaluated=tuple(not_evaluated),
     )
     return report, scope_filter
 

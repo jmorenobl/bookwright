@@ -126,9 +126,12 @@ def test_degraded_no_bible_project_exits_zero(
     state = payload["state"]
     assert state["graph"] == {"available": False, "entities": 0, "triples": 0}
     assert state["open_questions"] == {"count": 0, "items": []}
+    # The degraded path carries the additive `not_evaluated` key too (always present,
+    # never missing — iteration 040, status-state.md contract).
     assert state["validation"] == {
         "counts": {"error": 0, "warning": 0, "info": 0},
         "ran": [],
+        "not_evaluated": [],
     }
     # D5 short-circuit: at most the single bootstrap action.
     assert [a["skill"] for a in payload["next_actions"]] == ["bookwright-bible"]

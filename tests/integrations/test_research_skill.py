@@ -93,3 +93,7 @@ def test_body_consults_status_queue(integration: SkillsIntegration, tmp_path: Pa
         assert "bookwright status" in body  # RQ-1: the first-step consult.
         assert "open_questions" in body  # RQ-3: queue built from the raw facts.
         assert "unresolved_anchors" in body  # RQ-3: ...and the second fact list.
+        # FR-011 (iteration 040): the body also cites the raw not-evaluated facts,
+        # read from state.validation (NOT next_actions), like its sibling fact lists.
+        assert "not_evaluated" in body
+        assert "state.validation" in body

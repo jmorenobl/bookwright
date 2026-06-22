@@ -21,6 +21,8 @@ if TYPE_CHECKING:
     from bookwright.io.prose import ProseView
 
 __all__ = [
+    "NotEvaluated",
+    "NotEvaluatedResult",
     "Severity",
     "UnknownValidatorError",
     "ValidationContext",
@@ -114,15 +116,51 @@ class ValidatorError:
         return {"validator": self.validator, "phase": self.phase, "message": self.message}
 
 
+class NotEvaluated(Exception):
+    """A validator's opt-in signal that it consciously did not evaluate (FR-001).
+
+    Raised from inside ``validate`` when the validator has no input for ANY of its
+    checks. It is **not** a ``BookwrightError`` (it carries no error envelope) and
+    **not** a failure: the runner catches it BEFORE its generic handler and records a
+    :class:`NotEvaluatedResult` in the ``not_evaluated`` channel, never in ``errors[]``
+    (FR-005). A validator that never raises it is always **evaluated** (FR-014).
+    """
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(reason)
+
+
+@dataclass(frozen=True)
+class NotEvaluatedResult:
+    """One validator that ran without error but consciously did not evaluate.
+
+    Sibling to :class:`ValidatorError`; surfaced in the ``not_evaluated`` channel. It
+    is not a finding (no severity, never gates) and not a load/run error (FR-005). The
+    ``reason`` is the validator's English ``NotEvaluated`` reason; the runner stamps
+    the ``validator`` name (the validator never names itself).
+    """
+
+    validator: str
+    reason: str
+
+    def to_json(self) -> dict[str, Any]:
+        return {"validator": self.validator, "reason": self.reason}
+
+
 @runtime_checkable
 class Validator(Protocol):
     """The stable seam between the runner and any validator (design § 13.1).
 
     A validator examines the project (``ValidationContext``) and the already-built
     graph (``indexer``, possibly empty) and returns a list of ``Violation`` — an
-    empty list means "no problems" (FR-001). It MUST be deterministic (FR-019) and
-    MUST NOT write to disk or mutate the graph (FR-020); it MAY raise — the runner
-    isolates it (FR-014).
+    empty list means "evaluated, no findings" (a legitimate green, FR-001/FR-003). A
+    validator that has no input for ANY of its checks MAY ``raise NotEvaluated(reason)``
+    to declare it consciously did not look; the runner routes that to the
+    ``not_evaluated`` channel (FR-001). The ``validate`` return type is **unchanged**:
+    a custom validator returning a bare list keeps working as evaluated (FR-014). It
+    MUST be deterministic (FR-019) and MUST NOT write to disk or mutate the graph
+    (FR-020); it MAY raise — the runner isolates it (FR-014).
     """
 
     name: str

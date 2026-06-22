@@ -42,8 +42,11 @@ construyas cola.
 1. Ejecuta `bookwright status --json` y lee **solo** los hechos en bruto
    `state.open_questions.items[]` (`id`, `text`, `file`) y
    `state.unresolved_anchors.items[]` (`promotes`, `constrains`, `file`,
-   `problems`). **No** uses `next_actions[]`: es un traspaso entre skills, no la
-   cola propia de este comando.
+   `problems`). Lee también `state.validation.not_evaluated[]` (`validator`,
+   `reason`): son los validadores que **no pudieron evaluar** por falta de entrada
+   (verde ≠ "no miró"); tenlos presentes como contexto del estado, sin meterlos en
+   la cola de investigación. **No** uses `next_actions[]`: es un traspaso entre
+   skills, no la cola propia de este comando.
 2. Construye una **cola de investigación** con esos hechos: primero las preguntas
    abiertas, después las anclas sin resolver, numeradas `1..N` respetando el orden
    estable que da `status`, sin inventar elementos de relleno. Omite un grupo

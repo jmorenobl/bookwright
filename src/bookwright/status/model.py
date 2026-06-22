@@ -20,7 +20,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from bookwright.validation.base import Severity
+from bookwright.validation.base import NotEvaluatedResult, Severity
 
 
 class _PayloadItem(Protocol):
@@ -109,11 +109,16 @@ class ValidationSummary:
     """Counts per severity + the validators that ran (FR-007, data-model § 2.5).
 
     No violation items: their messages embed minted-URI labels (research D2/D8);
-    counts are what FR-007 requires and what rule ④ consumes.
+    counts are what FR-007 requires and what rule ④ consumes. ``not_evaluated`` is
+    the additive third-state channel (iteration 040): the validators that consciously
+    did not look, sorted by name. It is defaulted empty (last field) so the
+    degraded-path construction ``ValidationSummary(counts={}, ran=())`` in
+    ``commands/status.py`` needs no edit and the key is never missing.
     """
 
     counts: dict[str, int]
     ran: tuple[str, ...]
+    not_evaluated: tuple[NotEvaluatedResult, ...] = ()
 
     def to_payload(self) -> dict[str, Any]:
         # Fixed key order error/warning/info, zero-filled, regardless of the
@@ -121,6 +126,7 @@ class ValidationSummary:
         return {
             "counts": {level.value: self.counts.get(level.value, 0) for level in Severity},
             "ran": list(self.ran),
+            "not_evaluated": [r.to_json() for r in self.not_evaluated],
         }
 
 

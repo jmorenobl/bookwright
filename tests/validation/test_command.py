@@ -291,7 +291,11 @@ def test_narrative_structure_orphan_in_json_envelope(
     result = runner.invoke(app, ["validate", "--json"])
     payload = json.loads(result.stdout)
 
-    assert set(payload) == {"status", "failed", "violations", "errors", "summary"}
+    # The envelope gains the additive `not_evaluated` sibling key (iteration 040); the
+    # other keys keep their shape. narrative_structure (this test's subject) evaluated,
+    # so it is NOT in the channel — regardless of which input-less validators are.
+    assert set(payload) == {"status", "failed", "violations", "errors", "not_evaluated", "summary"}
+    assert "narrative_structure" not in {r["validator"] for r in payload["not_evaluated"]}
     assert payload["failed"] is False  # warning-only run never gates CI
     assert result.exit_code == 0
     orphans = [v for v in payload["violations"] if v["validator"] == "narrative_structure"]
