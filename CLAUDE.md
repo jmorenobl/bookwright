@@ -480,51 +480,38 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/040-tri-valued-validator-result/plan.md` (iteration 040, second of two in
-the `v0.5.0` "validation robustness" minor (issue #1, facet B — false confidence)
-and the one that CLOSES the milestone; 039, the prose seam, is merged. A validator
-returns `list[Violation]` and `[]` is INDISTINGUISHABLE between "evaluated and
-clean" and "had nothing to look at" — the bug that kept `focalization`
-asleep-and-green for the whole `v0.4` line (DEBT-004). This iteration makes a
-validator's per-run verdict TRI-VALUED: `evaluated` (with or without findings) vs
-`not-evaluated(reason)`, so GREEN means "evaluated and clean," never "did not look."
-THE LOAD-BEARING DECISION (research D1): a validator signals not-evaluated by
-RAISING a dedicated `NotEvaluated(reason)` exception (a plain `Exception`, NOT a
-`BookwrightError`) that the runner — already the per-validator isolation boundary —
-catches in a clause BEFORE its generic `except Exception` and records as
-`NotEvaluatedResult(validator, reason)`. `Validator.validate` keeps its return type
-`list[Violation]` UNCHANGED: no dual-shape `list | Outcome` return, no return-type
-sniffing — so the smell FR-001 forbids never materializes, and a custom validator
-returning a bare list keeps working as EVALUATED (FR-014). The explicit-Outcome and
-sentinel-`info`-`Violation` alternatives were rejected for exactly that residue. The
-new state flows ADDITIVELY: `runner.RunResult` gains a 4th element
-`not_evaluated: list[NotEvaluatedResult]` (sorted by name, FR-013) → `ValidationReport`
-gains `not_evaluated` + a `not_evaluated[]` envelope key (sibling of
-`violations`/`errors`) + a human "not evaluated:" section → `status`'s
-`ValidationSummary` gains `not_evaluated` under `state.validation` → a new pure
-`activate_dormant_validators` rule (with a static `_REMEDIES` map, after
-`review_continuity`/before `define_focus`) names the focalization remedy in
-`next_actions` (SC-004) → `resources/commands/bookwright-research.md` lists the raw
-`state.validation` not-evaluated facts at startup (FR-011). GREEN is the single
-documented predicate `status == "ok" AND not_evaluated == []` (SC-002), pinned in
-`report.py`. The CI gate is UNCHANGED — only `error`-severity `Violation`s gate;
-not-evaluated never gates (FR-004) and is a channel DISTINCT from `errors[]` (crashes
-stay `ValidatorError`, FR-005). Migration set (3 of 5): `focalization` routes ALL
-FOUR early "no usable voice" returns to `NotEvaluated` with distinct reasons —
-(i) no constitution, (ii) no parseable declaration, (iii) `[PENDING]` placeholder
-(reusing 039's `is_placeholder`), (iv) no grammatical person resolved; a usable
-first/third person stays EVALUATED (FR-008). `setting_continuity` → not-evaluated
-when the manuscript is empty (FR-009). `character_presence` → not-evaluated ONLY when
-BOTH inputs are empty (no prose AND empty roster); an empty manuscript with a
-non-empty roster STAYS EVALUATED and still emits its `error`-level orphan findings
-byte-for-byte (the rule that protects the gate, FR-004/FR-012). `temporal` /
-`factual_anchor` only conform to the backward-compatible contract. Parity (SC-003/
-FR-012): every migrated trigger fires only on inputs that already returned `[]`, so
-ZERO existing finding-oracle edits — verify empirically. `bookwright-design.md § 13.1`
-is updated to the tri-valued contract as the FIRST task, BEFORE `base.py` diverges
-(plan § 7.3). Prose validators stay graph-free, LLM-free, `triples=()`, frozen
-ontology untouched (Principle X / FR-015). Every changed/new file ≤ 500 lines
-(`base.py` ~284 → ~305). After this merges, `v0.5.0` releases ONCE for 039+040 via
-the `bookwright-release` skill. Design § 13.1 / § 13.4. `uv run pytest` and the four
-gates green.
+`specs/041-prose-dialogue-dash/plan.md` (iteration 041, the first post-`v0.5.0`
+patch, closing DEBT-009 — detected by the `tiny-historical` dogfood). In Spanish
+prose, dialogue opens with the typographic em dash `—` (U+2014; en dash `–` U+2013
+is a variant). The single prose seam (`io/prose.py`, iteration 039) normalizes ASCII
+block markers (`#{1,6}␠`, `[-*+>]␠`) but NOT the dialogue dash, so `character_presence`
+sees `—Esto es el porvenir` with the `—` glued to `Esto`: the word is not at offset 0,
+`_is_sentence_initial` returns `False`, and the demonstrative `Esto` is reported as an
+unknown proper noun — one spurious `warning` on the FIRST capitalized word of EVERY
+dialogue line, drowning the real findings. THE LOAD-BEARING DECISION (issue #1
+doctrine, research D2): close the class at the SEAM, never the validator. Add
+`_DIALOGUE_MARKER = re.compile(r"^\s*[—–]\s*")` to `io/prose.py` and strip it inside
+the EXISTING iterative `_normalize` loop as a third `elif` branch (`sub(count=1)`,
+one pass per marker), so only the LEADING dash is removed and internal incise dashes
+(`—dijo Arnela—`) stay intact. Trailing `\s*` (NOT `\s+`) because Spanish glues the
+dash to the word (`—Esto`); a leading typographic dash is unambiguous so no
+bullet-vs-emphasis guard is needed. After normalization the first content word lands
+at offset 0 and inherits `character_presence`'s EXISTING sentence-initial exemption —
+the SAME mechanism DEBT-008 (iteration 038) used for the ATX heading. NO validator is
+edited (SC-004 — the diff to validators is empty). Code points: em `—`/en `–` ONLY;
+ASCII hyphen bullet `- ` stays owned by `_BULLET_MARKER`; the horizontal bar `―`
+(U+2015) and leading quotes (`«`/`"`/`'`) are the SAME class but a distinct design,
+RECORDED as DEBT-011 (not swept here). PARITY (verified empirically during planning):
+today the seam yields `[Real, Fábrica, Paños, Esto]` on `tiny-historical`, with the
+marker `[Real, Fábrica, Paños]` — one fewer (`Esto`). The ONLY pinned-count oracle
+that shifts is `tiny-historical/expected-status.md` (`validation.counts.warning 5 → 4`,
+fixture manuscript UNTOUCHED, as 038 did `6 → 5`); `tiny-novel`/`tiny-memoir` carry
+leading-dash dialogue too but their tests assert only `error == 0` (warnings
+tolerated, no pinned count) so they need no edit. New tests: C2 seam rows
+(glued/spaced/indented/internal-intact/dash-only/composed) + a `character_presence`
+both-directions test (`—Esto` not flagged; mid-line `—Pregúntale a Quirón —dijo.`
+flagged). stdlib `re` only — no new dep, no Markdown parser (Constitution II); prose
+validator, `triples=()`, frozen ontology untouched (Principle X / FR-012); every
+changed file ≤ 500 lines (`io/prose.py` 81 → ~87). Remove DEBT-009 from `DEBT.md`.
+Design § 13. `uv run pytest` and the four gates green.
 <!-- SPECKIT END -->
