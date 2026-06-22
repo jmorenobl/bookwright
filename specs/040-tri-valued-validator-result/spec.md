@@ -17,6 +17,13 @@ For an authoring tool, **false confidence is a worse failure than noise**. DEBT-
 
 This iteration closes that **class** of defect (issue #1, move 2 / facet B). It is the second of the two `v0.5.0` iterations and the one that **closes the milestone**; iteration 039 (the single prose/structure seam) is its predecessor and is already merged.
 
+## Clarifications
+
+### Session 2026-06-22
+
+- Q: Is the evaluated/not-evaluated verdict whole-validator, or can a validator be partially not-evaluated per sub-check? → A: Whole-validator only; a validator is not-evaluated only when it has **no input for any** of its checks. *(Rationale: a per-sub-check state would let `character_presence` go not-evaluated on an empty manuscript and silently suppress its `error`-level orphan findings — the exact false-confidence/gate weakening this iteration exists to close, zero-debt doctrine §3. Already enforced by FR-009/FR-012 and the Edge Cases; ratified here per the requirements checklist's deferral of this point to clarify.)*
+- Q: In which language is the new not-evaluated `reason` string written? → A: English, matching the existing `Violation.message` convention. *(Rationale: every shipped validator message is English; CLAUDE.md fixes code/identifiers/messages as English while design/docs stay Spanish. A fixed language keeps test oracles stable — material to FR-012/SC-003 — and avoids a new localization seam, which would be out-of-scope plumbing per Scope & Release Discipline.)*
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A dormant validator can no longer read as green (Priority: P1)
@@ -83,7 +90,7 @@ A skill (or a human) that reads `bookwright status` at the start of a session se
 ### Functional Requirements
 
 - **FR-001**: The validator contract (`validation/base.py`, design § 13.1) MUST be extended so a validator can declare, per run, that it **did-not-evaluate(reason)** in addition to (or instead of) its `Violation` list. The mechanism MUST keep a custom validator that returns a bare `list[Violation]` working unchanged and read as **evaluated** (FR-014), and MUST NOT leave the runner permanently sniffing the return type or carrying a dual-shape return contract as a justified smell (zero-debt doctrine §3 — eliminate the cause, do not contain it); if planning finds no mechanism that avoids that residue, it is recorded in `DEBT.md` with justification, never shipped silently. `bookwright-design.md § 13.1` MUST be updated to the new contract **before** the code diverges (plan § 7.3).
-- **FR-002**: A not-evaluated result MUST carry the validator's name and a human-readable reason (e.g. "the constitution does not declare a narrative voice", "the narrative-voice declaration is still unanswered (`[PENDING]`)", "the manuscript is empty").
+- **FR-002**: A not-evaluated result MUST carry the validator's name and a human-readable reason, written in **English** to match the existing `Violation.message` convention (CLAUDE.md: code/identifiers/messages English, design/docs Spanish) — no new localization seam (e.g. "the constitution does not declare a narrative voice", "the narrative-voice declaration is still unanswered (`[PENDING]`)", "the manuscript is empty").
 - **FR-003**: A validator that examined its inputs and found nothing MUST remain **evaluated with zero findings** (a legitimate green) — distinct from not-evaluated.
 - **FR-004**: The new state MUST be **additive** and MUST NOT change the CI gate: only `Violation`s of `error` severity continue to fail CI. A not-evaluated result is **not** a gate failure (it is not a finding) but MUST be visible and MUST NOT be counted as clean.
 - **FR-005**: not-evaluated MUST be a channel **distinct from `errors[]`**. `errors[]` remains for validators that could not be loaded or that raised (`ValidatorError`); not-evaluated is for a validator that ran without error and consciously chose not to evaluate.
