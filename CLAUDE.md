@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.0 released (2026-06-22, the validation-robustness minor, issue #1 — shipped 039+040 at once at the close of the milestone: a single Markdown-aware prose/structure seam (`src/bookwright/io/prose.py`) now backs every prose validator, closing the surface-coupling *class* behind DEBT-004/007/008 at the root (039), and a validator's per-run verdict is now tri-valued — `evaluated` / `not-evaluated(reason)` raised as `NotEvaluated` and surfaced in an additive `not_evaluated[]` channel — so `[]` stops reading as "clean" when it meant "couldn't look" (040); the milestone is closed)
+## Repository state: v0.5.1 released (2026-06-22, the first post-`v0.5.0` patch, iteration 041, DEBT-009 — the single prose seam (`src/bookwright/io/prose.py`) now also strips the leading Spanish dialogue dash `—`/`–`/`―` so `character_presence` stops mis-flagging the first spoken word of every dialogue line as an unbound proper noun; the class is closed at the seam, not the validator — one `_normalize` branch, zero validator edits (issue #1 doctrine, the same mechanism 038 used for ATX headings). v0.5.0 (2026-06-22, the validation-robustness minor, issue #1) shipped 039+040 at once at the close of the milestone: a single Markdown-aware prose/structure seam now backs every prose validator, closing the surface-coupling *class* behind DEBT-004/007/008 at the root (039), and a validator's per-run verdict is now tri-valued — `evaluated` / `not-evaluated(reason)` raised as `NotEvaluated` and surfaced in an additive `not_evaluated[]` channel — so `[]` stops reading as "clean" when it meant "couldn't look" (040))
 
 Five milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
@@ -74,7 +74,27 @@ facet. GREEN is now the single documented predicate
 `status == "ok" AND not_evaluated == []`; the CI gate is unchanged (only
 `error` findings gate). Both iterations are **merged and released**. The LLM
 **semantic-judgment** escalation (issue #1 move 3) is parked in the demand-pulled
-horizon. The remaining longer-horizon work — semantic judgment in validation, vector
+horizon.
+
+The **`v0.5.x` post-dogfooding track** then continues the issue #1 doctrine
+against defects the `tiny-historical` dogfood of the released `v0.5.0` surfaced.
+Iteration 041 shipped as the **`v0.5.1`** patch (2026-06-22, DEBT-009): the
+single prose seam (`io/prose.py`) now strips the leading Spanish dialogue dash
+(`—` U+2014 / `–` U+2013 / `―` U+2015) inside its existing `_normalize` loop as a
+third `elif` branch (`_DIALOGUE_MARKER = ^\s*[—–―]\s*`, `sub(count=1)`), so
+`character_presence` stops emitting one spurious unbound-proper-noun `warning` on
+the first spoken word of every dialogue line (`—Esto` → `Esto` at offset 0,
+inheriting the existing sentence-initial exemption — the same mechanism 038 used
+for ATX headings). Only the leading dash is removed (internal incise dashes
+`—dijo Arnela—` survive); **no validator is edited** (the load-bearing issue #1
+"close the class at the seam" criterion); the only pinned oracle that shifts is
+`tiny-historical/expected-status.md` (`warning 5 → 4`, manuscript untouched, as
+038 did `6 → 5`). The audit recorded **DEBT-011** (the genuinely-distinct
+*paired* leading-quote markers `«`/`"`/`'`) for a future iteration; the
+horizontal bar `―` U+2015, being the same glued dash class **and** design, was
+swept here. The next planned patch is iteration 042 (`v0.5.2`, DEBT-010 — cross
+the proper-noun roster against settings/locations/objects, not just characters).
+The remaining longer-horizon work — semantic judgment in validation, vector
 search (ChromaDB over rdflib) and export — is deferred to an unversioned, demand-pulled
 horizon: each ships only when its activation condition is met, not on a pre-assigned
 version — see `bookwright-roadmap.md`.
@@ -258,6 +278,7 @@ was correct) and corrupts the run's audit trail.
 | 038 | `character_presence` skips ATX heading first word (DEBT-008) | v0.4.6 | ✅ merged |
 | 039 | Single prose/structure seam — validators stop coupling to surface markdown (issue #1, facet A) | v0.5.0 | ✅ merged |
 | 040 | Tri-valued validator result: `evaluated` / `not-evaluated(reason)` (issue #1, facet B) | v0.5.0 | ✅ merged |
+| 041 | Prose seam strips leading Spanish dialogue dash `—`/`–`/`―` (DEBT-009) | v0.5.1 | ✅ merged |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the

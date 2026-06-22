@@ -4,6 +4,57 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.1] — 2026-06-22
+
+The first patch of the **v0.5.x post-dogfooding track** (iteration 041),
+closing **DEBT-009** — a defect the `tiny-historical` dogfood surfaced and the
+direct continuation of the issue #1 doctrine v0.5.0 established. In Spanish
+prose a line of dialogue opens with the typographic em dash `—` (U+2014; the en
+dash `–` U+2013 and the historical horizontal bar `―` U+2015 are variants),
+glued to the first spoken word (`—Esto es el porvenir`). The single prose seam
+(`src/bookwright/io/prose.py`, iteration 039) normalized ASCII block markers
+(headings, bullets, blockquotes) but **not** the dialogue dash, so
+`character_presence` saw `Esto` at a non-zero offset, `_is_sentence_initial`
+returned `False`, and the demonstrative was reported as an unbound proper noun —
+one spurious `warning` on the first capitalized word of **every** dialogue line,
+drowning the real findings. Per the issue #1 doctrine, the class is closed at
+the **seam**, never the validator: the fix is one branch in `io/prose.py`'s
+existing normalization loop and **no validator file is touched**. No new CLI
+surface, no new runtime dependency, no ontology change (the prose validators
+stay graph-free, `triples=()`, Principle X) and the CI gate is unchanged — pure
+hardening.
+
+### Added
+
+- **A leading-dialogue-dash recognizer in the prose seam**
+  (`src/bookwright/io/prose.py`): a new `_DIALOGUE_MARKER`
+  (`^\s*[—–―]\s*` — em `—` U+2014, en `–` U+2013, and horizontal bar `―` U+2015,
+  all three a single glued, unpaired dash class) joins the heading and
+  bullet/blockquote strippers as a third `elif` branch in the existing iterative
+  `_normalize` loop (`sub(count=1)`, one pass per marker). The trailing `\s*`
+  (not `\s+`, unlike the bullet marker) is load-bearing because Spanish glues the
+  dash to the spoken word; a leading typographic dash is unambiguous, so no
+  bullet-vs-emphasis guard is needed. Only the **leading** dash is a block
+  prefix — internal incise dashes (`—dijo Arnela—`) are content and survive. The
+  first spoken word then lands at offset 0 and inherits `character_presence`'s
+  existing sentence-initial exemption — the same mechanism iteration 038 (ATX
+  headings, DEBT-008) used. No validator file is edited.
+
+### Changed
+
+- `tests/fixtures/tiny-historical/expected-status.md`: the pinned project-wide
+  `validation.counts.warning` drops `5 → 4` (the spurious `Esto` flag on the
+  first dialogue line is gone), the fixture manuscript untouched — exactly as
+  iteration 038 dropped `6 → 5`. `tiny-novel`/`tiny-memoir` carry leading-dash
+  dialogue too but their tests assert only `error == 0` (warnings tolerated, no
+  pinned count), so they needed no edit.
+- `DEBT.md`: the **DEBT-009** entry is removed (git keeps the history). The
+  audit recorded **DEBT-011** — the leading paired-quote markers
+  (`«`/`"`/`'`), a genuinely distinct *paired* (open…close) design with mid-line
+  content and `¿¡`/`_SENTENCE_END` overlap — as a separate future iteration; the
+  horizontal bar `―` U+2015, being the same glued dash class **and** design as
+  `—`/`–`, was swept here rather than deferred.
+
 ## [0.5.0] — 2026-06-22
 
 The **validation-robustness** minor (issue #1), shipping **two** iterations at
