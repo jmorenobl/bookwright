@@ -3,16 +3,48 @@ site_description: Toolkit de autoría spec-driven para novelas, ensayos y memori
 site_url: https://jmorenobl.github.io/bookwright/
 docs_dir: docs
 
+repo_url: https://github.com/jmorenobl/bookwright
+repo_name: jmorenobl/bookwright
+
 theme:
   name: material
   language: es
+  icon:
+    logo: material/feather
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Cambiar a modo oscuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Cambiar a modo claro
   features:
-    - navigation.tabs
+    # Full nav tree always in the left sidebar (no top tabs) so the left column
+    # is never empty — sections render as non-collapsible headers.
     - navigation.sections
     - navigation.indexes
     - navigation.top
+    - navigation.tracking
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
     - content.code.copy
+    - content.code.annotate
     - content.tabs.link
+
+extra_css:
+  - assets/extra.css
 
 # Warnings (broken links, orphan pages, missing nav targets) become build
 # errors — this is the machine-checkable "zero warnings" gate (D7, FR-021).

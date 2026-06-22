@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # Bookwright
 
 <p style="font-size:1.25rem;margin-top:-0.4rem;color:var(--md-default-fg-color--light)">
