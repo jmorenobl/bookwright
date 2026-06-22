@@ -226,3 +226,19 @@ def test_validation_summary_counts_real_violations(tmp_path: Path) -> None:
     summary = validation_summary(root, context.manifest, engine)
     assert summary.counts["warning"] > 0
     assert summary.counts["error"] == 0
+
+
+def test_validation_summary_surfaces_not_evaluated_sorted(tmp_path: Path) -> None:
+    # An empty project (no constitution, no prose, no roster) leaves three validators
+    # with no input; validation_summary surfaces them in state.validation, sorted by
+    # name (FR-013), each carrying a legible reason. The degraded/no-build path (where
+    # not_evaluated is empty) is built in commands/status.py and covered there.
+    root = write_project(tmp_path / "novel")
+    context = load_context(root)
+    summary = validation_summary(root, context.manifest, RdflibIndexer())
+    names = [r.validator for r in summary.not_evaluated]
+    assert names == sorted(names)  # deterministic order
+    assert "focalization" in names
+    assert "setting_continuity" in names
+    assert "character_presence" in names
+    assert all(r.reason for r in summary.not_evaluated)

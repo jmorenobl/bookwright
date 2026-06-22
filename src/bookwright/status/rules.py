@@ -117,6 +117,31 @@ def _review_continuity(state: StatusState) -> Action:
     )
 
 
+#: Concrete remedy clause per validator that can fall dormant (iteration 040, SC-004).
+#: A validator absent here contributes nothing to the prompt; the migrated set all map.
+_REMEDIES: dict[str, str] = {
+    "focalization": "declare the narrative voice in the constitution",
+    "setting_continuity": "add manuscript prose to validate",
+    "character_presence": "add a bible character roster and manuscript prose",
+}
+
+
+def _activate_dormant_validators(state: StatusState) -> Action:
+    dormant = state.validation.not_evaluated  # sorted by validator name (deterministic)
+    with_remedy = [r for r in dormant if r.validator in _REMEDIES]
+    if with_remedy:
+        clauses = "; ".join(f"{r.validator} — {_REMEDIES[r.validator]}" for r in with_remedy)
+        prompt = f"Activate the dormant validators: {clauses}."
+    else:
+        names = ", ".join(r.validator for r in dormant)
+        prompt = f"Investigate why these validators could not evaluate: {names}."
+    return Action(
+        skill="bookwright-continuity",
+        prompt=prompt,
+        reason=f"{_plural(len(dormant), 'validator')} could not evaluate",
+    )
+
+
 def _define_focus(_state: StatusState) -> Action:
     return Action(
         skill="bookwright focus set",
@@ -149,6 +174,11 @@ RULES: tuple[Rule, ...] = (
         name="review_continuity",
         applies=lambda s: s.validation.counts.get("error", 0) > 0,
         build=_review_continuity,
+    ),
+    Rule(
+        name="activate_dormant_validators",
+        applies=lambda s: bool(s.validation.not_evaluated),
+        build=_activate_dormant_validators,
     ),
     Rule(
         name="define_focus",

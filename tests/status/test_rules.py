@@ -17,6 +17,7 @@ from bookwright.status.model import (
     ValidationSummary,
 )
 from bookwright.status.rules import RULES, next_actions
+from bookwright.validation.base import NotEvaluatedResult
 
 _FILE = "bible/research/tema.md"
 _HEALTHY_GRAPH = GraphFacts(available=True, entities=5, triples=50)
@@ -29,6 +30,7 @@ def make_state(  # noqa: PLR0913 — one keyword knob per state fact, defaults h
     unresolved_anchors: tuple[AnchorGap, ...] = (),
     low_reliability_findings: tuple[LowReliabilityFinding, ...] = (),
     errors: int = 0,
+    not_evaluated: tuple[NotEvaluatedResult, ...] = (),
     focus_defined: bool = True,
 ) -> StatusState:
     """A healthy, focused state by default; each knob degrades one fact."""
@@ -40,7 +42,9 @@ def make_state(  # noqa: PLR0913 — one keyword knob per state fact, defaults h
         unresolved_anchors=unresolved_anchors,
         low_reliability_findings=low_reliability_findings,
         validation=ValidationSummary(
-            counts={"error": errors, "warning": 0, "info": 0}, ran=("temporal",)
+            counts={"error": errors, "warning": 0, "info": 0},
+            ran=("temporal",),
+            not_evaluated=not_evaluated,
         ),
     )
 
@@ -48,6 +52,9 @@ def make_state(  # noqa: PLR0913 — one keyword knob per state fact, defaults h
 _QUESTION = OpenQuestion(id="q-archivo", text="¿Dónde está el libro?", file=_FILE)
 _GAP = AnchorGap(promotes="f-1", constrains="timeline", file=_FILE, problems=("under_reliable",))
 _LOW = LowReliabilityFinding(id="f-1", best_reliability="baja", file=_FILE)
+_DORMANT_FOCAL = NotEvaluatedResult(
+    "focalization", "the constitution does not declare a narrative voice"
+)
 
 #: One synthetic state per rule, exercising exactly it (SC-005).
 _TRIGGER: dict[str, StatusState] = {
@@ -55,6 +62,7 @@ _TRIGGER: dict[str, StatusState] = {
     "research_queue": make_state(open_questions=(_QUESTION,)),
     "verify_findings": make_state(low_reliability_findings=(_LOW,)),
     "review_continuity": make_state(errors=2),
+    "activate_dormant_validators": make_state(not_evaluated=(_DORMANT_FOCAL,)),
     "define_focus": make_state(focus_defined=False),
 }
 
@@ -167,4 +175,47 @@ def test_actions_emit_in_table_priority_order() -> None:
         "bookwright-verify",
         "bookwright-continuity",
         "bookwright focus set",
+    ]
+
+
+def test_activate_dormant_validators_names_the_focalization_remedy() -> None:
+    # SC-004: a not-evaluated focalization yields a step naming its concrete remedy.
+    [action] = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL,)))
+    assert action.skill == "bookwright-continuity"
+    assert action.prompt == (
+        "Activate the dormant validators: "
+        "focalization — declare the narrative voice in the constitution."
+    )
+    assert action.reason == "1 validator could not evaluate"
+
+
+def test_activate_dormant_validators_lists_every_dormant_remedy() -> None:
+    # Multiple dormant validators → each remedy enumerated, count pluralized.
+    dormant = (
+        NotEvaluatedResult("character_presence", "no inputs"),
+        _DORMANT_FOCAL,
+    )
+    [action] = next_actions(make_state(not_evaluated=dormant))
+    assert action.prompt == (
+        "Activate the dormant validators: "
+        "character_presence — add a bible character roster and manuscript prose; "
+        "focalization — declare the narrative voice in the constitution."
+    )
+    assert action.reason == "2 validators could not evaluate"
+
+
+def test_no_dormant_validators_yields_no_activation_action() -> None:
+    # Empty not_evaluated → the rule produces nothing (no false positives, US3 scenario 2).
+    skills = [action.skill for action in next_actions(make_state())]
+    assert "bookwright-continuity" not in skills
+
+
+def test_activation_sits_between_continuity_and_focus() -> None:
+    state = make_state(errors=1, not_evaluated=(_DORMANT_FOCAL,), focus_defined=False)
+    actions = next_actions(state)
+    reasons = [a.reason for a in actions]
+    assert reasons == [
+        "1 validation error",  # review_continuity
+        "1 validator could not evaluate",  # activate_dormant_validators
+        "no authored focus is defined",  # define_focus
     ]
