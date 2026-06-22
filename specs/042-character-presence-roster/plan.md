@@ -64,7 +64,7 @@ writes, no graph mutation (validator contract); ES+EN prose handled by the exist
 accent-aware candidate regex (unchanged).
 
 **Scale/Scope**: ~4 source/test files touched + 1 oracle + `DEBT.md`. `validation/base.py`
-322 → ~350 lines; `character_presence.py` 215 → ~218 lines.
+321 → ~350 lines; `character_presence.py` 214 → ~218 lines.
 
 ## Constitution Check
 
@@ -123,7 +123,7 @@ src/bookwright/
 tests/
 ├── validation/
 │   ├── conftest.py                   # write_project: + locations=/objects= knobs (mirror settings)
-│   ├── test_validation_context.py    # + location_names()/object_names() accessor tests (or new file)
+│   ├── test_base.py                  # + location_names()/object_names() accessor tests
 │   └── test_character_presence.py    # + union-suppression + still-fires + orphan-untouched tests
 └── fixtures/
     └── tiny-historical/
