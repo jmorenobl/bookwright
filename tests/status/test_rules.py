@@ -205,7 +205,7 @@ def test_activate_dormant_validators_lists_every_dormant_remedy() -> None:
 
 
 def test_no_dormant_validators_yields_no_activation_action() -> None:
-    # Empty not_evaluated → the rule produces nothing (no false positives, US3 scenario 2).
+    # Empty not_evaluated → the rule produces nothing (no false positives).
     skills = [action.skill for action in next_actions(make_state())]
     assert "bookwright-continuity" not in skills
 

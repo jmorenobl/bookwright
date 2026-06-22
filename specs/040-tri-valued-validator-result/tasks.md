@@ -36,7 +36,7 @@ Single project: `src/bookwright/`, `tests/` at repository root.
 **Purpose**: Update the ratified contract in `bookwright-design.md` **before** any code
 diverges, so the design never lags the code (FR-001).
 
-- [ ] T001 Rewrite `bookwright-design.md § 13.1` (Spanish) to the tri-valued validator
+- [X] T001 Rewrite `bookwright-design.md § 13.1` (Spanish) to the tri-valued validator
   contract: keep `validate(...) -> list[Violation]` **unchanged**, document the
   `NotEvaluated(reason)` signal (a plain `Exception`, NOT a `BookwrightError`), the
   runner catching it before its generic handler, and the additive `not_evaluated`
@@ -57,38 +57,38 @@ nothing regresses. This is the generic, validator-agnostic layer (Assumptions).
 **⚠️ CRITICAL**: No user story (US1/US2/US3) can be implemented until this phase is
 complete.
 
-- [ ] T002 In `src/bookwright/validation/base.py` add `class NotEvaluated(Exception)`
+- [X] T002 In `src/bookwright/validation/base.py` add `class NotEvaluated(Exception)`
   (stores `reason: str`, calls `super().__init__(reason)`) and
   `@dataclass(frozen=True) class NotEvaluatedResult` (`validator: str`, `reason: str`,
   `to_json() -> dict[str, Any]` → `{"validator", "reason"}`); update the `Validator`
   Protocol `validate` **docstring** (not its signature) to note it MAY
   `raise NotEvaluated(reason)`; add both names to `__all__`. (283 → ~305 lines.)
-- [ ] T003 In `src/bookwright/validation/__init__.py` re-export `NotEvaluated` and
+- [X] T003 In `src/bookwright/validation/__init__.py` re-export `NotEvaluated` and
   `NotEvaluatedResult` from `base`.
-- [ ] T004 In `src/bookwright/validation/runner.py` widen `RunResult` to the 4-tuple
+- [X] T004 In `src/bookwright/validation/runner.py` widen `RunResult` to the 4-tuple
   `(list[Violation], list[ValidatorError], list[NotEvaluatedResult], list[str])`; in the
   per-validator loop add `except NotEvaluated as skip:` **before** the generic
   `except Exception`, appending `NotEvaluatedResult(validator.name, skip.reason)` and
   `continue`; sort `not_evaluated` by `validator` before return. The generic
   `except Exception` → `ValidatorError(phase="run")` path is unchanged (FR-005/FR-014).
-- [ ] T005 In `src/bookwright/validation/report.py` add
+- [X] T005 In `src/bookwright/validation/report.py` add
   `not_evaluated: tuple[NotEvaluatedResult, ...]` to `ValidationReport`; `to_json` emits
   a top-level `"not_evaluated"` sibling key (sorted, FR-013); `render` adds a
   `not evaluated:` section and prints the "no violations found" clean line **only** when
   violations, errors, AND not_evaluated are all empty; pin the documented green predicate
   `status == "ok" AND not_evaluated == []` here (the single place "clean" is defined,
   SC-002). `failed` (the gate) is **unchanged** — not-evaluated never gates (FR-004).
-- [ ] T006 In `src/bookwright/commands/validate.py` thread the runner's new
+- [X] T006 In `src/bookwright/commands/validate.py` thread the runner's new
   `not_evaluated` element into `ValidationReport`; confirm the human + `--json` paths
   both carry it and the exit code stays driven solely by `failed` (FR-004).
-- [ ] T007 [P] In `tests/validation/test_runner.py` add: a stub validator that raises
+- [X] T007 [P] In `tests/validation/test_runner.py` add: a stub validator that raises
   `NotEvaluated("…")` is recorded in the `not_evaluated` channel (not `errors[]`); a stub
   that raises a generic `Exception` still lands in `errors[]` as a `ValidatorError`
   (FR-005); a stub that returns a bare `list[Violation]` (non-empty) is **evaluated** — its
   findings flow into `violations[]` and it appears in **neither** `errors[]` **nor**
   `not_evaluated[]` (FR-014 backward-compat, explicit); `not_evaluated` is sorted by name
   and a validator appears at most once (FR-013).
-- [ ] T008 [P] In `tests/validation/test_report.py` add: `to_json` carries the
+- [X] T008 [P] In `tests/validation/test_report.py` add: `to_json` carries the
   `not_evaluated[]` sibling key; the green predicate is **False** for a run with a
   non-empty `not_evaluated` (even when `violations == []` / `status == "ok"`) and **True**
   for an evaluated-and-clean run; the human `render` prints the `not evaluated:` section
@@ -110,7 +110,7 @@ DEBT-004 dormant-green blind spot is closed (FR-008).
 with a reason, is NOT in `errors[]`, and the green predicate is **False**; a constitution
 declaring a usable first/third person stays evaluated (in neither channel).
 
-- [ ] T009 [US1] In `src/bookwright/validation/validators/focalization.py` route the four
+- [X] T009 [US1] In `src/bookwright/validation/validators/focalization.py` route the four
   early-return causes to `raise NotEvaluated(reason)`, each with a **distinct** English
   reason (FR-008 — the spec's four distinct "could not look" paths): (i) no constitution
   (`project.constitution_view()` is empty) → `"there is no constitution to read the
@@ -123,19 +123,19 @@ declaring a usable first/third person stays evaluated (in neither channel).
   `constitution_view()` tells them apart for free. A usable first/third person stays
   **evaluated**. Verify the enumeration is exhaustive over every early `[]` return so none
   keeps reading green. Stays `triples=()`, graph-free, LLM-free (FR-015).
-- [ ] T010 [US1] In `tests/validation/test_focalization.py` add (additive — no oracle edits,
+- [X] T010 [US1] In `tests/validation/test_focalization.py` add (additive — no oracle edits,
   SC-003) one case per **distinct** reason — (i) no constitution, (ii) constitution present
   but unparseable declaration, (iii) `[PENDING]` placeholder, (iv) no-person declaration —
   asserting `NotEvaluated` is raised with the exact, distinct reason string for each (so
   (i) and (ii) are verified to differ), plus a case asserting a usable third-person
   declaration on a clean manuscript returns `[]` (evaluated, green) and a first-person
   declaration likewise — never raises.
-- [ ] T011 [US1] Add a source-only fixture `tests/fixtures/tiny-undeclared-voice/`
+- [X] T011 [US1] Add a source-only fixture `tests/fixtures/tiny-undeclared-voice/`
   (manifest + `bible/` + a manuscript with prose + a constitution whose
   `- **Voz narrativa**:` is the `[PENDING: …]` placeholder a fresh `bookwright init`
   emits) plus its oracle, registered like the existing `tiny-*` fixtures in
   `tests/fixtures/`. No `graph.ttl` committed (derived cache, Constitution I).
-- [ ] T012 [US1] Add `tests/e2e/test_tri_valued_validation.py`: `graph build` → `validate
+- [X] T012 [US1] Add `tests/e2e/test_tri_valued_validation.py`: `graph build` → `validate
   --json` over `tiny-undeclared-voice`; assert `focalization` is in `not_evaluated[]` with
   a reason, absent from `errors[]`, and the green predicate evaluates to **False** while
   `violations` may be empty (SC-001/SC-002).
@@ -155,19 +155,19 @@ on their true no-input preconditions, never by suppressing a producible finding 
 orphan findings byte-for-byte; (b) empty project (no roster, no prose) →
 `character_presence` in `not_evaluated[]`. Neither run reads as clean.
 
-- [ ] T013 [P] [US2] In `src/bookwright/validation/validators/setting_continuity.py`
+- [X] T013 [P] [US2] In `src/bookwright/validation/validators/setting_continuity.py`
   `raise NotEvaluated("the manuscript is empty")` when the manuscript has no readable
   prose (its sole input); stay evaluated when prose is present. Stays `triples=()`,
   graph-free (FR-015).
-- [ ] T014 [P] [US2] In `src/bookwright/validation/validators/character_presence.py`
+- [X] T014 [P] [US2] In `src/bookwright/validation/validators/character_presence.py`
   `raise NotEvaluated("there is no manuscript prose and no bible character roster to
   cross-check")` **only** when BOTH inputs are empty (no prose AND empty roster). An empty
   manuscript with a non-empty roster MUST stay **evaluated** and emit its `error`-level
   orphan findings byte-for-byte unchanged (the rule that protects the gate, FR-004/FR-012).
-- [ ] T015 [P] [US2] In `tests/validation/test_setting_continuity.py` add (additive):
+- [X] T015 [P] [US2] In `tests/validation/test_setting_continuity.py` add (additive):
   empty manuscript → `NotEvaluated` raised with `"the manuscript is empty"`; manuscript
   with prose → evaluated (existing findings unchanged).
-- [ ] T016 [P] [US2] In `tests/validation/test_character_presence.py` add (additive): no
+- [X] T016 [P] [US2] In `tests/validation/test_character_presence.py` add (additive): no
   prose AND empty roster → `NotEvaluated` with the no-inputs reason; empty manuscript +
   non-empty roster → **evaluated**, orphan `error` findings produced byte-for-byte
   unchanged (asserts the gate is preserved, FR-012).
@@ -187,7 +187,7 @@ into `next_actions`, and surface the raw facts in the status-reading skill resou
 `state.validation.not_evaluated[]` and a `next_actions` step naming the focalization
 remedy; a fully-evaluated project shows neither (no false positives).
 
-- [ ] T017 [US3] In `src/bookwright/status/model.py` add
+- [X] T017 [US3] In `src/bookwright/status/model.py` add
   `not_evaluated: tuple[NotEvaluatedResult, ...] = ()` (defaulted empty — last field) to
   `ValidationSummary`; `to_payload` emits `"not_evaluated": [r.to_json() for r in
   self.not_evaluated]` under `state.validation` (additive, always present). The default is
@@ -195,13 +195,13 @@ remedy; a fully-evaluated project shows neither (no false positives).
   `src/bookwright/commands/status.py` (`_aggregate`, the no-prerequisite branch) then needs
   **no edit** and the new key is never missing on the degraded path (matches plan § —
   status.py unchanged).
-- [ ] T018 [US3] In `src/bookwright/status/queries.py` make `validation_summary` consume
+- [X] T018 [US3] In `src/bookwright/status/queries.py` make `validation_summary` consume
   the runner's **4-tuple** (`violations, _run_errors, not_evaluated, ran`) and fill
   `ValidationSummary.not_evaluated` (sorted by name, as the runner emits it). The
   degraded/no-build `ValidationSummary` is built in `commands/status.py` (not here) and
   relies on the T017 default, so the key is never missing on either path. (depends on
   T004, T017)
-- [ ] T019 [US3] In `src/bookwright/status/rules.py` add a static `_REMEDIES` map
+- [X] T019 [US3] In `src/bookwright/status/rules.py` add a static `_REMEDIES` map
   (`focalization` → "declare the narrative voice in the constitution"; `setting_continuity`
   → "add manuscript prose to validate"; `character_presence` → "add a bible character
   roster and manuscript prose") and a pure `Rule("activate_dormant_validators", …)` that
@@ -209,19 +209,19 @@ remedy; a fully-evaluated project shows neither (no false positives).
   (`skill="bookwright-continuity"`, count-driven `reason` via `_plural`, `prompt`
   enumerating each dormant validator's remedy). Place it after `review_continuity`, before
   `define_focus` in `RULES`. (depends on T017)
-- [ ] T020 [US3] In `src/bookwright/resources/commands/bookwright-research.md` extend the
+- [X] T020 [US3] In `src/bookwright/resources/commands/bookwright-research.md` extend the
   startup `bookwright status --json` step (Spanish, "Próximos pasos / Punto de partida")
   to list the **raw** `state.validation.not_evaluated` facts among the raw facts it
   surfaces — read from `state.validation`, NOT from `next_actions[]` (FR-011), mirroring
   the existing `state.open_questions` / `state.unresolved_anchors` enumeration.
-- [ ] T021 [P] [US3] In `tests/status/test_rules.py` add: with a not-evaluated
+- [X] T021 [P] [US3] In `tests/status/test_rules.py` add: with a not-evaluated
   `focalization` in the validation summary, `activate_dormant_validators` yields a
   `next_actions` step whose prompt names the focalization remedy (SC-004); with an empty
   `not_evaluated`, the rule produces nothing (no false positives).
-- [ ] T022 [P] [US3] In `tests/status/test_queries.py` add: `validation_summary` surfaces
+- [X] T022 [P] [US3] In `tests/status/test_queries.py` add: `validation_summary` surfaces
   `not_evaluated` from the runner 4-tuple into `state.validation`, sorted by name; the
   degraded path still emits an empty `not_evaluated` list.
-- [ ] T025 [P] [US3] In `tests/integrations/test_research_skill.py` extend
+- [X] T025 [P] [US3] In `tests/integrations/test_research_skill.py` extend
   `test_body_consults_status_queue` (the existing assertion that the resource body cites the
   raw `open_questions` / `unresolved_anchors` facts) to also assert the body cites
   `not_evaluated` (and `state.validation`) — verifying FR-011 for **both** integrations,
@@ -238,11 +238,11 @@ every surface where green is read.
 
 **Purpose**: prove the feature end-to-end and re-assert the quality bar and parity.
 
-- [ ] T023 Run the quickstart scenarios (`specs/040-tri-valued-validator-result/quickstart.md`):
+- [X] T023 Run the quickstart scenarios (`specs/040-tri-valued-validator-result/quickstart.md`):
   Scenario 1 (dormant focalization not green), Scenario 2 (a/b/c), Scenario 3 (status +
   next_actions), and the gate/exit-code check (`validate; echo exit=$?` → 0 on a
   solely-not-evaluated run, yet not reported clean).
-- [ ] T024 Verify parity (SC-003 / FR-012): run `uv run pytest` and confirm **zero** edits
+- [X] T024 Verify parity (SC-003 / FR-012): run `uv run pytest` and confirm **zero** edits
   to pre-existing `Violation` finding oracles — every migrated trigger fired only on inputs
   that already returned `[]`. Then run the four gates: `uv run ruff check`,
   `uv run ruff format --check`, `uv run mypy --strict`, `uv run pytest` (≥ 80 % coverage);

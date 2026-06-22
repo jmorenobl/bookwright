@@ -26,9 +26,10 @@ def _is_green(payload: dict[str, object]) -> bool:
 
 
 def _render(report: ValidationReport) -> str:
-    console = Console(file=io.StringIO(), width=200)
-    report.render(console, scope=None, severity=None)
-    return console.file.getvalue()  # type: ignore[attr-defined]
+    buffer = io.StringIO()
+    report.render(Console(file=buffer, width=200), scope=None, severity=None)
+    return buffer.getvalue()
+
 
 _ERR = Violation("temporal", Severity.error, "cycle", None)
 _WARN_A = Violation("character_presence", Severity.warning, "w-a", "manuscript/cap-01.md:3")
@@ -126,10 +127,15 @@ _SKIP = NotEvaluatedResult("focalization", "the constitution does not declare a 
 
 
 def test_to_json_carries_not_evaluated_sibling_key() -> None:
-    report = ValidationReport(violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,))
+    report = ValidationReport(
+        violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,)
+    )
     payload = report.to_json(scope=None, severity=None)
     assert payload["not_evaluated"] == [
-        {"validator": "focalization", "reason": "the constitution does not declare a narrative voice"}
+        {
+            "validator": "focalization",
+            "reason": "the constitution does not declare a narrative voice",
+        }
     ]
     # The channel is additive: violations/errors keep their shapes, status untouched.
     assert payload["status"] == "ok"
@@ -139,7 +145,9 @@ def test_to_json_carries_not_evaluated_sibling_key() -> None:
 
 def test_green_predicate_false_for_solely_not_evaluated_run() -> None:
     # status == "ok" and violations == [], yet not green because the channel is non-empty.
-    report = ValidationReport(violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,))
+    report = ValidationReport(
+        violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,)
+    )
     payload = report.to_json(scope=None, severity=None)
     assert payload["status"] == "ok"
     assert payload["failed"] is False  # never gates (FR-004)
@@ -153,7 +161,9 @@ def test_green_predicate_true_for_evaluated_and_clean_run() -> None:
 
 
 def test_render_prints_not_evaluated_section_instead_of_clean_line() -> None:
-    report = ValidationReport(violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,))
+    report = ValidationReport(
+        violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,)
+    )
     out = _render(report)
     assert "not evaluated:" in out
     assert "focalization: the constitution does not declare a narrative voice" in out

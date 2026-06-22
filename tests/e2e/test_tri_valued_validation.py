@@ -1,4 +1,4 @@
-"""The tri-valued validation flow proven end to end (iteration 040, US1).
+"""The tri-valued validation flow proven end to end (iteration 040, dormant focalization).
 
 Walks ``graph build`` → ``validate --json`` over the source-only
 ``tiny-undeclared-voice`` fixture — a project whose constitution still carries the

@@ -65,7 +65,7 @@ def test_dialogue_line_is_exempt(project_root: Path) -> None:
     assert all("first-person" not in f.message for f in _run(project_root))
 
 
-# --- tri-valued: the four distinct "could not read a voice" reasons (T010, FR-008) ---
+# --- tri-valued: the four distinct "could not read a voice" reasons (FR-008) ---
 #
 # Each cause routes to NotEvaluated with its OWN reason (iteration 040), superseding
 # the v0 "return []" reading. (i) and (ii) carry DIFFERENT reasons (the author's

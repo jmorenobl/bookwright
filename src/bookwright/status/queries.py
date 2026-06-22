@@ -206,6 +206,4 @@ def validation_summary(root: Path, manifest: Manifest, indexer: Indexer) -> Vali
     counts = {level.value: 0 for level in Severity}
     for violation in violations:
         counts[violation.severity.value] += 1
-    return ValidationSummary(
-        counts=counts, ran=tuple(ran), not_evaluated=tuple(not_evaluated)
-    )
+    return ValidationSummary(counts=counts, ran=tuple(ran), not_evaluated=tuple(not_evaluated))

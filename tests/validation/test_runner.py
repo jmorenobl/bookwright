@@ -63,7 +63,9 @@ def _ctx(project_root: Path) -> ValidationContext:
 
 def test_raising_validator_is_isolated(project_root: Path) -> None:
     ctx = _ctx(project_root)
-    violations, errors, not_evaluated, ran = run_validators([_Boom(), _Good()], ctx, RdflibIndexer())
+    violations, errors, not_evaluated, ran = run_validators(
+        [_Boom(), _Good()], ctx, RdflibIndexer()
+    )
 
     assert [v.message for v in violations] == ["ok finding"]  # the good one still ran
     assert len(errors) == 1
