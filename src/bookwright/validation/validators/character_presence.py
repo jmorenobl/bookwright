@@ -19,7 +19,7 @@ from typing import ClassVar
 from bookwright.golem.slug import make_slug
 from bookwright.indexers import Indexer
 from bookwright.io.prose import ProseView
-from bookwright.validation.base import Severity, ValidationContext, Violation
+from bookwright.validation.base import NotEvaluated, Severity, ValidationContext, Violation
 
 # Pinned proper-noun candidate: a capitalized word of ≥3 letters (D3). Accent-aware
 # for Spanish prose; matches single tokens (multi-word names are caught token-wise).
@@ -106,6 +106,13 @@ class CharacterPresence:
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
         roster = project.character_names()
         files = project.manuscript_files()
+        if not roster and not files:  # nothing to cross-check in EITHER direction (FR-009)
+            raise NotEvaluated(
+                "there is no manuscript prose and no bible character roster to cross-check"
+            )
+        # An empty manuscript with a non-empty roster STAYS evaluated and still emits its
+        # error-level orphan findings byte-for-byte — the rule that protects the gate
+        # (FR-004/FR-012).
         roster_slugs = _roster_slugs(roster)
 
         out: list[Violation] = []

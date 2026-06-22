@@ -13,7 +13,7 @@ from typing import ClassVar
 
 from bookwright.indexers import Indexer
 from bookwright.io.prose import ProseView
-from bookwright.validation.base import Severity, ValidationContext, Violation
+from bookwright.validation.base import NotEvaluated, Severity, ValidationContext, Violation
 
 # Antonym groups: two terms from one group on one setting, in different files, clash.
 _LEXICON: tuple[tuple[str, ...], ...] = (
@@ -45,6 +45,8 @@ class SettingContinuity:
         # The whole-file gate stays over the full text (FR-009); built once and shared
         # across every setting (the mapping is loop-invariant).
         texts = dict(project.manuscript_files())
+        if not texts:  # the manuscript is this validator's sole input (FR-009)
+            raise NotEvaluated("the manuscript is empty")
         view = project.manuscript_view()
         out: list[Violation] = []
         for setting_name, _ in project.setting_names():

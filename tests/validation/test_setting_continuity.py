@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from bookwright.indexers import RdflibIndexer
-from bookwright.validation.base import Severity, Violation
+from bookwright.validation.base import NotEvaluated, Severity, Violation
 from bookwright.validation.validators.setting_continuity import SettingContinuity
 from tests.validation.conftest import load_context, write_project
 
@@ -49,6 +51,25 @@ def test_same_file_two_terms_does_not_warn(project_root: Path) -> None:
         project_root,
         settings=["Ayelo"],
         manuscript={"cap-01.md": "Ayelo era coastal, casi inland.\n"},
+    )
+    assert _run(project_root) == []
+
+
+def test_empty_manuscript_is_not_evaluated(project_root: Path) -> None:
+    # The manuscript is this validator's sole input (FR-009): no prose → not-evaluated,
+    # never a silent green. The bible may carry settings — they are not its input.
+    write_project(project_root, settings=["Ayelo"], manuscript={})
+    with pytest.raises(NotEvaluated) as excinfo:
+        _run(project_root)
+    assert excinfo.value.reason == "the manuscript is empty"
+
+
+def test_manuscript_with_prose_stays_evaluated(project_root: Path) -> None:
+    # Prose present → evaluated; a consistent setting yields zero findings (unchanged).
+    write_project(
+        project_root,
+        settings=["Ayelo"],
+        manuscript={"cap-01.md": "Ayelo, coastal, brillaba al amanecer.\n"},
     )
     assert _run(project_root) == []
 
