@@ -12,11 +12,13 @@
 #
 # NOTE ON `validation.counts`: `status` aggregates ALL validators (character_presence,
 # factual_anchor, focalization, setting_continuity, temporal), so its warning count
-# (5) is the project-wide total — NOT the factual_anchor-scoped {error:1, warning:1}
+# (4) is the project-wide total — NOT the factual_anchor-scoped {error:1, warning:1}
 # that `expected-findings.md` pins for the M4 validator test. Both are correct for their
 # own consumer; this file records what `status` actually emits. (Iteration 038 dropped
 # this from 6 to 5: `character_presence` no longer mis-flags `Capítulo`, the first word
-# of the manuscript's ATX heading `# Capítulo 1 — El telar nuevo`, as a proper noun.)
+# of the manuscript's ATX heading `# Capítulo 1 — El telar nuevo`, as a proper noun.
+# Iteration 041 dropped it from 5 to 4: `character_presence` no longer mis-flags the
+# first spoken word `Esto` after the leading dialogue dash `—`, now stripped at the seam.)
 
 # The authored focus the E2E (re)stamps via `bookwright focus set` at the loop's start.
 focus:

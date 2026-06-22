@@ -126,10 +126,12 @@ See [research.md](./research.md). All decisions resolved (no NEEDS CLARIFICATION
   as a third `elif` branch — *not* `_is_sentence_initial`. This is the load-bearing
   issue-#1 decision: any prose validator benefits automatically and no validator
   couples to a surface marker.
-- **D3 — code points**: em dash `—` (U+2014) and en dash `–` (U+2013) only. The ASCII
-  hyphen bullet `- ` stays owned by `_BULLET_MARKER`; the horizontal bar `―` (U+2015)
-  and leading quotes (`«`/`"`/`'`) are the **same class** but a distinct design and are
-  deferred as DEBT-011 (already recorded — not silently dropped).
+- **D3 — code points**: the full dialogue-dash class — em dash `—` (U+2014), en dash
+  `–` (U+2013), and the horizontal bar `―` (U+2015). The ASCII hyphen bullet `- ` stays
+  owned by `_BULLET_MARKER`. U+2015 is same-class **and** same-design (a glued, unpaired
+  leading dash) so it is swept into the class here (doctrine § 4), not deferred; only the
+  **leading quotes** (`«`/`"`/`'`), a distinct *paired-marker* design, are deferred as
+  DEBT-011 (recorded — not silently dropped).
 - **D4 — parity**: verified empirically (script run during planning) — the only
   pinned oracle that shifts is `tiny-historical/expected-status.md` (`warning: 5 → 4`);
   `tiny-novel`/`tiny-memoir` carry leading-dash dialogue but their tests assert only

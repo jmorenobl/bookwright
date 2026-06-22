@@ -179,6 +179,23 @@ beyond it is (US2). The both-directions guarantee of FR-009 is covered across T0
 
 ---
 
+## Phase 6: Convergence
+
+- [X] T015 Update the now-stale explanatory NOTE in
+      `tests/fixtures/tiny-historical/expected-status.md` per FR-008 / SC-003 / T008 (partial).
+      The pinned `validation.counts.warning` (line 64) and the prose note (line 89) were
+      correctly changed to `4`, but the header `NOTE ON validation.counts` block was not:
+      line 15 still reads "its warning count **(5)** is the project-wide total" and the
+      lineage sentence (lines 17-19) records only iteration 038's `6 → 5`, leaving the
+      oracle internally contradictory (comment says 5, pinned value is 4). Mirror the 038
+      precedent the spec invokes: change the inline `(5)` → `(4)` and append a sentence
+      recording iteration 041's `5 → 4` drop (`character_presence` no longer mis-flags the
+      first spoken word `Esto` after the leading dialogue dash `—`). Do NOT touch the
+      fixture manuscript or any pinned count (both are already correct); this is a
+      documentation-truth fix to the oracle's own comment only.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

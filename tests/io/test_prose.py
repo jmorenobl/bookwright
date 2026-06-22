@@ -57,6 +57,8 @@ def test_blank_lines_are_not_dropped() -> None:
         ("> —Esto", "Esto"),  # D7 composes with blockquote across two passes
         ("Pregúntale a Quirón —dijo.", "Pregúntale a Quirón —dijo."),  # D8 no leading dash
         ("- Pedro", "Pedro"),  # D9 ASCII hyphen bullet stays owned by _BULLET_MARKER
+        ("―Esto", "Esto"),  # D10 horizontal bar (U+2015) — same dash class
+        ("― Claro", "Claro"),  # D11 horizontal bar + space → same result
     ],
 )
 def test_normalized_block_prefix_table(raw: str, normalized: str) -> None:

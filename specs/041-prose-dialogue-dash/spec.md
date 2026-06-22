@@ -193,11 +193,13 @@ produces nothing.
 - **SC-005**: All four quality gates pass: `ruff check`, `ruff format --check`,
   `mypy --strict`, and `pytest` at ≥ 80 % coverage.
 - **SC-006**: `DEBT.md` no longer contains a DEBT-009 entry, and the implementation
-  introduces no new debt of its own. The pre-existing, **same-class** leading
-  quotation-mark / horizontal-bar (`«`, `"`, `―` U+2015) false positives discovered
-  while closing DEBT-009 are **recorded** as DEBT-011 (a future iteration), never
-  silently dropped — this recording is the doctrine-mandated trail, not new debt the
-  change creates.
+  introduces no new debt of its own. The pre-existing, **same-class _and_ same-design**
+  horizontal bar `―` (U+2015) — a leading dialogue dash with identical glued, unpaired
+  semantics — is **swept here alongside** `—`/`–` (zero-debt doctrine § 4: fix every
+  instance of the class you touch; the review pass folded it in). The leading
+  quotation-mark false positives (`«`, `"`, ASCII `"`/`'`) — a genuinely distinct
+  *paired-marker* design — are **recorded** as DEBT-011 (a future iteration), never
+  silently dropped: the doctrine-mandated trail, not new debt the change creates.
 
 ## Assumptions
 
@@ -238,17 +240,18 @@ produces nothing.
 - Any validator that does not scan surface prose (`factual_anchor`, `temporal`,
   `narrative_structure`) — they do not consume the prose seam's line view, so they
   are unaffected.
-- Other **leading typographic markers of the same class** — the horizontal bar `―`
-  (U+2015) and leading quotation marks (`«`/`»`, `"`/`"`, ASCII `"`/`'`) — that
-  produce the identical spurious first-word flag (verified empirically during this
-  spec's audit: `«Esto`, `"Hola`, and `―Esto` all fire today). These are NOT silently
-  dropped: per the zero-debt doctrine they are recorded as **DEBT-011** in `DEBT.md`
-  for a future iteration. They are deferred (not swept here) because the
-  leading-quote/horizontal-bar family is a genuine design decision of its own — paired
-  open/close semantics (`«`…`»`), quotes that also appear mid-line as content, and the
-  overlap with the `¿¡` opening punctuation that `_SENTENCE_END` already exempts —
-  larger than adding the dialogue-dash code points. This iteration closes ONLY the
-  observed DEBT-009 defect: the dialogue dash (`—`/`–`).
+- Leading **quotation marks** (`«`/`»`, `"`/`"`, ASCII `"`/`'`) — that produce the
+  identical spurious first-word flag (verified empirically during this spec's audit:
+  `«Esto`, `"Hola` fire today). These are NOT silently dropped: per the zero-debt
+  doctrine they are recorded as **DEBT-011** in `DEBT.md` for a future iteration. They
+  are deferred (not swept here) because the leading-quote family is a genuine design
+  decision of its own — paired open/close semantics (`«`…`»`), quotes that also appear
+  mid-line as content, and the overlap with the `¿¡` opening punctuation that
+  `_SENTENCE_END` already exempts — larger than adding a dialogue-dash code point. The
+  horizontal bar `―` (U+2015), by contrast, is same-class **and** same-design (a
+  leading dialogue dash, glued, unpaired), so it is swept **into** the seam here with
+  `—`/`–` rather than deferred (doctrine § 4). This iteration closes the dialogue-dash
+  class in full: `—` (U+2014), `–` (U+2013), `―` (U+2015).
 - Full Markdown emphasis inside dialogue (`**`/`*`/`_`): out of scope; emphasis is
   `focalization`'s own vocabulary, never a seam block prefix (per the 039 seam).
 - Touching the frozen ontology (Constitution X); this is a prose-level change that

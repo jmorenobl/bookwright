@@ -41,20 +41,23 @@ All decisions below are resolved; the spec carries **no** `[NEEDS CLARIFICATION]
     any future prose validator; and `_SENTENCE_END` models *sentence-ending punctuation*,
     not a leading structural marker.
 
-## D3 — Code points: em dash `—` (U+2014) + en dash `–` (U+2013) only
+## D3 — Code points: the dialogue-dash class `—` `–` `―` (U+2014/2013/2015)
 
-- **Decision**: the new marker covers exactly `—` (U+2014) and `–` (U+2013).
-- **Rationale**: these are the Spanish dialogue-dash convention (and the form observed
-  in the `tiny-historical` dogfood). The ASCII hyphen bullet `- ` stays owned by
-  `_BULLET_MARKER` (requires a trailing space; FR-005).
-- **Deferred (same class, distinct design)**: the horizontal bar `―` (U+2015) and
-  **leading quotation marks** (`«`/`»`, `"`/`"`, ASCII `"`/`'`) produce the identical
-  spurious first-word flag — verified empirically during the spec audit (`«Esto`,
-  `"Hola`, `―Esto` all fire today). They are **recorded as DEBT-011** in `DEBT.md`, not
-  swept here: quotes have paired open/close semantics, appear mid-line as content, and
-  overlap the `¿¡` opening punctuation `_SENTENCE_END` already exempts — a larger design
-  than adding two dash code points. This iteration closes **only** the observed DEBT-009
-  defect (the dialogue dash).
+- **Decision**: the new marker covers the full dialogue-dash class — `—` (U+2014),
+  `–` (U+2013), and `―` (U+2015, the historical horizontal bar). All three are leading
+  dashes with identical glued, unpaired semantics — one class, not three bugs.
+- **Rationale**: these are the Spanish dialogue-dash convention (em/en is the form
+  observed in the `tiny-historical` dogfood; `―` is the historical *raya*). The ASCII
+  hyphen bullet `- ` stays owned by `_BULLET_MARKER` (requires a trailing space; FR-005).
+  U+2015 was originally scoped to DEBT-011 but the review pass swept it in: it is
+  same-class **and** same-design (one code point added to the class), so deferring it
+  would be the instance-by-instance whack-a-mole issue #1 exists to stop (doctrine § 4).
+- **Deferred (related class, distinct design)**: **leading quotation marks**
+  (`«`/`»`, `"`/`"`, ASCII `"`/`'`) produce the identical spurious first-word flag —
+  verified empirically during the spec audit (`«Esto`, `"Hola` fire today). They are
+  **recorded as DEBT-011** in `DEBT.md`, not swept here: quotes have paired open/close
+  semantics, appear mid-line as content, and overlap the `¿¡` opening punctuation
+  `_SENTENCE_END` already exempts — a larger design than adding a dash code point.
 
 ## D4 — Parity: which oracles change, verified empirically
 
