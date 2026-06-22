@@ -475,41 +475,54 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/038-character-presence-heading/plan.md` (iteration 038 — make the
-`character_presence` validator stop flagging the first word of a markdown heading
-as an unknown proper noun, closing DEBT-008, entirely in
-`src/bookwright/validation/validators/character_presence.py`. The bug: the
-proper-noun heuristic exempts a capital that opens a line or follows
-`_SENTENCE_END` punctuation as grammatical, but does not recognize ATX heading
-syntax — the first word of `# Capítulo 1` is preceded by the `# ` marker, so
-`_is_sentence_initial` sees a non-empty, non-terminal prefix and reports
-`proper noun 'Capítulo' appears in the manuscript but has no bible entry` on every
-chapter heading. The fix: add a module-level
-`_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` and, in `_unknown_mentions`, compute
-a `scan` string (the line with any leading ATX marker stripped, else the line
-unchanged) BEFORE the heuristic; run `_CANDIDATE.finditer(scan)` and pass `scan` to
-`_is_sentence_initial`. The marker removed, the heading's first content word sits
-at offset 0 and is exempted by the EXISTING empty-prefix branch — no new exemption
-rule (FR-001). The rest of the line is analyzed unchanged, so a real out-of-roster
-name later in the title (`Elena` in `# La caída de Elena`) still fires (FR-002).
-Marker shape is anchored at `^` with NO leading whitespace (spec Edge Cases put
-indented forms out of scope — this drops the `^\s*` the plan hint loosely wrote);
-`#Capítulo` (no space) and seven-plus `#` are not matched, so they behave exactly
-as today. The `relpath:line` locator is unchanged: `lineno` comes from `enumerate`,
-not the match offset (FR-005). The inverse (bible→manuscript, `error`) direction,
-the pinned `_STOP_WORDS`, the per-name collapsing, and the `warning` severity are
-untouched (FR-003/FR-004). Prose validator: no graph, `triples=()`, frozen ontology
-untouched (Principle X / FR-009). Tests in
-`tests/validation/test_character_presence.py`: (FR-006) a synthetic in-test
-manuscript with multi-depth chapter headings (`# Capítulo 1`, `## Escena …`) +
-plain prose with no out-of-roster names → assert 0 findings (the scaffold ships an
-EMPTY manuscript, so there is no live artifact to bind to — unlike iter 037);
-(FR-007) a heading `# La caída de Elena` with `Elena` off-roster → assert the
-unknown-proper-noun warning for `Elena` fires (proving the marker, not the title,
-is stripped). Existing fixtures stay green unchanged (FR-003 parity). Delete
-DEBT-008 from `DEBT.md` (the "Deuda abierta" section becomes `_Ninguna por ahora._`).
-The `_HEADING_MARKER` recognizer stays LOCAL to `character_presence.py` (no shared
-markdown-stripping utility — speculative plumbing per Scope discipline), mirroring
-iter 037's local `_PENDING_ONLY`. `character_presence.py` ≤ 500 lines (203 today).
-`uv run pytest` and the four gates green.
+`specs/039-prose-structure-seam/plan.md` (iteration 039, first of two in the
+`v0.5.0` "validation robustness" minor (issue #1, facet A — surface coupling) —
+close the *class* behind DEBT-004/007/008 instead of patching a fourth instance.
+Today three prose validators each re-implement how to "see past" the Markdown
+their own scaffold emits; the next surface (a `> blockquote`, an epigraph) reopens
+the crack in whichever validator meets it first. The fix: one shared,
+Markdown-aware **prose/structure seam** in a NEW `src/bookwright/io/prose.py`
+(modelled on `io/frontmatter.py`'s line-tracking). It exposes `ProseLine`
+(frozen dataclass: `number` 1-based, `raw` original, `normalized` = leading
+structural block prefix(es) stripped), `prose_view(text) -> tuple[ProseLine, ...]`,
+and `is_placeholder(body)`. `normalized` strips ITERATIVELY — one block prefix per
+`count=1` pass, left-to-right, until none remains (`> - text` → `text`); two
+recognizers keep the deleted strippers' asymmetric anchors EXACTLY:
+`_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` (strict col 0, mirrors
+`character_presence`) and `_BULLET_MARKER = re.compile(r"^\s*[-*+>]\s+")` (tolerates
+leading whitespace, mirrors `focalization._BULLET`). Inline emphasis is NEVER a
+block prefix (never triggers a pass); `is_placeholder` mirrors `_PENDING_ONLY`
+(`r"(?i)^\s*\[pending\b[^\]]*\]\s*$"`). NO new dependency, NO Markdown AST
+(Constitution II / FR-012). `ValidationContext` gains two cached accessors via the
+existing `_UNSET`/memo pattern: `manuscript_view()` (sorted `(relpath, view)`,
+built from `manuscript_files()` — no second disk read) and `constitution_view()`
+(`()` when the constitution is absent) — each source split ONCE per run (FR-006).
+Then rewrite the three validators and DELETE their local strippers: (a)
+`character_presence` runs its proper-noun scan over each line's `normalized`,
+deleting `_HEADING_MARKER` (keeps `manuscript_files()` for the orphan/`_is_mentioned`
+whole-file checks); (b) `focalization` locates its declaration over `normalized`
+with `_DECLARATION` WIDENED to tolerate optional emphasis around the label
+(`(?i)^\s*(?:\*\*|\*|_)*\s*(?:voz narrativa|narrative voice)(?:\*\*|\*|_)*\s*:\s*(?P<body>.+)$`),
+so `_BULLET`/`_LEAD_EMPHASIS`/`_CLOSE_EMPHASIS`/`_normalize_declaration_line` are
+DELETED (folded into the one pattern, not relocated to the seam — emphasis is this
+validator's vocabulary), consults the seam's `is_placeholder` (deleting local
+`_PENDING_ONLY`), and runs its dialogue/first-person/head-hopping scans over each
+line's `raw` (dialogue exemption byte-for-byte unchanged); (c) `setting_continuity`
+iterates `manuscript_view()` reading `.raw` (block-prefix stripping is inert for
+its `\bterm\b` matching) while its whole-file `name_re.search(text)` gate stays over
+the full text. NO validator calls `splitlines()` any longer (SC-002). Locators
+unchanged — the line number is `ProseLine.number`, never a match offset (FR-010).
+The class-closure proof (FR-011/SC-003/US2): a NEW fixture with a `> blockquote`
+off-roster mention (`> Quevedo lo dijo`, `Quevedo` line-initial after the strip) is
+handled correctly with ZERO validator-code change — the seam's existing `[-*+>]`
+recognizer strips it. US1/SC-001: the ENTIRE existing suite passes with ZERO oracle
+edits (byte-for-byte parity — the loop runs exactly one pass on every live input;
+verify empirically, never loosen the seam to pass a test — research D10). Tests: new
+`tests/io/test_prose.py` (the `contracts/prose-seam.md` tables) + extended
+`tests/validation/test_{character_presence,focalization,setting_continuity}.py`.
+Prose validators stay graph-free, LLM-free, `triples=()`, frozen ontology untouched
+(Principle X / FR-013); severities + the `error`-only CI gate unchanged. Every
+changed/new file ≤ 500 lines (`base.py` 256 → ~285; new module ~80). Facet B (the
+tri-valued `evaluated`/`not-evaluated(reason)` result) is iteration 040, explicitly
+OUT OF SCOPE here. Design § 13.4. `uv run pytest` and the four gates green.
 <!-- SPECKIT END -->

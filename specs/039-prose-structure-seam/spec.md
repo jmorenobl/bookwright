@@ -51,6 +51,30 @@ validator result so an empty finding list stops reading as "clean" when it meant
 "couldn't look" — is the separate, dependent iteration 040 and is explicitly out
 of scope here.
 
+## Clarifications
+
+### Session 2026-06-22
+
+- Q: Does the seam's normalized form strip a single leading block prefix or
+  iterate through nested prefixes (e.g. `> - text`)? → A: **Iterate** — strip one
+  leading block prefix at a time, left-to-right, repeating until the line carries
+  no leading block prefix; each strip is a single (`count=1`) removal of a heading
+  marker or a bullet/blockquote marker, and inline emphasis is never a block prefix
+  so it never triggers a pass. *(Rationale: only iterative stripping closes the
+  class for the nested surfaces the spec's own edge cases name (`> - text`); it
+  preserves live-fixture parity because today's strippers only ever met single
+  prefixes, so the loop runs exactly one pass on every existing input.)*
+- Q: Do the heading and bullet/blockquote recognizers share one anchor, or keep
+  the asymmetry of the two strippers they subsume? → A: **Keep the asymmetry
+  exactly** — the heading recognizer is anchored strictly at column 0
+  (`^#{1,6}\s+`, no leading whitespace, mirroring `character_presence._HEADING_MARKER`);
+  the bullet/blockquote recognizer tolerates leading whitespace (`^\s*[-*+>]\s+`,
+  mirroring `focalization._BULLET`). *(Rationale: FR-004 byte-for-byte parity
+  requires each recognizer to anchor exactly where its predecessor did; unifying
+  the anchors would be a "fix" the Assumptions forbid and would start
+  heading-stripping indented `   # text` lines, shifting `character_presence`'s
+  view.)*
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Zero regression across the existing validator suite (Priority: P1)
@@ -148,7 +172,11 @@ the same 1-based line numbers as the raw-text scan does today.
   (e.g. `   # text`, or `#text` with no following space, or seven-plus `#`) is
   **not** treated as an ATX heading — it keeps today's behaviour. The seam's
   recognizers stay anchored exactly where the deleted local strippers anchored
-  them (no looser, no tighter), preserving byte-for-byte parity.
+  them (no looser, no tighter), preserving byte-for-byte parity: the heading
+  recognizer is strict at column 0 while the bullet/blockquote recognizer
+  tolerates leading whitespace — the asymmetry is kept deliberately
+  (Clarifications 2026-06-22). So `   # text` is not heading-stripped, but
+  `   - text` (indented bullet) is, exactly as `_BULLET` does today.
 - **Distinguishing a bullet from an emphasis run**: A line-leading `* ` (bullet
   + space) is a structural bullet the seam strips; a `*Voz*` emphasis run (no
   following space) is inline styling the seam leaves untouched. The seam must
@@ -163,9 +191,10 @@ the same 1-based line numbers as the raw-text scan does today.
   `Voz narrativa: …` form. No emphasis-stripping construct survives in either the
   seam or the validator.
 - **Multiple markers / mixed nesting**: A line like `> - text` (blockquote +
-  bullet) is normalized by removing the leading block markers left-to-right to the
-  same extent as today's `_BULLET` would on each pass — no third-party Markdown
-  parse. Inline emphasis is never stripped by the seam.
+  bullet) is normalized by removing the leading block markers iteratively,
+  left-to-right (pass 1 strips `> `, pass 2 strips `- `), until none remains —
+  `> - text` → `text` (Clarifications 2026-06-22). No third-party Markdown parse.
+  Inline emphasis is never stripped by the seam and never triggers a pass.
 - **A leading block marker on a dialogue line**: A dialogue line carrying a
   leading `- ` or `> ` is stripped in the *normalized* view but its *raw* form is
   retained; `focalization`'s dialogue / first-person / head-hopping scans read the
@@ -196,11 +225,18 @@ the same 1-based line numbers as the raw-text scan does today.
   would be unused plumbing — the recognition of a prefix is an internal step of
   producing the normalized form, not a published attribute.
 - **FR-003**: The normalized form of a line MUST be the line with its leading
-  **structural block prefix** removed: a single ATX heading marker (`#{1,6}`
+  **structural block prefix(es)** removed: a single ATX heading marker (`#{1,6}`
   followed by whitespace) or a single bullet/blockquote marker (`[-*+>]` followed
-  by whitespace), applied left-to-right for a nested prefix. The seam MUST NOT
-  strip inline emphasis (`**`/`*`/`_`) — that is not a block prefix — and MUST NOT
-  reference any validator's domain vocabulary.
+  by whitespace). Stripping MUST be **iterative** — one prefix removed per pass,
+  left-to-right, repeated until the line carries no leading block prefix (so a
+  nested `> - text` normalizes to `text`); each pass is a single (`count=1`)
+  removal. The two recognizers MUST preserve, byte-for-byte, the anchors of the
+  strippers they subsume: the heading marker is anchored strictly at column 0
+  (`^#{1,6}\s+`, no leading whitespace), while the bullet/blockquote marker
+  tolerates leading whitespace (`^\s*[-*+>]\s+`) — the asymmetry is kept, not
+  normalized away (Clarifications 2026-06-22). The seam MUST NOT strip inline
+  emphasis (`**`/`*`/`_`) — that is not a block prefix, and it never triggers a
+  pass — and MUST NOT reference any validator's domain vocabulary.
 - **FR-004**: On every input the live fixtures exercise, the seam's block-prefix
   stripping MUST reproduce, byte-for-byte, what `character_presence`'s
   `_HEADING_MARKER` and `focalization`'s `_BULLET` produce today, and the seam's
