@@ -4,6 +4,87 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.0] — 2026-06-22
+
+The **validation-robustness** minor (issue #1), shipping **two** iterations at
+once — 039 (single prose/structure seam) and 040 (tri-valued validator result) —
+released together at the close of the milestone, the M4→`v0.2.0` /
+M5→`v0.3.0` pattern. The v0.4.x post-dogfooding track had patched DEBT-004,
+DEBT-007, and DEBT-008 one instance at a time, but the dogfooding made plain they
+were **one class** of defect, not three bugs: every prose validator was
+re-implementing how to "see past the markdown the tool itself emits," and `[]`
+from a validator could not be told apart from "evaluated and clean." Issue #1
+decided to close the class at the root rather than keep playing whack-a-mole.
+This release closes both facets. No new CLI subcommand and no new runtime
+dependency; the `--json` envelope grows **additively** (a new `not_evaluated[]`
+array) and the CI gate is unchanged — only `error`-severity findings gate, as
+before. The frozen ontology is untouched (Principle X); the prose validators stay
+graph-free and LLM-free (`triples=()`).
+
+### Added
+
+- **Single Markdown-aware prose/structure seam** (iteration 039,
+  `src/bookwright/io/prose.py`): a generic view that splits a Markdown source into
+  lines, classifies block-level prefixes (heading marker, blockquote/bullet),
+  and exposes a *normalized view* every prose validator consumes instead of
+  re-scanning raw text. It knows only about block-level Markdown — never a
+  validator's domain labels. Cached `ValidationContext` accessors
+  (`constitution_view()` / `manuscript_view()`) memoize the parse so the three
+  prose validators share one pass. This closes the **surface-coupling class**
+  behind DEBT-004/007/008 at the root: the per-validator strippers
+  (`character_presence`'s `_HEADING_MARKER`, `focalization`'s bullet/emphasis and
+  `_PENDING_ONLY` handling, `setting_continuity`'s own scan) are deleted and
+  rebuilt on the shared seam.
+- **Tri-valued validator result** (iteration 040,
+  `src/bookwright/validation/base.py`): a validator's per-run verdict is now
+  `evaluated` (with or without findings) vs `not-evaluated(reason)`, so an empty
+  result can no longer read as a clean pass when it meant "had nothing to look
+  at" — the exact false-confidence bug that kept `focalization` asleep-and-green
+  for the whole v0.4 line (DEBT-004). A validator signals not-evaluated by
+  **raising a dedicated `NotEvaluated(reason)`** (a plain `Exception`, not a
+  `BookwrightError`); the runner — already the per-validator isolation boundary —
+  catches it in a clause *before* its generic `except Exception` and records a
+  `NotEvaluatedResult(validator, reason)`. `Validator.validate` keeps its return
+  type `list[Violation]` **unchanged** — no dual-shape return, no return-type
+  sniffing — so a custom validator returning a bare list keeps working as
+  evaluated.
+- **A `not_evaluated[]` channel** threaded additively through the stack: the
+  runner's `RunResult` gains a 4th element (`not_evaluated`, sorted by name); the
+  `validate --json` envelope gains a `not_evaluated[]` array (sibling of
+  `violations`/`errors`) plus a human "not evaluated:" report section;
+  `status`'s `ValidationSummary` gains `not_evaluated` under `state.validation`; a
+  new pure `activate_dormant_validators` rule names the remedy in `next_actions`;
+  and `resources/commands/bookwright-research.md` lists the raw not-evaluated
+  facts at startup. **GREEN is now the single documented predicate
+  `status == "ok" AND not_evaluated == []`.**
+
+### Changed
+
+- **The three prose validators are rewritten on the shared seam** (iteration 039,
+  `character_presence.py`, `focalization.py`, `setting_continuity.py`): same
+  observable findings, but the markdown-normalization logic lives once in `io/`
+  instead of being duplicated and drifting per validator.
+- **Three validators migrate their "could-not-look" early returns to
+  `NotEvaluated`** (iteration 040): `focalization` routes all four early
+  "no usable voice" paths to distinct reasons — no constitution, no parseable
+  declaration, `[PENDING]` placeholder, and no grammatical person resolved (a
+  usable first/third person stays evaluated); `setting_continuity` is
+  not-evaluated when the manuscript is empty; `character_presence` is
+  not-evaluated **only** when *both* inputs are empty (no prose **and** an empty
+  roster) — an empty manuscript with a non-empty roster stays **evaluated** and
+  still emits its `error`-level orphan findings byte-for-byte, the rule that keeps
+  the gate honest. `temporal` and `factual_anchor` only conform to the
+  backward-compatible contract. Every migrated trigger fires only on inputs that
+  already returned `[]`, so there are **zero** existing finding-oracle edits.
+- **`bookwright-design.md § 13.1`** updated (Spanish) to the tri-valued contract
+  before the code diverged.
+
+### Removed
+
+- The per-validator markdown strippers, folded into the `io/prose.py` seam
+  (iteration 039) — the surface-coupling class is closed at the root, not patched
+  instance-by-instance.
+
 ## [0.4.6] — 2026-06-22
 
 Fifth patch of the **v0.4.x post-dogfooding hardening track** (iteration 038) —

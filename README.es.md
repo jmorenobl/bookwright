@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.4.5-6f42c1" alt="Versión 0.4.5"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.5.0-6f42c1" alt="Versión 0.5.0"></a>
   <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="Licencia: EUPL-1.2"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Cobertura ≥80%">
@@ -32,10 +32,12 @@ el capítulo 3 y verdes en el 12 — antes que tu lector. Bookwright deriva un
 grafo de conocimiento de tu obra y valida la continuidad (personajes,
 settings, cronología, focalización) de forma determinista.
 
-> Estado: **v0.4.5** — usable para investigar, estructurar, redactar y
+> Estado: **v0.5.0** — usable para investigar, estructurar, redactar y
 > validar continuidad. Investiga con procedencia, ingiere la estructura
 > narrativa (unidades, funciones y secuencias) y la tipa contra los
-> vocabularios de Propp y Greimas. Detalle de cambios en el
+> vocabularios de Propp y Greimas. La validación ya es robusta: un validador
+> informa `no-evaluado(motivo)` en vez de pintarse verde de forma engañosa
+> cuando no tiene nada que mirar. Detalle de cambios en el
 > [CHANGELOG](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md).
 
 ---
