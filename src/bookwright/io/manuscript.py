@@ -12,7 +12,7 @@ iteration 029, via their ``sequence``/``order`` keys — assemble
 ``NarrativeSequence`` (G7) entities (all via ``bookwright.io.outline``), while
 ``arcs``/``structure``/``synopsis``/``scenes`` remain author-only prose. This
 inertness is deliberate (see the deferral
-rationale in ``bookwright.golem.deferrals`` and ``docs/authoring.md``), not an
+rationale in ``bookwright.golem.deferrals`` and ``docs/concepts/authoring.md``), not an
 oversight.
 """
 

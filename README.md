@@ -212,8 +212,8 @@ continuity checks until you actually decide it, never a false alarm.
 time. **There is no "definitive" pass**: there's a manuscript and a graph
 that converge iteration by iteration.
 
-The full walkthrough is in
-[Getting started](https://github.com/jmorenobl/bookwright/blob/main/docs/getting-started.md).
+The full walkthrough is in the
+[Tutorial](https://github.com/jmorenobl/bookwright/blob/main/docs/tutorial/index.md).
 
 ---
 

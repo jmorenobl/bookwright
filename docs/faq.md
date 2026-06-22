@@ -31,6 +31,15 @@ sin ficha, posibles rupturas de voz) y **no bloquean**. Solo las violaciones de
 severidad `error` (personajes huérfanos, contradicciones temporales) hacen fallar
 la validación. Ver [Validación](validation.md).
 
+## `validate` dice «not evaluated» — ¿qué significa?
+
+Que un validador **no pudo mirar**: no había manuscrito que revisar, o la voz
+narrativa de tu constitución sigue como `[PENDING]`, o falta la constitución. No
+es un error y no bloquea, pero tampoco cuenta como verde — un resultado vacío no
+debe confundirse con un visto bueno. Tu proyecto está realmente comprobado cuando
+`status == "ok"` **y** la lista `not_evaluated` está vacía. Cómo despertar cada
+validador dormido: [Interpretar la validación](guides/interpret-validation.md).
+
 ## ¿Cómo consulto el grafo?
 
 Con SPARQL: `bookwright graph query "<consulta>" --json`. El prefijo `golem:` ya

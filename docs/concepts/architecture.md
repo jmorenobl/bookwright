@@ -1,11 +1,15 @@
-# Arquitectura
+# Texto plano y grafo derivado
 
-Esta página es un resumen curado. La especificación de diseño completa vive en
+Las dos primeras ideas de [Cómo piensa Bookwright](index.md) —*el texto plano es
+la verdad* y *el grafo es una caché*— no son eslóganes: son la arquitectura. Esta
+página enseña las capas que las sostienen y el flujo de datos que las conecta.
+
+Es un resumen curado. La especificación de diseño completa vive en
 `bookwright-design.md`, en la raíz del repositorio; su numeración de secciones
 es *load-bearing* y se cita aquí como `bookwright-design.md § N.M`. Esta página
 **enlaza y resume**, no duplica.
 
-## Capas
+## Las capas, en orden de dependencia
 
 ![Capas de bookwright en orden de dependencia: CLI (typer), commands/ con envelopes --json, una banda con validation/ · integrations/ · indexers/, golem/ sobre rdflib, core/ con el manifiesto, y errors.py como base sin dependencias](https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/layers.svg)
 

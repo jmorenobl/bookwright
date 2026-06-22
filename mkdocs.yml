@@ -6,8 +6,12 @@ theme:
   name: material
   language: es
   features:
+    - navigation.tabs
     - navigation.sections
+    - navigation.indexes
+    - navigation.top
     - content.code.copy
+    - content.tabs.link
 
 # Warnings (broken links, orphan pages, missing nav targets) become build
 # errors — this is the machine-checkable "zero warnings" gate (D7, FR-021).
@@ -15,32 +19,52 @@ strict: true
 
 nav:
   - Inicio: index.md
-  - Primeros pasos: getting-started.md
-  - El flujo de autoría: authoring.md
-  - Arquitectura: architecture.md
-  - Comandos:
-      - bookwright init: commands/init.md
-      - bookwright check: commands/check.md
-      - bookwright version: commands/version.md
-      - bookwright validate: commands/validate.md
-      - bookwright graph build: commands/graph-build.md
-      - bookwright graph query: commands/graph-query.md
-      - bookwright integration use: commands/integration-use.md
-      - bookwright focus set: commands/focus-set.md
-      - bookwright focus show: commands/focus-show.md
-      - bookwright focus clear: commands/focus-clear.md
-      - bookwright status: commands/status.md
-  - Validación: validation.md
-  - Estructura narrativa: narrative-structure.md
-  - Investigación: research.md
-  - Orquestación: orchestration.md
-  - Extender: extending.md
-  - Dogfooding: dogfooding.md
-  - FAQ: faq.md
-  - Cambios: changelog.md
+  - Tutorial:
+      - tutorial/index.md
+      - 2. Destila el canon: tutorial/distill.md
+      - 3. Investiga los hechos: tutorial/research.md
+      - 4. Estructura y redacta: tutorial/write.md
+      - 5. Revisa y vuelve atrás: tutorial/revise.md
+  - Conceptos:
+      - concepts/index.md
+      - Texto plano y grafo derivado: concepts/architecture.md
+      - El loop de autoría y las skills: concepts/authoring.md
+      - Investigación con procedencia: concepts/research.md
+      - Estructura narrativa: concepts/narrative-structure.md
+      - Orquestación de contexto: concepts/orchestration.md
+  - Guías prácticas:
+      - Interpretar la validación: guides/interpret-validation.md
+      - Resolver pendientes [PENDING]: guides/pending.md
+  - Referencia:
+      - Validadores: validation.md
+      - Extender (validador propio): extending.md
+      - Comandos:
+          - bookwright init: commands/init.md
+          - bookwright check: commands/check.md
+          - bookwright version: commands/version.md
+          - bookwright validate: commands/validate.md
+          - bookwright graph build: commands/graph-build.md
+          - bookwright graph query: commands/graph-query.md
+          - bookwright integration use: commands/integration-use.md
+          - bookwright focus set: commands/focus-set.md
+          - bookwright focus show: commands/focus-show.md
+          - bookwright focus clear: commands/focus-clear.md
+          - bookwright status: commands/status.md
+  - Proyecto:
+      - Cambios: changelog.md
+      - FAQ: faq.md
+      - Dogfooding: dogfooding.md
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc:
       permalink: true
