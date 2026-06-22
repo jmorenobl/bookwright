@@ -4,6 +4,64 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.2] — 2026-06-22
+
+The second patch of the **v0.5.x post-dogfooding track** (iteration 042),
+closing **DEBT-010** — a defect the `tiny-historical` dogfood surfaced, again a
+direct continuation of the issue #1 doctrine. The `character_presence` validator
+has two rules split by severity: an orphan rule (`error`, protects the gate —
+every bible CHARACTER must be mentioned in the prose) and an unknown-mention
+rule (`warning` — a prose proper noun with no bible entry). The unknown-mention
+rule cross-checked proper-noun candidates against the CHARACTER roster **only**,
+so the capitalized tokens of a declared multi-word environment — `Real`,
+`Fábrica`, `Paños` of the bible setting "la Real Fábrica de Paños" under
+`bible/settings/` — each fired a spurious "no bible entry" `warning`, even
+though the entry exists (just under `settings/`, not `characters/`). Per the
+issue #1 per-class, no-NER doctrine, the fix widens the rule's known-names set
+to the **union** of the character, setting, location and object rosters — **no
+validator heuristic is reworked** and **no new disk read is added** (the rosters
+ride the already-cached `bible()` map). The `error` orphan gate keeps deriving
+from the character roster alone, and the iteration-040 `not-evaluated` guard is
+byte-stable. No new CLI surface, no new runtime dependency, no ontology change
+(the prose validators stay graph-free, `triples=()`, Principle X) and the CI
+gate is unchanged — pure hardening.
+
+### Added
+
+- **Two cached roster accessors on `ValidationContext`**
+  (`src/bookwright/validation/base.py`): `location_names()` (GOLEM class
+  `NarrativeLocation`, G13, `bible/locations/`) and `object_names()` (GOLEM class
+  `Object`, G16, `bible/objects/`), each a byte-for-byte mirror of the existing
+  `setting_names()` — the same generic `_names_of(concept_cls)` helper and
+  `_UNSET`-sentinel memoization, no new helper.
+- **`locations=` / `objects=` knobs on the synthetic-project test builder**
+  (`tests/validation/conftest.py`'s `write_project`), mirroring the existing
+  `settings=` knob byte-for-byte (both default `()`), so the location/object
+  union arms and both new accessors are proven by synthetic projects rather than
+  by editing a pinned E2E fixture.
+
+### Changed
+
+- **The `character_presence` unknown-mention rule now suppresses against the
+  union of all four bible rosters**
+  (`src/bookwright/validation/validators/character_presence.py`): the slug set
+  `_unknown_mentions` consumes is built from
+  `character_names() + setting_names() + location_names() + object_names()`
+  passed once through the unchanged module-level `_roster_slugs`. `_orphans`
+  still feeds from `character_names()` alone (the `error` gate untouched), and
+  the `NotEvaluated` guard stays clavado on `not roster and not files`
+  (character roster only) with the identical reason string. The `Violation`
+  shape, `triples=()`, and frozen ontology are untouched.
+- **The `tiny-historical` E2E oracle** (`tests/fixtures/tiny-historical/expected-status.md`):
+  `validation.counts.warning 4 → 1` — the three setting tokens
+  `Real`/`Fábrica`/`Paños` stop being mis-flagged, leaving only the independent
+  `factual_anchor` warning; `error` stays `1`. The fixture manuscript and bible
+  are untouched (oracle-only shift, the same shape iteration 041 did `5 → 4` and
+  038 did `6 → 5`).
+- **`DEBT.md`**: the **DEBT-010** entry is removed (resolved). DEBT-011 (the
+  genuinely-distinct paired leading-quote markers `«`/`"`/`'`) remains recorded
+  for a future iteration — explicitly out of scope here.
+
 ## [0.5.1] — 2026-06-22
 
 The first patch of the **v0.5.x post-dogfooding track** (iteration 041),

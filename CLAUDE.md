@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.1 released (2026-06-22, the first post-`v0.5.0` patch, iteration 041, DEBT-009 — the single prose seam (`src/bookwright/io/prose.py`) now also strips the leading Spanish dialogue dash `—`/`–`/`―` so `character_presence` stops mis-flagging the first spoken word of every dialogue line as an unbound proper noun; the class is closed at the seam, not the validator — one `_normalize` branch, zero validator edits (issue #1 doctrine, the same mechanism 038 used for ATX headings). v0.5.0 (2026-06-22, the validation-robustness minor, issue #1) shipped 039+040 at once at the close of the milestone: a single Markdown-aware prose/structure seam now backs every prose validator, closing the surface-coupling *class* behind DEBT-004/007/008 at the root (039), and a validator's per-run verdict is now tri-valued — `evaluated` / `not-evaluated(reason)` raised as `NotEvaluated` and surfaced in an additive `not_evaluated[]` channel — so `[]` stops reading as "clean" when it meant "couldn't look" (040))
+## Repository state: v0.5.2 released (2026-06-22, the second post-`v0.5.0` patch, iteration 042, DEBT-010 — the `character_presence` unknown-mention `warning` rule now cross-checks proper-noun candidates against the UNION of the character, setting, location and object rosters, not the CHARACTER roster alone, so the capitalized tokens of a declared multi-word environment (`Real`/`Fábrica`/`Paños` of the bible setting "la Real Fábrica de Paños" under `bible/settings/`) stop firing spurious "no bible entry" warnings; two new cached `ValidationContext` accessors (`location_names()` G13, `object_names()` G16) mirror `setting_names()` byte-for-byte, the `error` orphan gate and the 040 `not-evaluated` guard stay character-only and untouched — file-based via the cached `bible()` map, no validator heuristic reworked, no new dep (issue #1 per-class doctrine, the same oracle-only shape 041/038 used). v0.5.1 (2026-06-22, the first post-`v0.5.0` patch, iteration 041, DEBT-009 — the single prose seam (`src/bookwright/io/prose.py`) now also strips the leading Spanish dialogue dash `—`/`–`/`―` so `character_presence` stops mis-flagging the first spoken word of every dialogue line as an unbound proper noun; the class is closed at the seam, not the validator — one `_normalize` branch, zero validator edits (issue #1 doctrine, the same mechanism 038 used for ATX headings). v0.5.0 (2026-06-22, the validation-robustness minor, issue #1) shipped 039+040 at once at the close of the milestone: a single Markdown-aware prose/structure seam now backs every prose validator, closing the surface-coupling *class* behind DEBT-004/007/008 at the root (039), and a validator's per-run verdict is now tri-valued — `evaluated` / `not-evaluated(reason)` raised as `NotEvaluated` and surfaced in an additive `not_evaluated[]` channel — so `[]` stops reading as "clean" when it meant "couldn't look" (040))
 
 Five milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
@@ -92,8 +92,29 @@ for ATX headings). Only the leading dash is removed (internal incise dashes
 038 did `6 → 5`). The audit recorded **DEBT-011** (the genuinely-distinct
 *paired* leading-quote markers `«`/`"`/`'`) for a future iteration; the
 horizontal bar `―` U+2015, being the same glued dash class **and** design, was
-swept here. The next planned patch is iteration 042 (`v0.5.2`, DEBT-010 — cross
-the proper-noun roster against settings/locations/objects, not just characters).
+swept here. Iteration 042 shipped as the **`v0.5.2`** patch (2026-06-22,
+DEBT-010): the `character_presence` unknown-mention rule (`warning` — a prose
+proper noun with «no bible entry») now cross-checks proper-noun candidates
+against the **union** of the character, setting, location and object rosters, not
+the CHARACTER roster alone, so the capitalized tokens of a declared multi-word
+environment (`Real`/`Fábrica`/`Paños` of the bible setting "la Real Fábrica de
+Paños" under `bible/settings/`) stop firing spurious "no bible entry" warnings
+even though the entry exists (just under `settings/`). Two new cached accessors
+on `ValidationContext` — `location_names()` (`NarrativeLocation`, G13) and
+`object_names()` (`Object`, G16) — each a byte-for-byte mirror of `setting_names()`
+through the existing `_names_of` helper; in `validate`, the slug set
+`_unknown_mentions` consumes is built from the concatenation of the four roster
+tuples passed once through the unchanged `_roster_slugs`. `_orphans` KEEPS feeding
+from `character_names()` alone (the `error` gate untouched), the `NotEvaluated`
+guard stays clavado on `not roster and not files` with the identical reason
+string, and the `Violation` shape / `triples=()` / frozen ontology are untouched
+(file-based via the cached `bible()` map, no SPARQL, no new disk read). The only
+pinned oracle that shifts is `tiny-historical/expected-status.md`
+(`warning 4 → 1`, manuscript/bible untouched, as 041 did `5 → 4` and 038 did
+`6 → 5`); the location/object union arms and both accessors are proven by
+synthetic-project tests (extended `write_project` `locations=`/`objects=` knobs),
+not by editing a pinned fixture. DEBT-011 (the genuinely-distinct *paired*
+leading-quote markers `«`/`"`/`'`) stays recorded for a future iteration.
 The remaining longer-horizon work — semantic judgment in validation, vector
 search (ChromaDB over rdflib) and export — is deferred to an unversioned, demand-pulled
 horizon: each ships only when its activation condition is met, not on a pre-assigned
@@ -279,6 +300,7 @@ was correct) and corrupts the run's audit trail.
 | 039 | Single prose/structure seam — validators stop coupling to surface markdown (issue #1, facet A) | v0.5.0 | ✅ merged |
 | 040 | Tri-valued validator result: `evaluated` / `not-evaluated(reason)` (issue #1, facet B) | v0.5.0 | ✅ merged |
 | 041 | Prose seam strips leading Spanish dialogue dash `—`/`–`/`―` (DEBT-009) | v0.5.1 | ✅ merged |
+| 042 | `character_presence` unknown-mention crosses setting/location/object rosters (DEBT-010) | v0.5.2 | ✅ merged |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
 (019), `bookwright status` with deterministic `next_actions` (020), the
