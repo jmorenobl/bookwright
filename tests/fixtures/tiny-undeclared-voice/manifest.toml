@@ -1,0 +1,45 @@
+# Bookwright project manifest — fixture `tiny-undeclared-voice`.
+#
+# A minimal project that is DELIBERATELY UNFINISHED in exactly one respect: its
+# constitution still carries the `- **Voz narrativa**: [PENDING: …]` placeholder a
+# fresh `bookwright init` emits. Its single character is mentioned in the manuscript
+# (no orphan error), so `validate` does not gate (exit 0) — yet `focalization` is
+# NOT-EVALUATED, so the run is honestly NOT clean. This is the iteration-040 fixture
+# proving a dormant validator no longer reads as green (DEBT-004). It is consumed only
+# by `tests/e2e/test_tri_valued_validation.py`; it is NOT in the `test_fixtures.py`
+# clean-fixture roster (it intentionally keeps a `[PENDING]` sentinel).
+
+[bookwright]
+cli_version_min = "0.0.1"
+schema_version = "golem-1.1"
+manifest_version = "1"
+uri_base = "https://example.org/tiny-undeclared-voice/"
+indexer = "rdflib"
+
+[book]
+title = "El faro sin nombre"
+type = "novel"
+language = "es"
+authors = ["Equipo Bookwright"]
+status = "drafting"
+
+[vocabularies]
+active = []
+
+[validators]
+enabled = []
+disabled = []
+custom = []
+
+[integration]
+key = "claude"
+skills_dir = ".claude/skills"
+
+[integration.options]
+
+[paths]
+manuscript = "manuscript/"
+bible = "bible/"
+outline = "outline/"
+graph = "bible/graph.ttl"
+constitution = "bible/constitution.md"
