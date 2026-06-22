@@ -22,6 +22,38 @@ bookwright validate --scope manuscript/ --severity warning
 ## Salida
 
 Bajo `--json`, el cuerpo es un único documento con `status`, `failed`,
-`violations[]`, `errors[]` y un `summary` con el desglose `by_severity`. La prosa
-humana va a stderr (Principio IX). Ver [Validación](../validation.md) para el
-catálogo de validadores.
+`violations[]`, `errors[]`, `not_evaluated[]` y un `summary` con el desglose
+`by_severity` y la lista `ran` de validadores ejecutados. La prosa humana va a
+stderr (Principio IX).
+
+```json
+{
+  "status": "violations",
+  "failed": true,
+  "violations": [
+    {"validator": "character_presence", "severity": "error",
+     "message": "character 'Tobías' is defined in the bible but never mentioned in the manuscript",
+     "source": "bible/characters/tobias.md", "triples": []}
+  ],
+  "errors": [],
+  "not_evaluated": [
+    {"validator": "focalization",
+     "reason": "the narrative-voice declaration is still unanswered ([PENDING])"}
+  ],
+  "summary": {"ran": ["character_presence", "..."], "total": 1, "reported": 1,
+              "by_severity": {"error": 1, "warning": 0, "info": 0}}
+}
+```
+
+Los tres canales son **distintos** y no se solapan:
+
+- **`violations[]`** — hallazgos de continuidad, cada uno con `validator`,
+  `severity`, `message`, `source` (`archivo:línea`) y `triples`.
+- **`errors[]`** — fallos del **propio validador** (excepciones), no del canon.
+- **`not_evaluated[]`** — validadores que **no pudieron evaluar**, cada uno con su
+  `validator` y un `reason`. Aditivo desde v0.5.0; **no bloquea**, pero un
+  `not_evaluated` no vacío significa que el verde no es completo
+  (`status == "ok" AND not_evaluated == []`).
+
+Ver [Validación](../validation.md) para el catálogo de validadores y
+[Interpretar la validación](../guides/interpret-validation.md) para leer la salida.

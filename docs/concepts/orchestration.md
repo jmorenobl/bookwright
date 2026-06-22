@@ -15,8 +15,8 @@ exactamente como en v0.2 (ver [Inercia](#inercia-cuando-no-se-usa)).
 1. **Capa autorada — el bloque `[focus]` (§ 21.2).** Lo que *tú* declaras que estás
    trabajando ahora: un `target` corto, unas `notes` opcionales y un `updated_at` que
    la CLI sella sola. Vive en `manifest.toml`, en texto plano, y se gestiona con
-   [`bookwright focus set`](commands/focus-set.md),
-   [`focus show`](commands/focus-show.md) y [`focus clear`](commands/focus-clear.md).
+   [`bookwright focus set`](../commands/focus-set.md),
+   [`focus show`](../commands/focus-show.md) y [`focus clear`](../commands/focus-clear.md).
    Es intención humana: ningún proceso la infiere ni la sobreescribe.
 
 2. **Capa derivada — `bookwright status` (§ 21.4).** El **estado calculado** del
@@ -40,13 +40,18 @@ el mismo estado. Ese es el motivo por el que el TODO escrito a mano queda descar
 
 ## Qué reporta `status` y cómo derivan las acciones
 
-[`bookwright status`](commands/status.md) emite, bajo `--json`, un único documento:
+[`bookwright status`](../commands/status.md) emite, bajo `--json`, un único documento:
 
 ```json
 {"status":"ok","focus":{…},"state":{"phase":"drafting","graph":{…},
  "open_questions":{…},"unresolved_anchors":{…},"low_reliability_findings":{…},
- "validation":{…}},"next_actions":[…]}
+ "validation":{"counts":{…},"ran":[…],"not_evaluated":[…]}},"next_actions":[…]}
 ```
+
+El resumen de validación incluye `not_evaluated`: los validadores que en esta
+corrida **no pudieron mirar** (manuscrito vacío, voz narrativa sin declarar…). No
+es un error —no bloquea— pero sí dispara una acción, porque un validador dormido es
+canon sin vigilar. Ver [Interpretar la validación](../guides/interpret-validation.md).
 
 Cada `next_action` lleva el **skill** a invocar, un **prompt** listo para pegar y la
 **razón** que la dispara. La lista sale de una tabla de reglas estática cuyo orden *es*
@@ -60,7 +65,8 @@ elemento**: una sola acción `bookwright-research` agrupa *todas* las preguntas 
 | ② | hay preguntas abiertas ∪ anclas sin resolver | cola de investigación pendiente | `bookwright-research` |
 | ③ | hay hallazgos de baja fiabilidad | respaldo por debajo del umbral del proyecto | `bookwright-verify` |
 | ④ | hay errores de validación | continuidad rota en biblia/manuscrito | `bookwright-continuity` |
-| ⑤ | no hay bloque `[focus]` | falta declarar el hilo conductor | `bookwright focus set` |
+| ⑤ | hay validadores «no evaluados» | uno o más validadores no pudieron mirar; la acción nombra el remedio | `bookwright-continuity` |
+| ⑥ | no hay bloque `[focus]` | falta declarar el hilo conductor | `bookwright focus set` |
 
 Como ② agrupa por workstream, **cerrar una pregunta no acorta la lista**: mientras
 quede *cualquier* pregunta abierta o *cualquier* ancla sin soporte, `bookwright-research`

@@ -181,7 +181,7 @@ A partir de la primera pasada, trabajas en bucle:
 
 - **Descubres algo que cambia el canon** (investigando, o sin más,
   pensando) → reinvocas la skill afectada (`/bookwright-bible`,
-  `/bookwright-outline`…). Las skills generativas **actualizan en sitio**:
+  `/bookwright-outline`…). Las skills generativas **actualizan in situ**:
   respetan tu prosa y los pendientes ya resueltos, y solo rellenan lo que
   sigue abierto. No reescriben lo que ya decidiste.
 - **Replanteas la estructura** → vuelves a `/bookwright-outline`, y
@@ -208,8 +208,8 @@ nunca una falsa alarma. `/bookwright-clarify` te lista en cualquier momento
 las dudas abiertas del proyecto. **No hay una pasada "definitiva"**: hay un manuscrito y un grafo
 que convergen iteración a iteración.
 
-El recorrido completo está en
-[Primeros pasos](https://github.com/jmorenobl/bookwright/blob/main/docs/getting-started.md).
+El recorrido completo está en el
+[Tutorial](https://github.com/jmorenobl/bookwright/blob/main/docs/tutorial/index.md).
 
 ---
 

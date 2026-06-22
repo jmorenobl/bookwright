@@ -47,7 +47,7 @@ de solo lectura cierran el loop:
   todas sus secciones, sin `[PENDING]` sin resolver, sin placeholders vacíos.
 
 Cuando resuelves un `[PENDING]` y vuelves a invocar la skill, esta **actualiza
-en sitio**: respeta tu prosa y los pendientes ya resueltos, y solo rellena lo
+in situ**: respeta tu prosa y los pendientes ya resueltos, y solo rellena lo
 que sigue abierto. No duplica ni sobrescribe lo que ya hay.
 
 ## Las skills, en orden
@@ -93,7 +93,7 @@ enciende con `[research]` en el manifiesto. Disparan tanto con prompts en españ
 | `/bookwright-verify` | Verifica el manuscrito **ya redactado** contra las anclas de investigación: señala anacronismos, errores de procedimiento e inexactitudes culturales o lingüísticas. Solo lectura, **post-draft**. |
 
 Las anclas que `/bookwright-research` deja en el grafo las audita además el validador
-determinista [`factual_anchor`](validation.md), que comprueba su integridad
+determinista [`factual_anchor`](../validation.md), que comprueba su integridad
 estructural y cronológica en CI. La capa de juicio del LLM (`/bookwright-verify`) y la
 capa determinista (`factual_anchor`) son **complementarias**: la primera lee prosa, la
 segunda solo el grafo. Todo el modelo se explica en [Investigación](research.md).
@@ -116,6 +116,6 @@ segunda solo el grafo. Todo el modelo se explica en [Investigación](research.md
 
 ## Después de destilar
 
-- Reconstruye el grafo narrativo: [`bookwright graph build`](commands/graph-build.md).
-- Valida la continuidad: [`bookwright validate`](validation.md).
-- Cambia de integración sin re-inicializar: [`bookwright integration use`](commands/integration-use.md).
+- Reconstruye el grafo narrativo: [`bookwright graph build`](../commands/graph-build.md).
+- Valida la continuidad: [`bookwright validate`](../validation.md).
+- Cambia de integración sin re-inicializar: [`bookwright integration use`](../commands/integration-use.md).

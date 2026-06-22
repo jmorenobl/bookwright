@@ -38,12 +38,15 @@ next actions:
 Con `--json`, exactamente un documento en stdout:
 
 ```json
-{"status":"ok","focus":null,"state":{"phase":"drafting","graph":{"available":true,"entities":21,"triples":208},"open_questions":{"count":2,"items":[…]},"unresolved_anchors":{"count":1,"items":[…]},"low_reliability_findings":{"count":1,"items":[…]},"validation":{"counts":{"error":1,"warning":6,"info":0},"ran":[…]}},"next_actions":[…]}
+{"status":"ok","focus":null,"state":{"phase":"drafting","graph":{"available":true,"entities":21,"triples":208},"open_questions":{"count":2,"items":[…]},"unresolved_anchors":{"count":1,"items":[…]},"low_reliability_findings":{"count":1,"items":[…]},"validation":{"counts":{"error":1,"warning":6,"info":0},"ran":[…],"not_evaluated":[{"validator":"focalization","reason":"…"}]}},"next_actions":[…]}
 ```
 
 Cada hecho con lista de elementos lleva siempre `count` **y** `items`;
 `next_actions` puede ser `[]` — la respuesta válida de un proyecto sano y con
-foco definido.
+foco definido. Bajo `state.validation`, `not_evaluated[]` lista los validadores
+que **no pudieron evaluar** (manuscrito vacío, voz sin declarar…): no bloquean,
+pero disparan una acción de despertar (ver la regla ⑤ abajo y
+[Interpretar la validación](../guides/interpret-validation.md)).
 
 ## Caché de estado
 
@@ -58,8 +61,9 @@ En orden de prioridad fijo: ① grafo vacío/indisponible → arrancar la biblia
 (`bookwright-bible`; suprime el resto); ② preguntas abiertas ∪ anclas sin
 resolver → `bookwright-research`; ③ hallazgos de baja fiabilidad →
 `bookwright-verify`; ④ errores de validación → `bookwright-continuity`
-(con puntero a `bookwright validate`); ⑤ sin `[focus]` →
-`bookwright focus set`.
+(con puntero a `bookwright validate`); ⑤ validadores «no evaluados» →
+`bookwright-continuity` (la acción nombra el remedio de cada validador dormido);
+⑥ sin `[focus]` → `bookwright focus set`.
 
 ## Degradación elegante
 

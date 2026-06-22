@@ -69,7 +69,7 @@ personajes (eso es [`bookwright-bible`](authoring.md)).
 Lo investigado se vigila por **dos mecanismos complementarios** que nunca se pisan: uno
 lee el **grafo**, el otro lee la **prosa**.
 
-1. **Capa determinista — el validador [`factual_anchor`](validation.md).** Audita la
+1. **Capa determinista — el validador [`factual_anchor`](../validation.md).** Audita la
    *integridad estructural y cronológica* de las anclas en CI, sin leer una sola línea
    de manuscrito. Sus reglas: ancla sin fuente (R1), fuente con procedencia incompleta
    (R2), respaldo por debajo de `min_reliability_for_anchor` (R3), hallazgo o entidad
