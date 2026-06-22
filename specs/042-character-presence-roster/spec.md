@@ -238,6 +238,12 @@ as before.
 - **SC-006**: All four CI gates (lint, format, type-check, test suite with ≥80% coverage)
   pass; no fixture manuscript or bible content is edited; `DEBT.md` no longer contains a
   DEBT-010 entry.
+- **SC-007**: `character_presence` still emits **0** triples and requires **no** built
+  graph (FR-009), the frozen GOLEM ontology closure is byte-unchanged — no class added,
+  no `.ttl` edited (FR-010), and every source file changed by this iteration is **≤500**
+  lines (FR-014). All three are checkable directly: the validator's `triples` stay `()`,
+  `git diff` over `resources/schemas/golem-1.1/` and `golem.ttl` is empty, and `wc -l`
+  on each changed file is ≤500.
 
 ## Assumptions
 
