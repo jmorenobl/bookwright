@@ -2,8 +2,9 @@
 
 Modelled on :mod:`bookwright.io.frontmatter`'s line-tracking. Splits prose text
 into 1-based :class:`ProseLine` records whose ``normalized`` form has had leading
-*structural block prefixes* (ATX headings, bullets, blockquotes) stripped, so a
-validator's surface heuristics never see the Markdown the scaffold itself emits.
+*structural block prefixes* (ATX headings, bullets, blockquotes, and the Spanish
+dialogue dash) stripped, so a validator's surface heuristics never see the Markdown
+the scaffold itself emits.
 
 This is the single place that "sees past" block markup. The three prose validators
 consume it instead of each re-implementing a private stripper (closing the surface
@@ -27,6 +28,17 @@ _HEADING_MARKER = re.compile(r"^#{1,6}\s+")
 # ``focalization._BULLET``). The trailing ``\s+`` distinguishes a list bullet
 # ``* text`` from an inline emphasis run ``*text*`` (never a block prefix — C2.2).
 _BULLET_MARKER = re.compile(r"^\s*[-*+>]\s+")
+# A leading Spanish dialogue dash: em ``—`` (U+2014), en ``–`` (U+2013), or the  # noqa: RUF003
+# historical horizontal bar ``―`` (U+2015) — all three are leading dashes with
+# identical glued, unpaired semantics, so they are ONE character class (not three
+# separate bugs). Leading whitespace tolerated; the trailing ``\s*`` (NOT ``\s+``)
+# is load-bearing because Spanish glues the dash to the spoken word (``—Esto``). A
+# leading typographic dash is unambiguous, so unlike ``_BULLET_MARKER`` no
+# bullet-vs-emphasis guard is needed; the ASCII hyphen bullet ``- `` stays owned by
+# ``_BULLET_MARKER`` (research D1/D3). Only the LEADING dash is a block prefix —
+# internal incise dashes (``—dijo Arnela—``) are content (DEBT-009). Leading
+# *quotes* (``«``/``"``/``'``) are a distinct paired-marker design — see DEBT-011.
+_DIALOGUE_MARKER = re.compile(r"^\s*[—–―]\s*")  # noqa: RUF001 — en/bar U+2013/2015 load-bearing
 # A declaration body that is *solely* an unanswered ``[PENDING: …]`` token
 # (mirrors the deleted ``focalization._PENDING_ONLY``). The ``^…$`` anchor is
 # load-bearing: real text before *or* after the token keeps it a real body (C3).
@@ -48,16 +60,18 @@ ProseView = tuple[ProseLine, ...]
 def _normalize(line: str) -> str:
     """Strip leading block prefix(es) iteratively, one per pass (contract C2).
 
-    Each pass removes a single heading marker (preferred) or bullet/blockquote
-    marker via ``sub(count=1)``, left-to-right, until neither matches — so a nested
-    ``> - text`` reduces to ``text``. Every stripping pass deletes ≥ 1 character, so
-    the loop terminates (C2.1).
+    Each pass removes a single heading marker (preferred), bullet/blockquote marker,
+    or leading dialogue dash via ``sub(count=1)``, left-to-right, until none matches —
+    so a nested ``> - text`` reduces to ``text`` and ``> —Esto`` to ``Esto``. Every
+    stripping pass deletes ≥ 1 character, so the loop terminates (C2.1).
     """
     while True:
         if _HEADING_MARKER.match(line):
             line = _HEADING_MARKER.sub("", line, count=1)
         elif _BULLET_MARKER.match(line):
             line = _BULLET_MARKER.sub("", line, count=1)
+        elif _DIALOGUE_MARKER.match(line):
+            line = _DIALOGUE_MARKER.sub("", line, count=1)
         else:
             return line
 

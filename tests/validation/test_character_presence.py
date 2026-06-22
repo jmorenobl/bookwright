@@ -157,6 +157,42 @@ def test_blockquote_off_roster_mention_is_not_flagged(project_root: Path) -> Non
     assert all("Quevedo" not in f.message for f in findings)
 
 
+def test_leading_dialogue_dash_opening_word_is_not_flagged(project_root: Path) -> None:
+    # FR-002 / SC-001: a Spanish dialogue line opens with a leading em dash glued
+    # to the first spoken word (`—Esto`). The SEAM strips that leading dash with NO
+    # validator-code change, so `Esto` lands at offset 0 and inherits the existing
+    # sentence-initial exemption — exactly the mechanism the heading/blockquote tests use.
+    # First, the seam itself strips the marker (so the word lands at offset 0):
+    assert prose_view("—Esto es el porvenir")[0].normalized == "Esto es el porvenir"
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        manuscript={"cap-01.md": "Aparici habló.\n—Esto es el porvenir.\n"},
+    )
+    findings = _run(project_root)
+    # `Esto` opens the dialogue line after the dash is stripped → exempt; no finding.
+    assert all("Esto" not in f.message for f in findings)
+
+
+def test_mid_line_name_in_dialogue_is_still_flagged(project_root: Path) -> None:
+    # FR-009 / SC-002: the other direction of the both-directions guarantee. Only
+    # the LEADING marker is neutralized — a genuine off-roster name later in the dialogue
+    # line still fires. `Quirón` sits mid-line after `—Pregúntale a`, so it is non-initial
+    # and flagged exactly once; the opening word `Pregúntale` is exempt.
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        manuscript={"cap-01.md": "Aparici asintió.\n—Pregúntale a Quirón —dijo.\n"},
+    )
+    findings = _run(project_root)
+    warnings = [f for f in findings if f.severity == Severity.warning]
+    quiron = [f for f in warnings if "Quirón" in f.message]
+    assert len(quiron) == 1
+    assert quiron[0].source == "manuscript/cap-01.md:2"
+    # The opening word is NOT flagged — only the leading dash was neutralized.
+    assert all("Pregúntale" not in f.message for f in findings)
+
+
 def test_locator_is_source_line_not_match_offset(project_root: Path) -> None:
     # Story 3 / FR-010 / SC-004: a finding on a marker-bearing line reports the line's
     # 1-based source number, never the offset of the match within the stripped text.

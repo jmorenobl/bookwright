@@ -43,15 +43,6 @@
 
 ## Deuda abierta
 
-### DEBT-009 — `character_presence` marca el primer término tras la raya de diálogo `—`
-- **Estado:** abierta
-- **Detectada en:** dogfood v0.5.0 (2026-06-22) — fixture `tiny-historical` corrido end-to-end fuera del repo
-- **Ubicación:** `src/bookwright/validation/validators/character_presence.py:209` (`_is_sentence_initial` / `_SENTENCE_END = frozenset(".!?¿¡")`); raíz compartida en `src/bookwright/io/prose.py:29` (`_BULLET_MARKER = r"^\s*[-*+>]\s+"`, no cubre `—`/`–`).
-- **Clase de deuda:** acoplamiento a marcador de superficie no normalizado (la *misma clase* que DEBT-008 / issue #1: un marcador líder que el heurístico no ve).
-- **Descripción:** en prosa española el diálogo abre con raya `—` (U+2014). En `—Esto es el porvenir`, el prefijo antes de `Esto` es `—`, que no está en `_SENTENCE_END`, así que `_is_sentence_initial` devuelve `False` y `Esto` (un demostrativo, no un nombre propio) se marca como nombre propio sin entrada en la bible. El seam de prosa (039) tampoco lo neutraliza: `_BULLET_MARKER` solo reconoce viñetas ASCII (`-*+>`), no la raya tipográfica. En una novela real, mayoritariamente diálogo, esto inunda de warnings espurios el primer término capitalizado de cada línea de diálogo (Esto, Sí, Claro, Nunca…). Son `warning`, así que no vetan el gate, pero ahogan los hallazgos reales — exactamente el fallo que issue #1 quería cerrar de raíz.
-- **Por qué se difiere:** v0.5.0 ya está liberada; esto es un defecto shippable nuevo, su propia iteración (decidir el hogar del arreglo —`_is_sentence_initial` vs. el seam `prose.py`— es una decisión de diseño bajo la doctrina de issue #1).
-- **Resolución sugerida / versión objetivo:** **iteración 041 → `v0.5.1`** (ver `bookwright-implementation-plan.md` § 1+). Coherente con issue #1, el arreglo vive en el seam de prosa (`io/prose.py`): añadir la raya de diálogo líder (`—`/`–`, U+2014/U+2013, tolerando espacio) al conjunto de marcadores que `_normalize` retira, de modo que el primer término caiga en offset 0 y herede la exención de inicio-de-frase ya existente (mismo mecanismo que DEBT-008). Ningún validador se toca.
-
 ### DEBT-010 — `character_presence` marca tokens de settings multi-palabra como nombres propios sin entrada
 - **Estado:** abierta
 - **Detectada en:** dogfood v0.5.0 (2026-06-22) — fixture `tiny-historical`
@@ -60,6 +51,15 @@
 - **Descripción:** `la Real Fábrica de Paños` es un setting declarado (`bible/settings/la-real-fabrica-de-panos.md`), pero `character_presence` solo cruza contra `character_names()`, así que sus tokens `Real`, `Fábrica`, `Paños` se marcan como nombres propios «sin entrada en la bible» — cuando la entrada existe, solo que en `settings/` en vez de `characters/`. El texto del warning es honesto («heuristic — may be a place or organization»), pero sobre una novela terminada el ruido es alto y el diagnóstico engañoso.
 - **Por qué se difiere:** es una cuestión de diseño (¿debe `character_presence` consultar también settings/locations/objects, o crearse un validador de presencia de entornos?), mayor que un fix puntual; fuera del scope de v0.5.0.
 - **Resolución sugerida / versión objetivo:** **iteración 042 → `v0.5.2`** (ver `bookwright-implementation-plan.md` § 1+). La regla de menciones-desconocidas suprime candidatos cuyo slug (o tokens) casen la UNIÓN de los rosters de personajes + settings + locations + objects (nuevos accesores `location_names()`/`object_names()` en `ValidationContext`, espejo de `setting_names()`); la regla de huérfanos (`error`, protege el gate) y el guard `NotEvaluated` de 040 no cambian.
+
+### DEBT-011 — `character_presence` marca el primer término tras una comilla-líder de apertura (`«` U+00AB, `"` U+201C, `'` U+2018, `"` ASCII)
+- **Estado:** abierta
+- **Detectada en:** auditoría de `spec-041` (2026-06-22) — al cerrar DEBT-009 (la raya de diálogo `—`/`–`/`―`) se verificó **empíricamente** que la *misma clase* de fallo persiste para los marcadores de comilla líder.
+- **Ubicación:** `src/bookwright/io/prose.py` (`_normalize` retira encabezados ATX, viñetas/citas ASCII y —tras 041— las tres rayas de diálogo `—`/`–`/`―`; NO retira la comilla angular `«`/`»` U+00AB/BB, las comillas tipográficas `"`/`"` U+201C/D, ni las comillas rectas ASCII `"`/`'`); consumido por `character_presence._is_sentence_initial` (`_SENTENCE_END` ya cubre `¿¡` pero no estas comillas).
+- **Clase de deuda:** emparentada con DEBT-008/DEBT-009 / issue #1 (acoplamiento a un marcador de superficie líder no normalizado), pero un *diseño distinto*: la comilla es un marcador **par** (apertura…cierre), no una raya líder simple.
+- **Descripción:** `«Esto es el porvenir»` y `"Hola"` dejan el primer término citado (`Esto`, `Hola`) en offset ≠ 0 con un prefijo de comilla (`«`/`"`) que no está en `_SENTENCE_END`, así que `_is_sentence_initial` devuelve `False` y el demostrativo/saludo se marca como nombre propio sin entrada en la bible. Verificado en la auditoría de spec-041: ambas formas producen el flag espurio hoy. (La barra horizontal `―` U+2015 era de esta familia pero es *misma clase y mismo diseño* que la raya de diálogo, así que **se barrió en 041** junto a `—`/`–`, no se difiere aquí.)
+- **Por qué se difiere:** 041 cierra todas las *rayas* de diálogo (`—`/`–`/`―`), la convención española dominante y el caso observado en el dogfood de `tiny-historical`. Las comillas son un marcador DISTINTO con semántica de par (apertura `«`…cierre `»`), pueden aparecer a mitad de línea como contenido citado, y su normalización (¿retirar solo la comilla de apertura líder?, ¿la de cierre?, interacción con el `¿¡` que `_SENTENCE_END` ya trata) es una decisión de diseño propia, mayor que añadir un code-point a la clase de caracteres de la raya.
+- **Resolución sugerida / versión objetivo:** una iteración futura (horizonte demand-pulled, tras 042). En el seam (`io/prose.py`), extender `_normalize` para retirar el marcador de comilla de apertura líder (`«`, `"`, `"`, `'`) — restaurando el primer término a inicio-de-frase y heredando la exención existente, mismo mecanismo que 041. Ningún validador se toca.
 
 ---
 

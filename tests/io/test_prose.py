@@ -47,6 +47,18 @@ def test_blank_lines_are_not_dropped() -> None:
         ("* Pedro", "Pedro"),  # bullet (* + space)
         ("*Pedro*", "*Pedro*"),  # emphasis run, no following space — never stripped
         ("**Voz narrativa**:", "**Voz narrativa**:"),  # inline emphasis not a prefix
+        # C2-D: leading Spanish dialogue dash (contracts/dialogue-marker.md).
+        ("—Esto es el porvenir", "Esto es el porvenir"),  # D1 em dash glued (\s*)
+        ("— Claro", "Claro"),  # D2 em dash + space → same result
+        ("–Esto", "Esto"),  # D3 en dash (U+2013) recognized identically  # noqa: RUF001
+        ("  —Esto", "Esto"),  # D4 leading whitespace tolerated (^\s*)
+        ("—dijo Arnela—, y se fue", "dijo Arnela—, y se fue"),  # D5 only leading stripped
+        ("—", ""),  # D6 dash-only line → empty
+        ("> —Esto", "Esto"),  # D7 composes with blockquote across two passes
+        ("Pregúntale a Quirón —dijo.", "Pregúntale a Quirón —dijo."),  # D8 no leading dash
+        ("- Pedro", "Pedro"),  # D9 ASCII hyphen bullet stays owned by _BULLET_MARKER
+        ("―Esto", "Esto"),  # D10 horizontal bar (U+2015) — same dash class
+        ("― Claro", "Claro"),  # D11 horizontal bar + space → same result
     ],
 )
 def test_normalized_block_prefix_table(raw: str, normalized: str) -> None:
