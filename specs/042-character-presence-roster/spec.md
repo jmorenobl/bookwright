@@ -36,6 +36,13 @@ rosters. It is the per-class fix consistent with the issue #1 doctrine: the orph
 that protects the gate, and the `not-evaluated` guard from iteration 040, both stay
 exactly as they are.
 
+## Clarifications
+
+### Session 2026-06-22
+
+- Q: How are the location (US1.2) and object (US1.3) acceptance scenarios proven, given `tiny-historical` declares **no** `bible/locations/` or `bible/objects/` and FR-011 forbids editing any fixture manuscript/bible? → A: With synthetic-project unit tests built on the existing `tests/validation/conftest.py` `write_project`/`load_context` pattern (extended with `locations`/`objects` keyword arguments that mirror the existing `settings` one byte-for-byte); the `tiny-historical` E2E proves only the setting arm and the `4 → 1` count correction. *Rationale: keeps FR-011's "no fixture edits" intact while giving the new location/object union arms real coverage, so neither arm ships as untested dead plumbing (Principle VIII; scope discipline).*
+- Q: Which concrete GOLEM classes back the new location and object accessors? → A: `NarrativeLocation` (the class `map_bible` binds to `bible/locations/`, G13) and `Object` (bound to `bible/objects/`, G16) — each resolved through the existing generic `_names_of(concept_cls)` helper, exactly as `setting_names()` binds `Setting`. *Rationale: names the verified concrete classes so the mirror accessors import the right symbol (there is no class literally named `Location`); confirms FR-001's "mirror exactly" needs only per-class wiring, no new helper (zero-debt §3).*
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Declared settings stop being mis-flagged as unknown proper nouns (Priority: P1)
@@ -158,8 +165,10 @@ as before.
 - **FR-001**: The validation context MUST expose cached accessors for the **location**
   roster and the **object** roster, mirroring the existing setting accessor exactly:
   the same generic name-extraction helper and the same memoization pattern, returning
-  sorted `(name, bible-relpath)` pairs for the GOLEM location class (`bible/locations/`)
-  and the GOLEM object class (`bible/objects/`).
+  sorted `(name, bible-relpath)` pairs for the GOLEM location class `NarrativeLocation`
+  (`bible/locations/`, G13) and the GOLEM object class `Object` (`bible/objects/`, G16),
+  each resolved through the existing generic `_names_of(concept_cls)` helper exactly as
+  `setting_names()` binds `Setting` — adding only the per-class wiring, no new helper.
 - **FR-002**: The `character_presence` unknown-mention rule MUST build its set of "known
   names" from the **union** of the character, setting, location and object rosters —
   each contributing its full declared name and each of its tokens — exactly as the
@@ -198,6 +207,13 @@ as before.
   shape of oracle correction iteration 041 made (`5 → 4`) and 038 made (`6 → 5`).
 - **FR-013**: The DEBT-010 entry MUST be removed from `DEBT.md` (git preserves history).
 - **FR-014**: Every changed source file MUST stay within the 500-line limit (Principle IV).
+- **FR-015**: The location (US1.2) and object (US1.3) acceptance scenarios MUST be proven by
+  synthetic-project unit tests built on the existing `tests/validation/conftest.py`
+  `write_project`/`load_context` pattern — extending `write_project` with `locations`/`objects`
+  keyword arguments that mirror the existing `settings` one — **not** by editing any pinned
+  fixture (`tiny-historical` declares no locations/objects and FR-011 forbids fixture edits).
+  Both new union arms (location and object) and both new context accessors MUST be exercised by
+  test, so neither ships as untested dead plumbing (Principle VIII).
 
 ### Out of Scope
 
@@ -247,9 +263,10 @@ as before.
 
 ## Assumptions
 
-- The GOLEM location class is the one backing `bible/locations/` (G13) and the GOLEM
-  object class is the one backing `bible/objects/` (G16); both are already mappable
-  through the bible-mapping path, exactly as the setting class is.
+- The GOLEM location class is `NarrativeLocation`, backing `bible/locations/` (G13), and the
+  GOLEM object class is `Object`, backing `bible/objects/` (G16) — verified against
+  `io/bible.py`'s `map_bible`; both are already mappable through the bible-mapping path,
+  exactly as `Setting` is.
 - "Mirror exactly" means the new location/object accessors reuse the same generic
   name-extraction helper and memoization sentinel pattern as the existing setting
   accessor, adding only the per-class wiring.
