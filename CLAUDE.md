@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.4.6 released (038 merged, the `character_presence` validator now strips a leading ATX heading marker before its proper-noun heuristic — a chapter heading like `# Capítulo 1` no longer flags `Capítulo` as an unbound proper noun, DEBT-008 closed)
+## Repository state: v0.4.6 released; v0.5.0 in progress (039 merged on `main`, unreleased — a single Markdown-aware prose/structure seam (`src/bookwright/io/prose.py`) now backs every prose validator, deleting the per-validator strippers and closing the surface-coupling *class* behind DEBT-004/007/008 at the root; `v0.5.0` is a minor that releases once at the close of iteration 040, so 039 carries no tag)
 
 Five milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
 the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
@@ -56,16 +56,16 @@ ready-to-run workflow commands and the
 per-iteration debt-cancellation/release cycle live in
 `bookwright-implementation-plan.md`.
 
-The **next milestone is `v0.5.0` — validation robustness** (issue #1), **planned but
-not started** (no branch yet; the plan's § 1+ is filled, `specs/039-…` does not exist
-on disk yet). The v0.4.x dogfooding made plain that DEBT-004/007/008 were **one class**
+The **current milestone is `v0.5.0` — validation robustness** (issue #1), **in
+progress** (iteration 039 merged on `main`, unreleased; 040 not started). The v0.4.x
+dogfooding made plain that DEBT-004/007/008 were **one class**
 of defect patched instance-by-instance (each validator re-implementing how to "see past
 the markdown the tool itself emits"), not three bugs. Issue #1 decided to **close the
 class at the root** rather than keep playing whack-a-mole. `v0.5.0` is a **minor** (new
 architecture, not a one-delta patch — so iterations accumulate on `main` and release
 once at close, M4→`v0.2.0`-style) with two ordered iterations: **039 — single
 prose/structure seam** (a markdown-aware view in `io/` all prose validators consume,
-deleting the per-validator strippers; closes the surface-coupling facet) and **040 —
+deleting the per-validator strippers; closes the surface-coupling facet, **merged**) and **040 —
 tri-valued result** (`evaluated` / `not-evaluated(reason)` so `[]` stops reading as
 "clean" when it meant "couldn't look"; closes the false-confidence facet). The LLM
 **semantic-judgment** escalation (issue #1 move 3) is parked in the demand-pulled
@@ -251,7 +251,7 @@ was correct) and corrupts the run's audit trail.
 | 036 | Actionable research-source error messages (DEBT-006) | v0.4.4 | ✅ merged |
 | 037 | `focalization` treats unanswered `[PENDING]` voice placeholder as no declaration (DEBT-007) | v0.4.5 | ✅ merged |
 | 038 | `character_presence` skips ATX heading first word (DEBT-008) | v0.4.6 | ✅ merged |
-| 039 | Single prose/structure seam — validators stop coupling to surface markdown (issue #1, facet A) | v0.5.0 | ⏳ planned |
+| 039 | Single prose/structure seam — validators stop coupling to surface markdown (issue #1, facet A) | v0.5.0 | ✅ merged |
 | 040 | Tri-valued validator result: `evaluated` / `not-evaluated(reason)` (issue #1, facet B) | v0.5.0 | ⏳ planned |
 
 M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
