@@ -84,9 +84,9 @@ produces nothing.
 ### Edge Cases
 
 - **Dash glued to the word**: the canonical Spanish form glues the dash to the first
-  word (`—Esto`, no space). The recognized leading marker therefore tolerates an
-  **optional** trailing space (`—Esto` and `— Esto` both normalize to `Esto…`),
-  unlike the bullet marker whose trailing space is required.
+  word (`—Esto`, no space). The recognized leading marker therefore tolerates
+  **optional** trailing whitespace (`\s*`, so `—Esto` and `— Esto` both normalize to
+  `Esto…`), unlike the bullet marker whose trailing space is required (`\s+`).
 - **Leading whitespace before the dash**: a small amount of indentation before the
   dash (`␠␠—Esto`) is tolerated, mirroring the bullet/blockquote marker which is
   already whitespace-tolerant at the line start.
@@ -110,8 +110,8 @@ produces nothing.
 
 - **FR-001**: The shared prose seam (`io/prose.py`) MUST recognize a **leading
   dialogue dash** — the em dash `—` (U+2014) or the en dash `–` (U+2013), anchored at
-  the line start, tolerating optional leading whitespace and an optional single
-  trailing space — as a structural marker and strip it during line normalization,
+  the line start, tolerating optional leading whitespace and optional trailing
+  whitespace (`\s*`) — as a structural marker and strip it during line normalization,
   alongside the heading and bullet/blockquote markers it already removes.
 - **FR-002**: After normalization, the first content word of a dialogue line MUST
   land at offset 0, so that `character_presence`'s **existing** sentence-initial
@@ -192,8 +192,12 @@ produces nothing.
   benefits automatically.
 - **SC-005**: All four quality gates pass: `ruff check`, `ruff format --check`,
   `mypy --strict`, and `pytest` at ≥ 80 % coverage.
-- **SC-006**: `DEBT.md` no longer contains a DEBT-009 entry, and no new debt entry is
-  introduced by this change.
+- **SC-006**: `DEBT.md` no longer contains a DEBT-009 entry, and the implementation
+  introduces no new debt of its own. The pre-existing, **same-class** leading
+  quotation-mark / horizontal-bar (`«`, `"`, `―` U+2015) false positives discovered
+  while closing DEBT-009 are **recorded** as DEBT-011 (a future iteration), never
+  silently dropped — this recording is the doctrine-mandated trail, not new debt the
+  change creates.
 
 ## Assumptions
 
@@ -234,8 +238,18 @@ produces nothing.
 - Any validator that does not scan surface prose (`factual_anchor`, `temporal`,
   `narrative_structure`) — they do not consume the prose seam's line view, so they
   are unaffected.
-- Handling exotic dash variants (e.g. the horizontal bar `―`, U+2015) or full
-  Markdown emphasis inside dialogue: out of scope; only the em dash `—` and en dash
-  `–` are recognized as leading dialogue markers.
+- Other **leading typographic markers of the same class** — the horizontal bar `―`
+  (U+2015) and leading quotation marks (`«`/`»`, `"`/`"`, ASCII `"`/`'`) — that
+  produce the identical spurious first-word flag (verified empirically during this
+  spec's audit: `«Esto`, `"Hola`, and `―Esto` all fire today). These are NOT silently
+  dropped: per the zero-debt doctrine they are recorded as **DEBT-011** in `DEBT.md`
+  for a future iteration. They are deferred (not swept here) because the
+  leading-quote/horizontal-bar family is a genuine design decision of its own — paired
+  open/close semantics (`«`…`»`), quotes that also appear mid-line as content, and the
+  overlap with the `¿¡` opening punctuation that `_SENTENCE_END` already exempts —
+  larger than adding the dialogue-dash code points. This iteration closes ONLY the
+  observed DEBT-009 defect: the dialogue dash (`—`/`–`).
+- Full Markdown emphasis inside dialogue (`**`/`*`/`_`): out of scope; emphasis is
+  `focalization`'s own vocabulary, never a seam block prefix (per the 039 seam).
 - Touching the frozen ontology (Constitution X); this is a prose-level change that
   never touches the graph.
