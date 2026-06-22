@@ -7,29 +7,33 @@
 > **Audiencia:** Jorge (o cualquier desarrollador con Spec Kit instalado y
 > `bookwright-design.md` en el root del repo).
 
-> **Hito en curso: `v0.5.0` — validación robusta** (issue #1). El último track
-> —endurecimiento post-dogfooding `v0.4.x` (iteraciones **034–038**, patches
-> `v0.4.2`…`v0.4.6`)— está **cerrado y liberado** (2026-06-22); `__version__` es
-> `0.4.6`, `main` está tageado y los cuatro gates verdes. Pero el dogfooding dejó
-> claro que DEBT-004/007/008 eran **la misma clase** de defecto parcheada instancia a
-> instancia, no tres bugs (issue #1). **`v0.5.0` cierra esa clase de raíz** en dos
-> iteraciones (§ 1+): la **costura de prosa/estructura única** (039, cierra el
-> acoplamiento de superficie) y el **resultado tri-valor** (040, cierra la falsa
-> confianza "verde ≠ evaluado"). El *qué/por qué* durable vive en
-> `bookwright-roadmap.md` § 3.
+> **Hito en curso: `v0.5.x` — endurecimiento post-dogfood** (DEBT-009/010). El hito
+> `v0.5.0` —validación robusta (issue #1): la **costura de prosa/estructura única** (039)
+> y el **resultado tri-valor** (040)— está **cerrado y liberado** (2026-06-22);
+> `__version__` es `0.5.0`, `main` está tageado y los cuatro gates verdes. Un **dogfood
+> end-to-end** del fixture `tiny-historical` tras la release (2026-06-22, banco
+> desechable fuera del repo) destapó dos defectos latentes en `character_presence`,
+> registrados en `DEBT.md`: **DEBT-009** (marca el primer término tras la raya de diálogo
+> `—`, la *misma clase* de acoplamiento de superficie que issue #1 cerró para los
+> marcadores de bloque, pero la costura de 039 no reconoce la raya tipográfica) y
+> **DEBT-010** (marca tokens de un setting multi-palabra que *sí* está declarado en la
+> bible, porque el cruce solo consulta el roster de personajes). El *qué/por qué* durable
+> vive en `bookwright-roadmap.md` § 3.
 >
-> **Es un minor, no un patch** (plan § 0.3): introduce arquitectura nueva (una capa
-> compartida en `io/` + un contrato de resultado tri-valor), así que **039 y 040
-> acumulan en `main`** y se liberan **una sola vez** como `v0.5.0` al cierre (040),
-> al estilo de M4→`v0.2.0`. No se cortan patches `v0.5.x` por iteración.
+> **Es un track de endurecimiento → un patch por iteración** (plan § 0.3, al estilo de
+> `v0.3.x` y `v0.4.x`): **041** cierra DEBT-009 (`v0.5.1`) y **042** cierra DEBT-010
+> (`v0.5.2`), cada uno con un delta observable y su entrada de `DEBT.md` borrada **dentro
+> del spec**. Las dos iteraciones son **independientes** —041 toca solo la costura
+> `io/prose.py`; 042 toca `validation/base.py` + `character_presence.py`—, así que el
+> orden es por prioridad (041 primero, es la clase de issue #1), no por dependencia.
 >
-> El detalle de las iteraciones **001–038** (M0–M5, `v0.3.1`…`v0.3.4`, `v0.4.0`, y
-> los patches `v0.4.1`…`v0.4.6`) vive en el historial git, en `specs/001-…` …
-> `specs/038-…` y en el `CHANGELOG` — **no** aquí. Este documento se **vacía del
-> trabajo entregado** al cerrar cada hito; conserva solo el andamiaje reutilizable
-> (§ 0 y § 7).
+> El detalle de las iteraciones **001–040** (M0–M5, `v0.3.1`…`v0.3.4`, `v0.4.0`, los
+> patches `v0.4.1`…`v0.4.6` y el minor `v0.5.0`) vive en el historial git, en
+> `specs/001-…` … `specs/040-…` y en el `CHANGELOG` — **no** aquí. Este documento se
+> **vacía del trabajo entregado** al cerrar cada hito; conserva solo el andamiaje
+> reutilizable (§ 0 y § 7).
 >
-> **Qué viene tras `v0.5.0`:** el **horizonte demand-pulled** (`bookwright-roadmap.md`
+> **Qué viene tras `v0.5.x`:** el **horizonte demand-pulled** (`bookwright-roadmap.md`
 > § 5 y `DEBT.md`), **sin versión asignada** — juicio semántico en validación
 > (movimiento 3 de la issue #1: el path LLM de `bookwright-verify` con el regex como
 > pre-filtro; trigger = un heurístico medido como insuficiente), búsqueda vectorial
@@ -85,9 +89,9 @@ que el workflow corre por dentro.
   puede dejar `bookwright` rojo a mitad: lo ya mergeado sigue pasando los gates.
 - **Cada iteración entrega un delta observable** y, si cancela deuda, **cierra su
   entrada de `DEBT.md`** (§ 0.4).
-- **Numeración:** los `specs/` van por `001`…`038`. El siguiente hito arranca en
-  **039** y continúa la secuencia. Cada iteración es un branch `NNN-<short-name>` con
-  su propio `specs/`.
+- **Numeración:** los `specs/` van por `001`…`040`. Este track arranca en **041** y
+  continúa la secuencia. Cada iteración es un branch `NNN-<short-name>` con su propio
+  `specs/`.
 
 ### 0.3 Versionado — patch vs. minor
 
@@ -148,92 +152,98 @@ iteración tiene un **cierre manual** fijo:
 
 ---
 
-## 1+. Iteraciones del hito en curso — `v0.5.0` (validación robusta)
+## 1+. Iteraciones del track en curso — `v0.5.x` (endurecimiento post-dogfood)
 
-Dos iteraciones, **en orden** (040 depende de 039). Acumulan en `main` sin tag
-propio; la release `v0.5.0` se corta **una sola vez** al cierre de 040 (§ 0.3, § 0.4).
-Origen: **issue #1** (discusión de diseño, etiqueta `validation`). El *qué/por qué*
-durable está en `bookwright-roadmap.md` § 3.
+Dos iteraciones **independientes** (041 toca solo la costura `io/prose.py`; 042 toca
+`validation/base.py` + `character_presence.py`). Cada una es un **patch** con un delta
+observable y se libera por separado (041 → `v0.5.1`, 042 → `v0.5.2`); el orden es por
+prioridad (041 primero, cierra la clase de issue #1), no por dependencia. Origen:
+**dogfood end-to-end de `tiny-historical` tras `v0.5.0`** (2026-06-22, banco desechable
+fuera del repo), registrado en `DEBT.md` (DEBT-009/010). El *qué/por qué* durable está
+en `bookwright-roadmap.md` § 3.
 
-### 1. Iteración 039 — Costura de prosa/estructura única (cierra la clase A)
+### 1. Iteración 041 — La costura de prosa reconoce la raya de diálogo `—` (cierra DEBT-009)
 
-Cierra el **acoplamiento a la prosa de superficie**: una sola capa markdown-aware que
-los validadores consumen, en vez de que cada uno re-strippee el markdown que el propio
-andamiaje emite. Subsume y borra los strippers locales de DEBT-004/007/008.
+Cierra DEBT-009: `character_presence` marca el primer término tras la **raya de diálogo**
+española (`—Esto…` → "Esto" reportado como nombre propio sin entrada en la bible). Es la
+*misma clase* que issue #1 cerró para los marcadores de bloque (DEBT-008): un marcador
+líder de superficie que el heurístico no "ve". El arreglo vive **solo en la costura
+compartida** (`io/prose.py`), no en un stripper local — meterlo en `character_presence`
+reintroduciría exactamente la deuda que 039 saldó.
 
 **Necesidad (`SPEC`)** — pega verbatim como `spec`:
 
 ```text
-Necesidad: los validadores de prosa de Bookwright acoplan a la SUPERFICIE markdown
-del manuscrito y la constitución, no a su estructura ya parseada, y cada uno
-reimplementa por su cuenta cómo "ver más allá" del markdown que el propio andamiaje
-emite. `character_presence` strippea el marcador de encabezado ATX antes de su
-heurística de nombres propios (DEBT-008); `focalization` strippea viñeta + énfasis
-alrededor de la etiqueta "Voz narrativa" y reconoce el placeholder `[PENDING: …]`
-(DEBT-004/007); `setting_continuity` re-escanea `splitlines()` crudo. Es la misma
-CLASE de defecto parcheada tres veces (issue #1): el próximo formato markdown nuevo
-(un epígrafe, un `> blockquote`) volverá a abrir la grieta en el siguiente validador.
+Necesidad: en prosa española el diálogo se abre con la raya tipográfica `—` (U+2014; y
+a veces la semirraya `–`, U+2013). La costura de prosa única de Bookwright
+(`io/prose.py`, iteración 039) normaliza los marcadores de bloque ASCII —encabezado ATX
+`#{1,6} `, viñeta/blockquote `[-*+>] `— pero NO reconoce la raya de diálogo. Como
+consecuencia, `character_presence` ve `—Esto es el porvenir` con la `—` aún pegada: el
+término `Esto` no queda en offset 0, así que la exención de inicio-de-frase no dispara y
+`Esto` (un demostrativo, no un nombre propio) se reporta como nombre propio sin entrada
+en la bible. En una novela real —mayoritariamente diálogo con raya— esto inunda de
+warnings espurios el primer término capitalizado de CADA línea de diálogo (Esto, Sí,
+Claro, Nunca…), ahogando los hallazgos reales. Son `warning`, así que no vetan el gate,
+pero es exactamente el fallo de superficie que issue #1 quería cerrar de raíz, y la
+costura de 039 lo dejó abierto para la raya. Detectado por el dogfood end-to-end de
+`tiny-historical` tras `v0.5.0` (DEBT-009 en `DEBT.md`).
 
-Esta iteración cierra la clase: una COSTURA de prosa/estructura única que todos los
-validadores de prosa consumen, en vez de re-escanear el texto crudo. La costura vive
-en `io/` (vecina de `frontmatter.py`, que ya lleva tracking de líneas), parsea un
-fuente markdown (manuscrito o constitución) en líneas/bloques CLASIFICADOS —encabezado
-ATX, viñeta, blockquote, run de énfasis, placeholder `[PENDING: …]`, prosa— con su
-número de línea 1-based preservado, y expone una vista normalizada (el texto con los
-marcadores estructurales de prefijo retirados) lista para que el heurístico de cada
-validador corra sobre ella. `ValidationContext` gana accesor(es) cacheados que
-devuelven esa vista (mismo patrón `_UNSET`/memo que `manuscript_files()` /
-`constitution_text()`).
-
-Los tres validadores (`character_presence`, `focalization`, `setting_continuity`) se
-reescriben sobre la costura y sus normalizadores/strippers locales —`_HEADING_MARKER`
-en `character_presence`; `_BULLET`, `_LEAD_EMPHASIS`, `_CLOSE_EMPHASIS`,
-`_normalize_declaration_line` y el reconocedor `_PENDING_ONLY` en `focalization`; el
-`splitlines()` a pelo de `setting_continuity`— SE BORRAN al quedar subsumidos por la
-capa compartida.
+Esta iteración cierra DEBT-009 en la COSTURA, no en el validador: `io/prose.py` añade la
+raya de diálogo líder (`—`/`–`, tolerando espacio alrededor) al conjunto de marcadores
+estructurales que su normalización retira, junto a los marcadores de bloque que ya
+maneja. Tras normalizar, el primer término de contenido de la línea de diálogo queda en
+offset 0 y hereda la exención de inicio-de-frase YA existente en `character_presence` (el
+mismo mecanismo con el que DEBT-008 resolvió el encabezado ATX). En consecuencia NINGÚN
+validador se toca: el arreglo es puramente de la capa compartida, lo que prueba que
+cierra la CLASE (cualquier validador de prosa se beneficia), no una instancia.
 
 Comportamiento esperado / criterios:
-- CERO regresión en los fixtures vivos: toda la suite actual sigue verde sin cambiar
-  oráculos (la vista normalizada reproduce byte a byte lo que hoy cada stripper
-  produce — `# Capítulo 1` sigue exento, `Elena` en `# La caída de Elena` sigue
-  disparando, la declaración `- **Voz narrativa**: …` sigue parseándose, el
-  `[PENDING: …]`-solo sigue tratándose como no-declaración).
-- El locator `relpath:línea` NO cambia: el número de línea sigue saliendo de
-  `enumerate`, no del offset del match.
-- GENERALIZACIÓN demostrada: un fixture nuevo de la SIGUIENTE superficie —una mención
-  de personaje fuera de roster dentro de un `> blockquote` (o un epígrafe), una forma
-  que hoy re-abriría la grieta— se maneja correctamente por la costura SIN tocar ningún
-  validador, probando que la capa cierra la clase y no una instancia.
-- SIN dependencia nueva (Constitución II): la costura es un clasificador determinista
-  de bloques/líneas sobre las primitivas regex existentes, NO un parser/AST de markdown
-  de terceros. Cada archivo ≤ 500 líneas.
-- Validadores de prosa: sin grafo, `triples=()`, ontología congelada intacta
-  (Principio X). El gate (solo `error` rompe CI) y las severidades no cambian.
+- `character_presence` deja de marcar el primer término tras una raya de diálogo líder:
+  `—Esto es el porvenir` no reporta `Esto`. El arreglo vive SOLO en `io/prose.py`; no se
+  edita ningún validador (criterio de que la clase se cierra en la costura).
+- La raya se trata como un marcador de bloque más: solo la LÍDER (anclada en `^`,
+  tolerando whitespace previo) se retira; las rayas internas de un inciso
+  (`—dijo Arnela—`) NO se tocan. La semirraya `–` (U+2013) se reconoce igual que la raya
+  `—` (U+2014); el guion ASCII `- ` ya lo cubre el marcador de viñeta existente.
+- CERO regresión en los fixtures vivos sin tocar oráculos salvo donde HOY exista un falso
+  positivo de raya de diálogo: hay que verificarlo EMPÍRICAMENTE corriendo la suite. Si
+  algún oráculo contaba un warning espurio de raya, se corrige a la baja (el manuscrito
+  del fixture NO se toca), igual que 038 corrigió el conteo `6 → 5` del `Capítulo`
+  espurio.
+- El locator `relpath:línea` NO cambia: el número de línea sigue saliendo de `enumerate`,
+  no del offset del match; la normalización solo afecta al texto escaneado, no a la
+  numeración.
+- GENERALIZACIÓN demostrada: un fixture/caso nuevo con una mención de personaje fuera de
+  roster MID-línea en un párrafo de diálogo (p. ej. `—Pregúntale a Quirón —dijo.`) sigue
+  disparando sobre `Quirón`, mientras que el demostrativo líder no dispara — probando que
+  solo se neutraliza el marcador líder, no el contenido.
+- SIN dependencia nueva (Constitución II): la raya se reconoce con una regex determinista
+  anclada (como `_BULLET_MARKER`), NO con un parser de markdown de terceros. Cada archivo
+  ≤ 500 líneas. Validadores de prosa sin grafo, `triples=()`, ontología congelada intacta
+  (Principio X); el gate (solo `error` rompe CI) y las severidades no cambian.
+- Borra la entrada DEBT-009 de `DEBT.md` (git conserva el historial).
 
-Fuera de scope: el estado tri-valor (eso es la iteración 040); convertir el heurístico
-en juicio semántico (movimiento 3 de la issue, demand-pulled); `factual_anchor`,
-`temporal` y `narrative_structure`, que operan sobre el grafo/research y no escanean
-prosa de superficie, no se tocan.
+Fuera de scope: el roster de cruce incompleto de settings/locations/objects (eso es
+DEBT-010 / iteración 042); convertir el heurístico de nombres propios en juicio semántico
+(movimiento 3 de issue #1, demand-pulled); cualquier validador que no escanee prosa de
+superficie (`factual_anchor`, `temporal`, `narrative_structure`).
 ```
 
 **Pista para `/speckit-plan` (`PLAN_HINT`)** — pega verbatim como `plan_hint`:
 
 ```text
-Apóyate en `io/frontmatter.py` (precedente de tracking de líneas: parsea YAML
-front-matter + body con `key_lines`) y en `validation/base.py:148-257` (el patrón de
-accesor cacheado `_UNSET`/memo de `ValidationContext`). Crea un módulo nuevo en `io/`
-(p. ej. `io/prose.py`) que, dado un fuente markdown, devuelva un documento parseado:
-una lista ordenada de líneas clasificadas (kind ∈ {heading, bullet, blockquote,
-emphasis, placeholder, prose}) cada una con su número de línea 1-based y un campo
-`normalized` (la línea con su marcador estructural de prefijo retirado — ATX `#{1,6} `,
-viñeta/blockquote `[-*+>] `, run de énfasis líder), reproduciendo EXACTAMENTE lo que
-hoy strippean `_HEADING_MARKER` / `_BULLET` / `_LEAD_EMPHASIS` / `_CLOSE_EMPHASIS`, más
-un predicado `is_placeholder` equivalente a `_PENDING_ONLY` (`^\s*\[pending…\]\s*$`).
-`ValidationContext` gana accesores cacheados `manuscript_view()` / `constitution_view()`.
-Reescribe `character_presence` para iterar el prose-scan de la vista (sin
-`_HEADING_MARKER` local), `focalization` para localizar su declaración sobre las líneas
-normalizadas + consultar `is_placeholder`, y `setting_continuity` para escanear las
-líneas de la vista. Determinismo y locators intactos. Diseño § 13. Sin librería de
+Apóyate en `io/prose.py` (la costura de 039): `_normalize` retira iterativamente los
+prefijos de bloque vía `_HEADING_MARKER` (`^#{1,6}\s+`) y `_BULLET_MARKER`
+(`^\s*[-*+>]\s+`). Añade un `_DIALOGUE_MARKER` —p. ej. `^\s*[—–]\s*` (raya U+2014 /
+semirraya U+2013, espacio opcional alrededor; OJO: la raya suele ir pegada al texto,
+`—Esto`, así que el sufijo es `\s*`, no `\s+`)— y aplícalo en `_normalize` dentro del
+mismo bucle de stripping, una pasada por marcador (`sub(count=1)`), de modo que solo la
+raya LÍDER se retire y las internas queden intactas. NO toques `character_presence`: con
+la raya retirada, `_is_sentence_initial(scan, match.start())` ve el primer término en
+prefijo vacío y lo exime, igual que el encabezado ATX en DEBT-008. Verifica
+empíricamente qué oráculos cambian (`uv run pytest`) y corrige solo los conteos de falsos
+positivos de raya (sin tocar manuscritos de fixture). Añade un caso de prosa que pruebe
+que una mención MID-línea de diálogo sigue disparando. Diseño § 13. Sin librería de
 markdown (Constitución II).
 ```
 
@@ -241,120 +251,120 @@ markdown (Constitución II).
 
 ```bash
 SPEC=$(cat <<'EOF'
-…  # la Necesidad de 039, verbatim del bloque de arriba
+…  # la Necesidad de 041, verbatim del bloque de arriba
 EOF
 )
 PLAN_HINT=$(cat <<'EOF'
-…  # la Pista de 039, verbatim del bloque de arriba
+…  # la Pista de 041, verbatim del bloque de arriba
 EOF
 )
 specify workflow run bookwright-quality \
   -i spec="$SPEC" -i plan_hint="$PLAN_HINT" -i integration=claude
 ```
 
-Al verde: mergear a `main` con el patrón `Merge iteration 039: …` + `docs(claude):
-record iteration 039 merged` (voltea la fila de la tabla y la prosa de estado).
-**No** se corta release aquí (acumula para `v0.5.0`).
+Al verde: mergear a `main` (`Merge iteration 041: …` + `docs(claude): record iteration
+041 merged`) y cortar la release `v0.5.1` con `bookwright-release` (§ 0.4, paso 4).
 
 ---
 
-### 2. Iteración 040 — Resultado tri-valor: `evaluado` / `no-evaluado(motivo)` (cierra la clase B)
+### 2. Iteración 042 — `character_presence` cruza contra TODA la bible (cierra DEBT-010)
 
-Cierra la **falsa confianza**: que `[]` deje de leerse igual que "limpio" cuando en
-realidad fue "no pude mirar". **Depende de 039** (la detección de placeholder de la
-costura alimenta el motivo "voz sin responder"). Cierra el hito → release `v0.5.0`.
+Cierra DEBT-010: el heurístico de "nombre propio sin entrada en la bible" solo consulta
+el roster de PERSONAJES, así que los tokens de un setting/location/object multi-palabra
+que SÍ está declarado (p. ej. `Real`, `Fábrica`, `Paños` de "la Real Fábrica de Paños")
+se marcan como sin entrada. El mensaje dice literalmente "no bible entry": debe consultar
+TODA la bible, no solo `characters/`.
 
 **Necesidad (`SPEC`)** — pega verbatim como `spec`:
 
 ```text
-Necesidad: un validador de Bookwright devuelve `list[Violation]`, y una lista vacía
-`[]` es INDISTINGUIBLE entre dos cosas opuestas: "evalué y está limpio" y "no tuve
-forma de mirar". Para una herramienta de autoría, la FALSA CONFIANZA es peor fallo que
-el ruido: DEBT-004 fue, literalmente, un validador DORMIDO Y VERDE durante todo v0.4
-(la declaración de voz no parseaba, así que `focalization` retornaba `[]` y se leía
-como "focalización OK"). Hoy `focalization` retorna `[]` cuando no hay constitución, no
-hay declaración de voz parseable, o la voz sigue en `[PENDING]`;
-`character_presence` / `setting_continuity` retornan `[]` sobre un manuscrito vacío.
-Todo eso se pinta verde.
+Necesidad: el validador `character_presence` tiene dos reglas. La regla de huérfanos
+(severidad `error`, protege el gate) verifica que cada PERSONAJE de la bible se mencione
+en el manuscrito. La regla de menciones-desconocidas (severidad `warning`) marca todo
+nombre propio del manuscrito que "no tiene entrada en la bible" — pero solo cruza contra
+el roster de PERSONAJES (`character_names()`). Por eso, un setting declarado como
+`bible/settings/la-real-fabrica-de-panos.md` ("la Real Fábrica de Paños") provoca que sus
+tokens `Real`, `Fábrica`, `Paños` se reporten como nombres propios «sin entrada en la
+bible» — cuando la entrada EXISTE, solo que en `settings/` (o `locations/`, `objects/`)
+en vez de `characters/`. El texto del warning es honesto («heuristic — may be a place or
+organization»), pero sobre una novela con sus entornos ya declarados el diagnóstico es
+engañoso y el ruido alto. Detectado por el dogfood end-to-end de `tiny-historical` tras
+`v0.5.0` (DEBT-010 en `DEBT.md`).
 
-Esta iteración cierra la clase (issue #1, movimiento 2): el resultado de un validador
-pasa de "lista de hallazgos" a TRI-VALOR — `evaluado` (con o sin hallazgos) frente a
-`no-evaluado(motivo)`. Los retornos-tempranos-`[]` de "no pude mirar" se vuelven
-`no-evaluado` con un motivo legible (p. ej. "la constitución no declara voz narrativa",
-"la declaración de voz sigue sin responder ([PENDING])", "el manuscrito está vacío").
-El runner, el report, el sobre `--json` de `bookwright validate`, `bookwright status`
-(y su `next_actions`) y las skills exponen el tercer estado, de modo que VERDE
-signifique "evaluado y limpio", no "no se miró".
+Esta iteración cierra DEBT-010: la regla de menciones-desconocidas pasa a suprimir todo
+candidato cuyo slug (o cuyos tokens) case con CUALQUIER entidad declarada en la bible
+—personajes, settings, locations y objects—, no solo personajes. La regla de huérfanos
+(la que rompe el gate) sigue operando EXCLUSIVAMENTE sobre el roster de personajes: un
+setting nunca mencionado NO es un huérfano de personaje. El estado `no-evaluado` de
+`character_presence` (iteración 040) tampoco cambia.
 
 Comportamiento esperado / criterios:
-- El contrato del `Validator` Protocol (`validation/base.py`, diseño § 13.1) crece para
-  que un validador declare por corrida si EVALUÓ o NO-EVALUÓ(motivo), ADEMÁS de sus
-  `Violation`. Se actualiza `bookwright-design.md § 13.1` ANTES de divergir el código
-  (plan § 7.3).
-- El estado es ADITIVO y NO rompe el gate: solo los `Violation` de severidad `error`
-  siguen rompiendo CI; un `no-evaluado` NO es fallo de gate (no es un hallazgo) pero SÍ
-  es visible — nunca se confunde con limpio. La forma de `Violation` y de
-  `ValidatorError` (los validadores que PETAN, canal `errors[]`) no cambia; `no-evaluado`
-  es un tercer canal distinto de `errors[]` (que es para fallos de carga/ejecución, no
-  para el que decide conscientemente no evaluar).
-- El sobre `--json` gana un canal para los `no-evaluado` (nombre del validador + motivo),
-  hermano de `findings` / `errors`. `bookwright status` lo refleja en el estado derivado
-  y, donde aplique, en `next_actions` (p. ej. "declara la voz narrativa en la
-  constitución para activar `focalization`"). Las skills que leen `status` al arrancar
-  lo muestran.
-- Los validadores que hoy retornan `[]` por "no pude mirar" migran al estado nuevo:
-  `focalization` (sin constitución / sin declaración parseable / voz en `[PENDING]`,
-  reusando la detección de placeholder de la costura de 039), y el manuscrito-vacío de
-  `character_presence` / `setting_continuity`. Un validador que evalúa y no encuentra
-  nada sigue siendo `evaluado` con cero hallazgos (verde legítimo).
-- CERO regresión funcional en los hallazgos existentes: los fixtures que hoy producen
-  `Violation` siguen produciéndolos; lo único que cambia es que el "no pude mirar" deja
-  de leerse como verde. `mypy --strict` y los cuatro gates verdes.
-- Esta iteración CIERRA el hito v0.5.0: tras mergear, se corta la release `v0.5.0` con
-  la skill `bookwright-release` (bump `__version__` a `0.5.0`, sección CHANGELOG, edición
-  de estado en CLAUDE.md/diseño, commit de release, tag anotado) — una sola vez, por
-  ambas iteraciones (039+040).
+- `ValidationContext` (`validation/base.py`) gana accesores cacheados `location_names()`
+  y `object_names()`, espejo exacto de `setting_names()` (mismo helper genérico
+  `_names_of`, mismo patrón `_UNSET`/memo), para las clases GOLEM `NarrativeLocation`
+  (G13, `bible/locations/`) y `Object` (G16, `bible/objects/`).
+- La regla de menciones-desconocidas de `character_presence` construye su conjunto de
+  "slugs conocidos" a partir de la UNIÓN de personajes + settings + locations + objects
+  (nombre completo y tokens, como ya hace `_roster_slugs`). Un token que case cualquiera
+  de esos rosters deja de reportarse: `Real`/`Fábrica`/`Paños` de "la Real Fábrica de
+  Paños" ya no se marcan.
+- La regla de huérfanos (`error`) NO cambia: sigue derivando del roster de PERSONAJES
+  (`character_names()`). Un setting/location/object declarado pero nunca mencionado NO
+  produce error ni warning de huérfano (no es su responsabilidad). Los hallazgos `error`
+  existentes salen byte a byte iguales (protege el gate, como 040).
+- El guard `NotEvaluated` de 040 NO cambia: `character_presence` sigue siendo
+  `no-evaluado` SOLO cuando NO hay prosa Y el roster de personajes está vacío; su motivo
+  textual es idéntico. (Settings/locations/objects sin prosa ni personajes siguen sin
+  nada que cruzar.)
+- CERO regresión funcional: verifícalo EMPÍRICAMENTE (`uv run pytest`). Donde un oráculo
+  contara un warning de un setting/location/object ya declarado, se corrige a la baja
+  (sin tocar manuscritos ni la bible del fixture). Un nombre propio genuinamente fuera de
+  TODA la bible sigue disparando.
+- Validador de prosa: el cruce sigue siendo file-based vía `bible()`/`map_bible` (no
+  SPARQL), `triples=()`, sin grafo, ontología congelada intacta (Principio X). El gate
+  (solo `error` rompe CI) y las severidades no cambian. Cada archivo ≤ 500 líneas.
+- Borra la entrada DEBT-010 de `DEBT.md` (git conserva el historial).
 
-Fuera de scope: la costura de superficie (iteración 039, precede a esta); el juicio
-semántico LLM (movimiento 3 de la issue, demand-pulled); añadir validadores nuevos.
+Fuera de scope: la raya de diálogo (DEBT-009 / iteración 041); crear un validador de
+presencia de entornos/objetos aparte (no hace falta: basta ampliar el roster de cruce);
+convertir el heurístico en juicio semántico (movimiento 3 de issue #1, demand-pulled).
 ```
 
 **Pista para `/speckit-plan` (`PLAN_HINT`)** — pega verbatim como `plan_hint`:
 
 ```text
-Apóyate en `validation/base.py` (`Violation`, `ValidatorError`, el `Validator` Protocol,
-`ValidationContext`), `validation/runner.py`, el report/sobre de `commands/validate`,
-`commands/status`, y las plantillas de skills que leen `status` al arrancar; diseño
-§ 13.1. Prefiere un RESULTADO EXPLÍCITO —p. ej. el validador devuelve un pequeño
-resultado frozen (`ValidationOutcome` con `evaluated: bool`, `reason: str | None`,
-`violations: tuple[Violation, ...]`), o el runner deriva el estado de un señal opt-in
-`not_evaluated(reason)`— antes que sobrecargar `Violation`/`Severity` (un `Violation`
-centinela de severidad `info` confundiría "no evaluado" con "hallazgo informativo"). El
-gate sigue clavado solo en hallazgos `error`. El sobre `--json` gana un array
-`not_evaluated[]` (validator, reason) hermano de `findings`/`errors`. Actualiza
-`bookwright-design.md § 13.1` antes de tocar el Protocol. Puede pasar de ~10 tareas en
-`/speckit-tasks` → si es así, divídela (plan § 7.2).
+Apóyate en `validation/base.py`: el helper genérico `_names_of(concept_cls)` y el accesor
+`setting_names()` (clase `Setting`) son el patrón exacto a replicar para
+`location_names()` (clase `NarrativeLocation`) y `object_names()` (clase `Object`), ambas
+exportadas desde `bookwright.golem`. En `character_presence.validate()`, hoy
+`roster = project.character_names()` alimenta tanto `_orphans` como `_roster_slugs`;
+sepáralo: `_orphans` sigue con `character_names()`, pero el conjunto de slugs que
+`_unknown_mentions` usa para suprimir se construye sobre la UNIÓN de los cuatro rosters
+(reutiliza `_roster_slugs` pasándole la concatenación). NO cambies el guard `NotEvaluated`
+(sigue clavado en `not character_names and not files`) ni la firma/forma de `Violation`.
+Verifica empíricamente qué oráculos cambian y corrige solo conteos de warnings de
+entidades ya declaradas. Diseño § 13. File-based (no SPARQL), sin dependencia nueva.
 ```
 
-**Comando del workflow** (desde `main` limpio, con 039 ya mergeada):
+**Comando del workflow** (desde `main` limpio, con 041 ya liberada):
 
 ```bash
 SPEC=$(cat <<'EOF'
-…  # la Necesidad de 040, verbatim del bloque de arriba
+…  # la Necesidad de 042, verbatim del bloque de arriba
 EOF
 )
 PLAN_HINT=$(cat <<'EOF'
-…  # la Pista de 040, verbatim del bloque de arriba
+…  # la Pista de 042, verbatim del bloque de arriba
 EOF
 )
 specify workflow run bookwright-quality \
   -i spec="$SPEC" -i plan_hint="$PLAN_HINT" -i integration=claude
 ```
 
-Al verde: mergear a `main` (`Merge iteration 040: …` + `docs(claude): record iteration
-040 merged`) y **cortar `v0.5.0`** con `bookwright-release` (§ 0.4, paso 4 — una sola vez
-por el hito minor). Tras la release, **vaciar § 1+ de este plan** (el trabajo entregado
-vive en git / `specs/` / `CHANGELOG`) y dejar el roadmap como intención durable.
+Al verde: mergear a `main` (`Merge iteration 042: …` + `docs(claude): record iteration
+042 merged`) y cortar la release `v0.5.2` con `bookwright-release` (§ 0.4, paso 4). Tras
+la release, **vaciar § 1+ de este plan** (el trabajo entregado vive en git / `specs/` /
+`CHANGELOG`) y dejar el roadmap como intención durable.
 
 ---
 
