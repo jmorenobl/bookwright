@@ -1,4 +1,4 @@
-# 2. Destila el canon
+# 1. Destila el canon
 
 Tienes el esqueleto y el proyecto abierto en tu agente. Ahora vas a llenarlo de
 **canon**: las reglas de la obra (la constitución) y el censo del mundo (la
@@ -57,7 +57,7 @@ El resultado es texto plano que puedes leer y editar cuando quieras:
     Esa línea `- **Voz narrativa**: Tercera persona limitada…` la leerá luego el
     sistema para vigilar que no se te cuelen saltos de punto de vista. Si la dejaras
     como un `[PENDING]`, esa comprobación no podría ejecutarse — lo verás en el
-    [paso 5](revise.md).
+    [paso 4](revise.md).
 
 ## El primer bucle de iteración: `[PENDING]` → resolver → rehacer
 

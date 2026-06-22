@@ -26,11 +26,13 @@ propósito: lo que importa es el *flujo*, no la extensión.
 
 ## El recorrido
 
-1. **[Prepara el proyecto](#instalacion)** — instala la CLI y crea el esqueleto (esta página).
-2. **[Destila el canon](distill.md)** — la constitución y la biblia, con tu agente.
-3. **[Investiga lo que das por cierto](research.md)** — fuentes y anclas para los hechos reales.
-4. **[Estructura y redacta](write.md)** — outline, escenas y la prosa de la primera escena.
-5. **[Revisa y vuelve atrás](revise.md)** — comprueba la continuidad, cambia de idea y rehazlo.
+Primero **[prepara el proyecto](#instalacion)** en esta misma página —instalas la
+CLI y creas el esqueleto— y a partir de ahí das cuatro pasos, todos con tu agente:
+
+1. **[Destila el canon](distill.md)** — la constitución y la biblia, con tu agente.
+2. **[Investiga lo que das por cierto](research.md)** — fuentes y anclas para los hechos reales.
+3. **[Estructura y redacta](write.md)** — outline, escenas y la prosa de la primera escena.
+4. **[Revisa y vuelve atrás](revise.md)** — comprueba la continuidad, cambia de idea y rehazlo.
 
 ---
 

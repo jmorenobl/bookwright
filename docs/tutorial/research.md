@@ -1,4 +1,4 @@
-# 3. Investiga lo que das por cierto
+# 2. Investiga lo que das por cierto
 
 Toda historia se apoya en cosas que da por ciertas. Una novela histórica las toma
 del mundo real; incluso nuestro cuento atemporal gana si el faro **funciona como un

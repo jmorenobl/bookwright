@@ -1,4 +1,4 @@
-# 5. Revisa y vuelve atrás
+# 4. Revisa y vuelve atrás
 
 Aquí está el corazón de Bookwright — y la parte más útil del día a día. Escribir un
 libro es, sobre todo, **cambiar de idea**: descubrir un descuido, repensar un
@@ -114,7 +114,7 @@ leyera como «limpio» sería *falsa confianza*.
 !!! success "La definición de verde"
     Tu libro está realmente comprobado cuando **no hay errores _y_ ningún validador
     se quedó sin mirar** (`status == "ok"` y `not_evaluated == []`). Por eso te
-    convino responder el `[PENDING]` de la voz narrativa en el [paso 2](distill.md):
+    convino responder el `[PENDING]` de la voz narrativa en el [paso 1](distill.md):
     despertó al validador de focalización. Tu agente, al leer `bookwright status`,
     te recuerda cualquier validador dormido como trabajo pendiente.
 

@@ -1,4 +1,4 @@
-# 4. Estructura y redacta
+# 3. Estructura y redacta
 
 Tienes el canon y, si lo necesitabas, los hechos. Ahora bajas del *qué* al *cómo*:
 la forma de la trama (outline), su desglose en escenas concretas, y por fin la
