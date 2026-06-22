@@ -84,7 +84,10 @@ complete.
 - [ ] T007 [P] In `tests/validation/test_runner.py` add: a stub validator that raises
   `NotEvaluated("…")` is recorded in the `not_evaluated` channel (not `errors[]`); a stub
   that raises a generic `Exception` still lands in `errors[]` as a `ValidatorError`
-  (FR-005); `not_evaluated` is sorted by name and a validator appears at most once.
+  (FR-005); a stub that returns a bare `list[Violation]` (non-empty) is **evaluated** — its
+  findings flow into `violations[]` and it appears in **neither** `errors[]` **nor**
+  `not_evaluated[]` (FR-014 backward-compat, explicit); `not_evaluated` is sorted by name
+  and a validator appears at most once (FR-013).
 - [ ] T008 [P] In `tests/validation/test_report.py` add: `to_json` carries the
   `not_evaluated[]` sibling key; the green predicate is **False** for a run with a
   non-empty `not_evaluated` (even when `violations == []` / `status == "ok"`) and **True**
@@ -108,19 +111,25 @@ with a reason, is NOT in `errors[]`, and the green predicate is **False**; a con
 declaring a usable first/third person stays evaluated (in neither channel).
 
 - [ ] T009 [US1] In `src/bookwright/validation/validators/focalization.py` route the four
-  early-return causes to `raise NotEvaluated(reason)` (FR-008): (i) no constitution and
-  (ii) no parseable voice declaration → `"the constitution does not declare a narrative
-  voice"`; (iii) the voice is still a `[PENDING]` placeholder (reuse iteration-039's
-  `is_placeholder`) → `"the narrative-voice declaration is still unanswered ([PENDING])"`;
-  (iv) a declaration present but resolving no grammatical person → `"the narrative-voice
-  declaration names no grammatical person (neither first nor third)"`. A usable first/third
-  person stays **evaluated**. Verify the enumeration is exhaustive over every early `[]`
-  return so none keeps reading green. Stays `triples=()`, graph-free, LLM-free (FR-015).
+  early-return causes to `raise NotEvaluated(reason)`, each with a **distinct** English
+  reason (FR-008 — the spec's four distinct "could not look" paths): (i) no constitution
+  (`project.constitution_view()` is empty) → `"there is no constitution to read the
+  narrative voice from"`; (ii) a constitution present but no parseable voice declaration →
+  `"the constitution does not declare a narrative voice"`; (iii) the voice is still a
+  `[PENDING]` placeholder (reuse iteration-039's `is_placeholder`) → `"the narrative-voice
+  declaration is still unanswered ([PENDING])"`; (iv) a declaration present but resolving no
+  grammatical person → `"the narrative-voice declaration names no grammatical person
+  (neither first nor third)"`. (i) and (ii) are split, not merged — the empty-vs-nonempty
+  `constitution_view()` tells them apart for free. A usable first/third person stays
+  **evaluated**. Verify the enumeration is exhaustive over every early `[]` return so none
+  keeps reading green. Stays `triples=()`, graph-free, LLM-free (FR-015).
 - [ ] T010 [US1] In `tests/validation/test_focalization.py` add (additive — no oracle edits,
-  SC-003) one case per reason (no constitution; unparseable declaration; `[PENDING]`
-  placeholder; no-person declaration) asserting `NotEvaluated` is raised with the exact
-  reason, plus a case asserting a usable third-person declaration on a clean manuscript
-  returns `[]` (evaluated, green) and a first-person declaration likewise — never raises.
+  SC-003) one case per **distinct** reason — (i) no constitution, (ii) constitution present
+  but unparseable declaration, (iii) `[PENDING]` placeholder, (iv) no-person declaration —
+  asserting `NotEvaluated` is raised with the exact, distinct reason string for each (so
+  (i) and (ii) are verified to differ), plus a case asserting a usable third-person
+  declaration on a clean manuscript returns `[]` (evaluated, green) and a first-person
+  declaration likewise — never raises.
 - [ ] T011 [US1] Add a source-only fixture `tests/fixtures/tiny-undeclared-voice/`
   (manifest + `bible/` + a manuscript with prose + a constitution whose
   `- **Voz narrativa**:` is the `[PENDING: …]` placeholder a fresh `bookwright init`
@@ -179,12 +188,18 @@ into `next_actions`, and surface the raw facts in the status-reading skill resou
 remedy; a fully-evaluated project shows neither (no false positives).
 
 - [ ] T017 [US3] In `src/bookwright/status/model.py` add
-  `not_evaluated: tuple[NotEvaluatedResult, ...]` to `ValidationSummary`; `to_payload`
-  emits `"not_evaluated": [r.to_json() for r in self.not_evaluated]` under
-  `state.validation` (additive, always present — empty list on the degraded path).
+  `not_evaluated: tuple[NotEvaluatedResult, ...] = ()` (defaulted empty — last field) to
+  `ValidationSummary`; `to_payload` emits `"not_evaluated": [r.to_json() for r in
+  self.not_evaluated]` under `state.validation` (additive, always present). The default is
+  load-bearing: the degraded-path construction `ValidationSummary(counts={}, ran=())` in
+  `src/bookwright/commands/status.py` (`_aggregate`, the no-prerequisite branch) then needs
+  **no edit** and the new key is never missing on the degraded path (matches plan § —
+  status.py unchanged).
 - [ ] T018 [US3] In `src/bookwright/status/queries.py` make `validation_summary` consume
-  the runner's 4-tuple and fill `ValidationSummary.not_evaluated`; the degraded/no-build
-  path constructs an empty `ValidationSummary` so the key is never missing. (depends on
+  the runner's **4-tuple** (`violations, _run_errors, not_evaluated, ran`) and fill
+  `ValidationSummary.not_evaluated` (sorted by name, as the runner emits it). The
+  degraded/no-build `ValidationSummary` is built in `commands/status.py` (not here) and
+  relies on the T017 default, so the key is never missing on either path. (depends on
   T004, T017)
 - [ ] T019 [US3] In `src/bookwright/status/rules.py` add a static `_REMEDIES` map
   (`focalization` → "declare the narrative voice in the constitution"; `setting_continuity`
@@ -206,6 +221,13 @@ remedy; a fully-evaluated project shows neither (no false positives).
 - [ ] T022 [P] [US3] In `tests/status/test_queries.py` add: `validation_summary` surfaces
   `not_evaluated` from the runner 4-tuple into `state.validation`, sorted by name; the
   degraded path still emits an empty `not_evaluated` list.
+- [ ] T025 [P] [US3] In `tests/integrations/test_research_skill.py` extend
+  `test_body_consults_status_queue` (the existing assertion that the resource body cites the
+  raw `open_questions` / `unresolved_anchors` facts) to also assert the body cites
+  `not_evaluated` (and `state.validation`) — verifying FR-011 for **both** integrations,
+  against the source body and the materialized body, exactly as the sibling facts are
+  verified today. This is the test that closes FR-011's coverage (it would otherwise be an
+  implemented-but-unverified requirement). (depends on T020)
 
 **Checkpoint**: all three stories independently functional; the third state is visible in
 every surface where green is read.
@@ -249,13 +271,14 @@ every surface where green is read.
 - T009 (US1) needs Foundational; uses iteration-039 `is_placeholder`.
 - T012 (US1 E2E) needs T009 + T011 (fixture).
 - T018 (US3 queries) needs T004 + T017. T019 (US3 rule) needs T017.
+- T025 (US3 skill-resource test) needs T020 (the resource edit it asserts).
 
 ### Parallel Opportunities
 
 - T007 ∥ T008 (different test files).
 - US1 (T009–T012) ∥ US2 (T013–T016) once Foundational is done.
 - Within US2: T013 ∥ T014 (different validators); T015 ∥ T016 (different test files).
-- Within US3: T021 ∥ T022 (different test files).
+- Within US3: T021 ∥ T022 ∥ T025 (different test files; T025 after T020 lands).
 
 ---
 

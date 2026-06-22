@@ -98,9 +98,13 @@ gates (FR-004).
 
 ### `status.ValidationSummary`
 
-Gains `not_evaluated: tuple[NotEvaluatedResult, ...]`. `to_payload` adds
-`"not_evaluated": [r.to_json() for r in self.not_evaluated]` under `state.validation`
-(additive). `validation_summary` reads the runner's 4-tuple and fills it.
+Gains `not_evaluated: tuple[NotEvaluatedResult, ...] = ()` (defaulted empty, last
+field). `to_payload` adds `"not_evaluated": [r.to_json() for r in self.not_evaluated]`
+under `state.validation` (additive). `validation_summary` reads the runner's 4-tuple
+and fills it. The default keeps the degraded-path construction
+`ValidationSummary(counts={}, ran=())` in `commands/status.py` (the no-prerequisite
+branch of `_aggregate`) working **unchanged**, so the new key is always present even
+on the degraded path and `status.py` needs no edit.
 
 ### `status.rules`
 

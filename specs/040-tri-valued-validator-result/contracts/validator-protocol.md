@@ -48,16 +48,18 @@ English, fixed templates, no minted data. Canonical set for the migrated validat
 
 | Validator | Reason |
 |---|---|
-| `focalization` (i) | `the constitution does not declare a narrative voice` *(no constitution / no parseable declaration share this OR are split — see FR-008 i & ii)* |
+| `focalization` (i) | `there is no constitution to read the narrative voice from` |
 | `focalization` (ii) | `the constitution does not declare a narrative voice` |
 | `focalization` (iii) | `the narrative-voice declaration is still unanswered ([PENDING])` |
 | `focalization` (iv) | `the narrative-voice declaration names no grammatical person (neither first nor third)` |
 | `setting_continuity` | `the manuscript is empty` |
 | `character_presence` | `there is no manuscript prose and no bible character roster to cross-check` |
 
-> FR-008 requires a **distinct** reason per *cause*; (i) "no constitution" and (ii)
-> "no parseable voice declaration" MAY share the user-facing wording (both mean "no
-> voice is declared") or be split — planning leaves the exact wording of (i)/(ii) to
-> implementation, but each of the four early-return branches MUST route to
-> `NotEvaluated`, none may keep returning `[]`. The placeholder (iii) and no-person
-> (iv) reasons are distinct and fixed.
+> FR-008 requires a **distinct** reason per *cause*, and the spec enumerates **four**
+> distinct "could not look" paths. All four are therefore split — (i) a missing
+> constitution and (ii) a present-but-silent constitution carry **different** reasons
+> (the author's remedy differs: create the file vs. add the declaration), and the
+> validator can tell them apart for free (`constitution_view()` is empty for (i),
+> non-empty with no matching line for (ii)). Each of the four early-return branches
+> MUST route to `NotEvaluated`; none may keep returning `[]`. The four reason strings
+> above are fixed (FR-002, English).
