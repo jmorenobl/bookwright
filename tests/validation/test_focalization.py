@@ -105,6 +105,20 @@ def test_no_parsable_declaration_is_not_evaluated(project_root: Path) -> None:
     assert _REASON_NO_DECLARATION != _REASON_NO_CONSTITUTION  # (i) and (ii) really differ
 
 
+def test_empty_constitution_is_no_declaration_not_no_constitution(project_root: Path) -> None:
+    # A present-but-empty constitution has a file (so NOT cause (i)); it just declares
+    # nothing → cause (ii), with the accurate reason.
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        constitution="",
+        manuscript={"cap-01.md": "Yo llegué tarde.\n"},
+    )
+    with pytest.raises(NotEvaluated) as excinfo:
+        _run(project_root)
+    assert excinfo.value.reason == _REASON_NO_DECLARATION
+
+
 def test_pending_placeholder_is_not_evaluated(project_root: Path) -> None:
     # (iii) the voice is still an unanswered `[PENDING: …]` placeholder.
     write_project(

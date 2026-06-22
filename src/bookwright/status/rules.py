@@ -118,26 +118,29 @@ def _review_continuity(state: StatusState) -> Action:
 
 
 #: Concrete remedy clause per validator that can fall dormant (iteration 040, SC-004).
-#: A validator absent here contributes nothing to the prompt; the migrated set all map.
+#: A validator absent here (e.g. a custom one) falls back to ``_GENERIC_REMEDY`` so it
+#: still appears in the prompt — the migrated set all map.
 _REMEDIES: dict[str, str] = {
     "focalization": "declare the narrative voice in the constitution",
     "setting_continuity": "add manuscript prose to validate",
     "character_presence": "add a bible character roster and manuscript prose",
 }
 
+#: Fallback clause for a dormant validator with no concrete remedy in ``_REMEDIES``.
+_GENERIC_REMEDY = "investigate why it could not evaluate"
+
 
 def _activate_dormant_validators(state: StatusState) -> Action:
     dormant = state.validation.not_evaluated  # sorted by validator name (deterministic)
-    with_remedy = [r for r in dormant if r.validator in _REMEDIES]
-    if with_remedy:
-        clauses = "; ".join(f"{r.validator} — {_REMEDIES[r.validator]}" for r in with_remedy)
-        prompt = f"Activate the dormant validators: {clauses}."
-    else:
-        names = ", ".join(r.validator for r in dormant)
-        prompt = f"Investigate why these validators could not evaluate: {names}."
+    # One clause per dormant validator so the prompt always covers EVERY validator the
+    # `reason` count names — no validator is silently dropped (mapped → its remedy,
+    # unmapped → the generic clause).
+    clauses = "; ".join(
+        f"{r.validator} — {_REMEDIES.get(r.validator, _GENERIC_REMEDY)}" for r in dormant
+    )
     return Action(
         skill="bookwright-continuity",
-        prompt=prompt,
+        prompt=f"Activate the dormant validators: {clauses}.",
         reason=f"{_plural(len(dormant), 'validator')} could not evaluate",
     )
 

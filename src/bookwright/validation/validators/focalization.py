@@ -70,12 +70,14 @@ class Focalization:
     severity_default: ClassVar[Severity] = Severity.warning
 
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
-        constitution = project.constitution_view()
-        if not constitution:  # (i) no constitution file to read at all
+        if project.constitution_text() is None:  # (i) no constitution file to read at all
             raise NotEvaluated("there is no constitution to read the narrative voice from")
         character_names = [name for name, _ in project.character_names()]
-        # (ii) no declaration / (iii) a [PENDING] placeholder both raise inside the parse.
-        declaration = _parse_declaration(constitution, character_names)
+        # A present-but-empty constitution is NOT cause (i): it has a file, it just
+        # declares nothing — so it falls through to cause (ii) inside the parse, where
+        # the empty view yields no declaration. (iii) a [PENDING] placeholder also raises
+        # there.
+        declaration = _parse_declaration(project.constitution_view(), character_names)
         if declaration.person is None:  # (iv) a declaration that names no grammatical person
             raise NotEvaluated(
                 "the narrative-voice declaration names no grammatical person "

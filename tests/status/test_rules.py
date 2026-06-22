@@ -204,6 +204,22 @@ def test_activate_dormant_validators_lists_every_dormant_remedy() -> None:
     assert action.reason == "2 validators could not evaluate"
 
 
+def test_activate_dormant_validators_falls_back_for_unmapped_validators() -> None:
+    # A custom/unmapped dormant validator still appears in the prompt (generic clause)
+    # and is counted — the prompt never drops a validator the reason counts.
+    dormant = (
+        NotEvaluatedResult("custom_check", "no inputs"),
+        _DORMANT_FOCAL,
+    )
+    [action] = next_actions(make_state(not_evaluated=dormant))
+    assert action.prompt == (
+        "Activate the dormant validators: "
+        "custom_check — investigate why it could not evaluate; "
+        "focalization — declare the narrative voice in the constitution."
+    )
+    assert action.reason == "2 validators could not evaluate"
+
+
 def test_no_dormant_validators_yields_no_activation_action() -> None:
     # Empty not_evaluated → the rule produces nothing (no false positives).
     skills = [action.skill for action in next_actions(make_state())]
