@@ -12,6 +12,7 @@ import re
 from typing import ClassVar
 
 from bookwright.indexers import Indexer
+from bookwright.io.prose import ProseView
 from bookwright.validation.base import Severity, ValidationContext, Violation
 
 # Antonym groups: two terms from one group on one setting, in different files, clash.
@@ -41,27 +42,35 @@ class SettingContinuity:
     severity_default: ClassVar[Severity] = Severity.warning
 
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
-        files = project.manuscript_files()
+        # The whole-file gate stays over the full text (FR-009); built once and shared
+        # across every setting (the mapping is loop-invariant).
+        texts = dict(project.manuscript_files())
+        view = project.manuscript_view()
         out: list[Violation] = []
         for setting_name, _ in project.setting_names():
-            out.extend(self._check_setting(setting_name, files))
+            out.extend(self._check_setting(setting_name, texts, view))
         return out
 
     def _check_setting(
-        self, setting_name: str, files: tuple[tuple[str, str], ...]
+        self,
+        setting_name: str,
+        texts: dict[str, str],
+        view: tuple[tuple[str, ProseView], ...],
     ) -> list[Violation]:
         name_re = re.compile(rf"\b{re.escape(setting_name)}\b", re.IGNORECASE)
         # term → (relpath, line) of its first occurrence in a file mentioning the setting.
         occurrences: dict[str, tuple[str, int]] = {}
-        for relpath, text in files:
-            if not name_re.search(text):
+        for relpath, prose in view:
+            if not name_re.search(texts[relpath]):
                 continue
-            for lineno, line in enumerate(text.splitlines(), start=1):
+            # Per-line scan reads RAW: block-prefix stripping is inert for the
+            # `\bterm\b` lexicon, so findings + line numbers are identical (D7).
+            for line in prose:
                 for term, pattern in _TERM_PATTERNS.items():
                     if term in occurrences:
                         continue
-                    if pattern.search(line):
-                        occurrences[term] = (relpath, lineno)
+                    if pattern.search(line.raw):
+                        occurrences[term] = (relpath, line.number)
 
         out: list[Violation] = []
         for group in _LEXICON:

@@ -74,6 +74,45 @@ def test_constitution_text_none_when_absent(project_root: Path) -> None:
     assert ctx.constitution_text() is None
 
 
+def test_manuscript_view_parallels_files_no_second_read(project_root: Path) -> None:
+    # C5.1 / C5.3: manuscript_view() returns sorted (relpath, ProseView) parallel to
+    # manuscript_files(), built from the cached files — each ProseLine.raw equals the
+    # source file's splitlines() element, normalized is block-prefix-stripped.
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        manuscript={"cap-01.md": "# Capítulo 1\nAparici llegó.\n"},
+    )
+    ctx = load_context(project_root)
+    view = ctx.manuscript_view()
+
+    assert [relpath for relpath, _ in view] == [relpath for relpath, _ in ctx.manuscript_files()]
+    (_, prose) = view[0]
+    text = ctx.manuscript_files()[0][1]
+    assert [pl.raw for pl in prose] == text.splitlines()
+    assert prose[0].normalized == "Capítulo 1"  # heading marker stripped by the seam
+    # Cached: a second call returns the identical object (split once per run, C5.3).
+    assert ctx.manuscript_view() is ctx.manuscript_view()
+
+
+def test_constitution_view_and_none_when_absent(project_root: Path) -> None:
+    # C5.2: constitution_view() is the constitution's ProseView; () when absent. Cached.
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        manuscript={"c.md": "x"},
+        constitution="Voz narrativa: tercera persona\n",
+    )
+    ctx = load_context(project_root)
+    view = ctx.constitution_view()
+    assert [pl.raw for pl in view] == ["Voz narrativa: tercera persona"]
+    assert ctx.constitution_view() is ctx.constitution_view()
+
+    bare = load_context(write_project(project_root.parent / "n2", characters=["A"]))
+    assert bare.constitution_view() == ()
+    assert bare.constitution_view() is bare.constitution_view()
+
+
 def test_context_is_a_dataclass_with_root_and_manifest(project_root: Path) -> None:
     write_project(project_root, characters=["A"])
     ctx = load_context(project_root)

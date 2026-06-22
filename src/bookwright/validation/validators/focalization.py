@@ -19,23 +19,20 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from bookwright.indexers import Indexer
+from bookwright.io.prose import ProseView, is_placeholder
 from bookwright.validation.base import Severity, ValidationContext, Violation
 
 _LABEL = r"(?:voz narrativa|narrative voice)"
-# The declaration, recognized on an already-normalized (markdown-stripped) line.
-_DECLARATION = re.compile(rf"(?i)^\s*{_LABEL}\s*:\s*(?P<body>.+)$")
-# One line-leading bullet/blockquote marker + trailing whitespace (the whitespace
-# distinguishes a list bullet `* Voz…` from an emphasis run `*Voz…*`).
-_BULLET = re.compile(r"^\s*[-*+>]\s+")
-# A leading emphasis run (before the label): `**`, `*`, or `_`, repeated.
-_LEAD_EMPHASIS = re.compile(r"^\s*(?:\*\*|\*|_)+")
-# An emphasis run sitting between the label and its colon (anchored to the label
-# so the declaration *body* is never touched, FR-006).
-_CLOSE_EMPHASIS = re.compile(rf"(?i)^(?P<label>\s*{_LABEL})(?:\*\*|\*|_)+(?=\s*:)")
-# An unanswered placeholder body: *solely* a `[PENDING: …]` token (case-insensitive
-# keyword, optional surrounding whitespace). The full `^…$` anchor means real text
-# before OR after the token keeps the body a real declaration (FR-002, contract C1-C5).
-_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")
+# The declaration, recognized on a line whose leading block prefix the seam already
+# stripped. Optional emphasis runs (`**`/`*`/`_`) are tolerated around the label —
+# `**` precedes `*` in the alternation so the longest run is consumed; the label
+# carries no `*`/`_`, so the emphasis groups cannot bleed into the label or body
+# (contract C4). The `(?P<body>.+)$` capture is unchanged, so the parsed body is
+# byte-identical to the bare `Voz narrativa: …` form (C4.1).
+_DECLARATION = re.compile(
+    r"(?i)^\s*(?:\*\*|\*|_)*\s*(?:voz narrativa|narrative voice)"
+    r"(?:\*\*|\*|_)*\s*:\s*(?P<body>.+)$"
+)
 _THIRD = re.compile(r"(?i)\b(tercera|third)\b")
 _FIRST = re.compile(r"(?i)\b(primera|first)\b")
 _LIMITED = re.compile(r"(?i)\b(limitada|limitado|limited)\b")
@@ -68,29 +65,28 @@ class Focalization:
     severity_default: ClassVar[Severity] = Severity.warning
 
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
-        constitution = project.constitution_text()
-        if constitution is None:
-            return []
         character_names = [name for name, _ in project.character_names()]
-        declaration = _parse_declaration(constitution, character_names)
+        declaration = _parse_declaration(project.constitution_view(), character_names)
         if declaration is None or declaration.person is None:
             return []
 
-        files = project.manuscript_files()
+        view = project.manuscript_view()
         out: list[Violation] = []
         if declaration.person == "third":
-            out.extend(self._first_person_breaks(files))
+            out.extend(self._first_person_breaks(view))
             if declaration.limited:
-                out.extend(self._head_hopping(files, character_names, declaration.focal))
+                out.extend(self._head_hopping(view, character_names, declaration.focal))
         return out
 
-    def _first_person_breaks(self, files: tuple[tuple[str, str], ...]) -> list[Violation]:
+    def _first_person_breaks(self, view: tuple[tuple[str, ProseView], ...]) -> list[Violation]:
         out: list[Violation] = []
-        for relpath, text in files:
-            for lineno, line in enumerate(text.splitlines(), start=1):
-                if _is_dialogue(line):
+        for relpath, prose in view:
+            for line in prose:
+                # Dialogue / first-person scans read RAW so the dialogue-prefix
+                # exemption is byte-for-byte unchanged from the original line form (C6.2).
+                if _is_dialogue(line.raw):
                     continue
-                match = _FIRST_PERSON.search(line)
+                match = _FIRST_PERSON.search(line.raw)
                 if match:
                     out.append(
                         Violation(
@@ -100,7 +96,7 @@ class Focalization:
                                 f"first-person marker '{match.group(1)}' outside dialogue, but "
                                 "the constitution declares a third-person narrative voice"
                             ),
-                            source=f"{relpath}:{lineno}",
+                            source=f"{relpath}:{line.number}",
                             triples=(),
                         )
                     )
@@ -109,21 +105,21 @@ class Focalization:
 
     def _head_hopping(
         self,
-        files: tuple[tuple[str, str], ...],
+        view: tuple[tuple[str, ProseView], ...],
         character_names: list[str],
         focal: str | None,
     ) -> list[Violation]:
         non_focal = sorted(n for n in character_names if n != focal)
         seen: set[str] = set()
         out: list[Violation] = []
-        for relpath, text in files:
-            for lineno, line in enumerate(text.splitlines(), start=1):
-                if not _INTERIORITY.search(line):
+        for relpath, prose in view:
+            for line in prose:
+                if not _INTERIORITY.search(line.raw):
                     continue
                 for name in non_focal:
                     if name in seen:
                         continue
-                    if re.search(rf"\b{re.escape(name)}\b", line):
+                    if re.search(rf"\b{re.escape(name)}\b", line.raw):
                         seen.add(name)
                         out.append(
                             Violation(
@@ -133,41 +129,23 @@ class Focalization:
                                     f"interiority attributed to '{name}', a non-focal character, "
                                     "under a third-person-limited narrative voice (head-hopping)"
                                 ),
-                                source=f"{relpath}:{lineno}",
+                                source=f"{relpath}:{line.number}",
                                 triples=(),
                             )
                         )
         return out
 
 
-def _normalize_declaration_line(line: str) -> str:
-    """Strip markdown markup around the narrative-voice label (FR-001/FR-002).
-
-    Removes one line-leading bullet/blockquote marker, then a leading emphasis
-    run, then an emphasis run between the label and its colon — each independently
-    (no balance guard, per spec clarification). The declaration body is never
-    touched, so the parsed ``_Declaration`` is identical to the bare form (R1).
-    """
-    line = _BULLET.sub("", line, count=1)
-    line = _LEAD_EMPHASIS.sub("", line, count=1)
-    line = _CLOSE_EMPHASIS.sub(r"\g<label>", line, count=1)
-    return line
-
-
-def _parse_declaration(text: str, character_names: list[str]) -> _Declaration | None:
+def _parse_declaration(view: ProseView, character_names: list[str]) -> _Declaration | None:
     match = next(
-        (
-            m
-            for line in text.splitlines()
-            if (m := _DECLARATION.match(_normalize_declaration_line(line))) is not None
-        ),
+        (m for prose_line in view if (m := _DECLARATION.match(prose_line.normalized)) is not None),
         None,
     )
     if match is None:
         return None
     body = match.group("body")
-    if _PENDING_ONLY.match(body):
-        return None  # an unanswered `[PENDING: …]` placeholder is no declaration (FR-002)
+    if is_placeholder(body):
+        return None  # an unanswered `[PENDING: …]` placeholder is no declaration (FR-008b)
     person: str | None = None
     if _THIRD.search(body):
         person = "third"
