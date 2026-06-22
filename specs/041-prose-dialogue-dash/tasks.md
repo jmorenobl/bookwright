@@ -36,10 +36,10 @@ Single project, src-layout (Constitution III): `src/bookwright/`, `tests/` at re
 **Purpose**: Confirm the working tree and baseline are ready; no scaffolding is needed
 (this iteration touches one existing module + tests).
 
-- [ ] T001 Sync the environment and confirm a green baseline before any edit: run
+- [X] T001 Sync the environment and confirm a green baseline before any edit: run
       `uv sync`, then `uv run pytest tests/io/test_prose.py tests/validation/test_character_presence.py -q`
       and record that they pass on `041-prose-dialogue-dash` (so any later red is this change's).
-- [ ] T002 Capture the empirical pre-change parity baseline cited in plan.md/research.md
+- [X] T002 Capture the empirical pre-change parity baseline cited in plan.md/research.md
       (D4): from the repo root run
       `uv run python -c "from bookwright.io.prose import prose_view as p; print([l.normalized for l in p('—Esto es el porvenir')])"`
       and confirm today's seam leaves `—Esto…` glued (word not at offset 0) — the defect
@@ -55,20 +55,20 @@ only source edit in the iteration.
 **⚠️ CRITICAL**: No user-story test can pass until this is complete. Per SC-004 the diff
 to every `src/bookwright/validation/validators/*` file is **empty**.
 
-- [ ] T003 In `src/bookwright/io/prose.py`, add the module-level recognizer
+- [X] T003 In `src/bookwright/io/prose.py`, add the module-level recognizer
       `_DIALOGUE_MARKER = re.compile(r"^\s*[—–]\s*")` next to `_HEADING_MARKER` /
       `_BULLET_MARKER`, with a comment noting: em `—` (U+2014) / en `–` (U+2013) only;
       leading whitespace tolerated; trailing `\s*` (NOT `\s+`) because Spanish glues the
       dash to the word (`—Esto`); a leading typographic dash is unambiguous so no
       bullet-vs-emphasis guard is needed (research D1/D3; the ASCII hyphen bullet `- `
       stays owned by `_BULLET_MARKER`).
-- [ ] T004 In `src/bookwright/io/prose.py`, extend the existing `_normalize` loop with a
+- [X] T004 In `src/bookwright/io/prose.py`, extend the existing `_normalize` loop with a
       third `elif` branch — order heading → bullet → **dialogue** —
       `elif _DIALOGUE_MARKER.match(line): line = _DIALOGUE_MARKER.sub("", line, count=1)`
       (one pass per marker, `count=1`, so only the LEADING dash is removed and internal
       incise dashes survive — data-model I1/I2, FR-003). Update the `_normalize` and
       module docstrings to name the leading dialogue dash alongside heading/bullet/blockquote.
-- [ ] T005 Verify the foundational edit against the seam contract by hand (quickstart §1):
+- [X] T005 Verify the foundational edit against the seam contract by hand (quickstart §1):
       run the one-liner
       `uv run python -c "from bookwright.io.prose import prose_view as p; print(p('—Esto es el porvenir')[0].normalized); print(p('—dijo Arnela—, y se fue')[0].normalized); print(repr(p('—')[0].normalized)); print(p('> —Esto')[0].normalized)"`
       and confirm it prints `Esto es el porvenir` / `dijo Arnela—, y se fue` / `''` /
@@ -93,14 +93,14 @@ on a roster lacking `Esto` and assert no `proper noun 'Esto' …` finding.
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] In `tests/io/test_prose.py`, extend the C2 `normalized`-table
+- [X] T006 [P] [US1] In `tests/io/test_prose.py`, extend the C2 `normalized`-table
       parametrization with the leading-dialogue-dash rows from
       contracts/dialogue-marker.md that prove the **removal**: D1 `—Esto es el porvenir`
       → `Esto es el porvenir`, D2 `— Claro` → `Claro`, D3 `–Esto` (en dash) → `Esto`,
       D4 `  —Esto` → `Esto`, D6 `—` → `` (empty), D7 `> —Esto` → `Esto` (composes with
       blockquote across two passes). Mirror the existing single-row
       `ProseLine(number=1, raw=…, normalized=…)` assertion shape.
-- [ ] T007 [P] [US1] In `tests/validation/test_character_presence.py`, add a test
+- [X] T007 [P] [US1] In `tests/validation/test_character_presence.py`, add a test
       (mirroring `test_heading_first_word_is_not_flagged` /
       `test_blockquote_off_roster_mention_is_not_flagged`) that builds a project whose
       roster lacks `Esto`, with a manuscript line `—Esto es el porvenir`, and asserts
@@ -110,14 +110,14 @@ on a roster lacking `Esto` and assert no `proper noun 'Esto' …` finding.
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Correct the one pinned oracle that shifts: in
+- [X] T008 [US1] Correct the one pinned oracle that shifts: in
       `tests/fixtures/tiny-historical/expected-status.md` change
       `validation.counts.warning` `5 → 4` (and the matching prose note
       `{error: 1, warning: 5, info: 0}` → `{… warning: 4 …}`), because the seam now
       removes the spurious `Esto` dialogue-dash flag — exactly as iteration 038 corrected
       `6 → 5` for the spurious `Capítulo`. **Do NOT edit the fixture manuscript** (FR-008,
       SC-003).
-- [ ] T009 [US1] Confirm the fixture parity end to end: run
+- [X] T009 [US1] Confirm the fixture parity end to end: run
       `uv run pytest tests/e2e/test_orchestration_workflow.py tests/fixtures/test_fixtures.py -q`
       and verify green — `tiny-historical` now pins `{error: 1, warning: 4, info: 0}`,
       while `tiny-novel`/`tiny-memoir` (which carry leading-dash dialogue but assert only
@@ -142,14 +142,14 @@ the opening position produces nothing.
 
 ### Tests for User Story 2
 
-- [ ] T010 [P] [US2] In `tests/io/test_prose.py`, add the C2 rows from
+- [X] T010 [P] [US2] In `tests/io/test_prose.py`, add the C2 rows from
       contracts/dialogue-marker.md that prove **only the leading** dash is stripped:
       D5 `—dijo Arnela—, y se fue` → `dijo Arnela—, y se fue` (internal incise dash kept,
       FR-003 / I2), D8 `Pregúntale a Quirón —dijo.` → unchanged (no leading dash → mid-line
       dashes are content), and the D9 non-regression anchor `- Pedro` → `Pedro` (ASCII
       hyphen bullet stays owned by `_BULLET_MARKER`, FR-005). Same single-row assertion
       shape as T006.
-- [ ] T011 [P] [US2] In `tests/validation/test_character_presence.py`, add the
+- [X] T011 [P] [US2] In `tests/validation/test_character_presence.py`, add the
       mid-line-name half of the both-directions test (FR-009): a roster lacking `Quirón`,
       a manuscript line `—Pregúntale a Quirón —dijo.`, asserting the `proper noun 'Quirón'`
       warning fires exactly once (per-distinct-name collapsing) and the opening word is
@@ -164,15 +164,15 @@ beyond it is (US2). The both-directions guarantee of FR-009 is covered across T0
 
 **Purpose**: Close the debt trail and prove the full suite + four gates.
 
-- [ ] T012 Remove the `DEBT-009` entry from `DEBT.md` (git retains the history), per the
+- [X] T012 Remove the `DEBT-009` entry from `DEBT.md` (git retains the history), per the
       debt-cancellation convention (FR-011, SC-006). Leave `DEBT-011` (the same-class
       `«`/`"`/`―` leading-quote / horizontal-bar deferral, already recorded by the spec
       audit) in place — it is NOT closed here. Verify: `grep -c "DEBT-009" DEBT.md` → `0`
       and `grep -c "DEBT-011" DEBT.md` → `≥1`.
-- [ ] T013 Run the full suite and all four gates (quickstart §4, SC-005):
+- [X] T013 Run the full suite and all four gates (quickstart §4, SC-005):
       `uv run pytest` (≥ 80 % coverage), `uv run ruff check`,
       `uv run ruff format --check`, `uv run mypy --strict`. All green.
-- [ ] T014 Final SC-004 audit: confirm `git diff --stat` shows the only `src/` change is
+- [X] T014 Final SC-004 audit: confirm `git diff --stat` shows the only `src/` change is
       `src/bookwright/io/prose.py` (no file under `src/bookwright/validation/validators/`
       appears) — the proof the surface-marker class is closed at the seam, not patched
       per-validator.

@@ -43,15 +43,6 @@
 
 ## Deuda abierta
 
-### DEBT-009 — `character_presence` marca el primer término tras la raya de diálogo `—`
-- **Estado:** abierta
-- **Detectada en:** dogfood v0.5.0 (2026-06-22) — fixture `tiny-historical` corrido end-to-end fuera del repo
-- **Ubicación:** `src/bookwright/validation/validators/character_presence.py:209` (`_is_sentence_initial` / `_SENTENCE_END = frozenset(".!?¿¡")`); raíz compartida en `src/bookwright/io/prose.py:29` (`_BULLET_MARKER = r"^\s*[-*+>]\s+"`, no cubre `—`/`–`).
-- **Clase de deuda:** acoplamiento a marcador de superficie no normalizado (la *misma clase* que DEBT-008 / issue #1: un marcador líder que el heurístico no ve).
-- **Descripción:** en prosa española el diálogo abre con raya `—` (U+2014). En `—Esto es el porvenir`, el prefijo antes de `Esto` es `—`, que no está en `_SENTENCE_END`, así que `_is_sentence_initial` devuelve `False` y `Esto` (un demostrativo, no un nombre propio) se marca como nombre propio sin entrada en la bible. El seam de prosa (039) tampoco lo neutraliza: `_BULLET_MARKER` solo reconoce viñetas ASCII (`-*+>`), no la raya tipográfica. En una novela real, mayoritariamente diálogo, esto inunda de warnings espurios el primer término capitalizado de cada línea de diálogo (Esto, Sí, Claro, Nunca…). Son `warning`, así que no vetan el gate, pero ahogan los hallazgos reales — exactamente el fallo que issue #1 quería cerrar de raíz.
-- **Por qué se difiere:** v0.5.0 ya está liberada; esto es un defecto shippable nuevo, su propia iteración (decidir el hogar del arreglo —`_is_sentence_initial` vs. el seam `prose.py`— es una decisión de diseño bajo la doctrina de issue #1).
-- **Resolución sugerida / versión objetivo:** **iteración 041 → `v0.5.1`** (ver `bookwright-implementation-plan.md` § 1+). Coherente con issue #1, el arreglo vive en el seam de prosa (`io/prose.py`): añadir la raya de diálogo líder (`—`/`–`, U+2014/U+2013, tolerando espacio) al conjunto de marcadores que `_normalize` retira, de modo que el primer término caiga en offset 0 y herede la exención de inicio-de-frase ya existente (mismo mecanismo que DEBT-008). Ningún validador se toca.
-
 ### DEBT-010 — `character_presence` marca tokens de settings multi-palabra como nombres propios sin entrada
 - **Estado:** abierta
 - **Detectada en:** dogfood v0.5.0 (2026-06-22) — fixture `tiny-historical`

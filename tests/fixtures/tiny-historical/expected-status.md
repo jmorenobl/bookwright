@@ -61,7 +61,7 @@ low_reliability_findings:
 validation:
   counts:
     error: 1
-    warning: 5
+    warning: 4
     info: 0
 
 # The three firing rules, in priority order (research D2 / data-model § 3). `research_queue`
@@ -86,7 +86,7 @@ un *anchor* infrasostenido permanente y un hallazgo de fiabilidad baja permanent
 
 1. **Primer `status`.** Dos preguntas abiertas (`q-libro-de-jornales`, `q-origen-telares`),
    un *anchor gap* (`rumor-incendio → El almacén viejo`), un hallazgo de baja fiabilidad
-   (`rumor-incendio`) y la cuenta de validación `{error: 1, warning: 5, info: 0}`.
+   (`rumor-incendio`) y la cuenta de validación `{error: 1, warning: 4, info: 0}`.
    `next_actions` enumera **tres** workstreams: `bookwright-research`, `bookwright-verify`,
    `bookwright-continuity`.
 
