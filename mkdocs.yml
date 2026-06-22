@@ -1,5 +1,6 @@
 site_name: Bookwright
 site_description: Toolkit de autoría spec-driven para novelas, ensayos y memorias.
+site_url: https://jmorenobl.github.io/bookwright/
 docs_dir: docs
 
 theme:
