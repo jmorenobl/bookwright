@@ -32,9 +32,9 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root.
 canonical docs change first. These are plain-text edits with no code dependency and
 can run in parallel.
 
-- [ ] T001 [P] Add the fatal-vs-warning principle paragraph (FR-012) to `bookwright-design.md` § 4.4 (Vocabularios controlados): research's invalid `reliability`/`type` is fatal because it breaks the `factual_anchor` gate; an absent `crm:P2_has_type` is descriptive metadata that breaks nothing, so an unrecognized Propp/Greimas term only warns and the node is still ingested untyped.
-- [ ] T002 [P] Reconcile `bookwright-design.md` § 13.5 move-3 item 3 from *planned* to *shipped in iteration 047*.
-- [ ] T003 [P] Remove the **DEBT-016** entry from `DEBT.md` and reconcile the track-B index line (DEBT-015, ~~DEBT-016~~, DEBT-017) per FR-013.
+- [X] T001 [P] Add the fatal-vs-warning principle paragraph (FR-012) to `bookwright-design.md` § 4.4 (Vocabularios controlados): research's invalid `reliability`/`type` is fatal because it breaks the `factual_anchor` gate; an absent `crm:P2_has_type` is descriptive metadata that breaks nothing, so an unrecognized Propp/Greimas term only warns and the node is still ingested untyped.
+- [X] T002 [P] Reconcile `bookwright-design.md` § 13.5 move-3 item 3 from *planned* to *shipped in iteration 047*.
+- [X] T003 [P] Remove the **DEBT-016** entry from `DEBT.md` and reconcile the track-B index line (DEBT-015, ~~DEBT-016~~, DEBT-017) per FR-013.
 
 ---
 
