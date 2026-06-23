@@ -161,11 +161,15 @@ the two documented values, and that no pre-existing field changed name or type.
   capability-gap** kind ("no deterministic run evaluates this; it awaits move 3" —
   not author-actionable, identical across projects, permanent).
 - **FR-002**: The **input-conditional kind MUST be the default**. Every existing
-  not-evaluated raise that does not specify a kind (`focalization` with no
-  declaration / `[PENDING]`-only voice, the `character_presence` "no roster and no
-  files" guard, an empty manuscript, any custom validator) MUST keep its
-  iteration-040 behavior byte-for-byte — same reason string, same channel, same
-  effect on green and on the nudge.
+  not-evaluated raise that does not specify a kind MUST keep its iteration-040
+  behavior byte-for-byte — same reason string, same channel, same effect on green
+  and on the nudge. The audit found the complete set of such raises (all
+  input-conditional, all to remain default): all four `focalization` input-gap
+  raises (no constitution file, no declaration, `[PENDING]`-only voice, a
+  declaration naming no grammatical person), `setting_continuity`'s "manuscript is
+  empty", `character_presence`'s "no roster and no files" guard, and any custom
+  third-party validator. `character_unknown_mentions` (FR-003) is the **only**
+  raise that opts into the non-default capability-gap kind.
 - **FR-003**: `character_unknown_mentions` MUST raise the not-evaluated signal
   with the **permanent capability-gap** kind, with its reason string unchanged.
 - **FR-004**: The documented "green/clean" predicate MUST be **refined**:
@@ -183,9 +187,13 @@ the two documented values, and that no pre-existing field changed name or type.
   (the validator is no longer nudged on).
 - **FR-007**: **Visibility is non-negotiable (issue #1 doctrine)**: a
   capability-gap entry MUST still appear in the `--json` `not_evaluated[]` array,
-  in `bookwright status`, and in the human report, labeled by its kind as a known
-  limitation pending move 3. It MUST NOT be hidden — hiding it would reintroduce
-  the silence (false confidence) that iteration 040 eliminated.
+  in `bookwright status`, and in the human report, labeled by its kind as a
+  **non-actionable known limitation**. The label MUST be **generic to the kind**
+  (it MUST NOT hardcode any single validator's specifics): the validator-specific
+  detail — e.g. `character_unknown_mentions`'s "awaits move 3" — stays in the
+  existing `reason` string, not in the kind label, so the kind-rendering path is
+  not coupled to one validator. It MUST NOT be hidden — hiding it would
+  reintroduce the silence (false confidence) that iteration 040 eliminated.
 - **FR-008**: The `--json` `not_evaluated[]` envelope and the `bookwright status`
   payload MUST each include the `kind` as an **additive** key: the entry shape
   gains one field; no existing field is renamed or retyped.
@@ -271,8 +279,9 @@ the two documented values, and that no pre-existing field changed name or type.
   diverges from the docs.
 - The human-report label for the kind is short and English (the report is
   English); the precise wording is a planning/UX detail, constrained only by
-  FR-007 (it must read as a known limitation pending move 3, not as a silent
-  pass).
+  FR-007 (the kind label must read as a non-actionable known limitation, not as a
+  silent pass, and must be generic to the kind — the validator-specific "move 3"
+  detail stays in the unchanged `reason` string).
 
 ## Out of Scope
 
