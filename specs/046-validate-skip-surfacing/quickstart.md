@@ -19,8 +19,11 @@ The broken-YAML trigger (proven in `test_status_errors.py`):
 ## Scenario 1 — one skipped file is no longer silently green (P1, SC-001)
 
 1. `copy_fixture("tiny-novel", tmp_path)` and `chdir` in; write `broken.md` (above).
-2. `bookwright graph build --json` → exit 0 (a partial graph builds; the file is skipped).
-3. `bookwright validate --json` → exit 0 (a skip does not gate).
+2. `bookwright graph build --json` → exit 4 (`EXIT_SKIPPED`: a partial graph is still
+   written, but `graph build` signals the skipped file per-corpus — matching the
+   passing `test_status_errors` oracle `exit_code == 4 == _build_exit(runner)`).
+3. `bookwright validate --json` → exit 0 (a skip does not gate `validate`; the skip is
+   surfaced in `not_evaluated[]` instead — this is the asymmetry the iteration closes).
 4. Assert `not_evaluated[]` contains exactly one entry with
    `validator == "ingestion"`, `kind == "missing_input"`, and a `reason` naming
    `bible/characters/broken.md`.

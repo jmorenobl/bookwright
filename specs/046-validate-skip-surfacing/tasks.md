@@ -290,5 +290,3 @@ Task: "T012 [US3] status/validate cross-command agreement in tests/commands/test
   degrades green via the unchanged 044 predicate (FR-002/FR-006).
 - Commit after each task or logical group; the auto-git `after_tasks` hook offers a
   commit when this file lands.
-</content>
-</invoke>
