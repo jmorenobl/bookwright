@@ -49,7 +49,7 @@ from ._bible_builders import (
 )
 from .bible import _DirSpec, _map_single_dir
 from .errors import InvalidFrontmatterError
-from .report import UnknownKey, UnresolvedReference
+from .report import UnknownKey, UnresolvedReference, UntypedVocabTerm
 from .vocabularies import VocabularyIndex
 
 #: The keys a unit card recognises; anything else is a soft ``unknown_keys`` warning.
@@ -293,6 +293,16 @@ def _mint_functions(
         function = ctx.functions_index.get(slug)
         if function is None:
             type_uri = ctx.propp.resolve(raw) if ctx.propp is not None else None
+            # Propp active but the name matched no term: the function is minted
+            # untyped (no ``crm:P2_has_type``) and we surface a non-fatal warning
+            # enumerating the valid terms at render (iteration 047, DEBT-016). The
+            # ``(slug, raw)`` pairs are already sluggable (``_distinct_slugs`` dropped
+            # the unsluggable up front), so this is a genuine no-match. Deduped across
+            # cards by ``functions_index`` ⇒ warned once.
+            if ctx.propp is not None and type_uri is None:
+                ctx.result.untyped_vocab_terms.append(
+                    UntypedVocabTerm(path=relpath, field="functions", term=raw, vocabulary="propp")
+                )
             function = NarrativeFunction(uri_base=uri_base, name=raw, type_uri=type_uri)
             ctx.functions_index[slug] = function
             ctx.result.mapped.append(MappedEntity(entity=function, relpath=relpath, key_lines={}))

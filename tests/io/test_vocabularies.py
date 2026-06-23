@@ -113,3 +113,29 @@ def test_greimas_resolves_en_es_to_same_term() -> None:
     """C2/C4: sender/destinador resolve to the same actant term."""
     index = load_vocabulary("greimas")
     assert index.resolve("sender") == index.resolve("destinador") is not None
+
+
+# --- iteration 047: the render-derived valid-term enumeration (FR-002/016) ---
+
+
+def test_index_terms_sorted_unique_and_bilingual() -> None:
+    """FR-002/FR-016: ``terms`` is the sorted, deduplicated ES+EN ``rdfs:label`` set.
+
+    Greimas has 6 actants, each with one EN + one ES label → 12 distinct, sorted terms
+    including both forms of one actant (``helper``/``ayudante``)."""
+    terms = load_vocabulary("greimas").terms
+    assert list(terms) == sorted(terms)  # sorted → byte-stable
+    assert len(terms) == len(set(terms))  # deduplicated
+    assert len(terms) == 12
+    assert "helper" in terms and "ayudante" in terms  # both languages present
+
+
+def test_index_terms_stable_across_loads() -> None:
+    """FR-016: two ``load_vocabulary`` calls expose an identical ``terms`` tuple."""
+    assert load_vocabulary("propp").terms == load_vocabulary("propp").terms
+
+
+def test_index_terms_from_constructed_ttl() -> None:
+    """FR-002: ``_index_turtle`` collects every label of every term, sorted+unique."""
+    index = _index_turtle(_OK_TTL, "fixture")
+    assert index.terms == ("Hero", "héroe")

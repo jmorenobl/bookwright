@@ -66,10 +66,12 @@ def test_unresolved_reference_key_and_shape(
     assert payload["unresolved_references"] == [
         {"path": "bible/timeline.md", "entity": "Duelo", "name": "Nadie Conocido"}
     ]
-    # The key keeps its exact slot between "unknown_keys" and "sources" (FR-017).
+    # The key keeps its slot after "unknown_keys"; "untyped_vocab_terms" (iteration
+    # 047) sits between it and "sources" (FR-017).
     keys = list(payload)
     assert keys[keys.index("unknown_keys") + 1] == "unresolved_references"
-    assert keys[keys.index("unresolved_references") + 1] == "sources"
+    assert keys[keys.index("unresolved_references") + 1] == "untyped_vocab_terms"
+    assert keys[keys.index("untyped_vocab_terms") + 1] == "sources"
 
 
 def test_build_summary_on_stderr(tiny_novel: Path, runner: CliRunner) -> None:

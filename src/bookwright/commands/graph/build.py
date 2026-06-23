@@ -18,6 +18,7 @@ from bookwright.errors import BookwrightError
 from bookwright.io.errors import ProjectNotFoundError, SlugCollisionError
 from bookwright.io.project import find_project_root
 from bookwright.io.report import BuildReport
+from bookwright.io.vocabularies import load_vocabulary
 
 from .._envelope import EXIT_COLLISION, EXIT_CONFIG, emit_error, emit_json, invalid_manifest_payload
 from .._graph import PIPELINE_CONFIG_FAULTS, build_project_graph
@@ -95,3 +96,31 @@ def _print_summary(console: Console, report: BuildReport) -> None:
         console.print(f"{len(report.research_warnings)} unresolved research target(s):")
         for warning in report.research_warnings:
             console.print(f"  - {warning.path}: {warning.field} '{warning.name}' not in bible")
+    _print_untyped_vocab_terms(console, report)
+
+
+def _print_untyped_vocab_terms(console: Console, report: BuildReport) -> None:
+    """Append the unrecognized-vocabulary-term block to the human summary (FR-002/006).
+
+    One ``- {path}: {field} '{term}' is not a {vocabulary} term`` line per entry in
+    envelope order, then one ``valid {vocabulary} terms: …`` enumeration **per distinct
+    vocabulary** (not per entry), derived at render time from
+    ``load_vocabulary(vocabulary).terms`` — never denormalized into the record. The
+    enumeration is pre-sorted (``VocabularyIndex.terms``), so two builds render
+    byte-identically (FR-016).
+    """
+    if not report.untyped_vocab_terms:
+        return
+    console.print(f"{len(report.untyped_vocab_terms)} unrecognized vocabulary term(s):")
+    for warning in report.untyped_vocab_terms:
+        console.print(
+            f"  - {warning.path}: {warning.field} '{warning.term}' "
+            f"is not a {warning.vocabulary} term"
+        )
+    seen: list[str] = []
+    for warning in report.untyped_vocab_terms:
+        if warning.vocabulary not in seen:
+            seen.append(warning.vocabulary)
+    for vocabulary in seen:
+        terms = ", ".join(load_vocabulary(vocabulary).terms)
+        console.print(f"  valid {vocabulary} terms: {terms}")

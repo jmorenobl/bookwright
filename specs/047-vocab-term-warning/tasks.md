@@ -46,12 +46,12 @@ this exists.
 
 **⚠️ CRITICAL**: US1 and US2 both depend on every task in this phase.
 
-- [ ] T004 [P] Add the frozen `UntypedVocabTerm` Pydantic model (`model_config = ConfigDict(frozen=True, extra="forbid")`; fields `path`, `field`, `term`, `vocabulary`) to `src/bookwright/io/report.py`, sibling of `UnknownKey` / `UnresolvedReference` / `ResearchTargetWarning` (data-model.md §1; FR-006).
-- [ ] T005 [P] Add `terms: tuple[str, ...]` to the frozen `VocabularyIndex` dataclass in `src/bookwright/io/vocabularies.py` and populate it in `_index_turtle` as `tuple(sorted(set(str(label) for every rdfs:label)))` (ES+EN, deduped, sorted → byte-stable); leave `resolve()` unchanged (data-model.md §4; FR-002, FR-016).
-- [ ] T006 Add `untyped_vocab_terms: list[UntypedVocabTerm] = field(default_factory=list)` to the `MapResult` dataclass in `src/bookwright/io/_bible_builders.py` (data-model.md §2; depends on T004).
-- [ ] T007 Add `untyped_vocab_terms: tuple[UntypedVocabTerm, ...] = ()` to `BuildReport` and emit one additive key in `to_json()` (`"untyped_vocab_terms": [w.model_dump() for w in self.untyped_vocab_terms]`) in `src/bookwright/io/report.py`; do NOT reference it in `exit_code` (data-model.md §3, contracts C-1/C-2; FR-004; depends on T004).
-- [ ] T008 In `src/bookwright/commands/_graph.py`, copy the accumulator into the report: `BuildReport(..., untyped_vocab_terms=tuple(result.untyped_vocab_terms))` — verbatim, no translation (plan decision 1; depends on T006, T007).
-- [ ] T009 In `src/bookwright/commands/graph/build.py` `_print_summary`/render, when `untyped_vocab_terms` is non-empty append one `  - {path}: {field} '{term}' is not a {vocabulary} term` line per entry (envelope order) and one `  valid {vocabulary} terms: …` line **per distinct vocabulary** via `load_vocabulary(vocabulary).terms`; stderr only, not in `--json` (contracts "Human-readable report"; FR-002, FR-006; depends on T007, T005).
+- [X] T004 [P] Add the frozen `UntypedVocabTerm` Pydantic model (`model_config = ConfigDict(frozen=True, extra="forbid")`; fields `path`, `field`, `term`, `vocabulary`) to `src/bookwright/io/report.py`, sibling of `UnknownKey` / `UnresolvedReference` / `ResearchTargetWarning` (data-model.md §1; FR-006).
+- [X] T005 [P] Add `terms: tuple[str, ...]` to the frozen `VocabularyIndex` dataclass in `src/bookwright/io/vocabularies.py` and populate it in `_index_turtle` as `tuple(sorted(set(str(label) for every rdfs:label)))` (ES+EN, deduped, sorted → byte-stable); leave `resolve()` unchanged (data-model.md §4; FR-002, FR-016).
+- [X] T006 Add `untyped_vocab_terms: list[UntypedVocabTerm] = field(default_factory=list)` to the `MapResult` dataclass in `src/bookwright/io/_bible_builders.py` (data-model.md §2; depends on T004).
+- [X] T007 Add `untyped_vocab_terms: tuple[UntypedVocabTerm, ...] = ()` to `BuildReport` and emit one additive key in `to_json()` (`"untyped_vocab_terms": [w.model_dump() for w in self.untyped_vocab_terms]`) in `src/bookwright/io/report.py`; do NOT reference it in `exit_code` (data-model.md §3, contracts C-1/C-2; FR-004; depends on T004).
+- [X] T008 In `src/bookwright/commands/_graph.py`, copy the accumulator into the report: `BuildReport(..., untyped_vocab_terms=tuple(result.untyped_vocab_terms))` — verbatim, no translation (plan decision 1; depends on T006, T007).
+- [X] T009 In `src/bookwright/commands/graph/build.py` `_print_summary`/render, when `untyped_vocab_terms` is non-empty append one `  - {path}: {field} '{term}' is not a {vocabulary} term` line per entry (envelope order) and one `  valid {vocabulary} terms: …` line **per distinct vocabulary** via `load_vocabulary(vocabulary).terms`; stderr only, not in `--json` (contracts "Human-readable report"; FR-002, FR-006; depends on T007, T005).
 
 **Checkpoint**: Channel exists end to end and renders; both typing sites can now emit.
 
@@ -70,12 +70,12 @@ no `crm:P2_has_type`, the valid node has it, and exit code is 0.
 
 ### Tests for User Story 1 ⚠️ (write first, ensure they FAIL)
 
-- [ ] T010 [P] [US1] In a new `tests/commands/graph/test_untyped_vocab.py`, add the Propp oracle: copy `tiny-quest` (Propp active), edit one unit so `functions: [struggle, intimidacion]`, run `graph build --json`; assert exit 0, exactly one `untyped_vocab_terms` entry `{path: "outline/units/…", field: "functions", term: "intimidacion", vocabulary: "propp"}` and none for `struggle`; assert the graph has `narrative-function/intimidacion` WITHOUT and `narrative-function/struggle` WITH `crm:P2_has_type` (quickstart Scenario 1; SC-001/002/003/006).
-- [ ] T010b [P] [US1] In `tests/commands/graph/test_untyped_vocab.py`, add the **human-render** oracle: run `graph build` **without `--json`** over the same unrecognized-Propp-term fixture and capture **stderr**; assert it contains the per-entry line `outline/units/…: functions 'intimidacion' is not a propp term` **and** the per-vocabulary enumeration line `valid propp terms: …` listing the sorted `rdfs:label`s. This exercises the `_print_summary` render branch (T009) — which the `--json` oracles bypass (`build.py` calls `_print_summary` only when `not json_output`) — closing the FR-002 "human-facing rendering MUST enumerate the valid terms" / SC-002 "lists the valid terms" coverage gap and guaranteeing the new render lines are covered for Principle VIII (contracts "Human-readable report"; FR-002, FR-006; depends on Phase 2 + T011).
+- [X] T010 [P] [US1] In a new `tests/commands/graph/test_untyped_vocab.py`, add the Propp oracle: copy `tiny-quest` (Propp active), edit one unit so `functions: [struggle, intimidacion]`, run `graph build --json`; assert exit 0, exactly one `untyped_vocab_terms` entry `{path: "outline/units/…", field: "functions", term: "intimidacion", vocabulary: "propp"}` and none for `struggle`; assert the graph has `narrative-function/intimidacion` WITHOUT and `narrative-function/struggle` WITH `crm:P2_has_type` (quickstart Scenario 1; SC-001/002/003/006).
+- [X] T010b [P] [US1] In `tests/commands/graph/test_untyped_vocab.py`, add the **human-render** oracle: run `graph build` **without `--json`** over the same unrecognized-Propp-term fixture and capture **stderr**; assert it contains the per-entry line `outline/units/…: functions 'intimidacion' is not a propp term` **and** the per-vocabulary enumeration line `valid propp terms: …` listing the sorted `rdfs:label`s. This exercises the `_print_summary` render branch (T009) — which the `--json` oracles bypass (`build.py` calls `_print_summary` only when `not json_output`) — closing the FR-002 "human-facing rendering MUST enumerate the valid terms" / SC-002 "lists the valid terms" coverage gap and guaranteeing the new render lines are covered for Principle VIII (contracts "Human-readable report"; FR-002, FR-006; depends on Phase 2 + T011).
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] In `src/bookwright/io/outline.py:_mint_functions`, inside `if function is None:`, append `UntypedVocabTerm(path=relpath, field="functions", term=raw, vocabulary="propp")` to `ctx.result.untyped_vocab_terms` when `ctx.propp is not None and type_uri is None` (inputs are already-sluggable `(slug, raw)` pairs; deduped across cards → warned once) (data-model.md §5; FR-001/003/007; depends on Phase 2).
+- [X] T011 [US1] In `src/bookwright/io/outline.py:_mint_functions`, inside `if function is None:`, append `UntypedVocabTerm(path=relpath, field="functions", term=raw, vocabulary="propp")` to `ctx.result.untyped_vocab_terms` when `ctx.propp is not None and type_uri is None` (inputs are already-sluggable `(slug, raw)` pairs; deduped across cards → warned once) (data-model.md §5; FR-001/003/007; depends on Phase 2).
 
 **Checkpoint**: US1 fully functional and independently testable — MVP slice complete.
 
@@ -94,12 +94,12 @@ role node minted without `crm:P2_has_type`.
 
 ### Tests for User Story 2 ⚠️ (write first, ensure they FAIL)
 
-- [ ] T012 [P] [US2] In `tests/commands/graph/test_untyped_vocab.py`, add the Greimas oracle: a character with `greimas` active and `narrative_roles:` containing a bad label + a valid actant; assert one entry `{field: "narrative_roles", vocabulary: "greimas", term: …}` for the bad label only and the role node untyped; add a blank/unsluggable-role case asserting NO warning (edge case; data-model.md §5; FR-007/010, SC-001/006).
+- [X] T012 [P] [US2] In `tests/commands/graph/test_untyped_vocab.py`, add the Greimas oracle: a character with `greimas` active and `narrative_roles:` containing a bad label + a valid actant; assert one entry `{field: "narrative_roles", vocabulary: "greimas", term: …}` for the bad label only and the role node untyped; add a blank/unsluggable-role case asserting NO warning (edge case; data-model.md §5; FR-007/010, SC-001/006).
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] In `src/bookwright/io/_bible_builders.py:_build_character`, add an `else:` branch to the existing `if greimas is not None:` loop; GUARD first with `try: make_slug(label) except EmptySlugError: continue` so a blank role mints no warnable node, then on `greimas.resolve(label) is None` append `UntypedVocabTerm(path=relpath, field="narrative_roles", term=label, vocabulary="greimas")` to `result.untyped_vocab_terms` (data-model.md §5; FR-001/003/007; edge case; depends on Phase 2).
-- [ ] T014 [US2] Thread `relpath` + `ctx.result` into `_build_character` via the existing `src/bookwright/io/bible.py` character-builder lambda (`meta`, `rp`, and `ctx` are already in scope) — signature + call site only; do NOT touch the outline-unit `roles:`→character-role `_resolve_roles` path that already emits `unresolved_references` (FR-008; depends on T013).
+- [X] T013 [US2] In `src/bookwright/io/_bible_builders.py:_build_character`, add an `else:` branch to the existing `if greimas is not None:` loop; GUARD first with `try: make_slug(label) except EmptySlugError: continue` so a blank role mints no warnable node, then on `greimas.resolve(label) is None` append `UntypedVocabTerm(path=relpath, field="narrative_roles", term=label, vocabulary="greimas")` to `result.untyped_vocab_terms` (data-model.md §5; FR-001/003/007; edge case; depends on Phase 2).
+- [X] T014 [US2] Thread `relpath` + `ctx.result` into `_build_character` via the existing `src/bookwright/io/bible.py` character-builder lambda (`meta`, `rp`, and `ctx` are already in scope) — signature + call site only; do NOT touch the outline-unit `roles:`→character-role `_resolve_roles` path that already emits `unresolved_references` (FR-008; depends on T013).
 
 **Checkpoint**: Both closed vocabularies handled uniformly; US1 and US2 both green.
 
@@ -116,9 +116,9 @@ warning-producing project twice and `diff` the envelopes.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T015 [P] [US3] In `tests/commands/graph/test_untyped_vocab.py`, add the non-regression oracle: build a project with `[vocabularies] active = []` (or absent) over units with `functions:` and characters with `narrative_roles:`; assert `untyped_vocab_terms == []` and no node typed (quickstart Scenario 3; FR-009, SC-005, contract C-5).
-- [ ] T016 [P] [US3] In `tests/commands/graph/test_untyped_vocab.py`, add the determinism oracle: build a warning-producing project twice and assert the two `graph build --json` envelopes are byte-identical (entry order + enumerated valid terms) (quickstart Scenario 4; FR-016, SC-008, contract C-6).
-- [ ] T017 [P] [US3] In `tests/io/test_vocabularies.py`, add a unit oracle for `VocabularyIndex.terms`: assert it is sorted, deduplicated, includes ES+EN `rdfs:label`s, and is stable across two `load_vocabulary` calls (data-model.md §4; FR-016).
+- [X] T015 [P] [US3] In `tests/commands/graph/test_untyped_vocab.py`, add the non-regression oracle: build a project with `[vocabularies] active = []` (or absent) over units with `functions:` and characters with `narrative_roles:`; assert `untyped_vocab_terms == []` and no node typed (quickstart Scenario 3; FR-009, SC-005, contract C-5).
+- [X] T016 [P] [US3] In `tests/commands/graph/test_untyped_vocab.py`, add the determinism oracle: build a warning-producing project twice and assert the two `graph build --json` envelopes are byte-identical (entry order + enumerated valid terms) (quickstart Scenario 4; FR-016, SC-008, contract C-6).
+- [X] T017 [P] [US3] In `tests/io/test_vocabularies.py`, add a unit oracle for `VocabularyIndex.terms`: assert it is sorted, deduplicated, includes ES+EN `rdfs:label`s, and is stable across two `load_vocabulary` calls (data-model.md §4; FR-016).
 
 **Checkpoint**: Non-regression and determinism pinned; full story set independently green.
 
@@ -128,9 +128,9 @@ warning-producing project twice and `diff` the envelopes.
 
 **Purpose**: Verify the whole slice against the gates and the quickstart.
 
-- [ ] T018 [P] Run `tests/commands/graph/test_json_contract.py` / envelope tests and confirm the additive `untyped_vocab_terms` key is always present (C-1) and the `--json` doc on stdout stays sole (Principle IX); confirm T010b's non-`--json` run keeps human prose on stderr only (no stdout pollution); extend the existing contract test if it asserts an exact key set.
-- [ ] T019 Run the `quickstart.md` walkthrough end to end (Scenarios 1–4) against a `tiny-quest`-derived project and confirm observed output matches.
-- [ ] T020 Run all four gates: `uv run pytest` (≥ 80 % coverage), `uv run ruff check`, `uv run ruff format --check`, `uv run mypy --strict`; confirm green and every changed file ≤ 500 lines (FR-015, SC-007).
+- [X] T018 [P] Run `tests/commands/graph/test_json_contract.py` / envelope tests and confirm the additive `untyped_vocab_terms` key is always present (C-1) and the `--json` doc on stdout stays sole (Principle IX); confirm T010b's non-`--json` run keeps human prose on stderr only (no stdout pollution); extend the existing contract test if it asserts an exact key set.
+- [X] T019 Run the `quickstart.md` walkthrough end to end (Scenarios 1–4) against a `tiny-quest`-derived project and confirm observed output matches.
+- [X] T020 Run all four gates: `uv run pytest` (≥ 80 % coverage), `uv run ruff check`, `uv run ruff format --check`, `uv run mypy --strict`; confirm green and every changed file ≤ 500 lines (FR-015, SC-007).
 
 ---
 

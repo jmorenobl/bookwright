@@ -62,6 +62,25 @@ class ResearchTargetWarning(BaseModel):
     name: str
 
 
+class UntypedVocabTerm(BaseModel):
+    """An authored term that, under an active vocabulary, matched no term and so
+    minted an untyped node (DEBT-016, iteration 047).
+
+    Non-fatal: never changes the exit code (an absent ``crm:P2_has_type`` is
+    descriptive metadata that breaks no downstream gate — design § 4.4). The
+    valid-term enumeration is render-derived from ``vocabulary`` (``VocabularyIndex
+    .terms``), **not** stored here (FR-002) — mirroring ``ResearchTargetWarning``,
+    which stores ``{path, field, name}`` and renders "not in bible" as derived text.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    path: str
+    field: str
+    term: str
+    vocabulary: str
+
+
 class BuildReport(BaseModel):
     """The full outcome of a ``graph build`` (data-model § 5)."""
 
@@ -74,6 +93,11 @@ class BuildReport(BaseModel):
     skipped: tuple[SkippedFile, ...] = ()
     unknown_keys: tuple[UnknownKey, ...] = ()
     unresolved_references: tuple[UnresolvedReference, ...] = ()
+    # Unrecognized controlled-vocabulary terms (iteration 047, DEBT-016): a soft
+    # channel, sibling of unknown_keys/unresolved_references. Never gates the build —
+    # it is *not* referenced in ``exit_code`` (FR-004). Empty on a vocabulary-free
+    # build so existing output stays byte-stable.
+    untyped_vocab_terms: tuple[UntypedVocabTerm, ...] = ()
     # Optional research metrics (iteration 012). Absent/zero on a research-free build
     # so existing build/`--json` output is byte-stable (research D8). Research warnings
     # never change the exit code (D12).
@@ -100,6 +124,7 @@ class BuildReport(BaseModel):
             "skipped": [s.model_dump() for s in self.skipped],
             "unknown_keys": [u.model_dump() for u in self.unknown_keys],
             "unresolved_references": [u.model_dump() for u in self.unresolved_references],
+            "untyped_vocab_terms": [w.model_dump() for w in self.untyped_vocab_terms],
             "sources": self.sources,
             "findings": self.findings,
             "anchors": self.anchors,
