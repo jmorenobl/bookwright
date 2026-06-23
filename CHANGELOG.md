@@ -4,6 +4,69 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.5] — 2026-06-23
+
+Iteration **046** — the **input-file twin of 040/043** (issue #1, track A —
+honesty). The 2nd dogfood (`sombra-en-el-puerto`) found that when a bible file
+has unusable front-matter (broken YAML), `map_bible` **omits** it
+(`MapResult.skipped`) so that entity never enters the graph — and `validate`, the
+CI gate, then ran over the **partial corpus silently**: `not_evaluated: []` read
+as "everything evaluated" when a whole file had been excluded (DEBT-018, the exact
+`[]`-lies-as-clean hole iteration 040 set out to erase, here at the **input-file**
+level rather than the validator level). Meanwhile `status` already hard-refused the
+same project (`code=skipped_sources`, exit 4) — a `status`↔`validate` asymmetry.
+This patch closes it on the `validate` side: after `run_validators(...)`,
+`validate` reads the **same memoized** `map_bible` the validators already triggered
+(`project.bible().skipped` — no graph rebuild, safe/empty on a missing bible dir)
+and merges one `NotEvaluated` entry per skipped file into the **existing**
+`not_evaluated[]` channel (040/044) — no new `skipped[]` channel. The entry carries
+`validator="ingestion"` (one shared sentinel for the non-validator origin) and
+`kind=missing_input`, so the **unchanged** 044 green predicate **degrades green**
+automatically. The gate/exit code is untouched (a skip is no `Violation`, so
+`report.failed` is identical for the same findings). This release only **consumes**
+the 040/044 machinery — the green predicate, `NotEvaluatedKind`/`NotEvaluatedResult`
+model, the `not_evaluated[]` serialization and `_KIND_LABEL` render, and `status`
+are all unchanged. No new CLI surface, no new runtime dependency, no ontology
+change, no validator module touched — pure hardening.
+
+### Added
+
+- **`ingestion` pseudo-source in `not_evaluated[]`** (`046`,
+  `src/bookwright/commands/validate.py`, 147 → 167 lines) — each
+  `project.bible().skipped` entry becomes a
+  `NotEvaluatedResult("ingestion", "bible file '<path>' skipped (unusable
+  front-matter): <reason>", NotEvaluatedKind.missing_input)`, merged into the
+  existing channel and re-sorted with the shared total-order key. Visible on both
+  surfaces (`--json` and the human report's `ingestion [input gap]: …` line);
+  `status` still refuses the same project independently — no shared third channel,
+  no `status` edit.
+- 7 tests (`tests/commands/test_validate_skipped.py`) — surface + degrade-green,
+  exit-code parity with the no-skip run, two-skip determinism, both-surfaces
+  visibility, `status`↔`validate` agreement, and no-skip byte-identity (the
+  tri-valued `_EXPECTED_GAPS` E2E oracle is unchanged).
+
+### Changed
+
+- **`not_evaluated[]` sort promoted to a total order** (`046`,
+  `src/bookwright/validation/runner.py`, 82 → 95 lines) — from the partial
+  `lambda r: r.validator` (safe only while each validator emitted ≤ 1 entry) to
+  `not_evaluated_sort_key → (validator, reason)`, defined **once** (added to
+  `__all__`) and imported by both sort sites (runner + the `validate` skip-merge)
+  so multi-skip runs (all sharing `validator="ingestion"`) stay byte-identical via
+  the unique-path `reason` tie-break. Skip-free runs are unaffected — validator
+  names are already unique, so no existing fixture reorders.
+- **Contract before code** — `bookwright-design.md` § 13.4 gained the `ingestion`
+  pseudo-source paragraph and § 13.5 move-1 was reconciled (skips are now surfaced
+  by `validate`, degrading green — not only refused by `status`), ahead of the code
+  diverging.
+
+### Removed
+
+- **DEBT-018** (the silent partial-corpus validation, `status`↔`validate`
+  asymmetry) — resolved and removed from `DEBT.md`; its track-A cross-reference
+  reconciled to past tense. **DEBT-019** (the all-or-nothing `NotEvaluated`
+  contract) stays recorded, untouched.
+
 ## [0.5.4] — 2026-06-23
 
 Iteration **045** — the **head-hopping twin of 043** (issue #1, track A —

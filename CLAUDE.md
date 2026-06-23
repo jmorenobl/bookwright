@@ -2,17 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.4 released (2026-06-23)
+## Repository state: v0.5.5 released (2026-06-23)
 
-The current release is **v0.5.4** (iteration 045). The repo is on `main`
+The current release is **v0.5.5** (iteration 046). The repo is on `main`
 (tagged) with a real `src/bookwright/` package (~200 Python files), the full
 test suite, docs, and CI gates green. **There is no active iteration branch.**
 
-The latest work continues the **issue #1 honesty doctrine**: a deterministic
-heuristic measured insufficient on real prose **stops faking** and abstains via
-the tri-valued `not_evaluated[]` channel rather than emitting near-null findings.
-v0.5.4 did this for `focalization`'s head-hopping check (DEBT-014); v0.5.3 did it
-for `character_presence`'s open-set unknown-mention rule, splitting off the
+The latest work continues the **issue #1 honesty doctrine**: a partial or
+unevaluated corpus must say so via the tri-valued `not_evaluated[]` channel
+rather than read green. v0.5.5 extended this from the validator level to the
+**input-file** level: when `map_bible` omits a bible file with unusable
+front-matter (`MapResult.skipped`), `validate` now surfaces each one as a
+`not_evaluated` entry (`validator="ingestion"`, `kind=missing_input`) — degrading
+green and closing the `status`↔`validate` asymmetry (DEBT-018) where the CI gate
+validated a partial corpus silently. v0.5.4 did the abstention move for
+`focalization`'s head-hopping check (DEBT-014); v0.5.3 did it for
+`character_presence`'s open-set unknown-mention rule, splitting off the
 `character_unknown_mentions` abstainer and making `not_evaluated` entries
 **kind-categorized** (`missing_input` / `pending_capability`) so a flawless
 project reads green again while the permanent move-3 gap stays visible.
@@ -39,12 +44,14 @@ per-release narrative is `CHANGELOG.md`):
   channel — so `[]` stops reading as "clean" when it meant "couldn't look". GREEN
   is the single documented predicate `status == "ok" AND no not_evaluated entry
   has kind == "missing_input"`; only `error` findings gate CI.
-- The **v0.5.x post-dogfooding track** (041–045, patches `v0.5.1`…`v0.5.4`)
+- The **v0.5.x post-dogfooding track** (041–046, patches `v0.5.1`…`v0.5.5`)
   continues the issue #1 honesty doctrine: a deterministic heuristic measured
   insufficient on real prose **abstains** (`not_evaluated`, kind-categorized
-  `missing_input`/`pending_capability`) instead of faking findings. Closed
-  DEBT-009/010/014; the `character_unknown_mentions` abstainer (043) and the
-  `focalization` head-hopping abstention (045) are the two headline moves.
+  `missing_input`/`pending_capability`) instead of faking findings, and a
+  partial corpus surfaces what was excluded. Closed DEBT-009/010/014/018; the
+  `character_unknown_mentions` abstainer (043), the `focalization` head-hopping
+  abstention (045), and `validate` surfacing ingestion-skipped bible files
+  (046) are the headline moves.
 
 The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** (its
 trigger — a concrete heuristic measured insufficient on real prose — is met) but
@@ -188,7 +195,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. The table below is the canonical
 per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
-iterations through 045 are merged; there is no active iteration branch.
+iterations through 046 are merged; there is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -237,6 +244,7 @@ iterations through 045 are merged; there is no active iteration branch.
 | 043 | Split `character_presence`: orphan `error` rule + `character_unknown_mentions` abstainer → `not_evaluated` (issue #1 track A; subsumes DEBT-011/012) | v0.5.3 | ✅ merged |
 | 044 | Kind-categorized `not_evaluated` (`missing_input`/`pending_capability`); green reachable again (issue #1, 040 green-contract repair) | v0.5.3 | ✅ merged |
 | 045 | `focalization` head-hopping abstains → `pending_capability` under limited-third; heuristic deleted (issue #1 track A; closes DEBT-014, records DEBT-019) | v0.5.4 | ✅ merged |
+| 046 | `validate` surfaces ingestion-skipped bible files as `not_evaluated` (`ingestion`/`missing_input`); closes `status`↔`validate` asymmetry (issue #1 track A; closes DEBT-018) | v0.5.5 | ✅ merged |
 
 The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
 ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles
@@ -353,7 +361,7 @@ history); only consciously `aceptada` (won't-fix) debt stays recorded.
   ingestion (closes ingestion parity): shipped in `v0.4.0`, plus the v0.4.x
   hardening track (033–038).
 - v0.5 — validation robustness (issue #1): shipped in `v0.5.0`, plus the v0.5.x
-  honesty/abstention track (041–045). The patch tracks follow one rule worth
+  honesty/abstention track (041–046). The patch tracks follow one rule worth
   keeping: each patch is one observable delta, with internal plumbing riding
   inside the patch it enables (not a zero-change release).
 - **The current frontier is the demand-pulled horizon below** — there is no open
