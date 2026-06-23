@@ -432,56 +432,61 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/046-validate-skip-surfacing/plan.md` (iteration 046, design § 13.4/§ 13.5 —
-closes DEBT-018). When a bible file has unusable front-matter (broken YAML),
-`map_bible` OMITS it (recorded in `MapResult.skipped`, a tuple of
-`SkippedFile{path, reason}`) and that entity never enters the graph. `status` already
-refuses such a partial corpus (`code=skipped_sources`, exit 4), but `validate` — the
-CI gate — proceeds SILENTLY: `not_evaluated: []` reads as "everything evaluated"
-when a whole file was excluded — the `[]`-lies-as-clean hole 040 set out to erase,
-and the `status`↔`validate` asymmetry DEBT-018 recorded. THE CHANGE (track A —
-honesty, family 040, at the input-file level): in `commands/validate.py`, after
-`run_validators(...)`, read `project.bible().skipped` (the SAME memoized `map_bible`
-the validators already trigger — NO graph rebuild; safe/empty on a missing bible
-dir) and merge one `NotEvaluatedResult("ingestion", f"bible file '{path}' skipped
-(unusable front-matter): {reason}", NotEvaluatedKind.missing_input)` per
-`SkippedFile` into the EXISTING `not_evaluated[]` channel (040/044) — NO new
-`skipped[]` channel (FR-008). `validator="ingestion"` is one shared sentinel for the
-non-validator origin (FR-004); `kind=missing_input` makes the unchanged 044 predicate
-DEGRADE GREEN automatically (FR-002/FR-005/FR-006) — `pending_capability` would leave
-it green (the bug). The gate/exit is UNCHANGED: a skip is no `Violation`, so
-`report.failed` (only `error`-severity) is identical for the same findings (FR-007).
-DETERMINISM FIX the merge forces (FR-009): the `not_evaluated` sort is promoted from
-the PARTIAL order `lambda r: r.validator` (`runner.py:80`, safe only while each
-validator emits ≤ 1 entry) to the TOTAL order `(validator, reason)` — skip entries
-all share `validator="ingestion"`, so the `reason` tie-break (paths are unique) keeps
-multi-skip runs byte-identical. Defined ONCE as `not_evaluated_sort_key` in
-`runner.py` (added to `__all__`) and IMPORTED by both sort sites (runner + the
-`validate` skip-merge) — no duplicated literal to drift (zero-debt §3). Promoting it
-reorders NO skip-free fixture (validator names already unique — FR-010, SC-003).
-IMPORTS: `NotEvaluatedResult` from `bookwright.validation`; `NotEvaluatedKind` from
-`bookwright.validation.base` (NOT in the package re-exports — `report.py` imports it
-there too); the key from `runner`. NO 040/044 machinery edit (FR-011/FR-012): the
-green predicate, `NotEvaluatedKind`/`NotEvaluatedResult` model, the `not_evaluated[]`
-serialization + `_KIND_LABEL` render, and `status` are all UNCHANGED — `status`
-aborts on a skip BEFORE embedding validation state, so it is NOT a third skip surface
-and needs no nudge/remedy edit (FR-008). CONTRACT-BEFORE-CODE: update
-`bookwright-design.md` § 13.4 (add the `ingestion` pseudo-source paragraph to the
-not-evaluated channel) + reconcile § 13.5 move-1 (skips are now surfaced by
-`validate`) BEFORE the code diverges (plan § 7.3). DEBT: REMOVE DEBT-018 from
-`DEBT.md` and reconcile its track-A cross-reference (FR-013); DEBT-019
-(partial-evaluation contract) stays recorded, untouched. ORACLES (empirical,
-`uv run pytest`, reuse the broken-YAML literal `"---\nname: : :\n  bad\n---\n"` from
-`tests/commands/test_status_errors.py` + `copy_fixture`/`is_green`): one broken file
-on `tiny-novel` → `validate --json` exit 0, one `not_evaluated` entry
-(`validator="ingestion"`, `kind="missing_input"`, reason names the file),
-`is_green(payload) is False`; exit code == the no-skip run's; two broken files emit
-two `ingestion` entries in identical order across runs; no-skip output byte-identical
-(pinned fixtures, `test_tri_valued_validation.py` `_EXPECTED_GAPS` UNCHANGED); cross-
-command: `status` still exits 4 `skipped_sources` while `validate` surfaces the file.
-Out of scope: hardening the gate so a skip breaks the exit code; `outline` skips;
-move 3; the partial-evaluation contract (DEBT-019); any green-predicate/kind change.
-Two-file change (`commands/validate.py` + `validation/runner.py`); NO validator
-module touched; stdlib only (Constitution II); each changed file ≤ 500 lines; frozen
-ontology untouched. `uv run pytest` + four gates green.
+`specs/047-vocab-term-warning/plan.md` (iteration 047, design § 4.4/§ 13.5 move-3
+item 3 — issue #1 track B, closes DEBT-016). With a closed narrative vocabulary
+active (`[vocabularies] active`, e.g. `propp`), `graph build` types each authored
+term: a MATCH gets a `crm:P2_has_type` edge, a NON-match is minted UNTYPED IN
+SILENCE — no warning, no validation finding (inconsistent with research, which
+REJECTS an unknown `type`/`reliability` FATALLY with an enumerated message). THE
+CHANGE (closed for *typing*, open for *authoring*): an unrecognized term emits a
+NON-FATAL `graph build` warning enumerating the valid terms; the node is still
+ingested unchanged, without `P2_has_type`; build does NOT abort and exit code does
+NOT change. Principle (FR-012, design § 4.4): **fatal ⇔ an invalid value breaks
+downstream logic** (`reliability` breaks the `factual_anchor` gate → fatal; an absent
+`P2_has_type` is descriptive metadata → only warn). NEW CHANNEL (sibling of
+`unknown_keys`/`unresolved_references`, direct-report-model pattern NOT the
+`research_warnings` translate pattern): `UntypedVocabTerm{path, field, term,
+vocabulary}` in `io/report.py`; `MapResult.untyped_vocab_terms` (`_bible_builders.py`)
+appended at the typing sites; `_graph.py` copies it into `BuildReport.untyped_vocab_terms`
+(`= ()` default; `to_json()` gains one key; `exit_code` NOT referenced — FR-004).
+CLASS SWEEP, TWO SITES (FR-007): (1) Propp `functions:` in `io/outline.py:_mint_functions`,
+inside `if function is None:`, warn when `ctx.propp is not None and type_uri is None`
+(inputs are already-sluggable `(slug, raw)` pairs — `_distinct_slugs` dropped
+unsluggable up front, so no extra guard; deduped across cards → warned once);
+(2) Greimas `narrative_roles:` in `_bible_builders.py:_build_character`, add an `else:`
+to the `if greimas is not None:` loop — but GUARD `try make_slug(label) except
+EmptySlugError: continue` FIRST so a blank role (mints no warnable node) does not warn
+(edge case). Thread `relpath`+`ctx.result` into `_build_character` via the existing
+`bible.py` lambda (`meta, rp` + `ctx` already in scope). UNTOUCHED (FR-008): the
+outline-unit `roles:`→character-role resolution already emits `unresolved_references`
+(a different edge, not Greimas typing) — do NOT double-handle. ENUMERATION (FR-002,
+render-derived, NOT denormalized): `VocabularyIndex` gains `terms: tuple[str,...] =
+tuple(sorted(set(rdfs:label)))` collected in `_index_turtle` (all ES+EN labels,
+sorted → byte-stable, keeps the loader manifest-free); the human render in
+`commands/graph/build.py` maps each distinct warning `vocabulary` →
+`load_vocabulary(vocabulary).terms` and prints `valid {vocabulary} terms: …` ONCE per
+vocabulary block (not per entry). The structured record carries only `{path, field,
+term, vocabulary}` — mirrors `ResearchTargetWarning` storing `{path,field,name}` and
+rendering "not in bible" as derived text. DETERMINISM (FR-016, NO new sort key): entry
+order = bible-character sorted-glob THEN outline-unit sorted-glob; intra-field =
+authored YAML list order (front-matter parser preserves it — clarified lowest-debt
+choice); enumeration = pre-sorted `terms`. CONTRACT-BEFORE-CODE: add the
+fatal-vs-warning paragraph to `bookwright-design.md` § 4.4 and reconcile § 13.5
+move-3 item 3 (planned → shipped iter 047) BEFORE the code diverges. DEBT: REMOVE
+DEBT-016 from `DEBT.md` and reconcile the track-B index line (FR-013). ORACLES
+(empirical, `uv run pytest`, reuse `tiny-quest` Propp fixture + `copy_fixture`):
+unit `functions: [struggle, intimidacion]` → `graph build --json` exit 0, ONE
+`untyped_vocab_terms` entry (`field="functions"`, `term="intimidacion"`,
+`vocabulary="propp"`) and NONE for `struggle`; graph has `narrative-function/intimidacion`
+WITHOUT `P2_has_type` and `…/struggle` WITH; Greimas `narrative_roles:` bad label →
+one `field="narrative_roles"`, `vocabulary="greimas"` entry, role node untyped;
+no-active-vocabulary build emits `[]` and is byte-identical to pre-feature; two builds
+byte-identical (entries + enumeration); blank term → no warning; valid term → no
+warning, still typed. Out of scope: making it fatal; a new validator/finding/`Severity`
+`info`; research `type`/`reliability` (already fatal); move 3; editing
+`propp.ttl`/`greimas.ttl`/`golem.ttl` (frozen) or the exit-code/gate contract.
+~7 source files (one ~12-line model, two ~6-line warn branches, three one-liners,
+one render block) + § 4.4/§ 13.5 + DEBT.md; no new module/dep (Constitution II);
+each changed file ≤ 500 lines; frozen ontology untouched. `uv run pytest` + four
+gates green.
 <!-- SPECKIT END -->

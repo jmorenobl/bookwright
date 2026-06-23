@@ -38,6 +38,18 @@ rejection: **fatal ⇔ an invalid value breaks downstream logic.** An invalid
 absent `P2_has_type` is descriptive metadata that breaks nothing downstream, so
 this only warns.
 
+## Clarifications
+
+### Session 2026-06-24
+
+- Q: When a single file/field lists **two or more** unrecognized terms (e.g. one
+  unit's `functions: [bad1, bad2]`), in what order are their warnings emitted? →
+  A: Authored sequence order — the order the terms appear in the YAML list. The
+  front-matter parser already preserves and tracks list order, so no additional
+  sort is introduced and the output stays deterministic (lowest-debt choice; a
+  second sort key would be unjustified plumbing). FR-016 amended to pin this third
+  ordering axis alongside cross-entry file order and intra-entry valid-term order.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Typo in a narrative-function name is surfaced (Priority: P1)
@@ -209,11 +221,15 @@ output (no warning channel entries, no `P2_has_type`).
 - **FR-016**: The warning output MUST be **deterministic** — building the same
   project twice MUST yield byte-identical unrecognized-term warnings, both in the
   order of the warning entries (inheriting the sibling channels' stable
-  sorted-glob file order) and in the order of each warning's **enumerated valid
-  terms**. The valid-term enumeration is drawn from the vocabulary index, whose
-  underlying label store has no guaranteed iteration order; it MUST therefore be
-  emitted in a stable, sorted order rather than in incidental store order, so no
-  run-to-run nondeterminism enters the `graph build` envelope or report.
+  sorted-glob file order), in the order of **multiple unrecognized terms drawn
+  from the same file/field** (which MUST follow the **authored sequence order**
+  of the source YAML list — the front-matter parser already preserves and tracks
+  that order, so no extra sort is introduced), and in the order of each warning's
+  **enumerated valid terms**. The valid-term enumeration is drawn from the
+  vocabulary index, whose underlying label store has no guaranteed iteration
+  order; it MUST therefore be emitted in a stable, sorted order rather than in
+  incidental store order, so no run-to-run nondeterminism enters the `graph
+  build` envelope or report.
 
 ### Key Entities *(include if feature involves data)*
 
