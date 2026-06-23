@@ -523,42 +523,45 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/042-character-presence-roster/plan.md` (iteration 042, `v0.5.2`, the
-second post-`v0.5.0` patch, closing DEBT-010 — detected by the `tiny-historical`
-dogfood). The `character_presence` validator has two rules split by severity: an
-orphan rule (`error`, protects the gate — every bible CHARACTER must be mentioned)
-and an unknown-mention rule (`warning` — a prose proper noun with «no bible entry»).
-The unknown-mention rule cross-checks proper-noun candidates against the CHARACTER
-roster ONLY, so the capitalized tokens of a declared multi-word environment —
-`Real`, `Fábrica`, `Paños` of the bible setting "la Real Fábrica de Paños" under
-`bible/settings/` — each fire a spurious "no bible entry" warning even though the
-entry EXISTS (just under `settings/`, not `characters/`). THE FIX (issue #1
-doctrine, per-class, no NER): widen the rule's known-names set to the UNION of the
-character, setting, LOCATION and OBJECT rosters. Two new cached accessors on
-`ValidationContext` — `location_names()` (GOLEM class `NarrativeLocation`,
-`bible/locations/`, G13) and `object_names()` (GOLEM class `Object`,
-`bible/objects/`, G16) — each a byte-for-byte mirror of `setting_names()`: the same
-generic `_names_of(concept_cls)` helper and `_UNSET`-sentinel memoization, NO new
-helper (there is no class literally named `Location`). In
-`CharacterPresence.validate`, `_orphans` KEEPS feeding from `character_names()` alone
-(the `error` gate is untouched, FR-004/FR-006), but the slug set `_unknown_mentions`
-consumes is built from the CONCATENATION of the four roster tuples passed once
-through the EXISTING module-level `_roster_slugs` (unchanged). The `NotEvaluated`
-guard stays clavado on `not roster and not files` (CHARACTER roster only) with the
-identical reason string (FR-007); the `Violation` shape, `triples=()`, and frozen
-ontology are untouched (FR-005/FR-008/FR-009/FR-010). File-based, NOT SPARQL — the
-rosters ride the cached `bible()` map, no extra disk read, no built graph. The ONLY
-pinned-count oracle that shifts is `tiny-historical/expected-status.md`
-(`validation.counts.warning 4 → 1`: the three setting tokens removed, the lone
-`factual_anchor` warning remains; `error` stays 1; fixture manuscript/bible
-UNTOUCHED, the same oracle-only shape 041 did `5 → 4` and 038 did `6 → 5`).
-`tiny-novel`/`tiny-memoir` assert only `error == 0` (warnings tolerated, no pinned
-count) so they need no edit. The location/object union arms + both new accessors are
-proven by SYNTHETIC-PROJECT tests on `tests/validation/conftest.py`'s `write_project`
-(extended with `locations=`/`objects=` knobs mirroring `settings=` byte-for-byte,
-both defaulting to `()`), NOT by editing any pinned fixture (FR-011/FR-015). DEBT-011
-(paired leading quotes `«`/`"`/`'`) is a distinct design, already recorded, NOT swept
-here. stdlib `re` only — no new dep (Constitution II); every changed file ≤ 500
-lines (`base.py` 322 → ~350, `character_presence.py` 215 → ~218). Remove DEBT-010
-from `DEBT.md`. Design § 13. `uv run pytest` and the four gates green.
+`specs/043-character-presence-split/plan.md` (iteration 043, the **track A —
+honestidad** landing of issue #1, design § 13.5 — triggered by the 2nd dogfood
+`sombra-en-el-puerto`, which measured the `character_presence` unknown-mention
+rule as 100% noise: 4 false positives, 0 signal). `character_presence` bundles
+TWO rules of opposite nature: an ORPHAN rule (`error`, closed-set, sound — every
+bible CHARACTER must be mentioned, protects the gate) and an UNKNOWN-MENTION rule
+(`warning`, open-set — is every capitalized proper-noun candidate in a bible
+roster? the NER problem without NER). THE FIX: the open-set rule STOPS PRETENDING
+— it declares `not_evaluated` (the iteration-040 channel) instead of emitting
+`warning`. Because `NotEvaluated` is PER-validator (raising it aborts the whole
+validator and would discard the orphans), the two rules are SPLIT into two
+auto-discovered built-ins: `character_presence` keeps its NAME + the orphan rule
+ONLY (its `error` findings stay byte-for-byte identical → gate untouched; its
+`not roster and not files` guard + reason string preserved), and a NEW
+`character_unknown_mentions` is a PURE ABSTAINER — `validate` is solely
+`raise NotEvaluated("open-set proper-noun discovery requires semantic judgment
+(move 3); the deterministic heuristic was measured insufficient on real prose")`,
+UNCONDITIONALLY (the approach, not the input, is unreliable). The ENTIRE
+deterministic heuristic is DELETED (FR-016: `_CANDIDATE`, `_STOP_WORDS`,
+`_is_sentence_initial`, `_roster_slugs`, `_unknown_mentions`, the DEBT-010/042
+union line, + orphaned imports `make_slug`/`ProseView`) — kept-for-move-3 is
+forbidden speculative plumbing; move 3 is a different semantic approach. The
+repo-wide dead-code sweep (FR-017) also DELETES the now-zero-consumer iteration-042
+`ValidationContext.location_names()`/`object_names()` accessors (+ fields, imports)
+and the `write_project` `locations=`/`objects=` knobs; `setting_names()` + the
+`settings=` knob are RETAINED (still consumed by `setting_continuity`). `io/prose.py`
+is NOT touched (its dialogue-dash strip still serves the deterministic validators);
+DEBT-011 paired-quote seam NOT added, DEBT-012 title-body exemption NOT applied —
+those FPs vanish because the rule abstains, not because it is de-noised. KEY RIPPLE
+(spec under-specified it): since the abstainer is ALWAYS dormant, the existing
+`status/rules.py` `activate_dormant_validators` rule fires on EVERY project → one
+extra `bookwright-continuity` action everywhere (the visible form of FR-008: green
+predicate `status=="ok" AND not_evaluated==[]` now `False` universally). Add an
+honest `_REMEDIES["character_unknown_mentions"]` clause. `tiny-historical`'s
+`validation.counts` are UNCHANGED `{error:1, warning:1, info:0}` (character_presence
+already emitted ZERO there post-042 — verified empirically); the oracle gains a
+`not_evaluated` entry and `next_actions` 3→4. The built-in-set pins move 6→7
+(`test_registry.py`, `test_command.py` `ran`, `test_status.py`); `tiny-novel` B1
+`isdisjoint` reframes to the research-derived skills only. Remove DEBT-011 + DEBT-012
+from `DEBT.md`. stdlib only, no new dep (Constitution II); every changed file ≤ 500
+lines (`character_presence.py` shrinks ~223→~95). `uv run pytest` + four gates green.
 <!-- SPECKIT END -->
