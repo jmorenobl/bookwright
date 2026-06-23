@@ -424,49 +424,56 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/045-focalization-headhop-abstain/plan.md` (iteration 045, design § 13.5 —
-the head-hopping twin of 043). The `focalization` validator runs a deterministic
-head-hopping check under a declared third-person-LIMITED/focalized voice
-(interiority verbs attributed to a non-focal bible character). The 2nd dogfood
-(`sombra-en-el-puerto`) measured it as PRACTICALLY DORMANT (a false negative,
-DEBT-014): it fires only on a character's FULL bible name on the SAME physical line
-as the verb, while real prose names characters by first name/epithet across lines.
-Per issue #1 (track A — honesty), a head-hop heuristic without semantic judgment has
-a precision ceiling, so — exactly as 043 did with the open-set unknown-mention rule —
-the head-hopping rule STOPS FAKING: when a parseable limited-third voice is declared,
-`validate()` raises `NotEvaluated("head-hopping / interiority attribution requires
-semantic judgment (move 3); the deterministic heuristic was measured nearly dormant
-on real prose", kind=NotEvaluatedKind.pending_capability)` instead of running the
-near-null heuristic (FR-001/FR-002). THE DELETION (FR-007, grep-confirmed zero
-external consumers, mirrors 043 deleting its heuristic — NOT parked "for move 3"):
-`_head_hopping`, `_INTERIORITY`, the `_Declaration.focal` field, the focal-name
-computation in `_parse_declaration` (its `character_names` arg is dropped), and the
-orphaned `character_names` computation in `validate`. The FOUR input-conditional
-abstentions — (i) no constitution, (ii) no declared voice, (iii) `[PENDING]`
-placeholder (037 `_PENDING_ONLY` guard preserved byte-for-byte), (iv) no grammatical
-person — stay `missing_input` with byte-identical reasons (FR-004/FR-005). A declared
-third-person NON-LIMITED voice still runs `_first_person_breaks` and stays
-`evaluated`; a first-person voice still evaluates with no findings (FR-008). NO 044
-machinery edit (FR-009): the green predicate, `NotEvaluatedKind`, the
-`not_evaluated[]` serialization, the `status` nudge (already filters `missing_input`),
-the `_REMEDIES["focalization"]` clause (kept — focalization still has `missing_input`
-causes), and the `_KIND_LABEL` render are all UNCHANGED — 045 only CONSUMES
-`pending_capability`. CONTRACT-BEFORE-CODE: update `bookwright-design.md` § 13.2 row
-+ § 13.5 (state the WHOLE-validator abstention plainly) BEFORE the code diverges
-(plan § 7.3). KNOWN REGRESSION (recorded, not dropped): `NotEvaluated` is
-all-or-nothing, so limited-third abstains the WHOLE run — `_first_person_breaks` no
-longer runs for limited-third (still runs under non-limited third). Recorded as
-DEBT-019 (already in `DEBT.md`, FR-015); remove DEBT-014 (FR-011). ORACLES (empirical,
-`uv run pytest`): `tiny-historical` gains a `focalization` `pending_capability`
-not_evaluated entry (sorted after `character_unknown_mentions`); `counts` stay
-`{error:1, warning:1, info:0}`, `next_actions` length stays 3 (head-hopping emits
-nothing on it today, so NO warning drops). `tiny-novel`/`tiny-quest` (third-limited)
-gain the entry and stay GREEN; `tiny-memoir`/`tiny-essay` (first-person) gain none.
-`test_tri_valued_validation.py::test_clean_fixture_is_green_under_refined_predicate`
-must split its `entries == {...}` literal per fixture. Out of scope: move 3 itself,
-a partial-evaluation contract (DEBT-019), `validate` skipped-input propagation
-(DEBT-018 / 046), `character_presence`/`character_unknown_mentions` (043). Single
-validator (NOT split, FR-006); stdlib only (Constitution II); each changed file ≤ 500
-lines; prose validator keeps `triples=()`; frozen ontology untouched. `uv run pytest`
-+ four gates green.
+`specs/046-validate-skip-surfacing/plan.md` (iteration 046, design § 13.4/§ 13.5 —
+closes DEBT-018). When a bible file has unusable front-matter (broken YAML),
+`map_bible` OMITS it (recorded in `MapResult.skipped`, a tuple of
+`SkippedFile{path, reason}`) and that entity never enters the graph. `status` already
+refuses such a partial corpus (`code=skipped_sources`, exit 4), but `validate` — the
+CI gate — proceeds SILENTLY: `not_evaluated: []` reads as "everything evaluated"
+when a whole file was excluded — the `[]`-lies-as-clean hole 040 set out to erase,
+and the `status`↔`validate` asymmetry DEBT-018 recorded. THE CHANGE (track A —
+honesty, family 040, at the input-file level): in `commands/validate.py`, after
+`run_validators(...)`, read `project.bible().skipped` (the SAME memoized `map_bible`
+the validators already trigger — NO graph rebuild; safe/empty on a missing bible
+dir) and merge one `NotEvaluatedResult("ingestion", f"bible file '{path}' skipped
+(unusable front-matter): {reason}", NotEvaluatedKind.missing_input)` per
+`SkippedFile` into the EXISTING `not_evaluated[]` channel (040/044) — NO new
+`skipped[]` channel (FR-008). `validator="ingestion"` is one shared sentinel for the
+non-validator origin (FR-004); `kind=missing_input` makes the unchanged 044 predicate
+DEGRADE GREEN automatically (FR-002/FR-005/FR-006) — `pending_capability` would leave
+it green (the bug). The gate/exit is UNCHANGED: a skip is no `Violation`, so
+`report.failed` (only `error`-severity) is identical for the same findings (FR-007).
+DETERMINISM FIX the merge forces (FR-009): the `not_evaluated` sort is promoted from
+the PARTIAL order `lambda r: r.validator` (`runner.py:80`, safe only while each
+validator emits ≤ 1 entry) to the TOTAL order `(validator, reason)` — skip entries
+all share `validator="ingestion"`, so the `reason` tie-break (paths are unique) keeps
+multi-skip runs byte-identical. Defined ONCE as `not_evaluated_sort_key` in
+`runner.py` (added to `__all__`) and IMPORTED by both sort sites (runner + the
+`validate` skip-merge) — no duplicated literal to drift (zero-debt §3). Promoting it
+reorders NO skip-free fixture (validator names already unique — FR-010, SC-003).
+IMPORTS: `NotEvaluatedResult` from `bookwright.validation`; `NotEvaluatedKind` from
+`bookwright.validation.base` (NOT in the package re-exports — `report.py` imports it
+there too); the key from `runner`. NO 040/044 machinery edit (FR-011/FR-012): the
+green predicate, `NotEvaluatedKind`/`NotEvaluatedResult` model, the `not_evaluated[]`
+serialization + `_KIND_LABEL` render, and `status` are all UNCHANGED — `status`
+aborts on a skip BEFORE embedding validation state, so it is NOT a third skip surface
+and needs no nudge/remedy edit (FR-008). CONTRACT-BEFORE-CODE: update
+`bookwright-design.md` § 13.4 (add the `ingestion` pseudo-source paragraph to the
+not-evaluated channel) + reconcile § 13.5 move-1 (skips are now surfaced by
+`validate`) BEFORE the code diverges (plan § 7.3). DEBT: REMOVE DEBT-018 from
+`DEBT.md` and reconcile its track-A cross-reference (FR-013); DEBT-019
+(partial-evaluation contract) stays recorded, untouched. ORACLES (empirical,
+`uv run pytest`, reuse the broken-YAML literal `"---\nname: : :\n  bad\n---\n"` from
+`tests/commands/test_status_errors.py` + `copy_fixture`/`is_green`): one broken file
+on `tiny-novel` → `validate --json` exit 0, one `not_evaluated` entry
+(`validator="ingestion"`, `kind="missing_input"`, reason names the file),
+`is_green(payload) is False`; exit code == the no-skip run's; two broken files emit
+two `ingestion` entries in identical order across runs; no-skip output byte-identical
+(pinned fixtures, `test_tri_valued_validation.py` `_EXPECTED_GAPS` UNCHANGED); cross-
+command: `status` still exits 4 `skipped_sources` while `validate` surfaces the file.
+Out of scope: hardening the gate so a skip breaks the exit code; `outline` skips;
+move 3; the partial-evaluation contract (DEBT-019); any green-predicate/kind change.
+Two-file change (`commands/validate.py` + `validation/runner.py`); NO validator
+module touched; stdlib only (Constitution II); each changed file ≤ 500 lines; frozen
+ontology untouched. `uv run pytest` + four gates green.
 <!-- SPECKIT END -->

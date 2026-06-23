@@ -35,6 +35,14 @@ its `not_evaluated[]` channel (the channel iteration 040 added, kind-categorized
 since 044), so a partial corpus stops reading as green. It reuses the channels
 040/044 already wired — no new channel, no predicate change.
 
+## Clarifications
+
+### Session 2026-06-23
+
+- Q: What exact total-order key orders the `not_evaluated[]` list (FR-009 left it as "e.g. `(validator, reason)`")? → A: `(validator, reason)` — paths are unique so two skip entries never collide, making it a true total order. *(Rationale: locking the example to a decision makes the byte-identical ordering assertions deterministic and removes plan-level latitude — zero-debt §3.)*
+- Q: How do the runner and the `validate` skip-merge avoid the two sort sites drifting apart (FR-009 said the key is "applied at every site")? → A: the key is defined **once** as a single shared module-level callable/constant and **imported** by both sort sites; no duplicated sort literal exists to drift. *(Rationale: eliminate the divergence cause rather than guard two copies — zero-debt §3.)*
+- Q: What exact identifier do skip-derived entries carry in their `validator` field (FR-004 deferred the exact value to `/speckit-plan`)? → A: `ingestion` — one shared value across all skip entries; this is precisely the shared-identifier tie FR-009's total order resolves. *(Rationale: the determinism argument in FR-009 only holds once this identifier is fixed; the recommended default was already explicit.)*
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A skipped bible file is no longer silently green (Priority: P1)
@@ -154,10 +162,11 @@ with `skipped_sources` AND `validate` now surfaces the same file in
   cites the skipped file path and the skip cause (e.g. `bible file
   'bible/characters/rota.md' skipped (unusable front-matter): <reason>`). The
   exact wording is fixed in `/speckit-plan`.
-- **FR-004**: Each such entry's `validator` field MUST use a stable, readable
-  identifier for the non-validator origin (the skipped file is not a validator);
-  the recommended value is `ingestion`, with the path and cause carried in the
-  `reason`. The exact identifier is fixed in `/speckit-plan`.
+- **FR-004**: Each such entry's `validator` field MUST be the literal identifier
+  `ingestion` (Clarifications 2026-06-23) — a single shared value for the
+  non-validator origin (the skipped file is not a validator), with the path and
+  cause carried in the `reason`. All skip entries share this one identifier, which
+  is precisely the tie FR-009's total order resolves.
 - **FR-005**: The presence of a `missing_input` `not_evaluated` entry MUST degrade
   green automatically via the **unchanged** 044 refined predicate (green ⟺
   `status == "ok"` AND no `not_evaluated` entry has `kind == "missing_input"`).
@@ -187,11 +196,14 @@ with `skipped_sources` AND `validate` now surfaces the same file in
   only a *partial* order (ties broken by insertion order); it is safe today solely
   because each validator emits at most one entry, but the skip entries break that
   assumption (they share one identifier). This is one determinism class: the key
-  MUST be promoted to a total order (e.g. `(validator, reason)`) and that **single**
-  key MUST be applied at every site that sorts `not_evaluated` (the runner and the
-  `validate` skip-merge), so the two sort sites cannot diverge. Promoting the key
-  MUST NOT change any skip-free fixture (validator names are already unique, so no
-  tie exists to reorder — FR-010).
+  MUST be promoted to the total order `(validator, reason)` (Clarifications
+  2026-06-23; paths are unique so two skip entries never collide). That key MUST be
+  defined **once** as a single shared module-level callable/constant and
+  **imported** by both sites that sort `not_evaluated` (the runner and the
+  `validate` skip-merge) — there is no duplicated sort literal, so the two sites
+  cannot diverge (the divergence *cause* is eliminated, not guarded — zero-debt §3).
+  Promoting the key MUST NOT change any skip-free fixture (validator names are
+  already unique, so no tie exists to reorder — FR-010).
 - **FR-010**: A project with no skipped bible files MUST produce no skip-derived
   `not_evaluated` entry and MUST remain byte-identical to today's behavior; pinned
   fixtures without skips MUST NOT be edited.
@@ -200,10 +212,12 @@ with `skipped_sources` AND `validate` now surfaces the same file in
   new field, no new kind, no predicate change).
 - **FR-012**: The change MUST live in `commands/validate.py` (read
   `ValidationContext.bible().skipped` and merge one `not_evaluated` entry per skip
-  into the report) plus `validation/runner.py` (the total-order sort-key promotion
-  of FR-009). The `NotEvaluatedResult` model, the `kind` vocabulary, and the green
-  predicate MUST NOT change (FR-011). No **validator** module may be touched, and
-  the frozen ontology MUST remain intact.
+  into the report) plus `validation/runner.py` (which owns the FR-009 total-order
+  key as the single shared definition — defined there and imported by the
+  `validate` skip-merge, so no third module is introduced). The
+  `NotEvaluatedResult` model, the `kind` vocabulary, and the green predicate MUST
+  NOT change (FR-011). No **validator** module may be touched, and the frozen
+  ontology MUST remain intact.
 - **FR-013**: The DEBT-018 entry MUST be removed from `DEBT.md` (git keeps the
   history); the cross-references to DEBT-018 in `DEBT.md` MUST be reconciled so no
   dangling pointer remains.
@@ -254,9 +268,11 @@ with `skipped_sources` AND `validate` now surfaces the same file in
   separate decision that `/speckit-plan` may revisit but this spec excludes. The
   asymmetry with `status`'s hard refusal is resolved at the *reporting* level, not
   the exit-code level.
-- The recommended `validator` identifier for a skip entry is `ingestion`; the
-  recommended `reason` template is `bible file '<path>' skipped (unusable
-  front-matter): <reason>`. Both exact forms are fixed in `/speckit-plan`.
+- The `validator` identifier for a skip entry is locked to `ingestion`
+  (Clarifications 2026-06-23, FR-004). The exact `reason` *wording* (recommended
+  template `bible file '<path>' skipped (unusable front-matter): <reason>`) remains
+  cosmetic and is fixed in `/speckit-plan`; only path-uniqueness is load-bearing
+  for the FR-009 total order, and that holds for any wording.
 - `ValidationContext.bible().skipped` is already populated by `map_bible` and is
   the read path; no ingestion change is needed.
 - The 044 machinery (the green predicate, `NotEvaluatedKind`, the `not_evaluated[]`
