@@ -38,7 +38,7 @@ design/debt records at repo root. Paths below are repo-relative.
 the channel (040), kind vocabulary (044), and read path (`ValidationContext.bible()`)
 already exist; this iteration only consumes them.
 
-- [ ] T001 Confirm clean baseline: run `uv run pytest -q`, `uv run ruff check`,
+- [X] T001 Confirm clean baseline: run `uv run pytest -q`, `uv run ruff check`,
   `uv run ruff format --check`, and `uv run mypy --strict` and verify all four gates
   are green on branch `046-validate-skip-surfacing` before editing (establishes the
   byte-identity reference for SC-003 / FR-010).
@@ -57,7 +57,7 @@ these land.**
 **⚠️ CRITICAL**: The design edits (T002) precede the code divergence; the runner
 key (T003) is imported by US1's merge (T009), so US1 is blocked on it.
 
-- [ ] T002 Contract-before-code design edit in `bookwright-design.md`: add the
+- [X] T002 Contract-before-code design edit in `bookwright-design.md`: add the
   `ingestion` pseudo-source paragraph to the not-evaluated channel description in
   § 13.4 (a skipped bible file becomes a `not_evaluated` entry with
   `validator="ingestion"`, `kind=missing_input`, reason citing path + cause), and
@@ -65,7 +65,7 @@ key (T003) is imported by US1's merge (T009), so US1 is blocked on it.
   `validate`** (degrading green), not only refused by `status` (plan § 7.3 / Phase 1).
   Keep these edits in Spanish (language convention).
 
-- [ ] T003 Promote the `not_evaluated` sort to a total order in
+- [X] T003 Promote the `not_evaluated` sort to a total order in
   `src/bookwright/validation/runner.py` (FR-009, plan decision 1): define a
   module-level `def not_evaluated_sort_key(result: NotEvaluatedResult) -> tuple[str, str]:`
   returning `(result.validator, result.reason)` with the FR-009 docstring; replace
@@ -93,7 +93,7 @@ front-matter is broken YAML; run `validate --json`; assert (a) exactly one
 
 ### Tests for User Story 1 (write first; they FAIL until T009) ⚠️
 
-- [ ] T004 [P] [US1] Create `tests/commands/test_validate_skipped.py` with a fixture
+- [X] T004 [P] [US1] Create `tests/commands/test_validate_skipped.py` with a fixture
   helper that does `copy_fixture("tiny-novel", tmp_path)`, writes a broken-YAML bible
   file using the literal `"---\nname: : :\n  bad\n---\n"` (reused from
   `tests/commands/test_status_errors.py`), and runs `validate --json` in-process via
@@ -102,12 +102,12 @@ front-matter is broken YAML; run `validate --json`; assert (a) exactly one
   and a `reason` naming `bible/characters/broken.md`; assert `is_green(payload) is
   False` (SC-001, Acceptance 1–2).
 
-- [ ] T005 [P] [US1] Add a test in `tests/commands/test_validate_skipped.py`
+- [X] T005 [P] [US1] Add a test in `tests/commands/test_validate_skipped.py`
   asserting the `validate --json` exit code on the one-skip project equals the exit
   code of the same fixture **without** the broken file (quickstart Scenario 2,
   SC-002, Acceptance 3) — a skip alone does not move the gate.
 
-- [ ] T006 [P] [US1] Add a determinism test in
+- [X] T006 [P] [US1] Add a determinism test in
   `tests/commands/test_validate_skipped.py`: write **two** broken bible files
   (`broken_a.md`, `broken_b.md`), run `validate --json` twice, and assert both runs
   emit two `ingestion` entries in byte-identical order (quickstart Scenario 3,
@@ -115,7 +115,7 @@ front-matter is broken YAML; run `validate --json`; assert (a) exactly one
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Merge the ingestion skips in `src/bookwright/commands/validate.py`
+- [X] T009 [US1] Merge the ingestion skips in `src/bookwright/commands/validate.py`
   `_validate` (plan decision 2): after `run_validators(...)` returns `not_evaluated`
   (line 108) and **before** constructing `ValidationReport` (line 109), build
   `skip_entries = [NotEvaluatedResult("ingestion", f"bible file '{s.path}' skipped
@@ -145,12 +145,12 @@ second channel).
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T010 [P] [US2] Add a test in `tests/commands/test_validate_skipped.py`
+- [X] T010 [P] [US2] Add a test in `tests/commands/test_validate_skipped.py`
   asserting the `--json` skip entry serializes with `validator`, `reason`, and `kind`
   keys (the existing `NotEvaluatedResult.to_json` shape — Acceptance 1, US2). (Rides
   the T009 code; no further source change.)
 
-- [ ] T011 [P] [US2] Add a human-report test in
+- [X] T011 [P] [US2] Add a human-report test in
   `tests/commands/test_validate_skipped.py`: run `validate` **without** `--json` and
   assert the `not evaluated:` section lists
   `ingestion [input gap]: bible file 'bible/characters/broken.md' skipped …`
@@ -174,7 +174,7 @@ neither reads a partial corpus as fully fine.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T012 [P] [US3] Add a cross-command test in
+- [X] T012 [P] [US3] Add a cross-command test in
   `tests/commands/test_validate_skipped.py`: on the one-skip project assert
   `status --json` → exit 4, `code == "skipped_sources"` (unchanged) and
   `validate --json` → surfaces the same `bible/characters/broken.md` in
@@ -190,19 +190,19 @@ neither reads a partial corpus as fully fine.
 **Purpose**: debt reconciliation, no-skip byte-identity guard, and the four-gate
 close.
 
-- [ ] T013 [P] Remove the DEBT-018 entry from `DEBT.md` (FR-013 / SC-005; git keeps
+- [X] T013 [P] Remove the DEBT-018 entry from `DEBT.md` (FR-013 / SC-005; git keeps
   the history) and reconcile its track-A cross-reference (the `Track A … DEBT-018,
   DEBT-019` pointer, ~line 51) to drop the dangling DEBT-018 reference. Leave
   DEBT-019 (partial-evaluation contract) recorded and untouched (out of scope).
 
-- [ ] T014 [P] Add the no-skip byte-identity assertion to
+- [X] T014 [P] Add the no-skip byte-identity assertion to
   `tests/commands/test_validate_skipped.py` (quickstart Scenario 4, SC-003 / FR-010):
   on a plain `tiny-novel` fixture with **no** broken file, assert `validate --json`
   produces **no** `ingestion` entry and is byte-identical to the pre-change output.
   Confirm `tests/e2e/test_tri_valued_validation.py` `_EXPECTED_GAPS` is **unchanged**
   (no pinned skip-free fixture edited).
 
-- [ ] T015 Run the full quickstart gate (`uv run pytest && uv run ruff check &&
+- [X] T015 Run the full quickstart gate (`uv run pytest && uv run ruff check &&
   uv run ruff format --check && uv run mypy --strict`) and confirm all four are green
   (FR-016, SC-003). Verify the agent-context block in `CLAUDE.md` points at this
   iteration's plan (already repointed during planning — confirm only).

@@ -1355,6 +1355,19 @@ entrada `missing_input` accionable. Así un proyecto impecable vuelve a leerse v
 el nudge deja de dispararse en todos lados (regresión que la 043 introdujo al hacer
 `character_unknown_mentions` un abstinente incondicional).
 
+**Pseudo-fuente `ingestion` (iteración 046).** `not_evaluated[]` admite además un
+origen **no-validador**: cada fichero de la bible que `map_bible` **omite** por
+front-matter inservible (`MapResult.skipped`) lo surfacéa `validate` como una entrada
+`not_evaluated` con `validator="ingestion"` (centinela compartido para el origen
+no-validador), `kind=missing_input` (un input de *este* proyecto quedó fuera del
+corpus: accionable y, por el predicado de 044, **deniega verde**) y `reason` citando el
+path omitido y la causa del skip. No es un canal nuevo ni una clave nueva: reusa el
+canal de 040/044 a nivel de **fichero de entrada omitido**, de modo que
+`not_evaluated: []` deje de leerse como «todo evaluado» cuando un fichero entero quedó
+fuera del grafo (la grieta `[]`-significa-limpio de la cara B, ahora cerrada también a
+ese nivel). El gate (`error`) no cambia: un skip no es `Violation`, así que el código
+de salida es idéntico al de un run sin skips con los mismos hallazgos.
+
 ### 13.2 Validators built-in en v0
 
 | Validator | Severity default | Qué valida |
@@ -1437,6 +1450,14 @@ de naturaleza opuesta** que conviven en ese validador:
    caso focalizado (sigue corriendo bajo tercera no-limitada). Es una regresión de
    cobertura real registrada como **DEBT-019** (la cierra un contrato de evaluación
    parcial o el propio move 3); el contrato escrito no la oculta.
+   *Matiz a nivel de fichero de entrada (iter 046):* la misma honestidad se extiende a
+   la **ingestión**. Un fichero de la bible omitido por front-matter inservible
+   (`map_bible.skipped`) lo **surfacéa ahora `validate`** como entrada `not_evaluated`
+   (`validator="ingestion"`, `kind=missing_input`, § 13.4), **degradando verde** —no
+   solo lo rechaza `status` (`code=skipped_sources`)—. Cierra la asimetría
+   `status`↔`validate` (**DEBT-018**): antes `validate` —el gate de CI— validaba el
+   corpus parcial en silencio (`not_evaluated: []`). El gate (`error`) y el código de
+   salida no cambian: un skip se surfacéa, no gatea.
 2. **El move 3 se activa** (§ 20.6, `bookwright-roadmap.md` § 5): la condición
    («heurístico concreto medido insuficiente sobre prosa real») está cumplida. Es la
    única cura de raíz del conjunto abierto; restaura la señal real (personaje usado

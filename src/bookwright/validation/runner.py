@@ -19,7 +19,7 @@ from bookwright.validation.base import (
     Violation,
 )
 
-__all__ = ["RunResult", "run_validators", "sort_key"]
+__all__ = ["RunResult", "not_evaluated_sort_key", "run_validators", "sort_key"]
 
 RunResult = tuple[
     list[Violation],
@@ -42,6 +42,19 @@ def sort_key(violation: Violation) -> tuple[str, int, str, str, tuple[tuple[str,
     )
 
 
+def not_evaluated_sort_key(result: NotEvaluatedResult) -> tuple[str, str]:
+    """Total order for ``not_evaluated[]`` (FR-009): ``(validator, reason)``.
+
+    A total order, not the old partial ``validator``-only key: ingestion-skip entries
+    (iteration 046) all share ``validator="ingestion"``, so the ``reason`` tie-break
+    (paths are unique) is what keeps multi-skip runs byte-identical. The single shared
+    definition both the runner and the ``validate`` skip-merge import — no duplicated
+    sort literal to drift. Skip-free runs are unaffected (validator names are already
+    unique, so no tie exists — FR-010).
+    """
+    return (result.validator, result.reason)
+
+
 def run_validators(
     active: list[Validator], project: ValidationContext, indexer: Indexer
 ) -> RunResult:
@@ -52,8 +65,9 @@ def run_validators(
     validator that raises :class:`NotEvaluated` contributes a ``NotEvaluatedResult``
     (and no findings) to the ``not_evaluated`` channel; any other exception
     contributes a ``ValidatorError(phase="run")`` (FR-005). The rest still run.
-    ``not_evaluated`` is sorted by validator name (FR-013); ``ran`` lists every
-    invoked validator name, sorted.
+    ``not_evaluated`` is sorted by the total order :func:`not_evaluated_sort_key`
+    (``(validator, reason)``, FR-009); ``ran`` lists every invoked validator name,
+    sorted.
     """
     seen: set[Violation] = set()
     violations: list[Violation] = []
@@ -77,5 +91,5 @@ def run_validators(
                 violations.append(violation)
 
     violations.sort(key=sort_key)
-    not_evaluated.sort(key=lambda r: r.validator)
+    not_evaluated.sort(key=not_evaluated_sort_key)
     return violations, errors, not_evaluated, sorted(ran)

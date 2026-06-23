@@ -21,6 +21,7 @@ from bookwright.indexers import GraphLoadError, UnknownIndexerError, resolve_ind
 from bookwright.io.errors import ProjectNotFoundError
 from bookwright.io.project import find_project_root
 from bookwright.validation import (
+    NotEvaluatedResult,
     ScopeFilter,
     Severity,
     UnknownValidatorError,
@@ -30,7 +31,9 @@ from bookwright.validation import (
     resolve_active,
     run_validators,
 )
+from bookwright.validation.base import NotEvaluatedKind
 from bookwright.validation.registry import CUSTOM_VALIDATORS_SUBPATH
+from bookwright.validation.runner import not_evaluated_sort_key
 
 from ._envelope import EXIT_CONFIG, INVALID_MANIFEST_CODE, NO_PROJECT_CODE, emit_error, emit_json
 
@@ -106,11 +109,28 @@ def _validate(scope: Path | None) -> tuple[ValidationReport, ScopeFilter | None]
     scope_filter = _resolve_scope(scope, root)
 
     violations, run_errors, not_evaluated, ran = run_validators(active, project, indexer)
+
+    # Surface ingestion-omitted bible files as not_evaluated entries (iteration 046,
+    # DEBT-018): a file map_bible skipped (unusable front-matter) never reached the
+    # graph, so validate would otherwise read a partial corpus as fully evaluated.
+    # Reads the same memoized map_bible the validators already triggered — no rebuild,
+    # safe/empty on a missing bible dir. kind=missing_input degrades green via the
+    # unchanged 044 predicate; the gate (error-severity only) is untouched.
+    skip_entries = [
+        NotEvaluatedResult(
+            "ingestion",
+            f"bible file '{skip.path}' skipped (unusable front-matter): {skip.reason}",
+            NotEvaluatedKind.missing_input,
+        )
+        for skip in project.bible().skipped
+    ]
+    merged = sorted([*not_evaluated, *skip_entries], key=not_evaluated_sort_key)
+
     report = ValidationReport(
         violations=tuple(violations),
         errors=(*load_errors, *run_errors),
         ran=tuple(ran),
-        not_evaluated=tuple(not_evaluated),
+        not_evaluated=tuple(merged),
     )
     return report, scope_filter
 
