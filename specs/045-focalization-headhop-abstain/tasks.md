@@ -31,8 +31,8 @@ docs and `DEBT.md` at repository root.
 
 **Purpose**: Establish a green baseline and confirm the deletion is safe before touching code.
 
-- [ ] T001 Run `uv run pytest -q` to confirm a green starting point on branch `045-focalization-headhop-abstain`; note the current `tiny-historical` `not_evaluated`/`counts`/`next_actions` values as the diff baseline.
-- [ ] T002 Confirm zero external consumers of every symbol slated for deletion (FR-007): grep `_head_hopping`, `_INTERIORITY`, `\.focal`, and the `character_names` threading across `src/` and `tests/`; verify all hits are inside `src/bookwright/validation/validators/focalization.py` (or its now-to-be-deleted tests). Record the grep result so the deletion is provably safe.
+- [X] T001 Run `uv run pytest -q` to confirm a green starting point on branch `045-focalization-headhop-abstain`; note the current `tiny-historical` `not_evaluated`/`counts`/`next_actions` values as the diff baseline.
+- [X] T002 Confirm zero external consumers of every symbol slated for deletion (FR-007): grep `_head_hopping`, `_INTERIORITY`, `\.focal`, and the `character_names` threading across `src/` and `tests/`; verify all hits are inside `src/bookwright/validation/validators/focalization.py` (or its now-to-be-deleted tests). Record the grep result so the deletion is provably safe.
 
 **Checkpoint**: Baseline captured, deletion confirmed safe.
 
@@ -46,8 +46,8 @@ These MUST land before the `focalization.py` edit in Phase 3.
 
 **⚠️ CRITICAL**: Do not edit `focalization.py` until T003 and T004 are done.
 
-- [ ] T003 Update `bookwright-design.md`: (a) § 13.2 — annotate the `focalization` row so that under a declared third-person-**limited** voice the validator now **abstains wholly** (`pending_capability`, head-hopping is move 3), and the first-person-break check runs only under third-person **non-limited**; (b) § 13.5 — add a one-line note that the abstention is *whole-validator* (the deterministic first-person-break check no longer runs for the limited-third case — DEBT-019), so the written contract does not over-claim (FR-014, plan §7.3). Keep prose in Spanish (design doc language convention).
-- [ ] T004 Edit `DEBT.md`: remove the **DEBT-014** entry (FR-011/SC-006 — its honesty half closes here; git keeps history) and confirm a **DEBT-019** entry is present recording that the deterministic first-person-break check no longer runs under a limited-third voice (debt class: validators are all-or-nothing; closed by a partial-evaluation contract or move 3) (FR-015/SC-008). Verify with `grep -c "DEBT-014" DEBT.md` → 0 and `grep -c "DEBT-019" DEBT.md` → ≥1.
+- [X] T003 Update `bookwright-design.md`: (a) § 13.2 — annotate the `focalization` row so that under a declared third-person-**limited** voice the validator now **abstains wholly** (`pending_capability`, head-hopping is move 3), and the first-person-break check runs only under third-person **non-limited**; (b) § 13.5 — add a one-line note that the abstention is *whole-validator* (the deterministic first-person-break check no longer runs for the limited-third case — DEBT-019), so the written contract does not over-claim (FR-014, plan §7.3). Keep prose in Spanish (design doc language convention).
+- [X] T004 Edit `DEBT.md`: remove the **DEBT-014** entry (FR-011/SC-006 — its honesty half closes here; git keeps history) and confirm a **DEBT-019** entry is present recording that the deterministic first-person-break check no longer runs under a limited-third voice (debt class: validators are all-or-nothing; closed by a partial-evaluation contract or move 3) (FR-015/SC-008). Verify with `grep -c "DEBT-014" DEBT.md` → 0 and `grep -c "DEBT-019" DEBT.md` → ≥1.
 
 **Checkpoint**: Written contract and debt ledger match the intended post-045 behavior; code may now diverge.
 

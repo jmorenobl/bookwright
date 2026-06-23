@@ -48,16 +48,19 @@
 > `not_evaluated` (familia 040), y el **move 3** (juicio semántico) se **activa**
 > como su cura de raíz. Eso reparte estas 8 deudas en tres destinos (ver
 > `bookwright-roadmap.md` § 3, `bookwright-design.md` § 13.5):
-> - **Track A — honestidad** (`not_evaluated`): DEBT-014, DEBT-018, DEBT-019
->   (esta última abierta por spec-045 como efecto colateral de cerrar la
->   mitad-honestidad de DEBT-014). (DEBT-011 y
+> - **Track A — honestidad** (`not_evaluated`): DEBT-018, DEBT-019
+>   (esta última abierta por spec-045 como efecto colateral de que `focalization`
+>   deje de fingir el head-hopping y se abstenga bajo tercera-limitada). El
+>   head-hopping de `focalization` —su mitad-honestidad— se cerró en la **iteración
+>   045** (declara `not_evaluated`, `kind=pending_capability`), así que su entrada
+>   sale de este registro; su techo de precisión lo cura el move 3 (track C). (DEBT-011 y
 >   DEBT-012 estaban aquí como **subsumidas** —des-ruido de la regla de
 >   menciones-desconocidas— y la **iteración 043** las cerró: partió esa regla al
 >   abstainer `character_unknown_mentions`, que declara `not_evaluated`, así que los
 >   parches de costura por instancia ya no aplican. Eliminadas de este registro.)
 > - **Track B — pulido determinista:** DEBT-015, DEBT-016, DEBT-017.
-> - **Track C — move 3** (juicio semántico, norte): DEBT-013 (decidido (b)), techo
->   de DEBT-014.
+> - **Track C — move 3** (juicio semántico, norte): DEBT-013 (decidido (b)), y el
+>   techo de precisión del head-hopping cerrado en honestidad por la iter 045.
 > - **Descartado:** parches de costura por instancia; 5º roster «organización».
 
 ## Deuda abierta
@@ -70,15 +73,6 @@
 - **Descripción:** en "la Naviera Salas", `Naviera` (cabeza del nombre de la organización) se reporta como nombre propio sin entrada en la bible (`manuscript/01-marea-baja.md:13`), aunque `Salas` sí esté en el roster de personajes (`Víctor Salas`). La unión de rosters de DEBT-010 (character/setting/location/object) NO cubre organizaciones. Ninguna normalización de superficie lo cura.
 - **Por qué se difiere:** a diferencia de DEBT-011/012, esto NO se arregla en el seam. Requería una **decisión de diseño** previa: **(a)** una 5ª clase de roster (organizaciones), o **(b)** diferirlo al juicio semántico (move 3). **Resuelta en la issue #1 (2026-06-23): (b).** Un 5º roster es perseguir un conjunto abierto (tras orgs vienen topónimos, barcos, vocativos…) con una lista cerrada más; no converge y roza el Principio X. El move 3 cura el conjunto abierto entero distinguiendo «Naviera = organización» de «Elena = personaje sin declarar» sin roster nuevo.
 - **Resolución sugerida / versión objetivo:** **track C — move 3** (juicio semántico, norte activado; `bookwright-roadmap.md` § 5, `bookwright-design.md` § 13.5/§ 20.6). Interim honesto ya cubierto por el track A: la regla de menciones-desconocidas declara `not_evaluated` (no emite el FP de `Naviera`). Esta deuda se cierra cuando el move 3 aterrice; no es una iteración de costura.
-
-### DEBT-014 — `focalization` no detecta head-hopping por nombre de pila (exige nombre completo + misma línea física)
-- **Estado:** abierta
-- **Detectada en:** dogfood `sombra-en-el-puerto` (novela negra, 2026-06-23), ronda de estrés de `focalization`.
-- **Ubicación:** `src/bookwright/validation/validators/focalization.py` (`_head_hopping`: `if re.search(rf"\b{re.escape(name)}\b", line.raw)` donde `name` es el nombre COMPLETO del bible, y el verbo de interioridad debe estar en esa MISMA línea física vía `_INTERIORITY.search(line.raw)`).
-- **Clase de deuda:** falso negativo de un validador que parece activo (familia DEBT-004: «validador silenciosamente dormido»). **Nota (post-043):** la antigua «inconsistencia de matching con `character_presence`» que esta entrada citaba quedó OBSOLETA — la iteración 043 borró la regla de menciones-desconocidas de `character_presence` (y con ella `_roster_slugs`); `character_presence` ahora es solo huérfanos (`_is_mentioned` sobre nombres conocidos), no cruza nombres propios por tokens. La cura de 045 es el `not_evaluated` con `kind=pending_capability` (familia 040/044), no «unificar el matching con `character_presence`».
-- **Descripción:** la constitución declara "Tercera persona limitada, focalizada en Nadia Brun" y un párrafo en clara interioridad de Víctor (`Víctor … Sintió … pensó … Recordó … tuvo miedo`) NO dispara. La regla exige (1) el nombre COMPLETO del bible (`Víctor Salas`) y (2) que aparezca en la MISMA línea física que el verbo de interioridad. La prosa narrativa real nombra a los personajes por el **nombre de pila** (`Víctor`) o por epíteto, y un párrafo largo se reparte en varias líneas físicas, así que la regla está **prácticamente dormida**. Verificado empíricamente (sobre `v0.5.2`, antes de 043): sustituir `Víctor` → `Víctor Salas` en la línea del verbo hace que el head-hop dispare de inmediato (`manuscript/01-marea-baja.md:38`).
-- **Por qué se difiere:** el banco que lo destapó está fuera del repo; arreglarlo a mano en `main` sin iteración numerada viola la disciplina de scope. La decisión de issue #1 ya zanjó el «cómo»: el head-hop sin juicio semántico tiene techo de precisión, así que NO se intenta subir el heurístico — el track A lo declara `not_evaluated` (`kind=pending_capability`) y el track C (move 3) lo resuelve de verdad. Lo que queda para `/speckit-plan` de 045 es el alcance del `not_evaluated` (regla entera vs. núcleo determinista) y los oráculos, no «cómo cruzar nombres».
-- **Resolución sugerida / versión objetivo:** **track A (honestidad) + track C (move 3)** tras la decisión de issue #1. La issue confirmó lo que esta deuda ya intuía: «un head-hop heurístico sin juicio semántico tiene techo de precisión». Por eso NO se intenta subir el heurístico (mejorar el matching) como cura: en el **track A**, cuando `focalization` tiene una declaración focal pero su heurístico no puede atribuir interioridad de forma fiable (nombre de pila, multi-línea), **declara `not_evaluated`** en vez de dormir en verde (familia 040). La detección real de head-hopping —irreductiblemente semántica— es **track C (move 3)**. Validador de prosa, `triples=()`, ontología congelada intacta.
 
 ### DEBT-015 — los validadores que consumen el grafo (`factual_anchor`, `temporal`) emiten locators ausentes/inconsistentes e identificadores opacos
 - **Estado:** abierta

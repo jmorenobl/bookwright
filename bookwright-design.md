@@ -1362,7 +1362,7 @@ el nudge deja de dispararse en todos lados (regresión que la 043 introdujo al h
 | `temporal` | error | Que los eventos en la timeline sean consistentes (no contradicciones). |
 | `character_presence` | error | Que los personajes mencionados en manuscrito existan en la bible y viceversa. |
 | `setting_continuity` | warning | Que los settings se mantengan coherentes (ej. clima, descripciones). |
-| `focalization` | warning | Que la persona narrativa declarada en constitution se respete. |
+| `focalization` | warning | Que la persona narrativa declarada en constitution se respete. **Bajo tercera persona *limitada*/focalizada se abstiene del run entero** (`NotEvaluated`, `kind=pending_capability`): el head-hopping (atribución de interioridad a un personaje no-focal) es juicio semántico —move 3 (§ 13.5)— y el heurístico determinista se midió casi dormido sobre prosa real (iter 045). La comprobación de ruptura de 1ª persona fuera de diálogo solo corre bajo tercera **no-limitada** (omnisciente); 1ª persona evalúa sin hallazgos. Las cuatro abstenciones por entrada (sin constitución / sin voz / `[PENDING]` / sin persona gramatical) siguen `missing_input`. |
 | `factual_anchor` (v0.2) | warning (estructura) / error (anacronismo) | Integridad estructural de las anclas de investigación: que cada ancla tenga Fuente con procedencia completa, que las entidades enlazadas existan, y detección de anacronismos contra la timeline. Ver § 20.6. |
 
 ### 13.3 Registry
@@ -1431,6 +1431,12 @@ de naturaleza opuesta** que conviven en ese validador:
    iteración 040) con motivo «conjunto abierto: requiere juicio semántico (move 3)».
    No es un parche: es el comportamiento terminal **permanente** (con el move 3
    offline, `not_evaluated` es el fallback correcto). El gate (`error`) no cambia.
+   *Matiz del head-hopping (iter 045):* como `NotEvaluated` es **todo-o-nada**, una
+   voz «tercera limitada» abstiene el validador **entero**, así que la comprobación
+   determinista de ruptura de 1ª persona —que sí funciona— deja de correr para el
+   caso focalizado (sigue corriendo bajo tercera no-limitada). Es una regresión de
+   cobertura real registrada como **DEBT-019** (la cierra un contrato de evaluación
+   parcial o el propio move 3); el contrato escrito no la oculta.
 2. **El move 3 se activa** (§ 20.6, `bookwright-roadmap.md` § 5): la condición
    («heurístico concreto medido insuficiente sobre prosa real») está cumplida. Es la
    única cura de raíz del conjunto abierto; restaura la señal real (personaje usado
