@@ -67,7 +67,8 @@ channel is noise the author is trained to ignore.
 
 **Independent Test**: Run validation/status on a clean fixture
 (`tiny-novel` / `tiny-memoir`) and assert the documented green predicate is
-`True` even though `not_evaluated` carries one `pending_capability` entry.
+`True` even though `not_evaluated` carries one permanent capability-gap entry
+(the concrete `kind` identifier is a `/speckit-plan` detail).
 
 **Acceptance Scenarios**:
 

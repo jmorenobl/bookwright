@@ -523,45 +523,44 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/043-character-presence-split/plan.md` (iteration 043, the **track A —
-honestidad** landing of issue #1, design § 13.5 — triggered by the 2nd dogfood
-`sombra-en-el-puerto`, which measured the `character_presence` unknown-mention
-rule as 100% noise: 4 false positives, 0 signal). `character_presence` bundles
-TWO rules of opposite nature: an ORPHAN rule (`error`, closed-set, sound — every
-bible CHARACTER must be mentioned, protects the gate) and an UNKNOWN-MENTION rule
-(`warning`, open-set — is every capitalized proper-noun candidate in a bible
-roster? the NER problem without NER). THE FIX: the open-set rule STOPS PRETENDING
-— it declares `not_evaluated` (the iteration-040 channel) instead of emitting
-`warning`. Because `NotEvaluated` is PER-validator (raising it aborts the whole
-validator and would discard the orphans), the two rules are SPLIT into two
-auto-discovered built-ins: `character_presence` keeps its NAME + the orphan rule
-ONLY (its `error` findings stay byte-for-byte identical → gate untouched; its
-`not roster and not files` guard + reason string preserved), and a NEW
-`character_unknown_mentions` is a PURE ABSTAINER — `validate` is solely
-`raise NotEvaluated("open-set proper-noun discovery requires semantic judgment
-(move 3); the deterministic heuristic was measured insufficient on real prose")`,
-UNCONDITIONALLY (the approach, not the input, is unreliable). The ENTIRE
-deterministic heuristic is DELETED (FR-016: `_CANDIDATE`, `_STOP_WORDS`,
-`_is_sentence_initial`, `_roster_slugs`, `_unknown_mentions`, the DEBT-010/042
-union line, + orphaned imports `make_slug`/`ProseView`) — kept-for-move-3 is
-forbidden speculative plumbing; move 3 is a different semantic approach. The
-repo-wide dead-code sweep (FR-017) also DELETES the now-zero-consumer iteration-042
-`ValidationContext.location_names()`/`object_names()` accessors (+ fields, imports)
-and the `write_project` `locations=`/`objects=` knobs; `setting_names()` + the
-`settings=` knob are RETAINED (still consumed by `setting_continuity`). `io/prose.py`
-is NOT touched (its dialogue-dash strip still serves the deterministic validators);
-DEBT-011 paired-quote seam NOT added, DEBT-012 title-body exemption NOT applied —
-those FPs vanish because the rule abstains, not because it is de-noised. KEY RIPPLE
-(spec under-specified it): since the abstainer is ALWAYS dormant, the existing
-`status/rules.py` `activate_dormant_validators` rule fires on EVERY project → one
-extra `bookwright-continuity` action everywhere (the visible form of FR-008: green
-predicate `status=="ok" AND not_evaluated==[]` now `False` universally). Add an
-honest `_REMEDIES["character_unknown_mentions"]` clause. `tiny-historical`'s
-`validation.counts` are UNCHANGED `{error:1, warning:1, info:0}` (character_presence
-already emitted ZERO there post-042 — verified empirically); the oracle gains a
-`not_evaluated` entry and `next_actions` 3→4. The built-in-set pins move 6→7
-(`test_registry.py`, `test_command.py` `ran`, `test_status.py`); `tiny-novel` B1
-`isdisjoint` reframes to the research-derived skills only. Remove DEBT-011 + DEBT-012
-from `DEBT.md`. stdlib only, no new dep (Constitution II); every changed file ≤ 500
-lines (`character_presence.py` shrinks ~223→~95). `uv run pytest` + four gates green.
+`specs/044-not-evaluated-kinds/plan.md` (iteration 044, design § 13.4/§ 13.5 —
+the follow-up to 043 that REPAIRS the 040 green contract 043 broke as a side
+effect). 043's `character_unknown_mentions` abstainer raises `NotEvaluated`
+UNCONDITIONALLY, so the documented green predicate `status=="ok" AND
+not_evaluated==[]` is now `False` in EVERY project (even a flawless one) and the
+`_activate_dormant_validators` nudge fires everywhere — the issue #1 alarm
+fatigue merely relocated to the `not_evaluated` channel. ROOT CAUSE: TWO kinds of
+`not_evaluated` entry share one channel that governs green — (a) INPUT-CONDITIONAL
+(could not evaluate THIS project, a missing/broken input — actionable, transient)
+and (b) PERMANENT CAPABILITY-GAP (no deterministic run evaluates this; awaits
+move 3 — not author-actionable, identical everywhere). THE FIX: a closed
+`NotEvaluatedKind(StrEnum)` in `validation/base.py` (mirrors `Severity`) with
+`missing_input` (DEFAULT) + `pending_capability`; `NotEvaluated.__init__` gains
+`kind` as the LAST param defaulting to `missing_input` (every existing raise
+byte-for-byte unchanged — FR-002), `NotEvaluatedResult` gains a `kind` field
+(last, defaulted) serialized additively in `to_json` (FR-008/SC-007). The runner
+(`runner.py:69`) stamps `skip.kind`; `character_unknown_mentions` is the ONLY
+non-default raise (`kind=pending_capability`, FR-003). REFINED GREEN PREDICATE
+(docstring + `_is_green` test helper, NOT a code property — same shape 040
+shipped): green ⟺ `status=="ok"` AND no entry has `kind=="missing_input"`;
+capability-gap entries DO NOT deny green (FR-004). `status/rules.py`
+`_activate_dormant_validators` filters `kind==missing_input` and the 043
+`_REMEDIES["character_unknown_mentions"]` clause is REMOVED (FR-005/FR-006).
+VISIBILITY non-negotiable (issue #1): the render labels each entry by a
+KIND-GENERIC tag (`_KIND_LABEL` in `report.py`, validator-specific "move 3" stays
+in `reason`) — and the line-116 clean-line early-return STAYS `not
+self.not_evaluated` (both kinds keep "no violations found" suppressed; the
+`/speckit-plan` hint's "filter line 116 by kind" is SUPERSEDED by FR-010 + the
+capability-gap-only edge case — see research.md D5). `status/model.py` needs NO
+serialization edit (`ValidationSummary.to_payload` already delegates to
+`r.to_json()` → `kind` flows automatically). CONTRACT-BEFORE-CODE: update
+`bookwright-design.md` § 13.1 (the `NotEvaluated` signature) + § 13.4 (the refined
+predicate quote) BEFORE the validators diverge (plan § 7.3). `tiny-historical`
+oracle: the entry gains `kind: pending_capability`, `next_actions` 4→3, counts
+byte-identical `{error:1, warning:1, info:0}`, manuscript/bible untouched;
+`tiny-novel`/`tiny-memoir` read GREEN again. Out of scope: `character_presence`
+(orphan rule), `io/prose.py`, move 3 itself, the `focalization` head-hopping
+not-evaluated (iteration 045). stdlib only, no new dep (Constitution II); every
+changed file ≤ 500 lines; prose validators keep `triples=()`; frozen ontology
+untouched. `uv run pytest` + four gates green.
 <!-- SPECKIT END -->
