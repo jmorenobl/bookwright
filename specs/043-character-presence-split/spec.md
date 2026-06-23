@@ -211,8 +211,15 @@ naming the open-set/move-3 cause, appears in both.
 - **Custom-validator config**: the new built-in validator is discovered like every other
   built-in; an author may `disable` it via the `[validators]` block exactly as with any
   built-in (no special-casing).
-- **The dialogue dash (DEBT-009/041) and the union roster (DEBT-010/042)**: those landed in
-  the *orphan*/deterministic path and the prose seam; both remain in effect and unchanged.
+- **The dialogue dash (DEBT-009/041)**: this landed in the **shared prose seam**
+  (`io/prose.py`), which the `setting_continuity` and `focalization` validators still consume, so
+  the seam and its dash-stripping stay in effect untouched (FR-009).
+- **The union roster (DEBT-010/042)**: this did **not** land in the orphan/deterministic path —
+  it lives entirely inside the unknown-mention rule's `roster_slugs` construction (`character +
+  setting + location + object`), the very code this iteration deletes. So the union-roster logic
+  **and** the iteration-042 `ValidationContext.location_names()`/`object_names()` accessors it was
+  the sole consumer of are **removed** here (FR-016/FR-017), not retained. The orphan rule keeps
+  deriving from the character roster alone (FR-003), so this removal never touches the gate.
 
 ## Requirements *(mandatory)*
 
@@ -276,6 +283,31 @@ naming the open-set/move-3 cause, appears in both.
 - **FR-015**: The move 3 LLM evaluator, an opt-in deterministic mode of the rule, the
   `focalization` head-hopping defect (DEBT-014), and `validate` propagating a `skipped`
   count (DEBT-018) MUST NOT be implemented here (out of scope; see Out of Scope).
+- **FR-016**: The new unknown-mention validator MUST be a **pure abstainer** — its evaluation is
+  solely `raise NotEvaluated(<open-set reason>)`. **None** of the deterministic unknown-mention
+  heuristic may be retained, relocated, or left dormant: the proper-noun candidate scan
+  (`_CANDIDATE`), the capitalized stop-set (`_STOP_WORDS`), the sentence-initial exemption
+  (`_is_sentence_initial`), the roster-slug builder (`_roster_slugs`), the `_unknown_mentions`
+  loop, and the union-roster construction (`character + setting + location + object`) MUST be
+  **deleted** from the codebase, along with any imports left unused by their removal (e.g.
+  `make_slug`, `ProseView` in `character_presence.py`). (Eliminate-the-cause: dead heuristic kept
+  "for move 3" is forbidden speculative plumbing — move 3 is a different, semantic approach that
+  does not reuse this code.)
+- **FR-017**: The split MUST leave **no dead code** (debt-is-a-class sweep, repo-wide): every
+  symbol whose only consumer was the deleted unknown-mention heuristic MUST be removed. Concretely
+  the iteration-042 `ValidationContext.location_names()` and `object_names()` accessors — with
+  their cached `_location_names`/`_object_names` fields, their `_names_of(NarrativeLocation)`/
+  `_names_of(Object)` wiring, the `NarrativeLocation`/`Object` imports left unused by their
+  removal, and the `tests/validation/test_base.py` cases that exercise them — are left with
+  **zero** live consumers by this split and MUST be deleted (retaining them solely "for move 3" is
+  forbidden speculative plumbing, Scope & Release Discipline). The same sweep reaches the test
+  scaffold: the iteration-042 `write_project` `locations=`/`objects=` knobs in
+  `tests/validation/conftest.py` are consumed **only** by the `test_base.py` cases and the
+  union-roster cases in `test_character_presence.py` that this iteration deletes/migrates, so once
+  those callers are gone the knobs (and the dir-scaffolding loops they drive) MUST be removed too.
+  `setting_names()` and the `settings=` knob MUST be **retained** — both are still consumed
+  (`setting_continuity` and its tests). The plan MUST confirm the zero-consumer count for each
+  symbol before deleting it.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -316,6 +348,12 @@ naming the open-set/move-3 cause, appears in both.
   is unmodified; and every source file changed by this iteration is **≤500** lines — all
   checkable directly (`triples` stay `()`, `git diff` over `resources/schemas/golem-1.1/`,
   `golem.ttl`, and `io/prose.py` is empty, and `wc -l` on each changed file is ≤500).
+- **SC-009**: The split leaves **no dead code**: a repo-wide grep over `src/` and `tests/` finds
+  **0** occurrences of each deleted unknown-mention symbol — `_unknown_mentions`, `_roster_slugs`,
+  `_CANDIDATE`, `_STOP_WORDS`, `_is_sentence_initial`, `location_names`, `object_names` — and the
+  `write_project` `locations=`/`objects=` knobs are gone, while `setting_names` retains exactly its
+  `setting_continuity` consumer (and its tests). No symbol survives solely to serve a future move 3
+  (Scope & Release Discipline); `ruff` reports no unused import introduced by the removals.
 
 ## Assumptions
 
