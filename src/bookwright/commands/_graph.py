@@ -134,6 +134,7 @@ def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
         skipped=tuple(result.skipped),
         unknown_keys=tuple(result.unknown_keys),
         unresolved_references=tuple(result.unresolved_references),
+        untyped_vocab_terms=tuple(result.untyped_vocab_terms),
         sources=len(research.sources),
         findings=len(research.findings),
         anchors=len(research.anchors),

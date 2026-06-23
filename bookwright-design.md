@@ -175,6 +175,26 @@ GOLEM proporciona el patrón `E55_Type` para enchufar vocabularios sin extender 
 
 Los usuarios pueden añadir vocabularios propios en `<proyecto>/.bookwright/vocabularies/`.
 
+**Tipado fatal vs. blando — el principio (iteración 047, issue #1 track B).** Un
+valor de vocabulario no reconocido se trata según rompa o no la lógica posterior,
+no por uniformidad superficial:
+
+- En **investigación** (§ 20), un `type`/`reliability` inválido es **fatal**: lo
+  rechaza con un mensaje que enumera los valores válidos, porque alimenta la
+  compuerta `factual_anchor` (§ 20.5) — un valor inválido envenena un juicio que
+  sí gobierna el verde de CI.
+- En el **tipado Propp/Greimas** de `graph build`, un término no reconocido es
+  **metadato descriptivo**: la única consecuencia es que el nodo se acuña **sin**
+  `crm:P2_has_type`. Eso no rompe ninguna lógica posterior (ningún validador
+  depende de la presencia de ese enlace), así que el término no reconocido emite
+  solo un **aviso no fatal** de `graph build` que enumera los términos válidos del
+  vocabulario activo, el nodo se ingiere igual (untyped) y ni el build aborta ni
+  cambia su código de salida. Cerrado para el *tipado*, abierto para la *autoría*.
+
+El principio rector: **fatal ⇔ un valor inválido rompe lógica posterior**. La
+ausencia de un `P2_has_type` no rompe nada; la enumeración de términos válidos se
+deriva del propio vocabulario en el render, nunca se desnormaliza en el registro.
+
 ### 4.5 Generación de URIs
 
 Cada proyecto declara un namespace base en `manifest.toml`. Por ejemplo:
@@ -1464,13 +1484,16 @@ de naturaleza opuesta** que conviven en ese validador:
    sin declarar) que el `not_evaluated` deja pendiente. **Necesita diseño propio
    antes de spec** por la tensión de determinismo del gate (§ 20.6).
 3. **Vocabularios cerrados, trato consistente** (DEBT-016, capa narrativa, no
-   `character_presence`): un término Propp/Greimas no reconocido —hoy ingerido **en
-   silencio** como nodo sin `crm:P2_has_type`— pasa a emitir un `warning` **no fatal**
-   en `graph build` que enumera los términos válidos (simetría con el rechazo de
+   `character_presence`) — **entregado en la iteración 047**: un término Propp/Greimas
+   no reconocido —antes ingerido **en silencio** como nodo sin `crm:P2_has_type`—
+   emite ahora un `warning` **no fatal** en `graph build` (canal aditivo
+   `untyped_vocab_terms` del sobre, hermano de `unknown_keys`/`unresolved_references`)
+   que enumera los términos válidos del vocabulario activo (simetría con el rechazo de
    research § 20, DEBT-006), pero el nodo se ingiere igual (cerrado para *tipar*,
-   abierto para *autorar*). Principio: **fatal ⇔ un valor inválido rompe lógica
-   downstream** (`reliability` inválido rompe el gate de `factual_anchor` → fatal;
-   `P2_has_type` ausente es metadato → no fatal).
+   abierto para *autorar*); el build ni aborta ni cambia su código de salida. Principio:
+   **fatal ⇔ un valor inválido rompe lógica downstream** (`reliability` inválido rompe
+   el gate de `factual_anchor` → fatal; `P2_has_type` ausente es metadato → no fatal,
+   § 4.4).
 
 **Descartado:** parchear la regla de conjunto abierto por instancia (la
 comilla-líder `«`, el cuerpo del título) o con un 5º roster «organización» —es

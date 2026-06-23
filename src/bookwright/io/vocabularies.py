@@ -53,9 +53,15 @@ class VocabularyIndex:
     Built once per vocabulary from every term's ``rdfs:label``s; ``resolve`` is a
     pure normalize-then-lookup, so the same name always yields the same term
     (determinism, SC-004).
+
+    ``terms`` is the sorted, deduplicated set of every ``rdfs:label`` (ES + EN) — the
+    human-facing valid-term enumeration the ``graph build`` warning render derives
+    from a warning's ``vocabulary`` (iteration 047, FR-002). Sorting makes it
+    byte-stable regardless of the label store's incidental order (FR-016).
     """
 
     _by_slug: dict[str, URIRef]
+    terms: tuple[str, ...]
 
     def resolve(self, name: str) -> URIRef | None:
         """The term URI an authored name maps to, or ``None`` (no-match / unsluggable).
@@ -82,10 +88,12 @@ def _index_turtle(data: str, name: str) -> VocabularyIndex:
     graph = Graph()
     graph.parse(data=data, format="turtle")
     by_slug: dict[str, URIRef] = {}
+    labels: set[str] = set()
     for term in graph.subjects(RDF.type, CLASS_IRI["Type"]):
         if not isinstance(term, URIRef):
             continue
         for label in graph.objects(term, RDFS.label):
+            labels.add(str(label))
             slug = make_slug(str(label))
             existing = by_slug.get(slug)
             if existing is not None and existing != term:
@@ -94,7 +102,7 @@ def _index_turtle(data: str, name: str) -> VocabularyIndex:
                     f"slug to {slug!r}; fix the colliding label"
                 )
             by_slug[slug] = term
-    return VocabularyIndex(_by_slug=by_slug)
+    return VocabularyIndex(_by_slug=by_slug, terms=tuple(sorted(labels)))
 
 
 @cache

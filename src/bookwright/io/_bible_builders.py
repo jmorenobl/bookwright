@@ -27,7 +27,7 @@ from bookwright.golem.namespaces import TEMPORAL_RELATIONS
 from bookwright.golem.slug import make_slug
 
 from .errors import InvalidFrontmatterError, SlugCollisionError
-from .report import SkippedFile, UnknownKey, UnresolvedReference
+from .report import SkippedFile, UnknownKey, UnresolvedReference, UntypedVocabTerm
 from .vocabularies import VocabularyIndex
 
 # The five qualitative temporal relations an event may declare (each a list of
@@ -62,6 +62,11 @@ class MapResult:
     skipped: list[SkippedFile] = field(default_factory=list)
     unknown_keys: list[UnknownKey] = field(default_factory=list)
     unresolved_references: list[UnresolvedReference] = field(default_factory=list)
+    # Unrecognized Propp/Greimas terms under an active vocabulary (iteration 047,
+    # DEBT-016): appended at the two silent ``resolve()→None``-then-mint typing sites
+    # (Propp ``functions:`` in ``outline.py``; Greimas ``narrative_roles:`` here),
+    # copied verbatim into ``BuildReport`` by ``_graph.py``. Empty with no vocab active.
+    untyped_vocab_terms: list[UntypedVocabTerm] = field(default_factory=list)
     # ``make_slug(name) → URI`` for every character, setting, event and location — the
     # research ``bears_on``/``constrains`` targets (D11), distinct from participant
     # ``slug_index``.
@@ -158,6 +163,8 @@ def _coerce_str_list(value: Any, field_name: str) -> tuple[str, ...]:
 def _build_character(
     uri_base: str,
     metadata: dict[str, Any],
+    relpath: str,
+    result: MapResult,
     *,
     greimas: VocabularyIndex | None = None,
 ) -> Character:
@@ -173,10 +180,35 @@ def _build_character(
     # graph is unchanged (iteration 030, research D5 / FR-008).
     role_types: dict[str, URIRef] = {}
     if greimas is not None:
+        # One role node per distinct slug (``Character`` dedups by URI), so warn
+        # once per slug too — fully mirroring the Propp path's ``_distinct_slugs``
+        # drop of both unsluggable AND duplicate slugs (iteration 047, DEBT-016):
+        # blank/unsluggable roles mint no node, and a repeated label (incl. a
+        # case-variant that slugs identically) mints no second node.
+        seen: set[str] = set()
         for label in roles:
+            try:
+                slug = make_slug(label)
+            except EmptySlugError:
+                continue
+            if slug in seen:
+                continue
+            seen.add(slug)
             uri = greimas.resolve(label)
             if uri is not None:
-                role_types[make_slug(label)] = uri
+                role_types[slug] = uri
+            else:
+                # Greimas active but the label matched no actant: the role node is
+                # minted untyped (no ``crm:P2_has_type``); surface a non-fatal warning
+                # enumerating the valid terms at render (FR-001/003/007).
+                result.untyped_vocab_terms.append(
+                    UntypedVocabTerm(
+                        path=relpath,
+                        field="narrative_roles",
+                        term=label,
+                        vocabulary="greimas",
+                    )
+                )
     return Character(
         uri_base=uri_base,
         name=name,

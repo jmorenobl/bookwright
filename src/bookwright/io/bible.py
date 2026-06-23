@@ -168,7 +168,9 @@ def map_bible(
         _DirSpec(
             directory=bible_dir / "characters",
             concept="Character",
-            builder=lambda meta, rp: _build_character(uri_base, meta, greimas=greimas),
+            builder=lambda meta, rp: _build_character(
+                uri_base, meta, rp, ctx.result, greimas=greimas
+            ),
             allowed_keys=CHARACTER_KEYS,
             index=True,
             into_entity_index=True,

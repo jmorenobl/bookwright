@@ -61,7 +61,11 @@
 >   menciones-desconocidas— y la **iteración 043** las cerró: partió esa regla al
 >   abstainer `character_unknown_mentions`, que declara `not_evaluated`, así que los
 >   parches de costura por instancia ya no aplican. Eliminadas de este registro.)
-> - **Track B — pulido determinista:** DEBT-015, DEBT-016, DEBT-017.
+> - **Track B — pulido determinista:** DEBT-015, ~~DEBT-016~~ (cerrada en la
+>   **iteración 047**, que hace que `graph build` emita un `warning` no fatal
+>   —canal `untyped_vocab_terms`— enumerando los términos válidos cuando un
+>   `functions:`/`narrative_roles:` con vocab activo no case ningún término; el nodo
+>   se ingiere igual sin `crm:P2_has_type`. Eliminada de este registro), DEBT-017.
 > - **Track C — move 3** (juicio semántico, norte): DEBT-013 (decidido (b)), y el
 >   techo de precisión del head-hopping cerrado en honestidad por la iter 045.
 > - **Descartado:** parches de costura por instancia; 5º roster «organización».
@@ -85,15 +89,6 @@
 - **Descripción:** (1) `factual_anchor` reporta `anchor '019ef2c4-bc50-7b81-…' is backed only by sources below the minimum reliability 'media'` con `source: null` — el anchor sale identificado por un UUID opaco y sin fichero, **inaccionable**; mientras tanto `bookwright status` reporta EL MISMO anchor de forma legible (`promotes: paginas-arrancadas, constrains: El cuaderno de bitácora, file: bible/research/puerto.md, problems: [under_reliable]`), prueba de que el dato existe. (2) `temporal` es inconsistente consigo mismo: la regla d adjunta `source: "bible/timeline.md"` pero las reglas a (ciclo) y b (solape+orden) emiten `source: None`, aunque todos los eventos viven en `timeline.md`; la capacidad de resolver el fichero existe (`resolve_source`, que la regla d usa) y solo falta aplicarla uniforme. El grafo lleva la procedencia `file:line` reificada en los `E13`, así que el locator es resoluble.
 - **Por qué se difiere:** banco fuera del repo; toca dos validadores y la capa de `queries.py` (`resolve_source`), más una decisión de presentación (¿identificar el anchor por su `constrains`-target y/o el `promotes`-finding, como hace `status`?), mayor que un parche puntual y propia de su iteración.
 - **Resolución sugerida / versión objetivo:** **track B (pulido determinista)** — locator/identificador resoluble, nada semántico. (a) `factual_anchor`: identificar el anchor en el mensaje por su target/finding (el handle determinista que el fixture ya documenta) y resolver `bible/research/<tema>.md` como `source`. (b) `temporal`: aplicar `resolve_source` también en las reglas a y b. Idealmente, un helper compartido de "resuelve el locator E13 de este sujeto/triple" para todos los graph-consumers. Severidades y gate sin cambios.
-
-### DEBT-016 — un término de vocabulario Propp/Greimas inválido se ingiere en silencio como nodo sin tipo
-- **Estado:** abierta
-- **Detectada en:** dogfood `sombra-en-el-puerto` (2026-06-23), ronda de estructura narrativa.
-- **Ubicación:** `src/bookwright/io/vocabularies.py` (tipado por etiqueta) + la ingestión de `outline/units/*.md` (`functions:`/`roles:`); ningún canal (`graph build` warnings, validación) reporta un término no reconocido.
-- **Clase de deuda:** trato **inconsistente** de vocabularios cerrados: el vocab de research (`type`/`reliability`) RECHAZA lo desconocido con un mensaje enumerado (DEBT-006/036), pero los nombres de función Propp (conjunto cerrado de 31) y de actante Greimas se aceptan en silencio si no casan ningún término.
-- **Descripción:** una unidad con `functions: [intimidacion]` (que NO es una de las 31 funciones de Propp) se ingiere como `G10_Narrative_Function` con `rdfs:label "intimidacion"` y **sin** `crm:P2_has_type` (mientras `struggle`, válida, sí recibe `P2_has_type propp#function/struggle`). No hay warning al construir ni hallazgo de validación: un typo o un término inventado entra al grafo como nodo sin tipo, sin feedback. Verificado en `bible/graph.ttl` (nodo `narrative-function/intimidacion` sin `P2_has_type`).
-- **Por qué se difiere:** banco fuera del repo; había una **decisión de diseño** detrás (vocabulario cerrado que rechaza vs. abierto que permite funciones propias del autor). **Resuelta en la issue #1 (2026-06-23): híbrido —cerrado para *tipar*, abierto para *autorar*.** El silencio total de hoy es lo único claramente malo; cerrarlo a la fuerza (rechazo fatal) rompería proyectos con etiquetas propias.
-- **Resolución sugerida / versión objetivo:** **track B (pulido determinista)**, lista para iteración. `graph build` emite un `warning` **no fatal** cuando un `functions:`/`roles:` con vocab activo no case ningún término, **enumerando los válidos** como el loader de research (DEBT-006/036); el nodo se ingiere igual, sin `crm:P2_has_type`. Principio que lo hace consistente con el rechazo *fatal* de research: **fatal ⇔ el valor inválido rompe lógica downstream** (un `reliability` inválido rompe el gate de `factual_anchor`; un `P2_has_type` ausente es metadato descriptivo y no rompe nada). NO se introduce severidad `info` nueva (superficie injustificada).
 
 ### DEBT-017 — `narrative_structure` identifica la unidad de forma inconsistente entre sus dos reglas (nombre vs. slug)
 - **Estado:** abierta

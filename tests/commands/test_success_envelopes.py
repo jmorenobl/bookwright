@@ -137,8 +137,8 @@ def test_graph_build_envelope_encoding_and_key_order(
     assert _is_compact_one_line_doc(out)
     payload = json.loads(out)
     assert payload["status"] == "ok"
-    # The full key order is the frozen contract; the renamed `unresolved_references`
-    # key keeps its exact slot between `unknown_keys` and `sources` (FR-017).
+    # The full key order is the frozen contract; `untyped_vocab_terms` (iteration 047)
+    # sits between `unresolved_references` and `sources` (FR-017).
     assert list(payload) == [
         "status",
         "files_processed",
@@ -147,6 +147,7 @@ def test_graph_build_envelope_encoding_and_key_order(
         "skipped",
         "unknown_keys",
         "unresolved_references",
+        "untyped_vocab_terms",
         "sources",
         "findings",
         "anchors",
