@@ -13,6 +13,7 @@ from bookwright.validation.registry import discover_validators, resolve_active
 
 _BUILTINS = {
     "character_presence",
+    "character_unknown_mentions",
     "factual_anchor",
     "focalization",
     "narrative_structure",

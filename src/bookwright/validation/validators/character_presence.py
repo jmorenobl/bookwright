@@ -1,14 +1,13 @@
-"""``character_presence`` — bible roster vs. manuscript mentions (FR-016, research D3).
+"""``character_presence`` — bible character roster vs. manuscript mentions (FR-003).
 
-Two directions, split by severity so a heuristic false positive can never fail CI:
+One direction only, deterministic and sound: a bible character **never** mentioned in
+the manuscript is an orphan finding at **error** (the name and the prose are both
+authored, so the absence is a fact, not a guess). This rule protects the CI gate.
 
-* a bible character **never** mentioned in the manuscript → orphan finding at
-  **error** (deterministic — the name and the prose are both authored),
-* a proper-noun candidate in the prose with **no** bible entry → unknown-mention at
-  **warning** (a pinned, conservative heuristic — no NER).
-
-Unknown mentions are collapsed per distinct name (one finding citing the first
-occurrence), never multiplied per mention (edge case).
+The opposite, open-set direction — is every capitalized proper noun in the prose backed
+by a bible entry? — used to live here as a ``warning`` heuristic. It was the NER problem
+without NER, measured 100 % noise on real prose, and now lives in the honest abstainer
+``character_unknown_mentions`` (issue #1, track A — honestidad).
 """
 
 from __future__ import annotations
@@ -16,89 +15,14 @@ from __future__ import annotations
 import re
 from typing import ClassVar
 
-from bookwright.golem.slug import make_slug
 from bookwright.indexers import Indexer
-from bookwright.io.prose import ProseView
 from bookwright.validation.base import NotEvaluated, Severity, ValidationContext, Violation
 
-# Pinned proper-noun candidate: a capitalized word of ≥3 letters (D3). Accent-aware
-# for Spanish prose; matches single tokens (multi-word names are caught token-wise).
-_CANDIDATE = re.compile(r"[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]{2,}")
-# Sentence-ending punctuation: a capital right after one of these (or at line start)
-# is grammatical, not necessarily a proper noun — excluded (conservative, D3).
-_SENTENCE_END = frozenset(".!?¿¡")
 _MIN_TOKEN_LEN = 3  # shortest name token worth matching as a standalone word.
-# Common capitalized non-names we never treat as a character mention (pinned stop-set).
-_STOP_WORDS = frozenset(
-    {
-        # Spanish weekdays / months / frequent sentence openers.
-        "lunes",
-        "martes",
-        "miercoles",
-        "jueves",
-        "viernes",
-        "sabado",
-        "domingo",
-        "enero",
-        "febrero",
-        "marzo",
-        "abril",
-        "mayo",
-        "junio",
-        "julio",
-        "agosto",
-        "septiembre",
-        "octubre",
-        "noviembre",
-        "diciembre",
-        "entonces",
-        "cuando",
-        "aunque",
-        "pero",
-        "porque",
-        "tambien",
-        "despues",
-        "antes",
-        "ahora",
-        "nunca",
-        "siempre",
-        "quiza",
-        "quizas",
-        "acaso",
-        # English weekdays / months / openers.
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday",
-        "january",
-        "february",
-        "march",
-        "april",
-        "may",
-        "june",
-        "july",
-        "august",
-        "september",
-        "october",
-        "november",
-        "december",
-        "then",
-        "when",
-        "although",
-        "because",
-        "after",
-        "before",
-        "however",
-        "perhaps",
-    }
-)
 
 
 class CharacterPresence:
-    """Cross-checks the bible character roster against manuscript proper nouns."""
+    """Flags every bible character that the manuscript never mentions (orphan → error)."""
 
     name: ClassVar[str] = "character_presence"
     severity_default: ClassVar[Severity] = Severity.error
@@ -106,27 +30,13 @@ class CharacterPresence:
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
         roster = project.character_names()
         files = project.manuscript_files()
-        if not roster and not files:  # nothing to cross-check in EITHER direction (FR-009)
+        if not roster and not files:  # nothing to cross-check in EITHER direction (FR-004)
             raise NotEvaluated(
                 "there is no manuscript prose and no bible character roster to cross-check"
             )
         # An empty manuscript with a non-empty roster STAYS evaluated and still emits its
-        # error-level orphan findings byte-for-byte — the rule that protects the gate
-        # (FR-004/FR-012).
-        #
-        # The unknown-mention rule suppresses a candidate whose slug is in ANY bible
-        # roster, not just characters: the capitalized tokens of a declared environment
-        # (e.g. `Real`/`Fábrica`/`Paños` of the setting "la Real Fábrica de Paños") have a
-        # bible entry — only under settings/locations/objects, not characters (DEBT-010).
-        # The `_orphans` (error) gate keeps deriving from `roster` (characters) ALONE.
-        roster_slugs = _roster_slugs(
-            roster + project.setting_names() + project.location_names() + project.object_names()
-        )
-
-        out: list[Violation] = []
-        out.extend(self._orphans(roster, files))
-        out.extend(self._unknown_mentions(project.manuscript_view(), roster_slugs))
-        return out
+        # error-level orphan findings byte-for-byte — the rule that protects the gate.
+        return self._orphans(roster, files)
 
     def _orphans(
         self,
@@ -150,58 +60,6 @@ class CharacterPresence:
                 )
         return out
 
-    def _unknown_mentions(
-        self,
-        view: tuple[tuple[str, ProseView], ...],
-        roster_slugs: frozenset[str],
-    ) -> list[Violation]:
-        # slug → (display name, first "relpath:line"); first occurrence wins.
-        first_seen: dict[str, tuple[str, str]] = {}
-        for relpath, prose in view:
-            for line in prose:
-                # The seam's ``normalized`` has stripped any leading block prefix (e.g.
-                # an ATX heading marker), so the title's first word is line-initial (and
-                # thus exempt); the scan runs over that normalized text.
-                scan = line.normalized
-                for match in _CANDIDATE.finditer(scan):
-                    token = match.group(0)
-                    slug = make_slug(token)
-                    if (
-                        slug in roster_slugs
-                        or slug in first_seen
-                        or slug in _STOP_WORDS
-                        or _is_sentence_initial(scan, match.start())
-                    ):
-                        continue
-                    first_seen[slug] = (token, f"{relpath}:{line.number}")
-        out: list[Violation] = []
-        for _, (token, source) in sorted(first_seen.items()):
-            out.append(
-                Violation(
-                    validator=self.name,
-                    severity=Severity.warning,
-                    message=(
-                        f"proper noun '{token}' appears in the manuscript but has no "
-                        "bible entry (heuristic — may be a place or organization)"
-                    ),
-                    source=source,
-                    triples=(),
-                )
-            )
-        return out
-
-
-def _roster_slugs(roster: tuple[tuple[str, str], ...]) -> frozenset[str]:
-    """Slugs for every roster name and each of its tokens (so a surname matches)."""
-    slugs: set[str] = set()
-    for name, _ in roster:
-        slugs.add(make_slug(name))
-        for token in name.split():
-            candidate = make_slug(token)
-            if candidate:
-                slugs.add(candidate)
-    return frozenset(slugs)
-
 
 def _is_mentioned(name: str, files: tuple[tuple[str, str], ...]) -> bool:
     """Whether ``name`` (full phrase or any ≥3-letter token) appears as a word."""
@@ -212,11 +70,3 @@ def _is_mentioned(name: str, files: tuple[tuple[str, str], ...]) -> bool:
         if len(token) >= _MIN_TOKEN_LEN
     ]
     return any(pattern.search(text) for pattern in patterns for _, text in files)
-
-
-def _is_sentence_initial(line: str, start: int) -> bool:
-    """Whether the match at ``start`` opens a sentence (capitalization is grammatical)."""
-    prefix = line[:start].rstrip()
-    if not prefix:
-        return True
-    return prefix[-1] in _SENTENCE_END

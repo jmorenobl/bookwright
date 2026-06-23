@@ -200,8 +200,6 @@ class ValidationContext:
     _outline: Any = field(default=_UNSET, repr=False, compare=False)
     _character_names: Any = field(default=_UNSET, repr=False, compare=False)
     _setting_names: Any = field(default=_UNSET, repr=False, compare=False)
-    _location_names: Any = field(default=_UNSET, repr=False, compare=False)
-    _object_names: Any = field(default=_UNSET, repr=False, compare=False)
     _manuscript_files: Any = field(default=_UNSET, repr=False, compare=False)
     _constitution_text: Any = field(default=_UNSET, repr=False, compare=False)
     _manuscript_view: Any = field(default=_UNSET, repr=False, compare=False)
@@ -266,22 +264,6 @@ class ValidationContext:
 
             self._setting_names = self._names_of(Setting)
         return cast("tuple[tuple[str, str], ...]", self._setting_names)
-
-    def location_names(self) -> tuple[tuple[str, str], ...]:
-        """Sorted ``(name, bible_relpath)`` for every bible NarrativeLocation (G13)."""
-        if self._location_names is _UNSET:
-            from bookwright.golem import NarrativeLocation  # noqa: PLC0415
-
-            self._location_names = self._names_of(NarrativeLocation)
-        return cast("tuple[tuple[str, str], ...]", self._location_names)
-
-    def object_names(self) -> tuple[tuple[str, str], ...]:
-        """Sorted ``(name, bible_relpath)`` for every bible Object (G16)."""
-        if self._object_names is _UNSET:
-            from bookwright.golem import Object  # noqa: PLC0415
-
-            self._object_names = self._names_of(Object)
-        return cast("tuple[tuple[str, str], ...]", self._object_names)
 
     def manuscript_files(self) -> tuple[tuple[str, str], ...]:
         """Sorted ``(relpath, text)`` for every ``**/*.md`` under the manuscript dir.

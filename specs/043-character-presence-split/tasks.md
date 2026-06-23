@@ -26,7 +26,7 @@ Single src-layout package: `src/bookwright/`, tests at `tests/`. Paths below are
 
 **Purpose**: Capture the pre-change reference the byte-for-byte invariants (SC-003/SC-004) are measured against.
 
-- [ ] T001 Run `uv run pytest` from repo root and confirm the suite is green **before** any edit; record the current `error`-level finding set across fixtures (the byte-for-byte reference for SC-003/invariant I1). Confirm `character_presence` emits **zero** findings on `tests/fixtures/tiny-historical/` today (clarification Q1 / Assumptions) so the unchanged `validation.counts` claim is grounded.
+- [X] T001 Run `uv run pytest` from repo root and confirm the suite is green **before** any edit; record the current `error`-level finding set across fixtures (the byte-for-byte reference for SC-003/invariant I1). Confirm `character_presence` emits **zero** findings on `tests/fixtures/tiny-historical/` today (clarification Q1 / Assumptions) so the unchanged `validation.counts` claim is grounded.
 
 **Checkpoint**: Green baseline + error-finding snapshot recorded.
 
@@ -38,7 +38,7 @@ Single src-layout package: `src/bookwright/`, tests at `tests/`. Paths below are
 
 **⚠️ CRITICAL**: T002 blocks every registry/status/oracle task (T010, T015, T016, T017, T018, T021, T022).
 
-- [ ] T002 Create `src/bookwright/validation/validators/character_unknown_mentions.py`: a `CharacterUnknownMentions` validator with `name = "character_unknown_mentions"` and `severity_default = Severity.warning` (cosmetic — never emits) — the two attributes the `Validator` Protocol requires, mirroring `CharacterPresence` which carries **no** class-level `triples` (the abstainer emits no `Violation`, so there are trivially no triples; contract C2 / data-model D3) — and a `validate(project, indexer)` body that is **solely** `raise NotEvaluated("open-set proper-noun discovery requires semantic judgment (move 3); the deterministic heuristic was measured insufficient on real prose")` — **unconditionally**, with no reference to `project`/`indexer` state (contract C2; FR-005; data-model D3). Module/class docstring states it is a pure abstainer pending move 3. Mirror the import/shape conventions of the existing validator modules so `registry._discover_builtins` auto-discovers it (no hand-registration).
+- [X] T002 Create `src/bookwright/validation/validators/character_unknown_mentions.py`: a `CharacterUnknownMentions` validator with `name = "character_unknown_mentions"` and `severity_default = Severity.warning` (cosmetic — never emits) — the two attributes the `Validator` Protocol requires, mirroring `CharacterPresence` which carries **no** class-level `triples` (the abstainer emits no `Violation`, so there are trivially no triples; contract C2 / data-model D3) — and a `validate(project, indexer)` body that is **solely** `raise NotEvaluated("open-set proper-noun discovery requires semantic judgment (move 3); the deterministic heuristic was measured insufficient on real prose")` — **unconditionally**, with no reference to `project`/`indexer` state (contract C2; FR-005; data-model D3). Module/class docstring states it is a pure abstainer pending move 3. Mirror the import/shape conventions of the existing validator modules so `registry._discover_builtins` auto-discovers it (no hand-registration).
 
 **Checkpoint**: New built-in exists and is auto-discovered; the validator set is now 7.
 
@@ -52,11 +52,11 @@ Single src-layout package: `src/bookwright/`, tests at `tests/`. Paths below are
 
 ### Tests for User Story 1
 
-- [ ] T003 [P] [US1] Create `tests/validation/test_character_unknown_mentions.py`: assert `CharacterUnknownMentions().validate(...)` raises `NotEvaluated` with the **exact** open-set reason string regardless of inputs — empty project, clean project, and a project with off-roster proper nouns (org / title word / quoted first word). Assert `name == "character_unknown_mentions"` and `severity_default == Severity.warning`. Reuse the `tests/validation/conftest.py` `write_project`/`load_context` pattern. (Acceptance scenarios 1–2; SC-001/SC-002.)
+- [X] T003 [P] [US1] Create `tests/validation/test_character_unknown_mentions.py`: assert `CharacterUnknownMentions().validate(...)` raises `NotEvaluated` with the **exact** open-set reason string regardless of inputs — empty project, clean project, and a project with off-roster proper nouns (org / title word / quoted first word). Assert `name == "character_unknown_mentions"` and `severity_default == Severity.warning`. Reuse the `tests/validation/conftest.py` `write_project`/`load_context` pattern. (Acceptance scenarios 1–2; SC-001/SC-002.)
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Verify (no code) via T003 that the abstainer emits **no** `Violation` and surfaces only through `not_evaluated[]` — depends on T002. (If T003 reveals a Protocol-attr gap, fix it in `character_unknown_mentions.py`.)
+- [X] T004 [US1] Verify (no code) via T003 that the abstainer emits **no** `Violation` and surfaces only through `not_evaluated[]` — depends on T002. (If T003 reveals a Protocol-attr gap, fix it in `character_unknown_mentions.py`.)
 
 **Checkpoint**: The abstainer unconditionally declares `not_evaluated`; zero unknown-mention warnings anywhere. MVP behavior delivered.
 
@@ -70,11 +70,11 @@ Single src-layout package: `src/bookwright/`, tests at `tests/`. Paths below are
 
 ### Implementation for User Story 2
 
-- [ ] T005 [US2] Edit `src/bookwright/validation/validators/character_presence.py`: **keep** `CharacterPresence` (name unchanged), `_orphans`, `_is_mentioned`, `_MIN_TOKEN_LEN`, and the `not roster and not files` `NotEvaluated` guard with its **identical** reason string. Make `validate` body: guard → `return self._orphans(roster, files)`. **Delete** `_CANDIDATE`, `_SENTENCE_END`, `_STOP_WORDS`, `_is_sentence_initial`, `_roster_slugs`, `_unknown_mentions`, and the `setting/location/object` union line. **Remove** the now-unused imports `make_slug` and `ProseView`. Trim the module/class docstring to the orphan-only rule. (Contract C1; FR-003/FR-004/FR-016; module must stay ≤500 lines — shrinks ~223→~95.)
-- [ ] T006 [US2] Edit `src/bookwright/validation/base.py`: **delete** `location_names()`, `object_names()`, the `_location_names`/`_object_names` cache fields, the `_names_of(NarrativeLocation)`/`_names_of(Object)` wiring, and the `NarrativeLocation`/`Object` imports left unused. **Keep** `setting_names()`, `_setting_names`, `_names_of`, the `_UNSET` sentinel, and the `Character`/`Setting` imports. (FR-017; data-model "Removed entities"; confirm zero live consumers before deleting.)
-- [ ] T007 [US2] Edit `tests/validation/conftest.py`: remove the `locations=` and `objects=` knobs from `write_project`, their two scaffold loops and dir creation, and update the docstring. **Keep** the `settings=` knob (still consumed by `setting_continuity` tests). (FR-017.)
-- [ ] T008 [P] [US2] Migrate `tests/validation/test_character_presence.py`: **keep** the orphan/guard tests (`test_no_prose_and_empty_roster_is_not_evaluated`, `test_empty_manuscript_with_roster_stays_evaluated_and_emits_orphans`, `test_orphan_bible_character_is_error`) and the clean-project test. **Delete** every unknown-mention / seam / union test (sentence-initial, heading, blockquote, dialogue-dash, mid-line, declared setting/location/object suppression, off-bible-still-fires, locator, guard-with-declared-environments). (Plan §Tests 5; depends on T005.)
-- [ ] T009 [P] [US2] Edit `tests/validation/test_base.py`: delete `test_location_and_object_names_read_and_cache` and `test_location_and_object_names_empty_when_dir_absent`. Leave the `setting_names()` coverage in `test_context_accessors_cache_and_read` intact. (FR-017; depends on T006/T007.)
+- [X] T005 [US2] Edit `src/bookwright/validation/validators/character_presence.py`: **keep** `CharacterPresence` (name unchanged), `_orphans`, `_is_mentioned`, `_MIN_TOKEN_LEN`, and the `not roster and not files` `NotEvaluated` guard with its **identical** reason string. Make `validate` body: guard → `return self._orphans(roster, files)`. **Delete** `_CANDIDATE`, `_SENTENCE_END`, `_STOP_WORDS`, `_is_sentence_initial`, `_roster_slugs`, `_unknown_mentions`, and the `setting/location/object` union line. **Remove** the now-unused imports `make_slug` and `ProseView`. Trim the module/class docstring to the orphan-only rule. (Contract C1; FR-003/FR-004/FR-016; module must stay ≤500 lines — shrinks ~223→~95.)
+- [X] T006 [US2] Edit `src/bookwright/validation/base.py`: **delete** `location_names()`, `object_names()`, the `_location_names`/`_object_names` cache fields, the `_names_of(NarrativeLocation)`/`_names_of(Object)` wiring, and the `NarrativeLocation`/`Object` imports left unused. **Keep** `setting_names()`, `_setting_names`, `_names_of`, the `_UNSET` sentinel, and the `Character`/`Setting` imports. (FR-017; data-model "Removed entities"; confirm zero live consumers before deleting.)
+- [X] T007 [US2] Edit `tests/validation/conftest.py`: remove the `locations=` and `objects=` knobs from `write_project`, their two scaffold loops and dir creation, and update the docstring. **Keep** the `settings=` knob (still consumed by `setting_continuity` tests). (FR-017.)
+- [X] T008 [P] [US2] Migrate `tests/validation/test_character_presence.py`: **keep** the orphan/guard tests (`test_no_prose_and_empty_roster_is_not_evaluated`, `test_empty_manuscript_with_roster_stays_evaluated_and_emits_orphans`, `test_orphan_bible_character_is_error`) and the clean-project test. **Delete** every unknown-mention / seam / union test (sentence-initial, heading, blockquote, dialogue-dash, mid-line, declared setting/location/object suppression, off-bible-still-fires, locator, guard-with-declared-environments). (Plan §Tests 5; depends on T005.)
+- [X] T009 [P] [US2] Edit `tests/validation/test_base.py`: delete `test_location_and_object_names_read_and_cache` and `test_location_and_object_names_empty_when_dir_absent`. Leave the `setting_names()` coverage in `test_context_accessors_cache_and_read` intact. (FR-017; depends on T006/T007.)
 
 **Checkpoint**: Orphan `error` byte-identical; dead heuristic + dead accessors fully removed; grep for deleted symbols is empty.
 
@@ -88,9 +88,9 @@ Single src-layout package: `src/bookwright/`, tests at `tests/`. Paths below are
 
 ### Tests for User Story 3
 
-- [ ] T010 [P] [US3] Edit `tests/validation/test_registry.py`: add `"character_unknown_mentions"` to the `_BUILTINS` pin (6 → 7). (Depends on T002.)
-- [ ] T011 [P] [US3] Edit `tests/validation/test_command.py`: add `"character_unknown_mentions"` to the exact `ran`-set assertion in `test_json_is_single_document_…` (6 → 7); the line-85 subset loop needs no edit. (Contract C3/C4; depends on T002.)
-- [ ] T012 [US3] Add a coexistence assertion (in `tests/validation/test_runner.py` or `test_command.py`): a synthetic project with a never-mentioned character **and** off-roster proper nouns yields the orphan `error` **and** the `character_unknown_mentions` `not_evaluated` entry in one run; `errors[]` does **not** contain `character_unknown_mentions` (it raised `NotEvaluated`, not a crash). (Acceptance scenario 1; contract C3; depends on T002/T005.)
+- [X] T010 [P] [US3] Edit `tests/validation/test_registry.py`: add `"character_unknown_mentions"` to the `_BUILTINS` pin (6 → 7). (Depends on T002.)
+- [X] T011 [P] [US3] Edit `tests/validation/test_command.py`: add `"character_unknown_mentions"` to the exact `ran`-set assertion in `test_json_is_single_document_…` (6 → 7); the line-85 subset loop needs no edit. (Contract C3/C4; depends on T002.)
+- [X] T012 [US3] Add a coexistence assertion (in `tests/validation/test_runner.py` or `test_command.py`): a synthetic project with a never-mentioned character **and** off-roster proper nouns yields the orphan `error` **and** the `character_unknown_mentions` `not_evaluated` entry in one run; `errors[]` does **not** contain `character_unknown_mentions` (it raised `NotEvaluated`, not a crash). (Acceptance scenario 1; contract C3; depends on T002/T005.)
 
 **Checkpoint**: Both verdicts coexist; the 7-built-in set is pinned everywhere.
 
@@ -104,14 +104,14 @@ Single src-layout package: `src/bookwright/`, tests at `tests/`. Paths below are
 
 ### Implementation for User Story 4
 
-- [ ] T013 [US4] Edit `src/bookwright/status/rules.py`: add a `_REMEDIES["character_unknown_mentions"]` clause so the always-firing `activate_dormant_validators` prompt is **honest** (e.g. "awaiting LLM semantic judgment (move 3) — no manual action available yet") instead of the generic "investigate why it could not evaluate". Use the existing dormant-prompt channel — **no** new rule, **no** new channel. (Contract C5; data-model D6; depends on T002.)
+- [X] T013 [US4] Edit `src/bookwright/status/rules.py`: add a `_REMEDIES["character_unknown_mentions"]` clause so the always-firing `activate_dormant_validators` prompt is **honest** (e.g. "awaiting LLM semantic judgment (move 3) — no manual action available yet") instead of the generic "investigate why it could not evaluate". Use the existing dormant-prompt channel — **no** new rule, **no** new channel. (Contract C5; data-model D6; depends on T002.)
 
 ### Tests for User Story 4
 
-- [ ] T014 [P] [US4] Edit `tests/status/test_queries.py` (`test_validation_summary_surfaces_not_evaluated_sorted`): keep the subset + `sorted` assertions; update the "three validators" comment to four and add `assert "character_unknown_mentions" in names`. (Depends on T002/T013.)
-- [ ] T015 [US4] Edit `tests/commands/test_status.py`: change `len(state["validation"]["ran"]) == 6` → `== 7`; in `test_known_state_yields_the_exact_next_actions`, append the 4th action `"bookwright-continuity"` (the dormant nudge), update its comment (no longer "exactly three"). (Contract C5; depends on T002/T013.)
-- [ ] T016 [US4] Edit `tests/e2e/test_orchestration_workflow.py` — **Group A**: `len(next_actions) == 3` → `== 4` in both `test_second_status_converges` assertions (lines ~290–291); the 4th action is byte-identical across runs so `_invariant_view` equality still holds; assert the `not_evaluated` entry appears. **Also** update the module docstring (lines ~9–11) that states resolving one question "leaves `len(next_actions) == 3` unchanged" → the 4-action shape, so the file's prose no longer contradicts its assertions (no stale lore). (Depends on T002/T013.)
-- [ ] T017 [US4] Edit `tests/e2e/test_orchestration_workflow.py` — **Group B** (`test_focus_free_project_recommends_no_research_workstream`): reframe the `research_skills.isdisjoint(_skills(payload))` assertion to the **research-derived** skills only `{"bookwright-research", "bookwright-verify"}`, since `bookwright-continuity` is now dual-purpose (`review_continuity` **and** the always-on `activate_dormant_validators`). (Plan §Tests 13; depends on T002/T013.)
+- [X] T014 [P] [US4] Edit `tests/status/test_queries.py` (`test_validation_summary_surfaces_not_evaluated_sorted`): keep the subset + `sorted` assertions; update the "three validators" comment to four and add `assert "character_unknown_mentions" in names`. (Depends on T002/T013.)
+- [X] T015 [US4] Edit `tests/commands/test_status.py`: change `len(state["validation"]["ran"]) == 6` → `== 7`; in `test_known_state_yields_the_exact_next_actions`, append the 4th action `"bookwright-continuity"` (the dormant nudge), update its comment (no longer "exactly three"). (Contract C5; depends on T002/T013.)
+- [X] T016 [US4] Edit `tests/e2e/test_orchestration_workflow.py` — **Group A**: `len(next_actions) == 3` → `== 4` in both `test_second_status_converges` assertions (lines ~290–291); the 4th action is byte-identical across runs so `_invariant_view` equality still holds; assert the `not_evaluated` entry appears. **Also** update the module docstring (lines ~9–11) that states resolving one question "leaves `len(next_actions) == 3` unchanged" → the 4-action shape, so the file's prose no longer contradicts its assertions (no stale lore). (Depends on T002/T013.)
+- [X] T017 [US4] Edit `tests/e2e/test_orchestration_workflow.py` — **Group B** (`test_focus_free_project_recommends_no_research_workstream`): reframe the `research_skills.isdisjoint(_skills(payload))` assertion to the **research-derived** skills only `{"bookwright-research", "bookwright-verify"}`, since `bookwright-continuity` is now dual-purpose (`review_continuity` **and** the always-on `activate_dormant_validators`). (Plan §Tests 13; depends on T002/T013.)
 
 **Checkpoint**: The honest `not_evaluated` reason and the 4-action ripple are pinned across status/queries/e2e; green predicate `False` everywhere.
 
@@ -121,13 +121,19 @@ Single src-layout package: `src/bookwright/`, tests at `tests/`. Paths below are
 
 **Purpose**: Fixture oracle, debt ledger, and the full gate/quickstart verification.
 
-- [ ] T018 [US4] Edit `tests/fixtures/tiny-historical/expected-status.md`: add a `not_evaluated` block (one entry: `character_unknown_mentions` + its open-set reason); change `next_actions.skills` to the 4-entry list `[bookwright-research, bookwright-verify, bookwright-continuity, bookwright-continuity]`; update the convergence prose ("tres workstreams"/`len == 3` → the 4-action shape, dormant nudge explained). **Do not** edit the fixture manuscript or bible; `validation.counts` stays byte-identical `{error: 1, warning: 1, info: 0}`. (FR-011; SC-005; depends on T002/T013.)
-- [ ] T019 [P] Edit `DEBT.md`: remove the **DEBT-011** (paired leading-quote markers) and **DEBT-012** (title-body scan) entries; keep DEBT-014/DEBT-018; update the track-A doctrine note so it no longer lists 011/012 as pending. (FR-010; SC-007.)
-- [ ] T020 Run the dead-code sweep (SC-009): `grep -rn "_unknown_mentions\|_roster_slugs\|_CANDIDATE\|_STOP_WORDS\|_is_sentence_initial\|location_names\|object_names" src tests` prints **nothing**; `grep -rn "locations=\|objects=" tests/validation/conftest.py` prints nothing; `grep -rn "setting_names" src tests` shows only `base.py` + `setting_continuity.py` (+ their tests). Confirm `git diff --stat` over `src/bookwright/io/prose.py`, `resources/schemas/golem-1.1/`, and `*golem.ttl` is empty (SC-008, FR-009/FR-013), and `wc -l` on each changed source file is ≤500.
-- [ ] T021 Run all four gates: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest`. All must pass with ≥80 % coverage; `ruff` must report **no** unused import introduced by the deletions. (SC-007; FR-012; depends on every prior task.)
-- [ ] T022 Execute the `quickstart.md` checks end-to-end (sections 1–7) over `tests/fixtures/tiny-novel` (or a copy) to confirm `green = False`, the abstainer entry present, and counts unchanged — the empirical zero-regression proof (FR-012; depends on T021).
+- [X] T018 [US4] Edit `tests/fixtures/tiny-historical/expected-status.md`: add a `not_evaluated` block (one entry: `character_unknown_mentions` + its open-set reason); change `next_actions.skills` to the 4-entry list `[bookwright-research, bookwright-verify, bookwright-continuity, bookwright-continuity]`; update the convergence prose ("tres workstreams"/`len == 3` → the 4-action shape, dormant nudge explained). **Do not** edit the fixture manuscript or bible; `validation.counts` stays byte-identical `{error: 1, warning: 1, info: 0}`. (FR-011; SC-005; depends on T002/T013.)
+- [X] T019 [P] Edit `DEBT.md`: remove the **DEBT-011** (paired leading-quote markers) and **DEBT-012** (title-body scan) entries; keep DEBT-014/DEBT-018; update the track-A doctrine note so it no longer lists 011/012 as pending. (FR-010; SC-007.)
+- [X] T020 Run the dead-code sweep (SC-009): `grep -rn "_unknown_mentions\|_roster_slugs\|_CANDIDATE\|_STOP_WORDS\|_is_sentence_initial\|location_names\|object_names" src tests` prints **nothing**; `grep -rn "locations=\|objects=" tests/validation/conftest.py` prints nothing; `grep -rn "setting_names" src tests` shows only `base.py` + `setting_continuity.py` (+ their tests). Confirm `git diff --stat` over `src/bookwright/io/prose.py`, `resources/schemas/golem-1.1/`, and `*golem.ttl` is empty (SC-008, FR-009/FR-013), and `wc -l` on each changed source file is ≤500.
+- [X] T021 Run all four gates: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest`. All must pass with ≥80 % coverage; `ruff` must report **no** unused import introduced by the deletions. (SC-007; FR-012; depends on every prior task.)
+- [X] T022 Execute the `quickstart.md` checks end-to-end (sections 1–7) over `tests/fixtures/tiny-novel` (or a copy) to confirm `green = False`, the abstainer entry present, and counts unchanged — the empirical zero-regression proof (FR-012; depends on T021).
 
 **Checkpoint**: All gates green, no dead code, oracle and debt ledger updated, quickstart verified.
+
+---
+
+## Phase 8: Convergence
+
+- [ ] T023 Remove the leftover quickstart scratch script `_qs_check.py` at the repo root (or, if it must be kept, move it under a path `ruff`/`pyproject` excludes and make it lint-clean) so `uv run ruff check` passes — today it fails with `PLR2004` (magic value `7`) at `_qs_check.py:31`, leaving the lint gate red despite `pytest`/`mypy`/`format` being green per SC-007 / T021 (unrequested).
 
 ---
 

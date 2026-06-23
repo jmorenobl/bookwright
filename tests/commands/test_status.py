@@ -67,7 +67,7 @@ def test_known_state_facts_match_the_fixture(tiny_historical: Path, runner: CliR
     }
 
     assert state["validation"]["counts"]["error"] >= 1
-    assert len(state["validation"]["ran"]) == 6
+    assert len(state["validation"]["ran"]) == 7
 
 
 def test_facts_agree_with_the_owning_tools(tiny_historical: Path, runner: CliRunner) -> None:
@@ -153,11 +153,15 @@ def test_known_state_yields_the_exact_next_actions(
 ) -> None:
     _, payload = _status_json(runner)
     actions = payload["next_actions"]
-    # The fixture carries an authored [focus] block (iteration 023), so rule ⑤
-    # (define_focus) does NOT fire — exactly three research-derived workstreams remain.
+    # The fixture carries an authored [focus] block (iteration 023), so rule ⑥
+    # (define_focus) does NOT fire. Four actions remain: the three research-derived
+    # workstreams plus the always-on dormant-validator nudge — `character_unknown_mentions`
+    # abstains unconditionally (issue #1 track A), so `activate_dormant_validators` fires on
+    # EVERY project, contributing a second `bookwright-continuity` action.
     assert [a["skill"] for a in actions] == [
         "bookwright-research",
         "bookwright-verify",
+        "bookwright-continuity",
         "bookwright-continuity",
     ]
     research = actions[0]

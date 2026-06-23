@@ -48,33 +48,17 @@
 > `not_evaluated` (familia 040), y el **move 3** (juicio semántico) se **activa**
 > como su cura de raíz. Eso reparte estas 8 deudas en tres destinos (ver
 > `bookwright-roadmap.md` § 3, `bookwright-design.md` § 13.5):
-> - **Track A — honestidad** (`not_evaluated`): DEBT-011, DEBT-012 (**subsumidas**:
->   no se parchean por instancia, las absorbe la regla→`not_evaluated`), DEBT-014,
->   DEBT-018.
+> - **Track A — honestidad** (`not_evaluated`): DEBT-014, DEBT-018. (DEBT-011 y
+>   DEBT-012 estaban aquí como **subsumidas** —des-ruido de la regla de
+>   menciones-desconocidas— y la **iteración 043** las cerró: partió esa regla al
+>   abstainer `character_unknown_mentions`, que declara `not_evaluated`, así que los
+>   parches de costura por instancia ya no aplican. Eliminadas de este registro.)
 > - **Track B — pulido determinista:** DEBT-015, DEBT-016, DEBT-017.
 > - **Track C — move 3** (juicio semántico, norte): DEBT-013 (decidido (b)), techo
 >   de DEBT-014.
-> - **Descartado:** 043/044 como parches de costura; 5º roster «organización».
+> - **Descartado:** parches de costura por instancia; 5º roster «organización».
 
 ## Deuda abierta
-
-### DEBT-011 — `character_presence` marca el primer término tras una comilla-líder de apertura (`«` U+00AB, `"` U+201C, `'` U+2018, `"` ASCII)
-- **Estado:** abierta
-- **Detectada en:** auditoría de `spec-041` (2026-06-22) — al cerrar DEBT-009 (la raya de diálogo `—`/`–`/`―`) se verificó **empíricamente** que la *misma clase* de fallo persiste para los marcadores de comilla líder.
-- **Ubicación:** `src/bookwright/io/prose.py` (`_normalize` retira encabezados ATX, viñetas/citas ASCII y —tras 041— las tres rayas de diálogo `—`/`–`/`―`; NO retira la comilla angular `«`/`»` U+00AB/BB, las comillas tipográficas `"`/`"` U+201C/D, ni las comillas rectas ASCII `"`/`'`); consumido por `character_presence._is_sentence_initial` (`_SENTENCE_END` ya cubre `¿¡` pero no estas comillas).
-- **Clase de deuda:** emparentada con DEBT-008/DEBT-009 / issue #1 (acoplamiento a un marcador de superficie líder no normalizado), pero un *diseño distinto*: la comilla es un marcador **par** (apertura…cierre), no una raya líder simple.
-- **Descripción:** `«Esto es el porvenir»` y `"Hola"` dejan el primer término citado (`Esto`, `Hola`) en offset ≠ 0 con un prefijo de comilla (`«`/`"`) que no está en `_SENTENCE_END`, así que `_is_sentence_initial` devuelve `False` y el demostrativo/saludo se marca como nombre propio sin entrada en la bible. Verificado en la auditoría de spec-041: ambas formas producen el flag espurio hoy. **Confirmado empíricamente** por el dogfood `sombra-en-el-puerto` (novela negra, 2026-06-23, banco desechable fuera del repo): `«Inspectora` y `«Las` —primer término de cada línea de diálogo abierta con `«`— se reportan como nombre propio sin entrada; `Las` es además un **artículo**, no un nombre propio, y solo se marca por el desplazamiento de offset que introduce la `«` (evidencia de que el fallo es de superficie, no de léxico). (La barra horizontal `―` U+2015 era de esta familia pero es *misma clase y mismo diseño* que la raya de diálogo, así que **se barrió en 041** junto a `—`/`–`, no se difiere aquí.)
-- **Por qué se difiere:** 041 cierra todas las *rayas* de diálogo (`—`/`–`/`―`), la convención española dominante y el caso observado en el dogfood de `tiny-historical`. Las comillas son un marcador DISTINTO con semántica de par (apertura `«`…cierre `»`), pueden aparecer a mitad de línea como contenido citado, y su normalización (¿retirar solo la comilla de apertura líder?, ¿la de cierre?, interacción con el `¿¡` que `_SENTENCE_END` ya trata) es una decisión de diseño propia, mayor que añadir un code-point a la clase de caracteres de la raya.
-- **Resolución sugerida / versión objetivo:** **SUBSUMIDA por el track A (honestidad)** tras la decisión de issue #1. El parche de costura por instancia (extender `_normalize` con la comilla líder) **se descarta**: es des-ruido de una regla —menciones-desconocidas— que pasa a declarar `not_evaluated` por defecto (conjunto abierto, requiere move 3). `«Las` (un artículo marcado solo por el offset de la `«`) es la prueba de que el problema es semántico, no de superficie. Se cierra cuando la iteración del track A (regla→`not_evaluated`) aterrice; el move 3 (track C) restaura la señal real. La costura `io/prose.py` se conserva intacta.
-
-### DEBT-012 — `character_presence` escanea el cuerpo de un encabezado (título) como prosa más allá de la primera palabra
-- **Estado:** abierta
-- **Detectada en:** dogfood `sombra-en-el-puerto` (novela negra, 2026-06-23) — banco desechable fuera del repo, sobre `v0.5.2`.
-- **Ubicación:** `src/bookwright/validation/validators/character_presence.py` (`_unknown_mentions`: `_HEADING_MARKER.sub("", line, count=1)` retira el marcador ATX, pero el RESTO del título se escanea como prosa); emparentada con la costura `io/prose.py`.
-- **Clase de deuda:** issue #1 / DEBT-008 (el validador trata markup estructural —aquí el cuerpo de un título— como prosa narrativa), pero un *mecanismo distinto* de DEBT-011: no es un marcador líder que desplaza el primer token, es que un TÍTULO entero no es prosa.
-- **Descripción:** DEBT-008 exime solo la PRIMERA palabra del encabezado (`Capítulo` en `# Capítulo 1 — Marea baja`, que cae a offset 0 y hereda la exención de inicio-de-frase). El resto del título se sigue escaneando como prosa, así que una palabra capitalizada tras la raya interna del título (`Marea` de "— Marea baja") se reporta como nombre propio sin entrada en la bible. Verificado en el dogfood: `# Capítulo 1 — Marea baja` dispara sobre `Marea` (`manuscript/01-marea-baja.md:1`). Un título de capítulo es texto editorial, no prosa narrativa: sus nombres propios son estilísticos y los personajes reales del capítulo se mencionan igual en el cuerpo.
-- **Por qué se difiere:** el dogfood que lo destapó es un banco fuera del repo; arreglarlo a mano en `main`, sin iteración numerada, viola la disciplina de scope. Además el mecanismo correcto (¿eximir TODA la línea de encabezado del heurístico de nombres propios?, ¿en la costura o como política anclada del validador?) es una decisión de `/speckit-plan`, no un ad hoc.
-- **Resolución sugerida / versión objetivo:** **SUBSUMIDA por el track A (honestidad)** tras la decisión de issue #1. Igual que DEBT-011: el parche por instancia (eximir el cuerpo del título) **se descarta**, porque des-ruida la misma regla de menciones-desconocidas que pasa a `not_evaluated` por defecto. Un nombre propio en un título es exactamente el tipo de juicio de conjunto abierto (¿estilístico? ¿personaje real?) que el move 3 (track C) resuelve. Se cierra con la iteración del track A.
 
 ### DEBT-013 — `character_presence` marca nombres de organización (no hay roster de organizaciones)
 - **Estado:** abierta

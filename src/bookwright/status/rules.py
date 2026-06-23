@@ -124,6 +124,9 @@ _REMEDIES: dict[str, str] = {
     "focalization": "declare the narrative voice in the constitution",
     "setting_continuity": "add manuscript prose to validate",
     "character_presence": "add a bible character roster and manuscript prose",
+    "character_unknown_mentions": (
+        "awaiting LLM semantic judgment (move 3) — no manual action available yet"
+    ),
 }
 
 #: Fallback clause for a dormant validator with no concrete remedy in ``_REMEDIES``.

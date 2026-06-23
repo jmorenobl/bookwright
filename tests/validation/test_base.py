@@ -68,38 +68,6 @@ def test_context_accessors_cache_and_read(project_root: Path) -> None:
     assert ctx.manuscript_files() is ctx.manuscript_files()
 
 
-def test_location_and_object_names_read_and_cache(project_root: Path) -> None:
-    # C1/C2 (FR-001/FR-015): location_names()/object_names() each return the sorted
-    # (name, bible_relpath) pairs for their bible dir, mirroring setting_names().
-    write_project(
-        project_root,
-        characters=["Aparici"],
-        locations=["Ayelo de Malferit", "Onteniente"],
-        objects=["El telar"],
-        manuscript={"cap-01.md": "Aparici llega.\n"},
-    )
-    ctx = load_context(project_root)
-
-    assert ctx.location_names() == (
-        ("Ayelo de Malferit", "bible/locations/ayelo-de-malferit.md"),
-        ("Onteniente", "bible/locations/onteniente.md"),
-    )
-    assert ctx.object_names() == (("El telar", "bible/objects/el-telar.md"),)
-    # Cached: a second call returns the identical object (read once per run).
-    assert ctx.location_names() is ctx.location_names()
-    assert ctx.object_names() is ctx.object_names()
-
-
-def test_location_and_object_names_empty_when_dir_absent(project_root: Path) -> None:
-    # C1/C2: with no bible/locations|objects dir, each accessor returns () (and caches).
-    write_project(project_root, characters=["Aparici"], manuscript={"cap-01.md": "x\n"})
-    ctx = load_context(project_root)
-    assert ctx.location_names() == ()
-    assert ctx.object_names() == ()
-    assert ctx.location_names() is ctx.location_names()
-    assert ctx.object_names() is ctx.object_names()
-
-
 def test_constitution_text_none_when_absent(project_root: Path) -> None:
     write_project(project_root, characters=["A"], manuscript={"c.md": "x"})
     ctx = load_context(project_root)
