@@ -69,14 +69,20 @@ not green under the 044 refined predicate.
 4. **Given** a project with **no** skipped bible files, **When** `validate` runs,
    **Then** no skip-derived `not_evaluated` entry is produced and the result is
    byte-identical to today's (pinned fixtures unchanged).
+5. **Given** a project with **two** broken-YAML bible files, **When** `validate
+   --json` runs twice, **Then** both runs emit two skip-derived `not_evaluated`
+   entries in the **same** order (byte-identical), proving the total-order key
+   resolves the shared-`validator` tie (FR-009).
 
 ---
 
-### User Story 2 - The skip is visible in every output surface (Priority: P2)
+### User Story 2 - The skip is visible in both `validate` surfaces (Priority: P2)
 
-An author reading the human report, the `--json` envelope, or `bookwright status`'s
-embedded validation state can see *which* file was skipped and *why*, using the
-same `not_evaluated[]` rendering 040/044 already wired (no second channel to learn).
+An author reading the human report or the `--json` envelope of `bookwright
+validate` can see *which* file was skipped and *why*, using the same
+`not_evaluated[]` rendering 040/044 already wired (no second channel to learn).
+`bookwright status` already refuses the same input outright (`skipped_sources`),
+so the partial corpus is never silent on any surface.
 
 **Why this priority**: Surfacing-everywhere is what makes the degraded-green
 actionable; it rides on the P1 channel but is a distinct observable.
@@ -164,22 +170,40 @@ with `skipped_sources` AND `validate` now surfaces the same file in
   green and becomes visible; the gate (only `error` breaks the exit code) is
   unchanged. (Hardening the gate so a skip breaks the exit code is a separate
   decision — out of scope; see Assumptions.)
-- **FR-008**: The skip entries MUST be surfaced consistently in all three existing
-  surfaces — the `--json` envelope, the human report, and `bookwright status`'s
-  embedded `state.validation` — by reusing the channels 040/044 already wired
-  (`kind` included). No new `skipped[]` channel may be added.
-- **FR-009**: When there are multiple skipped files, the resulting `not_evaluated`
-  entries MUST be emitted in a deterministic order so the JSON and human report
-  are byte-identical across runs.
+- **FR-008**: The skip entries MUST be surfaced in **both** surfaces `validate`
+  emits — the `--json` envelope and the human report — by reusing the
+  `not_evaluated[]` channel 040/044 already wired (`kind` included). No new
+  `skipped[]` channel may be added. `bookwright status` is **not** a third skip
+  surface: it aborts on any skip with `code=skipped_sources` (`commands/status.py:151`)
+  *before* it builds its embedded `state.validation`, so a skip never reaches
+  `status`'s `not_evaluated` and `status` requires no edit. The skip is therefore
+  surfaced by `validate` (degrading green) and refused by `status` independently —
+  the two no longer disagree (FR / User Story 3), but they report it by **different**
+  pre-existing mechanisms, not a shared third channel.
+- **FR-009**: The `not_evaluated[]` list MUST be ordered by a **total-order** key so
+  the JSON and human report are byte-identical across runs — including when multiple
+  skipped files all carry the same `validator` identifier. The runner's current
+  `not_evaluated` sort key (`lambda r: r.validator`, `validation/runner.py:80`) is
+  only a *partial* order (ties broken by insertion order); it is safe today solely
+  because each validator emits at most one entry, but the skip entries break that
+  assumption (they share one identifier). This is one determinism class: the key
+  MUST be promoted to a total order (e.g. `(validator, reason)`) and that **single**
+  key MUST be applied at every site that sorts `not_evaluated` (the runner and the
+  `validate` skip-merge), so the two sort sites cannot diverge. Promoting the key
+  MUST NOT change any skip-free fixture (validator names are already unique, so no
+  tie exists to reorder — FR-010).
 - **FR-010**: A project with no skipped bible files MUST produce no skip-derived
   `not_evaluated` entry and MUST remain byte-identical to today's behavior; pinned
   fixtures without skips MUST NOT be edited.
 - **FR-011**: The `not_evaluated[]` channel data model and the `kind` vocabulary
   MUST NOT change — this iteration only **consumes** what 040/044 delivered (no
   new field, no new kind, no predicate change).
-- **FR-012**: The change MUST live in `commands/validate.py` (envelope assembly)
-  plus the already-existing `not_evaluated` result model. Validators MUST NOT be
-  touched; the frozen ontology MUST remain intact.
+- **FR-012**: The change MUST live in `commands/validate.py` (read
+  `ValidationContext.bible().skipped` and merge one `not_evaluated` entry per skip
+  into the report) plus `validation/runner.py` (the total-order sort-key promotion
+  of FR-009). The `NotEvaluatedResult` model, the `kind` vocabulary, and the green
+  predicate MUST NOT change (FR-011). No **validator** module may be touched, and
+  the frozen ontology MUST remain intact.
 - **FR-013**: The DEBT-018 entry MUST be removed from `DEBT.md` (git keeps the
   history); the cross-references to DEBT-018 in `DEBT.md` MUST be reconciled so no
   dangling pointer remains.
