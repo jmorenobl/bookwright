@@ -1365,10 +1365,60 @@ validadores de prosa, con dos caras:
   `error`; `no-evaluado` es un canal distinto de `errors[]` (que es para validadores
   que petan).
 
-Lo que **no** entra en `v0.5.0`: convertir el heurístico en **juicio semántico** vía
-el path LLM de `bookwright-verify` (§ 20.6). Es el movimiento 3 de la issue, dirección
-del horizonte demand-pulled (`bookwright-roadmap.md` § 5), activable solo cuando un
-heurístico concreto se mida como insuficiente.
+Lo que **no** entró en `v0.5.0`: convertir el heurístico en **juicio semántico** vía
+el path LLM de `bookwright-verify` (§ 20.6). Era el movimiento 3 de la issue,
+dirección del horizonte demand-pulled, activable solo cuando un heurístico concreto
+se midiera como insuficiente. **Ese disparador se cumplió** (§ 13.5).
+
+### 13.5 El reencuadre del 2º dogfood — honestidad de conjunto abierto + move 3 activado (issue #1)
+
+> **Dirección decidida en la issue #1 tras el 2º dogfood (`sombra-en-el-puerto`,
+> 2026-06-23), transcrita aquí (Principio I).** Es el *qué/por qué*; el detalle
+> durable está en `bookwright-roadmap.md` § 3/§ 5. El contrato concreto de cada
+> validador se actualiza en la spec de su iteración, antes de divergir código.
+
+`v0.5.0` cerró las caras A/B, pero un 2º dogfood midió la regla de
+menciones-desconocidas de `character_presence` (`warning`) como **100% ruido** (4
+falsos positivos, 0 señal real) sobre prosa real. Eso obligó a separar **dos reglas
+de naturaleza opuesta** que conviven en ese validador:
+
+- **Huérfanos** (`error`, el gate): ¿toda CHARACTER del bible se menciona en la
+  prosa? **Conjunto cerrado** — buscas nombres *conocidos*. Determinista, sin NER,
+  sin costura. Sólido; intacto. (Verificado: `_orphans` usa `_is_mentioned` sobre los
+  ficheros, no toca `_is_sentence_initial` ni los rosters de candidatos.)
+- **Menciones-desconocidas** (`warning`): ¿todo token capitalizado tiene entrada en
+  el bible? **Conjunto abierto** — *descubrir desconocidos*. Es el problema de
+  NER/juicio semántico, con un techo de precisión que **ninguna costura ni roster
+  nuevo sube**. Aquí vive todo lo frágil y los 4 FP.
+
+**La decisión (tres movimientos):**
+
+1. **El heurístico de conjunto abierto deja de fingir.** La regla de
+   menciones-desconocidas y el head-hopping de `focalization` —dos heurísticos
+   deterministas haciendo un trabajo semántico— dejan de emitir por defecto
+   (inundar ruido / dormir en verde) y **declaran `NotEvaluated`** (el canal de la
+   iteración 040) con motivo «conjunto abierto: requiere juicio semántico (move 3)».
+   No es un parche: es el comportamiento terminal **permanente** (con el move 3
+   offline, `not_evaluated` es el fallback correcto). El gate (`error`) no cambia.
+2. **El move 3 se activa** (§ 20.6, `bookwright-roadmap.md` § 5): la condición
+   («heurístico concreto medido insuficiente sobre prosa real») está cumplida. Es la
+   única cura de raíz del conjunto abierto; restaura la señal real (personaje usado
+   sin declarar) que el `not_evaluated` deja pendiente. **Necesita diseño propio
+   antes de spec** por la tensión de determinismo del gate (§ 20.6).
+3. **Vocabularios cerrados, trato consistente** (DEBT-016, capa narrativa, no
+   `character_presence`): un término Propp/Greimas no reconocido —hoy ingerido **en
+   silencio** como nodo sin `crm:P2_has_type`— pasa a emitir un `warning` **no fatal**
+   en `graph build` que enumera los términos válidos (simetría con el rechazo de
+   research § 20, DEBT-006), pero el nodo se ingiere igual (cerrado para *tipar*,
+   abierto para *autorar*). Principio: **fatal ⇔ un valor inválido rompe lógica
+   downstream** (`reliability` inválido rompe el gate de `factual_anchor` → fatal;
+   `P2_has_type` ausente es metadato → no fatal).
+
+**Descartado:** parchear la regla de conjunto abierto por instancia (la
+comilla-líder `«`, el cuerpo del título) o con un 5º roster «organización» —es
+perseguir un conjunto abierto con listas cerradas; no converge. La costura
+`io/prose.py` se conserva para los validadores deterministas; solo se deja de
+alimentar con ella el heurístico abierto.
 
 ---
 
@@ -1871,6 +1921,20 @@ La división respeta la filosofía existente: lo que se puede comprobar con
 código determinista (¿el ancla está bien formada? ¿hay choque temporal duro?) lo
 hace un validator; lo que exige juicio (¿este párrafo contradice el hecho
 investigado?) lo hace el LLM vía skill.
+
+> **El move 3 de la issue #1 reusa esta capa LLM (activado, 2026-06-23).** El
+> reencuadre del 2º dogfood (§ 13.5) activó el escalado a juicio semántico de los
+> heurísticos de **conjunto abierto** —menciones-desconocidas (¿«Naviera» es
+> organización o personaje sin declarar?), voz/focalización— sobre este mismo path
+> `bookwright-verify`, con el regex como **pre-filtro barato** (acota candidatos), no
+> como veredicto. **Tensión a resolver antes de spec:** todo el proyecto es
+> disciplina de test **determinista**, y un LLM en el gate de CI no lo es. El diseño
+> de la iteración debe decidir: ¿el veredicto semántico vive **fuera** del gate
+> (informativo, como `bookwright-verify`/`bookwright-continuity` hoy — un reporte
+> post-borrador que nunca rompe CI) o **dentro** (con golden-runs/caché de veredictos
+> para fijar el no-determinismo)? Coste, operación offline y reproducibilidad de
+> tests son parte de esa decisión. Mientras tanto, el heurístico declara
+> `NotEvaluated` (§ 13.5), no finge.
 
 ### 20.7 Almacenamiento: `bible/research/`
 

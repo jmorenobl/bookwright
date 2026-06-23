@@ -29,10 +29,15 @@ El tramo de endurecimiento **`v0.3.x` está cerrado** (`v0.3.4` tageada
 2026-06-15), **v0.4 — la capa estructural narrativa — está entregada**
 (iteraciones 028–032; `v0.4.0` al cierre, iteración 032) y el **tramo de
 endurecimiento post-dogfooding `v0.4.x`** (iteraciones 033–038, patches
-`v0.4.1`…`v0.4.6`) está **cerrado** (`v0.4.6` tageada 2026-06-22). El siguiente
-hito es **`v0.5.0` — validación robusta** (§ 3), que cierra la *clase* de defecto
-de superficie de los validadores (issue #1); tras él, el horizonte
-**demand-pulled** sin versión asignada (§ 5). Lo entregado hasta hoy:
+`v0.4.1`…`v0.4.6`) está **cerrado** (`v0.4.6` tageada 2026-06-22). **`v0.5.0` —
+validación robusta** (issue #1) **está entregada** (2026-06-22, iteraciones
+039+040), y sus dos primeros patches también (`v0.5.1`/`v0.5.2`, iteraciones
+041/042). Un **segundo dogfooding** (`sombra-en-el-puerto`, novela negra,
+2026-06-23) reencuadró el norte: lo que queda no son tres parches de costura más,
+sino **una decisión de fondo** sobre dónde acaba el heurístico determinista (§ 3).
+El siguiente hito es el **track de honestidad de validación** que sale de esa
+decisión; tras él, el **move 3** (juicio semántico) deja de ser demand-pulled-sin-
+disparador y pasa a **dirección activada** (§ 5). Lo entregado hasta hoy:
 
 - **`v0.1.0`** (M0–M3) — el toolkit v0: manifiesto, modelo GOLEM sobre `rdflib`,
   los 10 commands de autoría materializados como Agent Skills, validación.
@@ -60,7 +65,16 @@ de superficie de los validadores (issue #1); tras él, el horizonte
   trata el placeholder `[PENDING]` de voz como "sin declaración" (037, DEBT-007) y
   `character_presence` ignora la primera palabra de un encabezado markdown (038,
   DEBT-008). Las cinco son **parches por instancia** de una misma clase de defecto
-  (§ 3); cerrarla de raíz es el cometido de `v0.5.0`.
+  (§ 3); cerrarla de raíz fue el cometido de `v0.5.0`.
+- **`v0.5.0`** (validación robusta, issue #1) — cierre de la *clase* de raíz: la
+  **costura de prosa/estructura única** (`io/prose.py`, 039, cierra el acoplamiento
+  de superficie) y el **resultado tri-valor** `evaluado` / `no-evaluado(motivo)`
+  (040, cierra la falsa confianza). Minor: 039+040 acumularon en `main` y se
+  liberaron una sola vez (estilo M4→`v0.2.0`).
+- **`v0.5.1`/`v0.5.2`** (endurecimiento post-`v0.5.0`) — primer dogfood de `v0.5.0`
+  (`tiny-historical`): la costura strippea la raya de diálogo `—`/`–`/`―` (041,
+  DEBT-009), y la regla de menciones-desconocidas cruza contra la **unión** de
+  rosters character/setting/location/object (042, DEBT-010).
 
 Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 `ruff format`, `mypy --strict`, `pytest` ≥ 80 %) verdes.
@@ -74,12 +88,17 @@ v0.3.x  ──  endurecimiento: cancelar deuda, robustez, cerrar atajos de v0   
 v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)            ✅ entregada (v0.4.0)
             + ingesta de outline/  — cierra la paridad de ingesta
 v0.4.x  ──  endurecimiento post-dogfooding (issue #1, instancia a instancia)  ✅ cerrado (v0.4.6)
-v0.5.0  ──  validación robusta: cerrar la CLASE del defecto de superficie     ← AQUÍ
+v0.5.0  ──  validación robusta: cerrar la CLASE del defecto de superficie     ✅ entregada (v0.5.0)
             (costura única + estado tri-valor; verde = evaluado).  issue #1.
-──── horizonte sin versión asignada (demand-pulled, con condición de activación) ────
-juicio    ─  escalado semántico (voz/focalización/temporal) vía el path LLM de
-semántico    bookwright-verify, con el regex como pre-filtro. Activar cuando un
-             validador concreto pida juicio literario que el heurístico no da.
+v0.5.x  ──  honestidad de validación: el heurístico de conjunto ABIERTO        ← AQUÍ
+            deja de fingir y declara no-evaluado (familia 040); pulido
+            determinista (locators, vocab, mensajes).  issue #1, 2º dogfood.
+──── el move 3 ASCIENDE de demand-pulled-sin-disparador a dirección ACTIVADA ────
+juicio    ─  escalado semántico (voz/focalización/menciones-desconocidas) vía el
+semántico    path LLM de bookwright-verify, con el regex como pre-filtro. Condición
+   (norte)   CUMPLIDA por el 2º dogfood (heurístico medido 100% ruido sobre prosa
+             real). Es el norte del track de validación; necesita diseño propio
+             (determinismo en el gate de CI) antes de spec — no es un sprint ciego.
 vectores  ─  ChromaDB sobre rdflib, tras el Indexer Protocol. Activar SI:
              corpus multi-libro/serie, O recall estructural medido como
              insuficiente en una skill concreta. Hasta entonces: no se implementa.
@@ -112,69 +131,94 @@ scope de la constitución).
 
 ---
 
-## 3. El norte actual: `v0.5.0` — validación robusta (issue #1)
+## 3. El norte actual: honestidad de validación + el move 3 activado (issue #1, 2º dogfood)
 
-El dogfooding de v0.4.x destapó **una clase de defecto, no tres bugs**. Cinco
-parches (`v0.4.2`…`v0.4.6`) saldaron instancias sueltas de un mismo patrón
-recurrente; la **issue #1** lo nombró y decidió **cerrar la clase de raíz** en vez
-de seguir jugando al whack-a-mole. `v0.5.0` es ese cierre. Es un **minor** (no un
-patch v0.4.x): introduce arquitectura nueva —una costura compartida y un contrato
-de resultado tri-valor—, así que las iteraciones **acumulan en `main`** y se
-liberan **una sola vez** al cierre, al estilo de M4→`v0.2.0` (plan § 0.3).
+`v0.5.0` (entregada) cerró las **dos caras** de la clase que el dogfooding de
+v0.4.x destapó: la **costura única** (`io/prose.py`, 039) mató el acoplamiento a la
+prosa de superficie, y el **resultado tri-valor** (`evaluado` /
+`no-evaluado(motivo)`, 040) mató la falsa confianza del `[]`-que-no-distingue
+"limpio" de "no pude mirar". El gate sigue clavado solo en `error`; **verde =
+`status ok` Y `not_evaluated == []`**. Eso es historia cerrada (detalle en
+`CHANGELOG` / `specs/039`,`040`).
 
-La clase tiene **dos caras**:
+Un **segundo dogfooding** —`sombra-en-el-puerto`, novela negra con diálogo denso,
+2026-06-23— corrió sobre `v0.5.2` y dio el dato que **reencuadra lo que queda**: la
+regla de menciones-desconocidas de `character_presence` (`warning`) produjo **4
+falsos positivos, 0 señal real** sobre prosa real. No es un parche más; es la
+prueba empírica de que esa regla pide la decisión de fondo de la issue #1.
 
-- **A — acoplamiento a la prosa de superficie.** Cada validador que escanea
-  manuscrito/constitución reimplementa por su cuenta "cómo ver más allá del
-  markdown que la propia herramienta emite": `character_presence` strippea el
-  encabezado ATX (`# `, DEBT-008), `focalization` strippea viñeta + énfasis +
-  placeholder (`- **Voz narrativa**`, `[PENDING: …]`, DEBT-004/007), y
-  `setting_continuity` re-escanea `splitlines()` crudo. Cada formato markdown nuevo
-  (un epígrafe, un `> blockquote`) vuelve a abrir la grieta en el siguiente
-  validador. Un topo por iteración.
-- **B — falsa confianza.** `validate()` devuelve `list[Violation]`, y `[]` es
-  **indistinguible** entre "evaluado y limpio" y "no pude mirar". DEBT-004 fue,
-  literalmente, un validador **dormido y verde**. Para una herramienta de autoría el
-  peor fallo no es el falso positivo (ruido), es la **falsa confianza**.
+### El reencuadre: una regla, no "la validación"
 
-**Lo que entrega `v0.5.0`** (dos iteraciones, cierran A y B; movimientos 1 y 2 de
-la issue):
+`character_presence` mezcla **dos reglas de naturaleza opuesta**, y esa distinción
+es la que ordena las 8 deudas del dogfood:
 
-- **Costura de prosa/estructura única** (iter 039, cierra A). Una sola capa
-  markdown-aware en `io/` —vecina de `frontmatter.py`, que ya lleva tracking de
-  líneas— que **todos** los validadores de prosa consumen: clasifica cada línea
-  (encabezado / viñeta / blockquote / énfasis / placeholder `[PENDING]` / prosa) y
-  expone la vista normalizada **una vez**, con los números de línea preservados
-  (el locator `relpath:línea` no cambia). Los tres validadores se reescriben sobre
-  ella y sus strippers locales (`_HEADING_MARKER`, `_BULLET`, `_LEAD_EMPHASIS`,
-  `_CLOSE_EMPHASIS`, `_PENDING_ONLY`, `_normalize_declaration_line`) **se borran**.
-  Cero regresión en los fixtures vivos; un fixture nuevo de la *siguiente* superficie
-  (`> blockquote`/epígrafe) prueba que la costura generaliza sin tocar validador.
-  **Sin dependencia nueva** (Constitución II): es un clasificador determinista de
-  bloques sobre las primitivas regex existentes, **no** un AST de markdown.
-- **Resultado tri-valor** (iter 040, cierra B). El contrato del validador pasa de
-  "lista de hallazgos" a **`evaluado` / `con-hallazgos` / `no-evaluado(motivo)`**.
-  Los retornos-tempranos-`[]` de hoy (focalización sin declaración parseable o con
-  voz aún en `[PENDING]`; manuscrito vacío) se vuelven `no-evaluado` con motivo. El
-  runner, el report, el sobre `--json`, `bookwright status` y las skills exponen el
-  tercer estado, de modo que **verde = evaluado**. El gate (solo `error` rompe CI) y
-  la forma de `Violation` no cambian; el estado es **aditivo**. La detección de
-  placeholder de la costura (iter 039) alimenta aquí el motivo "declaración sin
-  responder", uniendo ambas caras.
+- **Huérfanos** (`error`, el gate). ¿Toda CHARACTER del bible aparece en la prosa?
+  Es **conjunto cerrado**: buscas nombres *conocidos*. Determinista, sin NER, sin
+  costura — sólido, se queda intacto.
+- **Menciones-desconocidas** (`warning`). ¿Todo token capitalizado de la prosa
+  tiene entrada en el bible? Es **conjunto abierto**: *descubrir desconocidos*. Eso
+  **es** el problema de NER/juicio semántico, y tiene un techo de precisión que
+  **ninguna costura ni roster nuevo sube**. Aquí vive TODO lo frágil (`_CANDIDATE`,
+  `_is_sentence_initial`, los rosters), y los 4 FP del dogfood.
 
-**Alineado con los principios.** Es Principio I llevado a la validación: los
-validadores dejan de acoplar a la **prosa de superficie** y consumen la
-**estructura ya clasificada**. No toca la ontología congelada (validadores de
-prosa, `triples=()`, Principio X). La decisión § 13.1 del diseño (el Protocol
-`validate`) se actualiza **antes** de divergir el código (plan § 7.3).
+El error de fondo del estado actual: dos heurísticos deterministas
+—menciones-desconocidas y el head-hopping de `focalization`— **fingen** hacer un
+trabajo semántico. Echarles más listas cerradas (un 5º roster) o más stripping de
+superficie (043/044) es perseguir un conjunto abierto con listas cerradas: no
+converge nunca.
 
-**Lo que NO entra** (movimiento 3 de la issue, → horizonte demand-pulled, § 5): el
-**escalado a juicio semántico** de los validadores que lo exigen (voz,
-focalización, continuidad temporal) reusando el path LLM de `bookwright-verify`
-(iter 015), con el regex como **pre-filtro barato**, no como veredicto. La propia
-issue lo deja como **dirección roadmap-level**, no como patch: se activa cuando un
-validador concreto pida juicio literario que el heurístico determinista no da, no
-antes (sería plumbing especulativo).
+### La decisión (issue #1, 2º dogfood)
+
+1. **El heurístico de conjunto abierto deja de fingir.** En vez de inundar ruido
+   (menciones-desconocidas: 4/4 FP) o dormir en verde (head-hopping: falso
+   negativo, familia 040), **declaran `not_evaluated`** con motivo preciso
+   («descubrimiento/juicio de conjunto abierto: requiere juicio semántico, move 3»).
+   No es un parche: es la aplicación honesta del canal que 040 ya construyó, y es el
+   comportamiento terminal **permanente** (aun con el move 3, si el path LLM está
+   offline, `not_evaluated` es el fallback correcto). Mata el ruido y la falsa
+   confianza a la vez.
+2. **El move 3 se activa** (§ 5). La condición del roadmap (un heurístico concreto
+   *medido* como insuficiente sobre prosa real) está **cumplida**: 4/4 FP, no "mejor
+   validación" en abstracto. Deja de ser demand-pulled-sin-disparador y pasa a ser
+   el **norte del track de validación**. Es la única cura de raíz del conjunto
+   abierto: el path LLM distingue «Naviera = organización» / «Las = artículo» /
+   «Elena = personaje sin declarar», restaurando la **señal real** (un personaje
+   usado pero no declarado) sin el ruido.
+3. **DEBT-016 (vocab Propp/Greimas), otra familia, se cierra barata e
+   independiente.** Hoy un término no-Propp (`functions: [intimidacion]`) entra **en
+   silencio** como nodo sin tipo, mientras el vocab de research (`type`/`reliability`)
+   rechaza enumerando (DEBT-006). El silencio es lo único claramente malo. Resolución:
+   **cerrado para *tipar*, abierto para *autorar*** — un `warning` **no fatal** en
+   `graph build` que enumere los términos válidos (simetría con DEBT-006, atrapa el
+   typo), pero el nodo se ingiere sin tipo (no prohíbe etiquetas propias, no aborta).
+   El principio que lo hace consistente con el rechazo fatal de DEBT-006: **fatal ⇔
+   un valor inválido rompe lógica downstream** (un `reliability` inválido rompería el
+   gate de `factual_anchor`; un `P2_has_type` ausente es metadato descriptivo y no
+   rompe nada).
+
+### Reparto de las 8 deudas del 2º dogfood
+
+| Track | Deudas | Naturaleza |
+|---|---|---|
+| **A — honestidad** (consecuencia de 040) | menciones-desconocidas→`not_evaluated` (subsume DEBT-011/012, y el *síntoma* de 013), head-hopping→`not_evaluated` (DEBT-014), `validate` propaga `skipped` (DEBT-018) | cerrar la mentira `[]`/dormido |
+| **B — pulido determinista** | locators de graph-consumers (DEBT-015), vocab build-warning (DEBT-016), mensaje nombre-vs-slug (DEBT-017) | cerrado/estructural, real, barato |
+| **C — move 3** (norte activado, § 5) | conjunto abierto entero: DEBT-013 (orgs), techo de DEBT-014 | juicio semántico, diseño propio |
+| **Descartado** | 043/044 como parches de costura; 5º roster «organización» | parchear conjunto abierto con listas cerradas |
+
+**Por qué se descartan 043/044 (los parches de comilla-líder y cuerpo-de-título).**
+Ambos solo des-ruidan la regla de menciones-desconocidas — verificado: tocan solo
+`_is_sentence_initial`, que solo alimenta esa regla. Si la regla pasa a
+`not_evaluated` por defecto, pulir sus FP de superficie es trabajo muerto. La
+costura `io/prose.py` se queda (es buena arquitectura para los validadores
+deterministas); solo dejamos de alimentar con ella el heurístico abierto. DEBT-011/012
+quedan **subsumidas**, no resueltas por instancia.
+
+**Alineado con los principios.** Honestidad (track A) y pulido determinista (track
+B) son shippables ya, deterministas y de raíz; no tocan la ontología congelada
+(validadores de prosa, `triples=()`, Principio X). El move 3 (track C) es el norte,
+pero **necesita diseño propio antes de spec** — tiene una tensión real: todo el
+proyecto es disciplina de test determinista y un LLM en el gate de CI es
+no-determinista (§ 5, design § 20.6). No es un sprint ciego.
 
 ---
 
@@ -241,17 +285,26 @@ presente. No se cancelan, pero **no se implementan hasta que su condición se
 cumpla** — y entonces se les asigna número de versión. Es el patrón del registro
 de diferidos (iteración 024) a escala de subsistema:
 
-- **Juicio semántico en validación** (movimiento 3 de la issue #1). Escalar a juicio
-  literario los validadores que lo exigen —voz, focalización, continuidad
+- **Juicio semántico en validación** (movimiento 3 de la issue #1) — **CONDICIÓN
+  CUMPLIDA, dirección ACTIVADA** (ya no es demand-pulled-sin-disparador). Escalar a
+  juicio literario los validadores que lo exigen —menciones-desconocidas (orgs,
+  topónimos, vocativos, personajes sin declarar), voz/focalización, continuidad
   temporal— reusando el path LLM existente (`bookwright-verify`, iteración 015), con
   el heurístico regex como **pre-filtro barato** que acota candidatos, no como
-  veredicto final. `v0.5.0` cierra el acoplamiento de superficie y la falsa confianza
-  (§ 3), pero **no** convierte el heurístico en juicio; algunos juicios (¿esta prosa
-  rompe de verdad la focalización limitada?) son irreductiblemente semánticos.
-  **Condición de activación:** un validador concreto cuyo heurístico determinista se
-  mida como insuficiente (demasiados falsos positivos/negativos sobre prosa real), no
-  "mejor validación" en abstracto. Hasta entonces, plumbing especulativo
-  (disciplina de scope, § 6).
+  veredicto final. Algunos juicios (¿esta prosa rompe de verdad la focalización
+  limitada? ¿«Naviera» es organización o personaje sin declarar?) son
+  irreductiblemente semánticos: ninguna costura ni roster nuevo los resuelve.
+  **Condición de activación — cumplida (2026-06-23):** el 2º dogfood
+  (`sombra-en-el-puerto`) midió la regla de menciones-desconocidas como **100%
+  ruido** sobre prosa real (4 FP, 0 señal); ese es el disparador concreto que el
+  roadmap exigía, no "mejor validación" en abstracto. **Lo que falta antes de
+  spec (no es un sprint ciego):** una pasada de diseño (design § 20.6) que resuelva
+  la **tensión de determinismo** —todo el proyecto es disciplina de test
+  determinista, y un LLM en el gate de CI no lo es: cómo cachear/fijar veredictos,
+  si el move 3 vive fuera del gate (informativo) o dentro (con golden-runs), coste,
+  operación offline. El interim honesto ya está: el heurístico declara
+  `not_evaluated` (track A, § 3), no finge. El move 3 restaura la señal que ese
+  `not_evaluated` deja pendiente.
 - **Búsqueda vectorial.** ChromaDB (o equivalente) **sobre `rdflib`**, desacoplada
   del grafo, detrás del `Indexer` Protocol. Sin Grafeo (cancelado). Su valor real
   es la capa RAG (lo que las skills recuperan como contexto) y la detección
