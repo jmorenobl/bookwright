@@ -4,6 +4,69 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.6] — 2026-06-24
+
+Iteration **047** — issue #1 **track B** (determinism / polish), closing
+**DEBT-016**. With a closed narrative vocabulary active (`[vocabularies] active`,
+e.g. `propp`), `graph build` types each authored term — a match gets a
+`crm:P2_has_type` edge — but a **non-match was minted as an untyped node in
+silence**: no warning, no finding, inconsistent with research (§ 20), which
+**rejects** an unknown `type`/`reliability` *fatally* with an enumerated message.
+This patch closes that asymmetry **for typing while leaving authoring open**: an
+unrecognized Propp `functions:` / Greimas `narrative_roles:` term now emits a
+**non-fatal** `graph build` warning enumerating the valid terms of the active
+vocabulary; the node is still ingested **unchanged** (untyped, no
+`crm:P2_has_type`), and the build **neither aborts nor changes its exit code**.
+The governing principle (design § 4.4): **fatal ⇔ an invalid value breaks
+downstream logic** — `reliability` poisons the `factual_anchor` gate (fatal); an
+absent `P2_has_type` is descriptive metadata that gates nothing (warn only). The
+warning rides a new soft channel (`untyped_vocab_terms`), sibling of
+`unknown_keys`/`unresolved_references` — additive to the success envelope, never
+referenced in `exit_code`. No new CLI verb, no new runtime dependency, no
+ontology change (the frozen `golem.ttl`/`propp.ttl`/`greimas.ttl` are untouched),
+no new validator and no `Severity` change — pure hardening.
+
+### Added
+
+- **`untyped_vocab_terms` soft channel** (`047`) — `UntypedVocabTerm{path, field,
+  term, vocabulary}` (`src/bookwright/io/report.py`), carried by
+  `MapResult.untyped_vocab_terms` and copied verbatim into
+  `BuildReport.untyped_vocab_terms` (additive `to_json()` key, **not** referenced
+  in `exit_code`, default `()` so vocabulary-free builds stay byte-identical).
+  Populated at the **two** silent `resolve()→None`-then-mint typing sites — Propp
+  `functions:` in `io/outline.py:_mint_functions` (deduped project-wide via
+  `functions_index` ⇒ warned once) and Greimas `narrative_roles:` in
+  `io/_bible_builders.py:_build_character` (an `else:` on the typing loop, guarded
+  by an `EmptySlugError` pre-filter so a blank role mints no node and no warning,
+  and deduped per character by slug so a repeated label warns once).
+- **`VocabularyIndex.terms`** (`io/vocabularies.py`) — the sorted, deduplicated
+  set of every `rdfs:label` (ES + EN), collected in `_index_turtle`; the
+  human-render valid-term enumeration is **derived** from it at render time
+  (`commands/graph/build.py`, one `valid <vocab> terms: …` line per distinct
+  vocabulary), never denormalized into the structured record. Sorting makes the
+  enumeration byte-stable regardless of the label store's incidental order.
+- Oracles (`tests/commands/graph/test_untyped_vocab.py`,
+  `tests/io/test_vocabularies.py`) — Propp typo → one envelope entry (valid term
+  untyped → none, bad node lacks `P2_has_type`, exit 0); the human render lists
+  the valid terms; Greimas bad role → one `narrative_roles`/`greimas` entry;
+  blank role → no warning; a repeated bad role warns once; vocabulary-free build
+  → empty channel, byte-identical to pre-feature; two builds byte-identical;
+  `terms` sorted / unique / bilingual / stable.
+
+### Changed
+
+- **Contract before code** — `bookwright-design.md` § 4.4 gained the fatal-vs-warning
+  principle paragraph and § 13.5 move-3 item 3 was reconciled (planned → delivered
+  in iteration 047), ahead of the code diverging. `io/bible.py` threads `relpath`
+  + `ctx.result` into `_build_character` via the existing lambda so the Greimas
+  site can record warnings.
+
+### Removed
+
+- **DEBT-016** (the silent untyped-mint of unrecognized vocabulary terms) —
+  resolved and removed from `DEBT.md`; its track-B index cross-reference struck
+  through.
+
 ## [0.5.5] — 2026-06-23
 
 Iteration **046** — the **input-file twin of 040/043** (issue #1, track A —
