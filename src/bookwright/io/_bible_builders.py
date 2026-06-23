@@ -180,14 +180,20 @@ def _build_character(
     # graph is unchanged (iteration 030, research D5 / FR-008).
     role_types: dict[str, URIRef] = {}
     if greimas is not None:
+        # One role node per distinct slug (``Character`` dedups by URI), so warn
+        # once per slug too — fully mirroring the Propp path's ``_distinct_slugs``
+        # drop of both unsluggable AND duplicate slugs (iteration 047, DEBT-016):
+        # blank/unsluggable roles mint no node, and a repeated label (incl. a
+        # case-variant that slugs identically) mints no second node.
+        seen: set[str] = set()
         for label in roles:
-            # A blank/unsluggable role mints no role node, so there is nothing to
-            # warn about — pre-filter it first, mirroring the Propp path's
-            # ``_distinct_slugs`` drop (iteration 047, DEBT-016, edge case).
             try:
                 slug = make_slug(label)
             except EmptySlugError:
                 continue
+            if slug in seen:
+                continue
+            seen.add(slug)
             uri = greimas.resolve(label)
             if uri is not None:
                 role_types[slug] = uri

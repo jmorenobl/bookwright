@@ -117,10 +117,7 @@ def _print_untyped_vocab_terms(console: Console, report: BuildReport) -> None:
             f"  - {warning.path}: {warning.field} '{warning.term}' "
             f"is not a {warning.vocabulary} term"
         )
-    seen: list[str] = []
-    for warning in report.untyped_vocab_terms:
-        if warning.vocabulary not in seen:
-            seen.append(warning.vocabulary)
-    for vocabulary in seen:
+    # One enumeration per distinct vocabulary (first-seen order, ``dict.fromkeys``).
+    for vocabulary in dict.fromkeys(w.vocabulary for w in report.untyped_vocab_terms):
         terms = ", ".join(load_vocabulary(vocabulary).terms)
         console.print(f"  valid {vocabulary} terms: {terms}")

@@ -163,6 +163,22 @@ def test_greimas_bad_role_emits_one_warning_node_untyped(
     assert _is_typed(graph, URIRef(URI_BASE + "character/brenna/role/helper"))
 
 
+def test_greimas_repeated_bad_role_warns_once(tmp_path: Path) -> None:
+    """FR-016 / one-node-one-warning: a character that lists the same unrecognized
+    role twice (incl. a case-variant that slugs identically) mints a single role
+    node, so it must warn exactly once — symmetric with the Propp ``functions:``
+    path, which dedups by slug across cards."""
+    bible = tmp_path / "bible" / "characters"
+    bible.mkdir(parents=True)
+    (bible / "echo.md").write_text(
+        '---\nname: "Echo"\nnarrative_roles: [villano, Villano, villano]\n---\n',
+        encoding="utf-8",
+    )
+    result = map_bible(tmp_path, tmp_path / "bible", URI_BASE, greimas=load_vocabulary("greimas"))
+    greimas_terms = [w.term for w in result.untyped_vocab_terms if w.vocabulary == "greimas"]
+    assert greimas_terms == ["villano"]  # three labels, one slug ⇒ one warning
+
+
 def test_greimas_blank_role_does_not_warn(tmp_path: Path) -> None:
     """Edge case / FR-007/010: a blank/unsluggable role mints no warnable node, so
     it emits no warning (only the genuinely unrecognized label does).
