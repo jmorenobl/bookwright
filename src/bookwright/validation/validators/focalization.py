@@ -98,9 +98,7 @@ class Focalization:
                 # Head-hopping under a focalized voice is a move-3 semantic judgment; the
                 # deterministic heuristic was measured nearly dormant on real prose. The
                 # validator stops faking and abstains for the whole run (iteration 045).
-                raise NotEvaluated(
-                    _HEAD_HOPPING_PENDING, kind=NotEvaluatedKind.pending_capability
-                )
+                raise NotEvaluated(_HEAD_HOPPING_PENDING, kind=NotEvaluatedKind.pending_capability)
             return self._first_person_breaks(project.manuscript_view())
         return []  # first person: nothing third-person to flag
 

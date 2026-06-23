@@ -88,7 +88,7 @@ and `status`'s `next_actions` gains no `bookwright-continuity` action for it.
 
 ### Tests for User Story 2
 
-- [ ] T009 [US2] In `tests/e2e/test_tri_valued_validation.py::test_clean_fixture_is_green_under_refined_predicate`: split the shared `entries == {...}` literal **per fixture** — `tiny-novel` (third-limited) now carries both `character_unknown_mentions` and `focalization` as `pending_capability` and stays **green**; `tiny-memoir` (first-person) carries only `character_unknown_mentions` (SC-002/SC-005). Assert the green predicate holds and no `focalization` `next_action` is added.
+- [X] T009 [US2] In `tests/e2e/test_tri_valued_validation.py::test_clean_fixture_is_green_under_refined_predicate`: split the shared `entries == {...}` literal **per fixture** — `tiny-novel` (third-limited) now carries both `character_unknown_mentions` and `focalization` as `pending_capability` and stays **green**; `tiny-memoir` (first-person) carries only `character_unknown_mentions` (SC-002/SC-005). Assert the green predicate holds and no `focalization` `next_action` is added.
 
 **Checkpoint**: Clean focal-voice project verified green with the additive entry; no impossible action surfaced.
 
@@ -105,7 +105,7 @@ keep denying green and firing the dormant-validator nudge (FR-004/SC-003).
 
 ### Tests for User Story 3
 
-- [ ] T010 [US3] In `tests/validation/test_focalization.py`: confirm the four `missing_input` not-evaluated tests and the live-scaffold `[PENDING]` tests still pass **unchanged** after the T007 edit (reason strings byte-for-byte, `kind == missing_input`); if any only fail due to the dropped `character_names`/`focal` parser surface, fix the call site, not the asserted reason/kind. Also confirm `test_first_person_outside_dialogue_warns`, `test_dialogue_line_is_exempt`, `test_usable_third_person_is_evaluated_and_clean`, `test_usable_first_person_is_evaluated_and_clean`, `test_first_person_locator_is_source_line_over_raw`, and `test_bullet_prefixed_line_stays_dialogue_exempt` (non-limited third / first-person → still evaluate, FR-008) pass unchanged.
+- [X] T010 [US3] In `tests/validation/test_focalization.py`: confirm the four `missing_input` not-evaluated tests and the live-scaffold `[PENDING]` tests still pass **unchanged** after the T007 edit (reason strings byte-for-byte, `kind == missing_input`); if any only fail due to the dropped `character_names`/`focal` parser surface, fix the call site, not the asserted reason/kind. Also confirm `test_first_person_outside_dialogue_warns`, `test_dialogue_line_is_exempt`, `test_usable_third_person_is_evaluated_and_clean`, `test_usable_first_person_is_evaluated_and_clean`, `test_first_person_locator_is_source_line_over_raw`, and `test_bullet_prefixed_line_stays_dialogue_exempt` (non-limited third / first-person → still evaluate, FR-008) pass unchanged.
 
 **Checkpoint**: The actionable half of `focalization`'s honesty contract is preserved.
 
@@ -115,9 +115,9 @@ keep denying green and firing the dormant-validator nudge (FR-004/SC-003).
 
 **Purpose**: Correct the one pinned oracle empirically and run the full gate set + quickstart.
 
-- [ ] T011 Update `tests/fixtures/tiny-historical/expected-status.md`: add a second `not_evaluated` entry (`validator: focalization`, the FR-002 reason, `kind: pending_capability`), keeping the list **sorted by validator name** (`character_unknown_mentions` then `focalization`); leave `validation.counts` `{error: 1, warning: 1, info: 0}` and `next_actions` length 3 unchanged; update the explanatory prose. Do **not** edit the fixture manuscript/constitution (FR-010/SC-004). Verify with `uv run pytest -k tiny_historical` (or the relevant E2E test), not by hand-computing.
-- [ ] T012 Confirm nothing else regresses: run `uv run pytest tests/e2e/test_narrative_workflow.py tests/e2e/test_orchestration_workflow.py -q` (tiny-quest third-limited gains the entry and stays green; tiny-memoir/tiny-essay gain none — SC-005).
-- [ ] T013 Run the full gate set + quickstart Scenario E: `grep -c "DEBT-014" DEBT.md` → 0, `grep -c "DEBT-019" DEBT.md` → ≥1, then `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (≥80% coverage) all green (SC-006/SC-007/SC-008).
+- [X] T011 Update `tests/fixtures/tiny-historical/expected-status.md`: add a second `not_evaluated` entry (`validator: focalization`, the FR-002 reason, `kind: pending_capability`), keeping the list **sorted by validator name** (`character_unknown_mentions` then `focalization`); leave `validation.counts` `{error: 1, warning: 1, info: 0}` and `next_actions` length 3 unchanged; update the explanatory prose. Do **not** edit the fixture manuscript/constitution (FR-010/SC-004). Verify with `uv run pytest -k tiny_historical` (or the relevant E2E test), not by hand-computing.
+- [X] T012 Confirm nothing else regresses: run `uv run pytest tests/e2e/test_narrative_workflow.py tests/e2e/test_orchestration_workflow.py -q` (tiny-quest third-limited gains the entry and stays green; tiny-memoir/tiny-essay gain none — SC-005).
+- [X] T013 Run the full gate set + quickstart Scenario E: `grep -c "DEBT-014" DEBT.md` → 0, `grep -c "DEBT-019" DEBT.md` → ≥1, then `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (≥80% coverage) all green (SC-006/SC-007/SC-008).
 
 ---
 
