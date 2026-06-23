@@ -19,7 +19,13 @@ from __future__ import annotations
 from typing import ClassVar
 
 from bookwright.indexers import Indexer
-from bookwright.validation.base import NotEvaluated, Severity, ValidationContext, Violation
+from bookwright.validation.base import (
+    NotEvaluated,
+    NotEvaluatedKind,
+    Severity,
+    ValidationContext,
+    Violation,
+)
 
 
 class CharacterUnknownMentions:
@@ -31,5 +37,6 @@ class CharacterUnknownMentions:
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
         raise NotEvaluated(
             "open-set proper-noun discovery requires semantic judgment (move 3); "
-            "the deterministic heuristic was measured insufficient on real prose"
+            "the deterministic heuristic was measured insufficient on real prose",
+            kind=NotEvaluatedKind.pending_capability,
         )

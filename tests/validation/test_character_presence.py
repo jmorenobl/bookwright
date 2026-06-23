@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from bookwright.indexers import RdflibIndexer
-from bookwright.validation.base import NotEvaluated, Severity, Violation
+from bookwright.validation.base import NotEvaluated, NotEvaluatedKind, Severity, Violation
 from bookwright.validation.validators.character_presence import CharacterPresence
 from tests.validation.conftest import load_context, write_project
 
@@ -29,6 +29,8 @@ def test_no_prose_and_empty_roster_is_not_evaluated(project_root: Path) -> None:
     assert excinfo.value.reason == (
         "there is no manuscript prose and no bible character roster to cross-check"
     )
+    # Both inputs empty is an input gap: kind defaults to missing_input (FR-002).
+    assert excinfo.value.kind is NotEvaluatedKind.missing_input
 
 
 def test_empty_manuscript_with_roster_stays_evaluated_and_emits_orphans(

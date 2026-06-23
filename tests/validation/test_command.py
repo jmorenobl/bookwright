@@ -115,11 +115,15 @@ def test_clean_project_reports_none_and_exits_zero(
     # A genuinely clean project no longer reads as "no violations found": the always-dormant
     # `character_unknown_mentions` abstainer (issue #1 track A) keeps the `not_evaluated`
     # channel non-empty on EVERY project, so the report shows the `not evaluated:` section
-    # instead — the honest green predicate (status==ok AND not_evaluated==[]) is now False
-    # everywhere (FR-008/SC-006).
+    # instead. Since iteration 044 its entry is a `pending_capability` (a permanent
+    # capability-gap): it stays VISIBLE here (FR-010) but does NOT deny green — visibility
+    # and the green predicate are decoupled. Its label reads as a known limitation, never
+    # an actionable input gap.
     assert "no violations found" not in result.stdout
     assert "not evaluated:" in result.stdout
-    assert "character_unknown_mentions" in result.stdout
+    assert (
+        "character_unknown_mentions [known limitation — no action available yet]" in result.stdout
+    )
 
 
 def test_location_less_finding_still_renders(

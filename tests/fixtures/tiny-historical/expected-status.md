@@ -30,10 +30,14 @@
 # unknown-mention rule split out of `character_presence` into the new pure abstainer
 # `character_unknown_mentions`, which raises `NotEvaluated` UNCONDITIONALLY. So the
 # `not_evaluated` channel always carries it. `validation.counts` is UNCHANGED (the
-# abstainer emits no finding; `character_presence` already emitted zero here post-042),
-# but `next_actions` goes 3 → 4: the always-on `activate_dormant_validators` rule fires
-# on every project now, contributing a second `bookwright-continuity` action. DEBT-011/012
-# (the seam patches the rule made moot) were removed from `DEBT.md` in the same iteration.
+# abstainer emits no finding; `character_presence` already emitted zero here post-042).
+# (Iteration 044, the 043 repair: the entry now carries `kind: pending_capability` — a
+# PERMANENT capability-gap that awaits move 3, not an actionable per-project input gap.
+# The refined green predicate and the refined `activate_dormant_validators` rule consider
+# only `missing_input` entries, so this capability-gap entry no longer fires the dormant
+# nudge: `next_actions` goes 4 → 3 (the second `bookwright-continuity` is gone;
+# `review_continuity`, driven by the `error: 1` count, stays). `validation.counts` is
+# byte-identical. DEBT — see § 13.5; this restores the reachable-green contract 043 broke.)
 
 # The authored focus the E2E (re)stamps via `bookwright focus set` at the loop's start.
 focus:
@@ -81,25 +85,27 @@ validation:
     error: 1
     warning: 1
     info: 0
-  # The always-dormant open-set abstainer (iteration 043). Present in BOTH runs — it is
-  # why `activate_dormant_validators` (the 4th action) keeps firing.
+  # The always-dormant open-set abstainer (iteration 043). Present in BOTH runs. Its
+  # `kind` is `pending_capability` (iteration 044): a permanent capability-gap, so it
+  # stays VISIBLE here but does NOT fire `activate_dormant_validators` (which now nudges
+  # only on `missing_input` gaps) and does NOT deny green for a clean project.
   not_evaluated:
     - validator: character_unknown_mentions
       reason: >-
         open-set proper-noun discovery requires semantic judgment (move 3); the
         deterministic heuristic was measured insufficient on real prose
+      kind: pending_capability
 
-# The four firing rules, in priority order (research D2 / data-model § 3). `research_queue`
-# fires while ANY open question OR anchor gap remains; `activate_dormant_validators` fires
-# on every project now (the abstainer is always dormant). So the LENGTH stays 4 across both
-# runs (NOT N-1) — only the research-queue prompt/reason converge. The two
-# `bookwright-continuity` entries are distinct rules (`review_continuity` then the dormant
-# nudge), both byte-identical across runs.
+# The three firing rules, in priority order (research D2 / data-model § 3). `research_queue`
+# fires while ANY open question OR anchor gap remains; `review_continuity` fires on the
+# `error: 1` count. `activate_dormant_validators` NO LONGER fires (iteration 044): the only
+# `not_evaluated` entry is `pending_capability`, and the refined rule nudges only on
+# `missing_input` gaps — so the second `bookwright-continuity` is gone. The LENGTH stays 3
+# across both runs (NOT N-1) — only the research-queue prompt/reason converge.
 next_actions:
   skills:
     - bookwright-research
     - bookwright-verify
-    - bookwright-continuity
     - bookwright-continuity
 ---
 
@@ -116,10 +122,14 @@ un *anchor* infrasostenido permanente y un hallazgo de fiabilidad baja permanent
 1. **Primer `status`.** Dos preguntas abiertas (`q-libro-de-jornales`, `q-origen-telares`),
    un *anchor gap* (`rumor-incendio → El almacén viejo`), un hallazgo de baja fiabilidad
    (`rumor-incendio`) y la cuenta de validación `{error: 1, warning: 1, info: 0}`.
-   `next_actions` enumera **cuatro** workstreams: `bookwright-research`, `bookwright-verify`,
-   `bookwright-continuity` (los errores de continuidad) y un segundo `bookwright-continuity`
-   (el *nudge* de validadores dormidos: `character_unknown_mentions` abstiene siempre, así
-   que `activate_dormant_validators` dispara en todo proyecto — issue #1 track A).
+   `next_actions` enumera **tres** workstreams: `bookwright-research`, `bookwright-verify`
+   y `bookwright-continuity` (los errores de continuidad). El *nudge* de validadores
+   dormidos ya **no** dispara: la única entrada `not_evaluated` es
+   `character_unknown_mentions` con `kind: pending_capability` (un hueco de capacidad
+   permanente, no accionable), y `activate_dormant_validators` —refinada en la iteración
+   044— solo dispara ante huecos `missing_input`. La entrada sigue **visible** en
+   `not_evaluated`, pero no añade acción ni deniega verde (issue #1 track A: la 044 repara
+   el verde alcanzable que la 043 rompió).
 
 2. **Tras aplicar la resolución pre-cocinada** (`_resolution/q-libro-de-jornales.md` →
    `bible/research/`, y se elimina `q-libro-de-jornales` de `_index.md`) y reconstruir:
@@ -127,8 +137,8 @@ un *anchor* infrasostenido permanente y un hallazgo de fiabilidad baja permanent
    deja de nombrar la pregunta cerrada y su `reason` baja a *«1 open research question»*;
    **todo lo demás es byte-idéntico** —`focus`, `phase`, `unresolved_anchors`,
    `low_reliability_findings`, `validation` (incluida la entrada `not_evaluated` del
-   abstainer), y las acciones `verify`/`continuity`— y `len(next_actions)` **sigue siendo
-   4** (agregación por workstream, no `N−1`).
+   abstainer, con su `kind: pending_capability`), y las acciones `verify`/`continuity`— y
+   `len(next_actions)` **sigue siendo 3** (agregación por workstream, no `N−1`).
 
 `state.graph` (entidades/triples) se asevera *presente* en cada corrida pero se **excluye**
 de la igualdad byte cross-run: cerrar un hallazgo emite triples distintos de forma

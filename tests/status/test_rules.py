@@ -16,8 +16,8 @@ from bookwright.status.model import (
     StatusState,
     ValidationSummary,
 )
-from bookwright.status.rules import RULES, next_actions
-from bookwright.validation.base import NotEvaluatedResult
+from bookwright.status.rules import _REMEDIES, RULES, next_actions
+from bookwright.validation.base import NotEvaluatedKind, NotEvaluatedResult
 
 _FILE = "bible/research/tema.md"
 _HEALTHY_GRAPH = GraphFacts(available=True, entities=5, triples=50)
@@ -54,6 +54,12 @@ _GAP = AnchorGap(promotes="f-1", constrains="timeline", file=_FILE, problems=("u
 _LOW = LowReliabilityFinding(id="f-1", best_reliability="baja", file=_FILE)
 _DORMANT_FOCAL = NotEvaluatedResult(
     "focalization", "the constitution does not declare a narrative voice"
+)
+#: A permanent capability-gap entry (iteration 044): never nudged, never denies green.
+_DORMANT_CAP = NotEvaluatedResult(
+    "character_unknown_mentions",
+    "open-set proper-noun discovery requires semantic judgment (move 3)",
+    NotEvaluatedKind.pending_capability,
 )
 
 #: One synthetic state per rule, exercising exactly it (SC-005).
@@ -224,6 +230,33 @@ def test_no_dormant_validators_yields_no_activation_action() -> None:
     # Empty not_evaluated → the rule produces nothing (no false positives).
     skills = [action.skill for action in next_actions(make_state())]
     assert "bookwright-continuity" not in skills
+
+
+def test_capability_gap_only_run_suppresses_the_dormant_nudge() -> None:
+    # SC-002: a pending_capability-only not_evaluated channel produces NO
+    # activate_dormant_validators action — the permanent capability-gap is not actionable.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_CAP,)))
+    assert [a.skill for a in actions] == []  # nothing fires (no error, no missing_input)
+
+
+def test_removed_character_unknown_mentions_remedy_clause_is_gone() -> None:
+    # FR-006: the 043 remedy clause for the abstainer is removed — the validator
+    # is no longer nudged on, so it must not appear in the remedy table.
+    assert "character_unknown_mentions" not in _REMEDIES
+
+
+def test_both_kinds_at_once_nudges_only_the_missing_input_validator() -> None:
+    # Edge case (SC-004): a run with one missing_input and one pending_capability
+    # entry fires the nudge, but its prompt names ONLY the missing_input validator.
+    state = make_state(not_evaluated=(_DORMANT_CAP, _DORMANT_FOCAL))
+    [action] = next_actions(state)
+    assert action.skill == "bookwright-continuity"
+    assert action.prompt == (
+        "Activate the dormant validators: "
+        "focalization — declare the narrative voice in the constitution."
+    )
+    assert action.reason == "1 validator could not evaluate"  # capability-gap excluded
+    assert "character_unknown_mentions" not in action.prompt
 
 
 def test_activation_sits_between_continuity_and_focus() -> None:

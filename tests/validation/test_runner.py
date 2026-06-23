@@ -10,7 +10,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from bookwright.indexers import Indexer, RdflibIndexer
-from bookwright.validation.base import NotEvaluated, Severity, ValidationContext, Violation
+from bookwright.validation.base import (
+    NotEvaluated,
+    NotEvaluatedKind,
+    Severity,
+    ValidationContext,
+    Violation,
+)
 from bookwright.validation.runner import run_validators
 from tests.validation.conftest import load_context, write_project
 
@@ -54,6 +60,14 @@ class _SkipZ:
 
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
         raise NotEvaluated("also nothing")
+
+
+class _SkipCapability:
+    name = "abstainer"
+    severity_default = Severity.warning
+
+    def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
+        raise NotEvaluated("awaits move 3", kind=NotEvaluatedKind.pending_capability)
 
 
 def _ctx(project_root: Path) -> ValidationContext:
@@ -121,3 +135,13 @@ def test_not_evaluated_is_sorted_and_deduped(project_root: Path) -> None:
     _, _, not_evaluated, ran = run_validators([_SkipZ(), _Skip()], ctx, RdflibIndexer())
     assert [r.validator for r in not_evaluated] == ["skip", "zskip"]  # sorted, not run order
     assert ran == ["skip", "zskip"]
+
+
+def test_runner_stamps_kind_from_the_signal(project_root: Path) -> None:
+    # The runner stamps each raise's kind onto the recorded result: a capability-gap
+    # raise carries pending_capability; a default raise stays missing_input (D3).
+    ctx = _ctx(project_root)
+    _, _, not_evaluated, _ = run_validators([_SkipCapability(), _Skip()], ctx, RdflibIndexer())
+    kinds = {r.validator: r.kind for r in not_evaluated}
+    assert kinds["abstainer"] is NotEvaluatedKind.pending_capability
+    assert kinds["skip"] is NotEvaluatedKind.missing_input  # default preserved

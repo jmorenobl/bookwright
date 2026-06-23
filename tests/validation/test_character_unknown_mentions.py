@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from bookwright.indexers import RdflibIndexer
-from bookwright.validation.base import NotEvaluated, Severity
+from bookwright.validation.base import NotEvaluated, NotEvaluatedKind, Severity
 from bookwright.validation.validators.character_unknown_mentions import (
     CharacterUnknownMentions,
 )
@@ -39,6 +39,15 @@ def test_protocol_attributes() -> None:
 def test_empty_project_abstains_with_open_set_reason(project_root: Path) -> None:
     write_project(project_root, characters=[], manuscript={})
     assert _raise(project_root).reason == _REASON
+
+
+def test_abstainer_raises_pending_capability_kind(project_root: Path) -> None:
+    # The abstainer is a PERMANENT capability-gap, not an input gap (FR-003): the raise
+    # carries kind == pending_capability, with its reason string unchanged.
+    write_project(project_root, characters=[], manuscript={})
+    skip = _raise(project_root)
+    assert skip.kind is NotEvaluatedKind.pending_capability
+    assert skip.reason == _REASON
 
 
 def test_clean_project_still_abstains(project_root: Path) -> None:

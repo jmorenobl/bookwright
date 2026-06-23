@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "NotEvaluated",
+    "NotEvaluatedKind",
     "NotEvaluatedResult",
     "Severity",
     "UnknownValidatorError",
@@ -47,6 +48,22 @@ class Severity(StrEnum):
 
 _RANK: dict[Severity, int] = {Severity.error: 2, Severity.warning: 1, Severity.info: 0}
 """Ordinal for the ``--severity`` threshold, the gate, and the total-order sort."""
+
+
+class NotEvaluatedKind(StrEnum):
+    """Why a validator consciously did not evaluate (iteration 044, design § 13.4).
+
+    A small closed vocabulary mirroring :class:`Severity`. The wire value is the
+    member name; carried on the not-evaluated signal and its recorded result.
+    """
+
+    missing_input = "missing_input"
+    """Input-conditional: an input of THIS project was missing/malformed —
+    actionable, per-project, transient. The default (FR-002)."""
+
+    pending_capability = "pending_capability"
+    """Permanent capability-gap: no deterministic run evaluates this; it awaits
+    move 3 (§ 13.5) — not author-actionable, identical in every project."""
 
 
 def split_source(source: str | None) -> tuple[str | None, int | None]:
@@ -124,10 +141,19 @@ class NotEvaluated(Exception):
     **not** a failure: the runner catches it BEFORE its generic handler and records a
     :class:`NotEvaluatedResult` in the ``not_evaluated`` channel, never in ``errors[]``
     (FR-005). A validator that never raises it is always **evaluated** (FR-014).
+
+    The ``kind`` (default :attr:`NotEvaluatedKind.missing_input`) records whether the
+    gap is about *this input* (actionable, transient) or about the *approach* (a
+    permanent capability-gap); the validator is the only party that knows, so it
+    declares it at raise time. Every existing ``raise NotEvaluated(reason)`` is
+    unchanged and yields ``missing_input`` (FR-002).
     """
 
-    def __init__(self, reason: str) -> None:
+    def __init__(
+        self, reason: str, kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
+    ) -> None:
         self.reason = reason
+        self.kind = kind
         super().__init__(reason)
 
 
@@ -138,14 +164,22 @@ class NotEvaluatedResult:
     Sibling to :class:`ValidatorError`; surfaced in the ``not_evaluated`` channel. It
     is not a finding (no severity, never gates) and not a load/run error (FR-005). The
     ``reason`` is the validator's English ``NotEvaluated`` reason; the runner stamps
-    the ``validator`` name (the validator never names itself).
+    the ``validator`` name (the validator never names itself). The ``kind`` (default
+    :attr:`NotEvaluatedKind.missing_input`) categorizes the gap as input-conditional
+    or a permanent capability-gap (iteration 044); it is stamped by the runner from
+    the signal and serialized as an additive key (FR-008).
     """
 
     validator: str
     reason: str
+    kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
 
     def to_json(self) -> dict[str, Any]:
-        return {"validator": self.validator, "reason": self.reason}
+        return {
+            "validator": self.validator,
+            "reason": self.reason,
+            "kind": self.kind.value,
+        }
 
 
 @runtime_checkable

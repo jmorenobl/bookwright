@@ -103,20 +103,24 @@ proyecto**, antes de escribir nada, habrías visto:
 
 ```text
 not evaluated:
-  focalization: the narrative-voice declaration is still unanswered ([PENDING])
-  setting_continuity: the manuscript is empty
+  focalization [input gap]: the narrative-voice declaration is still unanswered ([PENDING])
+  setting_continuity [input gap]: the manuscript is empty
 ```
 
 Ni errores ni avisos… pero tampoco un «todo bien». Esos validadores **no pudieron
-mirar**: no había prosa, ni una voz narrativa declarada. Un resultado vacío que se
-leyera como «limpio» sería *falsa confianza*.
+mirar**: no había prosa, ni una voz narrativa declarada. La etiqueta `[input gap]`
+te lo dice: faltaba una entrada *tuya*. Un resultado vacío que se leyera como
+«limpio» sería *falsa confianza*. (Verás también una entrada
+`[known limitation — no action available yet]`: un límite permanente del enfoque, no
+algo que tú puedas arreglar — esa **no** te impide el verde.)
 
 !!! success "La definición de verde"
     Tu libro está realmente comprobado cuando **no hay errores _y_ ningún validador
-    se quedó sin mirar** (`status == "ok"` y `not_evaluated == []`). Por eso te
-    convino responder el `[PENDING]` de la voz narrativa en el [paso 1](distill.md):
-    despertó al validador de focalización. Tu agente, al leer `bookwright status`,
-    te recuerda cualquier validador dormido como trabajo pendiente.
+    se quedó sin mirar por falta de una entrada tuya** (`status == "ok"` y ninguna
+    entrada `not_evaluated` de tipo `missing_input`). Por eso te convino responder el
+    `[PENDING]` de la voz narrativa en el [paso 1](distill.md): despertó al validador
+    de focalización. Tu agente, al leer `bookwright status`, te recuerda cualquier
+    validador dormido **accionable** como trabajo pendiente.
 
 ## Y a partir de aquí
 

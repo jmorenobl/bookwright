@@ -18,6 +18,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from bookwright.validation.base import NotEvaluatedKind
+
 if TYPE_CHECKING:
     from bookwright.status.model import StatusState
 
@@ -124,9 +126,6 @@ _REMEDIES: dict[str, str] = {
     "focalization": "declare the narrative voice in the constitution",
     "setting_continuity": "add manuscript prose to validate",
     "character_presence": "add a bible character roster and manuscript prose",
-    "character_unknown_mentions": (
-        "awaiting LLM semantic judgment (move 3) — no manual action available yet"
-    ),
 }
 
 #: Fallback clause for a dormant validator with no concrete remedy in ``_REMEDIES``.
@@ -134,7 +133,12 @@ _GENERIC_REMEDY = "investigate why it could not evaluate"
 
 
 def _activate_dormant_validators(state: StatusState) -> Action:
-    dormant = state.validation.not_evaluated  # sorted by validator name (deterministic)
+    # Only input-conditional gaps are actionable (iteration 044, FR-005): a
+    # `pending_capability` entry is a permanent capability-gap with no manual remedy,
+    # so it is filtered out here and never nudged. Still sorted by validator name.
+    dormant = [
+        r for r in state.validation.not_evaluated if r.kind is NotEvaluatedKind.missing_input
+    ]
     # One clause per dormant validator so the prompt always covers EVERY validator the
     # `reason` count names — no validator is silently dropped (mapped → its remedy,
     # unmapped → the generic clause).
@@ -183,7 +187,9 @@ RULES: tuple[Rule, ...] = (
     ),
     Rule(
         name="activate_dormant_validators",
-        applies=lambda s: bool(s.validation.not_evaluated),
+        applies=lambda s: any(
+            r.kind is NotEvaluatedKind.missing_input for r in s.validation.not_evaluated
+        ),
         build=_activate_dormant_validators,
     ),
     Rule(

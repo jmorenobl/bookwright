@@ -66,7 +66,7 @@ def run_validators(
         try:
             found = validator.validate(project, indexer)
         except NotEvaluated as skip:  # conscious skip → not_evaluated channel (FR-005)
-            not_evaluated.append(NotEvaluatedResult(validator.name, skip.reason))
+            not_evaluated.append(NotEvaluatedResult(validator.name, skip.reason, skip.kind))
             continue
         except Exception as exc:  # per-validator isolation (FR-014) — never abort the run
             errors.append(ValidatorError(validator.name, f"{type(exc).__name__}: {exc}", "run"))

@@ -1276,14 +1276,26 @@ class Violation:
     source: str | None  # ej. "manuscript/cap-04.md:42"
     triples: list[tuple[str, str, str]] | None  # triples implicados
 
+class NotEvaluatedKind(str, Enum):
+    """Por qué un validador NO evaluó (iteración 044). Vocabulario cerrado de dos
+    valores que refleja a `Severity`; el `.value` es la cadena de wire."""
+    missing_input = "missing_input"          # input-condicional: faltó una entrada
+                                              # de ESTE proyecto (accionable, transitorio)
+    pending_capability = "pending_capability"  # hueco de capacidad permanente: ningún
+                                              # run determinista lo evalúa (espera move 3)
+
 class NotEvaluated(Exception):
     """Señal (no error) de que un validador NO evaluó por falta de entrada.
 
     Es un `Exception` plano —NO un `BookwrightError`—; no es un fallo. El runner
     la captura en una cláusula **antes** de su `except Exception` genérico y la
-    anota en el canal `not_evaluated`, nunca en `errors[]`.
+    anota en el canal `not_evaluated`, nunca en `errors[]`. El validador declara
+    `kind` al lanzar: es el único que sabe si el hueco es de *esta entrada*
+    (`missing_input`, por defecto) o del *enfoque* (`pending_capability`).
     """
-    def __init__(self, reason: str) -> None: ...
+    def __init__(
+        self, reason: str, kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
+    ) -> None: ...
 
 class Validator(Protocol):
     name: str
@@ -1309,8 +1321,18 @@ sub-comprobación):
 |---|---|---|---|
 | **evaluado, sin hallazgos** | `return []` | en ningún sitio (cuenta como limpio) | no |
 | **evaluado, con hallazgos** | `return [Violation, …]` | `violations[]` | sí, si hay algún `error` |
-| **no-evaluado(motivo)** | `raise NotEvaluated(motivo)` | `not_evaluated[]` | no |
+| **no-evaluado(motivo, kind)** | `raise NotEvaluated(motivo[, kind])` | `not_evaluated[]` | no |
 | **petó (load/run)** | lanza cualquier otra excepción | `errors[]` (`ValidatorError`) | no |
+
+El estado **no-evaluado** lleva además un `kind` del vocabulario cerrado
+`{missing_input, pending_capability}` (iteración 044), por defecto `missing_input`
+—así toda `raise NotEvaluated(motivo)` existente queda byte-idéntica—. `missing_input`
+es input-condicional (faltó una entrada de *este* proyecto: accionable, transitorio);
+`pending_capability` es un hueco de capacidad permanente (ningún run determinista lo
+evalúa; espera move 3 — § 13.5). El `kind` se serializa como clave **aditiva** en cada
+elemento de `not_evaluated[]` (sobre `--json` y payload de `status`); ninguna clave
+previa se renombra. Refina el predicado de verde y la regla del nudge (§ 13.4): solo
+`missing_input` deniega verde y dispara `activate_dormant_validators`.
 
 El motivo es texto fijo en **inglés** (sin datos minteados), determinista. El
 nuevo estado fluye de forma **aditiva**: `runner.RunResult` gana un 4.º elemento
@@ -1320,9 +1342,18 @@ el informe humano → `status` lo expone en `state.validation.not_evaluated` y u
 regla `activate_dormant_validators` lo nombra en `next_actions`. El gate sigue
 clavado **solo** en hallazgos `Violation` de severidad `error`; `no-evaluado`
 nunca gatea y es un canal **distinto** de `errors[]` (que es para validadores que
-petan). El predicado de verde queda fijado en un único sitio (`report.py`):
+petan). El predicado de verde queda fijado en un único sitio (`report.py`),
+**refinado por `kind` en la iteración 044** (§ 13.5):
 
-> Una ejecución es **verde/limpia** ⟺ `status == "ok"` **y** `not_evaluated == []`.
+> Una ejecución es **verde/limpia** ⟺ `status == "ok"` **y** ninguna entrada de
+> `not_evaluated` tiene `kind == "missing_input"`.
+
+Una entrada `pending_capability` (p.ej. el abstinente `character_unknown_mentions`,
+presente en *todo* proyecto) queda **visible** pero **no** deniega verde, y la regla
+`activate_dormant_validators` se filtra igual: dispara **solo** cuando hay alguna
+entrada `missing_input` accionable. Así un proyecto impecable vuelve a leerse verde y
+el nudge deja de dispararse en todos lados (regresión que la 043 introdujo al hacer
+`character_unknown_mentions` un abstinente incondicional).
 
 ### 13.2 Validators built-in en v0
 

@@ -42,6 +42,22 @@ def cli() -> CliRunner:
     return CliRunner()
 
 
+def is_green(payload: dict[str, object]) -> bool:
+    """The single documented green predicate, refined by kind (SC-002, iteration 044).
+
+    Green ⟺ ``status == "ok"`` AND no ``not_evaluated`` entry is a ``missing_input``
+    gap. A ``pending_capability`` entry stays listed but does **not** deny green
+    (FR-004). Canonical here so the two consumers (the ``report`` unit suite and the
+    tri-valued E2E suite) cannot drift — it is a test helper, not a code property, the
+    same shape iteration 040 shipped.
+    """
+    not_evaluated = payload["not_evaluated"]
+    assert isinstance(not_evaluated, list)
+    return payload["status"] == "ok" and not any(
+        r["kind"] == "missing_input" for r in not_evaluated
+    )
+
+
 def copy_fixture(name: str, dest_parent: Path) -> Path:
     """Copy the committed fixture ``name`` into ``dest_parent``; return the copy.
 
