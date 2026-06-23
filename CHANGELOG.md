@@ -4,6 +4,69 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.4] — 2026-06-23
+
+Iteration **045** — the **head-hopping twin of 043** (issue #1, track A —
+honesty). The 2nd dogfood (`sombra-en-el-puerto`) measured `focalization`'s
+deterministic head-hopping check (interiority verbs attributed to a non-focal
+bible character under a declared third-person-**limited** voice) as **practically
+dormant**: it fires only when a character's **full** bible name sits on the **same
+physical line** as the interiority verb, while real prose names characters by
+first name / epithet across lines (DEBT-014, a near-total false negative). A
+head-hop heuristic without semantic judgment has a precision ceiling, so — exactly
+as 043 did with the open-set unknown-mention rule — the rule **stops faking**:
+under a parseable limited-third voice the validator now raises `NotEvaluated(…,
+kind=pending_capability)` for the **whole run** instead of running the near-null
+heuristic, surfacing the permanent gap through the iteration-040 `not_evaluated[]`
+channel. The deterministic heuristic is **deleted**, not parked. This release only
+**consumes** the 044 machinery — the green predicate, `NotEvaluatedKind`, the
+`not_evaluated[]` serialization, the `status` nudge and `_KIND_LABEL` render are
+all unchanged. The validator stays a single prose validator (`triples=()`), the
+frozen ontology is untouched (Principle X), and no runtime dependency is added.
+
+### Changed
+
+- **`focalization` abstains on head-hopping** (`045`,
+  `src/bookwright/validation/validators/focalization.py`, 190 → 159 lines) — under
+  a declared third-person-limited / focalized voice, `validate()` raises
+  `NotEvaluated("head-hopping / interiority attribution requires semantic judgment
+  (move 3); the deterministic heuristic was measured nearly dormant on real
+  prose", kind=NotEvaluatedKind.pending_capability)` instead of running the
+  deterministic check. A declared third-person **non-limited** voice still runs
+  `_first_person_breaks` and stays `evaluated`; a first-person voice still
+  evaluates with no findings; the four input-conditional abstentions (no
+  constitution, no declared voice, `[PENDING]` placeholder, no grammatical person)
+  stay `kind=missing_input` with byte-identical reasons (the 037 `_PENDING_ONLY`
+  guard is preserved verbatim).
+- **Contract before code** — `bookwright-design.md` § 13.2 (the validator row) and
+  § 13.5 now state the whole-validator limited-third abstention plainly, ahead of
+  the code diverging.
+- **Oracles** — the per-fixture `not_evaluated[]` expectation now carries a
+  `focalization` `pending_capability` entry for the third-limited fixtures
+  (`tiny-historical`, `tiny-novel`, `tiny-quest`); first-person fixtures
+  (`tiny-memoir`, `tiny-essay`) gain none. `tiny-historical` counts stay
+  `{error:1, warning:1, info:0}` and its `next_actions` length stays 3 (the
+  head-hopping rule emitted nothing on it, so no warning drops).
+
+### Removed
+
+- The dormant head-hopping heuristic and its now-dead support — `_head_hopping`,
+  the `_INTERIORITY` matcher, the `_Declaration.focal` field, the focal-name
+  computation in `_parse_declaration` (its `character_names` argument is dropped),
+  and the orphaned `character_names` computation in `validate` — grep-confirmed to
+  have zero external consumers (mirrors 043 deleting its heuristic rather than
+  parking it for move 3).
+- **DEBT-014** (the dormant head-hopping false negative) — resolved and removed
+  from `DEBT.md`.
+
+### Known regression (recorded, not dropped)
+
+- **DEBT-019** — `NotEvaluated` is all-or-nothing, so a limited-third declaration
+  abstains the **whole** `focalization` run: the still-working deterministic
+  first-person-break check no longer runs for limited-third projects (it still
+  runs under non-limited third). The honest fix is a partial-evaluation contract
+  or move 3, both 040/044-scale and out of this iteration's scope.
+
 ## [0.5.3] — 2026-06-23
 
 Iterations **043 + 044**, released together — the **issue #1 second-dogfood
