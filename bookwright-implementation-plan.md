@@ -172,11 +172,11 @@ Tres tracks, salidos de la decisión de la issue #1 tras el 2º dogfood
 
 - **Track A — honestidad** (familia 040): el heurístico de **conjunto abierto** deja de
   fingir y declara `not_evaluated`. Cierra la mentira (`[]`/dormido). Iteraciones **043**
-  (menciones-desconocidas → abstainer, **ya implementada**, branch `043-character-presence-split`),
-  **044** (categorías de `not_evaluated` + verde alcanzable — el refinamiento de 040 que
-  043 hizo necesario; **se apila sobre 043 y se libera con él** como `v0.5.3`), **045**
-  (head-hopping de `focalization`), **046** (`validate` propaga `skipped`). Un patch cada
-  una (043+044 comparten `v0.5.3`).
+  (menciones-desconocidas → abstainer — **✅ released `v0.5.3`**) y **044** (categorías de
+  `not_evaluated` + verde alcanzable, el refinamiento de 040 que 043 hizo necesario — **✅
+  released `v0.5.3`**, junto con 043); **045** (head-hopping de `focalization`) y **046**
+  (`validate` propaga `skipped`) quedan pendientes. Un patch cada una (043+044 compartieron
+  `v0.5.3`).
 - **Track B — pulido determinista** (cerrado/estructural, real, barato): **047** (vocab
   Propp/Greimas no fatal enumerado, DEBT-016), **048** (locators de graph-consumers,
   DEBT-015), **049** (mensaje nombre-vs-slug, DEBT-017). Un patch cada una; independientes
@@ -201,7 +201,13 @@ de `DEBT.md` al cerrarse.
 
 ## 1.A — Track de honestidad (familia 040)
 
-### 1. Iteración 043 — La regla de menciones-desconocidas declara `not_evaluated` (cierra el ruido de conjunto abierto; subsume DEBT-011/012/013-síntoma)
+> **✅ 043 y 044 están RELEASED como `v0.5.3`** (2026-06-23: mergeadas a `main` con
+> `48bb8a0`, release `f62922a`, tag `v0.5.3`). Sus bloques `SPEC`/comando se conservan abajo
+> **solo como referencia histórica — NO relanzar** (re-ejecutar el workflow re-crearía la
+> branch sobre trabajo ya entregado). El detalle vivo está en git / `CHANGELOG`. **El frente
+> vivo del track A es la iteración 045.**
+
+### 1. Iteración 043 — La regla de menciones-desconocidas declara `not_evaluated` (cierra el ruido de conjunto abierto; subsume DEBT-011/012/013-síntoma) — ✅ RELEASED v0.5.3
 
 `character_presence` mezcla **dos reglas de naturaleza opuesta**: la de **huérfanos**
 (`error`, el gate — ¿toda CHARACTER del bible se menciona en la prosa? conjunto **cerrado**,
@@ -318,7 +324,7 @@ sobre esta misma branch y lo corrige; **043+044 se mergean juntas y se liberan c
 
 ---
 
-### 2. Iteración 044 — `not_evaluated` distingue capability-gap permanente de input-gap; el verde vuelve a ser alcanzable
+### 2. Iteración 044 — `not_evaluated` distingue capability-gap permanente de input-gap; el verde vuelve a ser alcanzable — ✅ RELEASED v0.5.3
 
 **El refinamiento de 040 que 043 hizo necesario.** 043 hizo honesto el heurístico de conjunto
 abierto (`character_unknown_mentions` declara `NotEvaluated` **incondicionalmente**). Correcto,
@@ -449,9 +455,17 @@ verde. La detección real —irreductiblemente semántica— es track C (move 3)
   **entera a `not_evaluated`** hasta el move 3. El guard `_PENDING_ONLY` y el de "sin
   declaración" (037) NO cambian: esos ya son `not_evaluated`/"sin declaración" correctos.
 - **Pista (`/speckit-plan`):** `validation/validators/focalization.py` (`_head_hopping`,
-  `_INTERIORITY`, el matching por nombre completo en `line.raw`). Reúsa `NotEvaluated` (040).
+  `_INTERIORITY`, el matching por nombre completo en `line.raw`). **`kind` (044), CRÍTICO:** el
+  nuevo raise del head-hop es un hueco de CAPACIDAD (semántico → move 3), así que usa
+  `raise NotEvaluated(<motivo>, kind=NotEvaluatedKind.pending_capability)`. Si se queda con el
+  DEFAULT `missing_input`, por el predicado de 044 tumbaría el verde y dispararía el nudge en
+  TODO proyecto con voz focal — la regresión que 044 reparó. Los CUATRO raises existentes de
+  `focalization` (sin constitución / sin declaración / `[PENDING]`,
+  `focalization.py:74/82/167/170`) son input-conditional y se quedan `missing_input` — NO les
+  pongas `pending_capability`.
   Verifica oráculos con `uv run pytest`; los fixtures con declaración focal ganan una entrada
-  `not_evaluated`. Borra DEBT-014 de `DEBT.md` (la mitad de honestidad; el techo de precisión
+  `not_evaluated` de `kind: pending_capability` que —correctamente— NO les rompe el verde.
+  Borra DEBT-014 de `DEBT.md` (la mitad de honestidad; el techo de precisión
   lo cierra el track C). Validador de prosa, `triples=()`, ontología congelada intacta.
 - **Release:** `v0.5.4`.
 
@@ -466,15 +480,18 @@ desaparece del grafo y de toda validación. `bookwright status` lo trata como bl
 sobre el corpus parcial con `not_evaluated: []`, que se lee como «todo evaluado» cuando un
 personaje entero quedó fuera. Es justo el `[]`-miente que 040 quería erradicar.
 
-- **Necesidad / criterios:** `validate` propaga los `skipped` de `map_bible` a su sobre. Como
-  mínimo los surfacea (una entrada en `not_evaluated[]` por fichero omitido con el motivo, o
-  un canal `skipped[]` espejo del de `graph build`) para que `not_evaluated: []` no mienta.
-  Decidir en `/speckit-plan` si además degrada el verde (alineándose con la negativa dura de
-  `status`) o solo informa; postura recomendada: al menos surfacear en `not_evaluated[]` (no
-  mentir) y evaluar si el gate debe degradarse. Cierra la asimetría `status`↔`validate`.
-- **Pista (`/speckit-plan`):** `commands/validate/` (ensamblado del `ValidationContext`/sobre)
-  vs. `commands/status` (que ya rechaza con `code=skipped_sources`); el canal `skipped` de
-  `map_bible`/`graph build`. Reúsa el `not_evaluated[]` de 040. Borra DEBT-018 de `DEBT.md`.
+- **Necesidad / criterios:** `validate` propaga los `skipped` de `map_bible` a su sobre como
+  entradas `not_evaluated[]` con **`kind=NotEvaluatedKind.missing_input`** (un fichero omitido
+  es input-conditional: el autor arregla el YAML roto), una por fichero omitido con su motivo,
+  para que `not_evaluated: []` no mienta. **044 ya resuelve la pregunta del verde:** al ser
+  `missing_input`, el predicado refinado de 044 degrada el verde automáticamente, alineándose
+  con la negativa dura de `status` — ya no es una decisión abierta. Cierra la asimetría
+  `status`↔`validate`. (Alternativa de presentación: un canal `skipped[]` espejo del de `graph
+  build`; pero `not_evaluated[]` + `missing_input` reúsa 044 sin canal nuevo.)
+- **Pista (`/speckit-plan`):** `commands/validate.py` (ensamblado del `ValidationReport`/sobre)
+  vs. `commands/status.py` (que ya rechaza con `code=skipped_sources`, `commands/status.py:82`);
+  el canal `skipped` de `map_bible` (`io/bible.py`, `SkippedFile`). Reúsa el `not_evaluated[]`
+  de 040 con `kind=missing_input` (044). Borra DEBT-018 de `DEBT.md`.
 - **Release:** `v0.5.5`.
 
 ---
