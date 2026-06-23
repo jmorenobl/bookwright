@@ -123,21 +123,24 @@ validator and is independently valuable: an author can locate a cycle as easily
 as a numeric clash.
 
 **Independent Test**: Build a timeline fixture that triggers each of rules a, b
-and c and assert each emitted `temporal` violation carries
-`source == "bible/timeline.md"` (not `null`), matching what rule (d) already
-produces.
+and c and assert each emitted `temporal` violation carries a `source` that
+resolves to the `bible/timeline.md` file (its relpath component is
+`bible/timeline.md`; like rule (d) it is a line-bearing `bible/timeline.md:<line>`
+locator because `resolve_source` prefers a `:line`-bearing provenance) rather than
+`null`, matching what rule (d) already produces.
 
 **Acceptance Scenarios**:
 
 1. **Given** a timeline with a follows/precedes cycle, **When** the author
    runs `bookwright validate --json`, **Then** the rule (a) `temporal` violation's
-   `source` is `bible/timeline.md` (not `null`).
+   `source` resolves to the `bible/timeline.md` file (a line-bearing
+   `bible/timeline.md:<line>` locator, exactly as rule (d) produces), not `null`.
 2. **Given** a timeline with a pair both strictly ordered and overlapping,
    **When** the author runs validate, **Then** the rule (b) violation's `source`
-   is `bible/timeline.md`.
+   resolves to the `bible/timeline.md` file (not `null`).
 3. **Given** a timeline with a containment that conflicts with a strict
    order, **When** the author runs validate, **Then** the rule (c) violation's
-   `source` is `bible/timeline.md`.
+   `source` resolves to the `bible/timeline.md` file (not `null`).
 
 ---
 
@@ -172,9 +175,14 @@ produces.
   (`resolve_source` over an implicated event URI). All four rules MUST end up
   uniform in how they populate `source`.
 - **FR-002**: For a `temporal` rule that implicates more than one event, the
-  event whose URI is used to resolve `source` MUST be chosen deterministically
-  (e.g. mirroring rule (d)'s choice), so repeated builds emit byte-identical
-  `source` values.
+  event whose URI is used to resolve `source` MUST be chosen by a fixed, total
+  rule so repeated builds emit byte-identical `source` values: resolve from the
+  subject of the (already deterministically-ordered) implicated triple the
+  violation carries — mirroring rule (d), which resolves from the relation
+  subject `a` — and, for rule (a) (whose violation spans an SCC with no single
+  subject), resolve from the lexicographically smallest event URI in the
+  component. Byte-stability MUST be verified empirically by comparing two builds
+  of the same fixture.
 - **FR-003**: Every `factual_anchor` violation MUST carry a `source` locator
   resolved to the anchor's authoring file (`bible/research/<topic>.md`) instead of
   `null`, resolved by the same path `status` uses (the anchor's `relpath` via its
@@ -233,8 +241,14 @@ produces.
   `factual_anchor` must reuse.
 - **Violation `source` locator**: the `relpath[:line]` provenance string a
   validator attaches to a finding so an author can jump to the offending line —
-  resolved for events via the graph's reified `E13` provenance
-  (`resolve_source`), and for anchors via their `AnchorIdentity.relpath`.
+  resolved for events via the graph's reified `E13` provenance (`resolve_source`,
+  a line-bearing `relpath:line`), and for anchors via their
+  `AnchorIdentity.relpath`. The two granularities differ **by design**, not by
+  defect: a temporal event locator carries a `:line` (its E13 records one),
+  whereas an anchor locator is the file relpath alone (`AnchorIdentity` carries
+  no line, and FR-007 binds the anchor surface to the exact handle/file `status`
+  already renders — `status` is likewise file-only). Both are resolvable and
+  actionable; neither is `null`.
 - **Timeline event**: a `G5_Narrative_Event` authored in `bible/timeline.md`;
   unlike an anchor it **does** carry an inbound E13, so `resolve_source` over its
   URI yields `bible/timeline.md`.
