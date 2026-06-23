@@ -53,29 +53,42 @@ Cada hallazgo trae **validador**, **severidad**, **mensaje** y un **localizador*
 
 ```text
 not evaluated:
-  focalization: the narrative-voice declaration is still unanswered ([PENDING])
-  setting_continuity: the manuscript is empty
+  character_unknown_mentions [known limitation — no action available yet]: open-set proper-noun discovery requires semantic judgment (move 3); the deterministic heuristic was measured insufficient on real prose
+  focalization [input gap]: the narrative-voice declaration is still unanswered ([PENDING])
+  setting_continuity [input gap]: the manuscript is empty
 ```
 
-Esto **no** es un error ni una advertencia, y **no** bloquea — pero tampoco es
-verde. El validador no tenía con qué trabajar: no había manuscrito, o la
-constitución no declaraba la voz narrativa, o la información que necesitaba aún era
-un `[PENDING]`.
+Esto **no** es un error ni una advertencia, y **no** bloquea. Cada «no evaluado»
+lleva una **etiqueta de tipo** entre corchetes, y la distinción importa:
+
+- **`[input gap]`** — el validador no tenía con qué trabajar *en tu proyecto*: no
+  había manuscrito, o la constitución no declaraba la voz narrativa, o lo que
+  necesitaba aún era un `[PENDING]`. Es **accionable y transitorio**: aporta la
+  entrada que falta y el validador despierta. **No es verde** hasta que lo hagas.
+- **`[known limitation — no action available yet]`** — un **hueco de capacidad
+  permanente**: ningún chequeo determinista puede evaluar eso de forma fiable (hoy,
+  `character_unknown_mentions`, el descubrimiento de nombres propios de conjunto
+  abierto, que espera el juicio semántico del *move 3*). No hay nada que puedas
+  hacer; aparece en *todo* proyecto. Por eso **no impide el verde** ni te pide
+  acción — solo se declara, honesto, en lugar de fingir que miró.
 
 La distinción es la razón de ser de esta capa. Antes, un validador sin nada que
 mirar devolvía «cero hallazgos», **indistinguible** de «miré y está todo bien». Eso
 es *falsa confianza*: tu CI en verde mientras un validador llevaba meses dormido sin
-que nadie lo notara. Ahora cada «no evaluado» **se declara, con su motivo**.
+que nadie lo notara. Ahora cada «no evaluado» **se declara, con su motivo y su tipo**.
 
 ## La definición de VERDE
 
 !!! success "Tu proyecto está realmente comprobado cuando…"
     ```text
-    status == "ok"   Y   not_evaluated == []
+    status == "ok"   Y   ninguna entrada de not_evaluated es de tipo "missing_input"
     ```
-    Es decir: cero errores **y** ningún validador dormido. Un proyecto con
-    `not_evaluated` no vacío no está roto, pero tiene canon **sin vigilar** — y
-    conviene despertar esos validadores.
+    Es decir: cero errores **y** ningún validador dormido *por falta de una entrada
+    tuya*. Una entrada `[input gap]` (`missing_input`) sí deniega el verde: tienes
+    canon **sin vigilar** y conviene despertar ese validador. Una entrada
+    `[known limitation]` (`pending_capability`) **no** deniega el verde — es un límite
+    conocido del enfoque, no algo que tú puedas arreglar, así que un proyecto impecable
+    se lee verde aunque la lleve siempre.
 
 `bookwright status` reporta lo mismo bajo `state.validation.not_evaluated`, y su
 capa de orquestación incluso te propone el remedio como una `next_action` (ver

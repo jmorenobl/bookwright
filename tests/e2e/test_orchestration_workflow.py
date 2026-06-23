@@ -9,6 +9,11 @@ the merged 020 engine aggregates per workstream, so ``research_queue`` keeps fir
 while *any* open question OR anchor gap remains. Resolving one question therefore
 leaves ``len(next_actions) == 3`` unchanged; only ``state.open_questions`` and the
 ``research_queue`` prompt/reason converge, while every other fact is byte-identical.
+(The ``not_evaluated`` channel is never empty — ``character_unknown_mentions`` abstains
+unconditionally, issue #1 track A — but its entry is ``kind: pending_capability`` since
+iteration 044, so ``activate_dormant_validators`` NO LONGER fires: the nudge nudges only
+on actionable ``missing_input`` gaps. The three actions are the research workstreams plus
+the single ``review_continuity`` (the ``error`` count), byte-identical across runs.)
 
 Four groups, mapped 1:1 to ``contracts/e2e-orchestration-contract.md``:
 
@@ -286,7 +291,19 @@ def test_second_status_converges(cli: CliRunner, historical: Path, oracle: dict[
     assert f"{before_count} open research question" in research_before["reason"]
     assert f"{after_count} open research question" in research_after["reason"]
 
+    # The abstainer keeps the not_evaluated channel non-empty in both runs, as a
+    # pending_capability entry (iteration 044) — visible, but not nudged on.
+    for payload in (before, after):
+        entry = next(
+            r
+            for r in payload["state"]["validation"]["not_evaluated"]
+            if r["validator"] == "character_unknown_mentions"
+        )
+        assert entry["kind"] == "pending_capability"
+
     # Invariant: everything else byte-identical; the list length is unchanged (NOT N-1).
+    # Three actions: the capability-gap entry no longer fires the dormant nudge (044), so
+    # only the research workstreams plus the single review_continuity remain.
     assert len(after["next_actions"]) == 3
     assert len(before["next_actions"]) == 3
     assert _invariant_view(after) == _invariant_view(before)
@@ -348,7 +365,13 @@ def test_focus_free_project_recommends_no_research_workstream(
     assert state["unresolved_anchors"]["count"] == 0
     assert state["low_reliability_findings"]["count"] == 0
 
-    research_skills = set(oracle["next_actions"]["skills"])
+    # The *research-derived* workstreams must not fire on a research-free project. Note
+    # `bookwright-continuity` is dual-purpose — `review_continuity` (not firing here, no
+    # errors) AND `activate_dormant_validators` (which also does NOT fire since iteration
+    # 044: the only `not_evaluated` entry is `character_unknown_mentions` with
+    # `kind: pending_capability`, and the nudge nudges only on `missing_input` gaps) — so
+    # the inertness check covers research/verify; continuity is simply absent here too.
+    research_skills = {"bookwright-research", "bookwright-verify"}
     assert research_skills.isdisjoint(_skills(payload))
 
 

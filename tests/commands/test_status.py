@@ -67,7 +67,20 @@ def test_known_state_facts_match_the_fixture(tiny_historical: Path, runner: CliR
     }
 
     assert state["validation"]["counts"]["error"] >= 1
-    assert len(state["validation"]["ran"]) == 6
+    assert len(state["validation"]["ran"]) == 7
+
+
+def test_status_not_evaluated_entries_carry_kind(tiny_historical: Path, runner: CliRunner) -> None:
+    # FR-008/SC-007: each state.validation.not_evaluated[] entry exposes an
+    # additive `kind`, with the prior `validator`/`reason` keys intact.
+    _, payload = _status_json(runner)
+    not_evaluated = payload["state"]["validation"]["not_evaluated"]
+    assert not_evaluated  # the abstainer is always present
+    for entry in not_evaluated:
+        assert set(entry) == {"validator", "reason", "kind"}
+        assert entry["kind"] in {"missing_input", "pending_capability"}
+    kinds = {e["validator"]: e["kind"] for e in not_evaluated}
+    assert kinds["character_unknown_mentions"] == "pending_capability"
 
 
 def test_facts_agree_with_the_owning_tools(tiny_historical: Path, runner: CliRunner) -> None:
@@ -97,6 +110,14 @@ def test_v02_era_project_succeeds_with_empty_research_facts(
     # never a research/verify action on a research-free corpus
     assert all(
         action["skill"] not in {"bookwright-research", "bookwright-verify"}
+        for action in payload["next_actions"]
+    )
+    # SC-002: the only not_evaluated entry is the pending_capability abstainer, so
+    # NO activate_dormant_validators nudge fires on this clean project.
+    entries = {r["validator"]: r["kind"] for r in state["validation"]["not_evaluated"]}
+    assert entries == {"character_unknown_mentions": "pending_capability"}, entries
+    assert all(
+        not action["prompt"].startswith("Activate the dormant validators")
         for action in payload["next_actions"]
     )
 
@@ -153,8 +174,12 @@ def test_known_state_yields_the_exact_next_actions(
 ) -> None:
     _, payload = _status_json(runner)
     actions = payload["next_actions"]
-    # The fixture carries an authored [focus] block (iteration 023), so rule ⑤
-    # (define_focus) does NOT fire — exactly three research-derived workstreams remain.
+    # The fixture carries an authored [focus] block (iteration 023), so rule ⑥
+    # (define_focus) does NOT fire. Three actions remain: the three research-derived
+    # workstreams. The dormant-validator nudge NO LONGER fires (iteration 044): the only
+    # `not_evaluated` entry is `character_unknown_mentions` with `kind: pending_capability`,
+    # and `activate_dormant_validators` now nudges only on `missing_input` gaps — so there
+    # is a single `bookwright-continuity` action (review_continuity, the `error` count).
     assert [a["skill"] for a in actions] == [
         "bookwright-research",
         "bookwright-verify",

@@ -523,42 +523,44 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/042-character-presence-roster/plan.md` (iteration 042, `v0.5.2`, the
-second post-`v0.5.0` patch, closing DEBT-010 — detected by the `tiny-historical`
-dogfood). The `character_presence` validator has two rules split by severity: an
-orphan rule (`error`, protects the gate — every bible CHARACTER must be mentioned)
-and an unknown-mention rule (`warning` — a prose proper noun with «no bible entry»).
-The unknown-mention rule cross-checks proper-noun candidates against the CHARACTER
-roster ONLY, so the capitalized tokens of a declared multi-word environment —
-`Real`, `Fábrica`, `Paños` of the bible setting "la Real Fábrica de Paños" under
-`bible/settings/` — each fire a spurious "no bible entry" warning even though the
-entry EXISTS (just under `settings/`, not `characters/`). THE FIX (issue #1
-doctrine, per-class, no NER): widen the rule's known-names set to the UNION of the
-character, setting, LOCATION and OBJECT rosters. Two new cached accessors on
-`ValidationContext` — `location_names()` (GOLEM class `NarrativeLocation`,
-`bible/locations/`, G13) and `object_names()` (GOLEM class `Object`,
-`bible/objects/`, G16) — each a byte-for-byte mirror of `setting_names()`: the same
-generic `_names_of(concept_cls)` helper and `_UNSET`-sentinel memoization, NO new
-helper (there is no class literally named `Location`). In
-`CharacterPresence.validate`, `_orphans` KEEPS feeding from `character_names()` alone
-(the `error` gate is untouched, FR-004/FR-006), but the slug set `_unknown_mentions`
-consumes is built from the CONCATENATION of the four roster tuples passed once
-through the EXISTING module-level `_roster_slugs` (unchanged). The `NotEvaluated`
-guard stays clavado on `not roster and not files` (CHARACTER roster only) with the
-identical reason string (FR-007); the `Violation` shape, `triples=()`, and frozen
-ontology are untouched (FR-005/FR-008/FR-009/FR-010). File-based, NOT SPARQL — the
-rosters ride the cached `bible()` map, no extra disk read, no built graph. The ONLY
-pinned-count oracle that shifts is `tiny-historical/expected-status.md`
-(`validation.counts.warning 4 → 1`: the three setting tokens removed, the lone
-`factual_anchor` warning remains; `error` stays 1; fixture manuscript/bible
-UNTOUCHED, the same oracle-only shape 041 did `5 → 4` and 038 did `6 → 5`).
-`tiny-novel`/`tiny-memoir` assert only `error == 0` (warnings tolerated, no pinned
-count) so they need no edit. The location/object union arms + both new accessors are
-proven by SYNTHETIC-PROJECT tests on `tests/validation/conftest.py`'s `write_project`
-(extended with `locations=`/`objects=` knobs mirroring `settings=` byte-for-byte,
-both defaulting to `()`), NOT by editing any pinned fixture (FR-011/FR-015). DEBT-011
-(paired leading quotes `«`/`"`/`'`) is a distinct design, already recorded, NOT swept
-here. stdlib `re` only — no new dep (Constitution II); every changed file ≤ 500
-lines (`base.py` 322 → ~350, `character_presence.py` 215 → ~218). Remove DEBT-010
-from `DEBT.md`. Design § 13. `uv run pytest` and the four gates green.
+`specs/044-not-evaluated-kinds/plan.md` (iteration 044, design § 13.4/§ 13.5 —
+the follow-up to 043 that REPAIRS the 040 green contract 043 broke as a side
+effect). 043's `character_unknown_mentions` abstainer raises `NotEvaluated`
+UNCONDITIONALLY, so the documented green predicate `status=="ok" AND
+not_evaluated==[]` is now `False` in EVERY project (even a flawless one) and the
+`_activate_dormant_validators` nudge fires everywhere — the issue #1 alarm
+fatigue merely relocated to the `not_evaluated` channel. ROOT CAUSE: TWO kinds of
+`not_evaluated` entry share one channel that governs green — (a) INPUT-CONDITIONAL
+(could not evaluate THIS project, a missing/broken input — actionable, transient)
+and (b) PERMANENT CAPABILITY-GAP (no deterministic run evaluates this; awaits
+move 3 — not author-actionable, identical everywhere). THE FIX: a closed
+`NotEvaluatedKind(StrEnum)` in `validation/base.py` (mirrors `Severity`) with
+`missing_input` (DEFAULT) + `pending_capability`; `NotEvaluated.__init__` gains
+`kind` as the LAST param defaulting to `missing_input` (every existing raise
+byte-for-byte unchanged — FR-002), `NotEvaluatedResult` gains a `kind` field
+(last, defaulted) serialized additively in `to_json` (FR-008/SC-007). The runner
+(`runner.py:69`) stamps `skip.kind`; `character_unknown_mentions` is the ONLY
+non-default raise (`kind=pending_capability`, FR-003). REFINED GREEN PREDICATE
+(docstring + `_is_green` test helper, NOT a code property — same shape 040
+shipped): green ⟺ `status=="ok"` AND no entry has `kind=="missing_input"`;
+capability-gap entries DO NOT deny green (FR-004). `status/rules.py`
+`_activate_dormant_validators` filters `kind==missing_input` and the 043
+`_REMEDIES["character_unknown_mentions"]` clause is REMOVED (FR-005/FR-006).
+VISIBILITY non-negotiable (issue #1): the render labels each entry by a
+KIND-GENERIC tag (`_KIND_LABEL` in `report.py`, validator-specific "move 3" stays
+in `reason`) — and the line-116 clean-line early-return STAYS `not
+self.not_evaluated` (both kinds keep "no violations found" suppressed; the
+`/speckit-plan` hint's "filter line 116 by kind" is SUPERSEDED by FR-010 + the
+capability-gap-only edge case — see research.md D5). `status/model.py` needs NO
+serialization edit (`ValidationSummary.to_payload` already delegates to
+`r.to_json()` → `kind` flows automatically). CONTRACT-BEFORE-CODE: update
+`bookwright-design.md` § 13.1 (the `NotEvaluated` signature) + § 13.4 (the refined
+predicate quote) BEFORE the validators diverge (plan § 7.3). `tiny-historical`
+oracle: the entry gains `kind: pending_capability`, `next_actions` 4→3, counts
+byte-identical `{error:1, warning:1, info:0}`, manuscript/bible untouched;
+`tiny-novel`/`tiny-memoir` read GREEN again. Out of scope: `character_presence`
+(orphan rule), `io/prose.py`, move 3 itself, the `focalization` head-hopping
+not-evaluated (iteration 045). stdlib only, no new dep (Constitution II); every
+changed file ≤ 500 lines; prose validators keep `triples=()`; frozen ontology
+untouched. `uv run pytest` + four gates green.
 <!-- SPECKIT END -->

@@ -126,8 +126,6 @@ def write_project(  # noqa: PLR0913 — a flexible scaffold helper; keyword-only
     characters: Iterable[str] = (),
     character_roles: Mapping[str, Iterable[str]] | None = None,
     settings: Iterable[str] = (),
-    locations: Iterable[str] = (),
-    objects: Iterable[str] = (),
     timeline: str | None = None,
     relationships: str | None = None,
     manuscript: Mapping[str, str] | None = None,
@@ -139,13 +137,10 @@ def write_project(  # noqa: PLR0913 — a flexible scaffold helper; keyword-only
 ) -> Path:
     """Create a project tree under ``root`` and return it.
 
-    ``characters`` / ``settings`` / ``locations`` / ``objects`` are names (one bible
-    file each, under ``bible/<dir>/``); ``timeline`` / ``relationships`` /
-    ``constitution`` are raw file bodies; ``manuscript`` maps a relpath (under
-    ``manuscript/``) to its text. The ``manuscript/`` directory always exists so the
-    layout is valid. ``locations`` / ``objects`` default to ``()`` so an existing caller
-    builds a byte-identical project (FR-011/FR-015); their bible dir is created only when
-    a name is supplied.
+    ``characters`` / ``settings`` are names (one bible file each, under
+    ``bible/<dir>/``); ``timeline`` / ``relationships`` / ``constitution`` are raw file
+    bodies; ``manuscript`` maps a relpath (under ``manuscript/``) to its text. The
+    ``manuscript/`` directory always exists so the layout is valid.
 
     ``character_roles`` maps a character name to its ``narrative_roles`` list so the
     character pass materializes role nodes a unit card's ``roles:`` can resolve
@@ -187,18 +182,6 @@ def write_project(  # noqa: PLR0913 — a flexible scaffold helper; keyword-only
     for name in settings:
         slug = name.lower().replace(" ", "-")
         (bible / "settings" / f"{slug}.md").write_text(
-            f'---\nname: "{name}"\n---\n', encoding="utf-8"
-        )
-    for name in locations:
-        slug = name.lower().replace(" ", "-")
-        (bible / "locations").mkdir(parents=True, exist_ok=True)
-        (bible / "locations" / f"{slug}.md").write_text(
-            f'---\nname: "{name}"\n---\n', encoding="utf-8"
-        )
-    for name in objects:
-        slug = name.lower().replace(" ", "-")
-        (bible / "objects").mkdir(parents=True, exist_ok=True)
-        (bible / "objects" / f"{slug}.md").write_text(
             f'---\nname: "{name}"\n---\n', encoding="utf-8"
         )
     if timeline is not None:

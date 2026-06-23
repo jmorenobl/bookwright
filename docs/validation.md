@@ -39,10 +39,12 @@ Cada validador devuelve, por corrida, un veredicto de **tres valores**, no dos:
   voz narrativa sin declarar, sin constitución…).
 
 Los «no evaluados» viajan en su propio canal `not_evaluated[]`, **distinto** de
-`errors[]` (un fallo del validador) y de las violaciones. **No bloquean**, pero
-tampoco cuentan como verde: un resultado vacío ya no se confunde con un visto
-bueno. La definición canónica de verde es, por tanto,
-`status == "ok" AND not_evaluated == []`. Lo trata a fondo la guía
+`errors[]` (un fallo del validador) y de las violaciones. **No bloquean**. Cada
+entrada lleva un `kind`: `missing_input` (faltó una entrada *tuya* — accionable,
+deniega el verde) o `pending_capability` (un límite permanente del enfoque, no
+accionable, que **no** deniega el verde). La definición canónica de verde es, por
+tanto, `status == "ok" AND ninguna entrada de not_evaluated tiene kind == "missing_input"`.
+Lo trata a fondo la guía
 [Interpretar la validación](guides/interpret-validation.md); su forma exacta en
 JSON está en la referencia de [`bookwright validate`](commands/validate.md).
 

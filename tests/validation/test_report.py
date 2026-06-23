@@ -12,17 +12,14 @@ import io
 from rich.console import Console
 
 from bookwright.validation.base import (
+    NotEvaluatedKind,
     NotEvaluatedResult,
     Severity,
     ValidatorError,
     Violation,
 )
 from bookwright.validation.report import ScopeFilter, ValidationReport
-
-
-def _is_green(payload: dict[str, object]) -> bool:
-    """The single documented predicate (SC-002): ok AND nothing not-evaluated."""
-    return payload["status"] == "ok" and payload["not_evaluated"] == []
+from tests.conftest import is_green
 
 
 def _render(report: ValidationReport) -> str:
@@ -124,6 +121,13 @@ def test_errors_surface_in_json() -> None:
 
 
 _SKIP = NotEvaluatedResult("focalization", "the constitution does not declare a narrative voice")
+#: A permanent capability-gap entry (iteration 044): present in every project, does not
+#: deny green, labeled as a known limitation.
+_SKIP_CAP = NotEvaluatedResult(
+    "character_unknown_mentions",
+    "open-set proper-noun discovery requires semantic judgment (move 3)",
+    NotEvaluatedKind.pending_capability,
+)
 
 
 def test_to_json_carries_not_evaluated_sibling_key() -> None:
@@ -135,6 +139,7 @@ def test_to_json_carries_not_evaluated_sibling_key() -> None:
         {
             "validator": "focalization",
             "reason": "the constitution does not declare a narrative voice",
+            "kind": "missing_input",
         }
     ]
     # The channel is additive: violations/errors keep their shapes, status untouched.
@@ -143,21 +148,56 @@ def test_to_json_carries_not_evaluated_sibling_key() -> None:
     assert payload["errors"] == []
 
 
+def test_to_json_not_evaluated_carries_kind() -> None:
+    """FR-008: each ``not_evaluated[]`` element exposes ``kind`` alongside the
+    unchanged ``validator``/``reason``; no pre-existing key changed name or type."""
+    report = ValidationReport(
+        violations=(),
+        errors=(),
+        ran=("character_unknown_mentions", "focalization"),
+        not_evaluated=(_SKIP_CAP, _SKIP),  # sorted? no — report preserves given order
+    )
+    payload = report.to_json(scope=None, severity=None)
+    entries = payload["not_evaluated"]
+    assert isinstance(entries, list)
+    for entry in entries:
+        assert set(entry) == {"validator", "reason", "kind"}
+        assert entry["kind"] in {"missing_input", "pending_capability"}
+        assert isinstance(entry["validator"], str)
+        assert isinstance(entry["reason"], str)
+    kinds = {e["validator"]: e["kind"] for e in entries}
+    assert kinds["character_unknown_mentions"] == "pending_capability"
+    assert kinds["focalization"] == "missing_input"
+
+
 def test_green_predicate_false_for_solely_not_evaluated_run() -> None:
-    # status == "ok" and violations == [], yet not green because the channel is non-empty.
+    # status == "ok" and violations == [], yet not green because the channel carries a
+    # missing_input gap (FR-004).
     report = ValidationReport(
         violations=(), errors=(), ran=("focalization",), not_evaluated=(_SKIP,)
     )
     payload = report.to_json(scope=None, severity=None)
     assert payload["status"] == "ok"
     assert payload["failed"] is False  # never gates (FR-004)
-    assert _is_green(payload) is False  # SC-002
+    assert is_green(payload) is False  # SC-002
+
+
+def test_green_predicate_true_for_capability_gap_only_run() -> None:
+    """SC-001: status ok + a ``pending_capability``-only channel is GREEN — the
+    permanent capability-gap does not deny green (FR-004)."""
+    report = ValidationReport(
+        violations=(), errors=(), ran=("character_unknown_mentions",), not_evaluated=(_SKIP_CAP,)
+    )
+    payload = report.to_json(scope=None, severity=None)
+    assert payload["status"] == "ok"
+    assert payload["failed"] is False
+    assert is_green(payload) is True
 
 
 def test_green_predicate_true_for_evaluated_and_clean_run() -> None:
     report = ValidationReport(violations=(), errors=(), ran=("temporal",))
     payload = report.to_json(scope=None, severity=None)
-    assert _is_green(payload) is True
+    assert is_green(payload) is True
 
 
 def test_render_prints_not_evaluated_section_instead_of_clean_line() -> None:
@@ -166,8 +206,39 @@ def test_render_prints_not_evaluated_section_instead_of_clean_line() -> None:
     )
     out = _render(report)
     assert "not evaluated:" in out
-    assert "focalization: the constitution does not declare a narrative voice" in out
+    assert "focalization [input gap]: the constitution does not declare a narrative voice" in out
     assert "no violations found" not in out  # the clean line is suppressed (SC-002)
+
+
+def test_render_labels_each_kind_and_suppresses_clean_line_for_capability_gap() -> None:
+    """FR-007/FR-010: the render labels each entry by its kind-generic tag, keeps
+    the validator-specific reason, and never prints the clean line for a capability-gap
+    only run (the entry stays visible)."""
+    report = ValidationReport(
+        violations=(),
+        errors=(),
+        ran=("character_unknown_mentions", "focalization"),
+        not_evaluated=(_SKIP_CAP, _SKIP),
+    )
+    out = _render(report)
+    assert (
+        "character_unknown_mentions [known limitation — no action available yet]: "
+        "open-set proper-noun discovery requires semantic judgment (move 3)" in out
+    )
+    assert "focalization [input gap]: the constitution does not declare a narrative voice" in out
+    assert "no violations found" not in out
+
+
+def test_render_capability_gap_only_does_not_read_as_clean() -> None:
+    """FR-010 edge case: a run whose ONLY content is a capability-gap entry shows the
+    ``not evaluated:`` section, never the terse clean line."""
+    report = ValidationReport(
+        violations=(), errors=(), ran=("character_unknown_mentions",), not_evaluated=(_SKIP_CAP,)
+    )
+    out = _render(report)
+    assert "not evaluated:" in out
+    assert "character_unknown_mentions [known limitation — no action available yet]" in out
+    assert "no violations found" not in out
 
 
 def test_render_clean_line_only_when_all_channels_empty() -> None:

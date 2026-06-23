@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from bookwright.indexers import RdflibIndexer
-from bookwright.validation.base import NotEvaluated, Severity, Violation
+from bookwright.validation.base import NotEvaluated, NotEvaluatedKind, Severity, Violation
 from bookwright.validation.validators.setting_continuity import SettingContinuity
 from tests.validation.conftest import load_context, write_project
 
@@ -62,6 +62,8 @@ def test_empty_manuscript_is_not_evaluated(project_root: Path) -> None:
     with pytest.raises(NotEvaluated) as excinfo:
         _run(project_root)
     assert excinfo.value.reason == "the manuscript is empty"
+    # An empty manuscript is an input gap: kind defaults to missing_input (FR-002).
+    assert excinfo.value.kind is NotEvaluatedKind.missing_input
 
 
 def test_manuscript_with_prose_stays_evaluated(project_root: Path) -> None:

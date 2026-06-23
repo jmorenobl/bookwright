@@ -9,7 +9,7 @@ import pytest
 
 from bookwright.indexers import RdflibIndexer
 from bookwright.io.prose import prose_view
-from bookwright.validation.base import NotEvaluated, Severity, Violation
+from bookwright.validation.base import NotEvaluated, NotEvaluatedKind, Severity, Violation
 from bookwright.validation.validators.focalization import Focalization, _parse_declaration
 from tests.validation.conftest import load_context, write_project
 
@@ -89,6 +89,9 @@ def test_no_constitution_is_not_evaluated(project_root: Path) -> None:
     with pytest.raises(NotEvaluated) as excinfo:
         _run(project_root)
     assert excinfo.value.reason == _REASON_NO_CONSTITUTION
+    # The gap is input-conditional (a missing constitution): kind defaults to
+    # missing_input (FR-002, iteration 044) — focalization never opts into a capability-gap.
+    assert excinfo.value.kind is NotEvaluatedKind.missing_input
 
 
 def test_no_parsable_declaration_is_not_evaluated(project_root: Path) -> None:

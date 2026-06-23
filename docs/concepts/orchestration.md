@@ -50,8 +50,11 @@ el mismo estado. Ese es el motivo por el que el TODO escrito a mano queda descar
 
 El resumen de validación incluye `not_evaluated`: los validadores que en esta
 corrida **no pudieron mirar** (manuscrito vacío, voz narrativa sin declarar…). No
-es un error —no bloquea— pero sí dispara una acción, porque un validador dormido es
-canon sin vigilar. Ver [Interpretar la validación](../guides/interpret-validation.md).
+es un error —no bloquea—. Cuando la causa es una entrada que falta (`kind:
+missing_input`) **sí dispara una acción**, porque ese canon queda sin vigilar y tú
+puedes despertarlo; un límite permanente del enfoque (`kind: pending_capability`) se
+declara pero **no** propone acción, porque no hay nada que puedas hacer. Ver
+[Interpretar la validación](../guides/interpret-validation.md).
 
 Cada `next_action` lleva el **skill** a invocar, un **prompt** listo para pegar y la
 **razón** que la dispara. La lista sale de una tabla de reglas estática cuyo orden *es*

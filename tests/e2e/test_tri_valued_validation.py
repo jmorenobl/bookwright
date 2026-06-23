@@ -10,8 +10,10 @@ The assertion surface is the ``validate --json`` envelope only (SC-001/SC-002):
 
 * ``focalization`` appears in ``not_evaluated[]`` with a legible reason;
 * it is **absent** from ``errors[]`` (it did not crash — FR-005);
-* the documented green predicate ``status == "ok" AND not_evaluated == []`` is
-  **False** (the run is not clean) even though ``violations`` may be empty;
+* the refined green predicate (``status == "ok" AND no not_evaluated entry has
+  kind == "missing_input"``, iteration 044) is **False** here — ``focalization``'s gap is
+  ``missing_input`` — even though ``violations`` may be empty; a clean fixture, by
+  contrast, reads green despite carrying the ``pending_capability`` abstainer entry;
 * the gate is not tripped (exit 0): not-evaluated is not a finding (Edge Case "the gate").
 """
 
@@ -24,7 +26,7 @@ import pytest
 from typer.testing import CliRunner
 
 from bookwright.cli import app
-from tests.conftest import copy_fixture
+from tests.conftest import copy_fixture, is_green
 
 FIXTURE = "tiny-undeclared-voice"
 
@@ -37,11 +39,6 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def _is_green(payload: dict[str, object]) -> bool:
-    """The single documented green predicate (SC-002)."""
-    return payload["status"] == "ok" and payload["not_evaluated"] == []
-
-
 def test_dormant_focalization_is_not_evaluated_not_green(project: Path, cli: CliRunner) -> None:
     assert cli.invoke(app, ["graph", "build", "--json"]).exit_code == 0
 
@@ -49,8 +46,33 @@ def test_dormant_focalization_is_not_evaluated_not_green(project: Path, cli: Cli
     assert result.exit_code == 0, result.stdout  # not-evaluated never gates (FR-004)
     payload = json.loads(result.stdout)
 
-    skipped = {r["validator"]: r["reason"] for r in payload["not_evaluated"]}
+    skipped = {r["validator"]: r for r in payload["not_evaluated"]}
     assert "focalization" in skipped  # SC-001: the dormant validator declares itself
-    assert skipped["focalization"]  # a legible, non-empty reason
+    assert skipped["focalization"]["reason"]  # a legible, non-empty reason
+    # focalization's gap is input-conditional — a missing voice declaration (FR-002).
+    assert skipped["focalization"]["kind"] == "missing_input"
     assert "focalization" not in {e["validator"] for e in payload["errors"]}  # FR-005
-    assert _is_green(payload) is False  # SC-002: not-evaluated ⇒ not clean
+    # The capability-gap abstainer is present but is pending_capability (it does not deny green).
+    assert skipped["character_unknown_mentions"]["kind"] == "pending_capability"
+    assert is_green(payload) is False  # SC-002: the missing_input gap ⇒ not clean
+
+
+@pytest.mark.parametrize("fixture", ["tiny-novel", "tiny-memoir"])
+def test_clean_fixture_is_green_under_refined_predicate(
+    fixture: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cli: CliRunner
+) -> None:
+    """SC-001/SC-005: a clean fixture reads GREEN under the refined predicate even
+    though it carries the permanent ``character_unknown_mentions`` capability-gap entry —
+    the durable regression guard 043 lacked (nothing asserted green on a real clean run)."""
+    root = copy_fixture(fixture, tmp_path)
+    monkeypatch.chdir(root)
+
+    assert cli.invoke(app, ["graph", "build", "--json"]).exit_code == 0
+    result = cli.invoke(app, ["validate", "--json"])
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    # The ONLY not_evaluated entry is the abstainer, and it is a capability-gap.
+    entries = {r["validator"]: r["kind"] for r in payload["not_evaluated"]}
+    assert entries == {"character_unknown_mentions": "pending_capability"}, payload["not_evaluated"]
+    assert is_green(payload) is True  # SC-001: clean project reads green again

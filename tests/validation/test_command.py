@@ -111,8 +111,19 @@ def test_clean_project_reports_none_and_exits_zero(
     monkeypatch.chdir(project_root)
 
     result = runner.invoke(app, ["validate"])
-    assert result.exit_code == 0  # SC-002
-    assert "no violations found" in result.stdout
+    assert result.exit_code == 0  # SC-002 — no error-severity finding
+    # A genuinely clean project no longer reads as "no violations found": the always-dormant
+    # `character_unknown_mentions` abstainer (issue #1 track A) keeps the `not_evaluated`
+    # channel non-empty on EVERY project, so the report shows the `not evaluated:` section
+    # instead. Since iteration 044 its entry is a `pending_capability` (a permanent
+    # capability-gap): it stays VISIBLE here (FR-010) but does NOT deny green — visibility
+    # and the green predicate are decoupled. Its label reads as a known limitation, never
+    # an actionable input gap.
+    assert "no violations found" not in result.stdout
+    assert "not evaluated:" in result.stdout
+    assert (
+        "character_unknown_mentions [known limitation — no action available yet]" in result.stdout
+    )
 
 
 def test_location_less_finding_still_renders(
@@ -168,12 +179,38 @@ def test_json_is_single_document_with_prose_on_stderr(
     assert set(payload["summary"]["ran"]) == {
         "temporal",
         "character_presence",
+        "character_unknown_mentions",
         "setting_continuity",
         "focalization",
         "factual_anchor",
         "narrative_structure",
     }
     assert "{" not in result.stderr  # no JSON leaked to stderr
+
+
+def test_orphan_error_and_abstainer_coexist_in_one_run(
+    runner: CliRunner, project_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Acceptance scenario 1 / contract C3: the orphan `error` (Fantasma, never mentioned)
+    # and the open-set abstainer both surface in the SAME run — neither suppresses the
+    # other (the per-run channel 040 created to avoid exactly this). The abstainer raised
+    # NotEvaluated, so it lands in not_evaluated[], NOT errors[] (it is not a crash).
+    root = _scaffold_bad(project_root)  # off-roster proper nouns + the Fantasma orphan
+    monkeypatch.chdir(root)
+    payload = json.loads(runner.invoke(app, ["validate", "--json"]).stdout)
+
+    orphans = [
+        v
+        for v in payload["violations"]
+        if v["validator"] == "character_presence" and v["severity"] == "error"
+    ]
+    assert len(orphans) == 1
+    assert "Fantasma" in orphans[0]["message"]
+    # No unknown-mention warning is ever emitted by either validator.
+    assert all(v["validator"] != "character_unknown_mentions" for v in payload["violations"])
+    # The abstainer surfaces ONLY through not_evaluated — never errors[].
+    assert "character_unknown_mentions" in {r["validator"] for r in payload["not_evaluated"]}
+    assert all(e["validator"] != "character_unknown_mentions" for e in payload["errors"])
 
 
 def test_scope_narrows_report_but_gate_still_fails(

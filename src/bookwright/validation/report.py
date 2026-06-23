@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from bookwright.validation.base import (
+    NotEvaluatedKind,
     NotEvaluatedResult,
     Severity,
     ValidatorError,
@@ -24,6 +25,15 @@ if TYPE_CHECKING:
     from rich.console import Console
 
 __all__ = ["ScopeFilter", "ValidationReport"]
+
+#: Kind-generic human tag for a not-evaluated entry (iteration 044, FR-007). Generic to
+#: the KIND, never a validator's specifics — the validator-specific "move 3" detail stays
+#: in the unchanged ``reason``. ``missing_input`` reads as something the author can fix;
+#: ``pending_capability`` reads as a non-actionable known limitation.
+_KIND_LABEL: dict[NotEvaluatedKind, str] = {
+    NotEvaluatedKind.missing_input: "input gap",
+    NotEvaluatedKind.pending_capability: "known limitation — no action available yet",
+}
 
 
 @dataclass(frozen=True)
@@ -47,10 +57,13 @@ class ScopeFilter:
 class ValidationReport:
     """A full run: all (deduped, pre-filter) violations, run/load errors, run names.
 
-    A run is **green/clean** iff ``status == "ok"`` AND ``not_evaluated == []`` — the
-    single documented predicate (SC-002). ``not_evaluated`` is the additive third state
-    (a validator that consciously did not look); it never gates (FR-004) and is a
-    channel distinct from ``errors`` (which is for validators that crashed, FR-005).
+    A run is **green/clean** iff ``status == "ok"`` AND no ``not_evaluated`` entry has
+    ``kind == "missing_input"`` — the single documented predicate, refined by kind in
+    iteration 044 (SC-002). A ``pending_capability`` entry stays listed but does **not**
+    deny green (FR-004): it is a permanent capability-gap identical in every project,
+    not an actionable per-project gap. ``not_evaluated`` is the additive third state (a
+    validator that consciously did not look); it never gates (FR-004) and is a channel
+    distinct from ``errors`` (which is for validators that crashed, FR-005).
     """
 
     violations: tuple[Violation, ...]
@@ -127,7 +140,10 @@ class ValidationReport:
         if self.not_evaluated:
             console.print("not evaluated:", markup=False)
             for result in self.not_evaluated:
-                console.print(f"  {result.validator}: {result.reason}", markup=False)
+                console.print(
+                    f"  {result.validator} [{_KIND_LABEL[result.kind]}]: {result.reason}",
+                    markup=False,
+                )
         if self.errors:
             console.print("validator errors:", markup=False)
             for error in self.errors:
