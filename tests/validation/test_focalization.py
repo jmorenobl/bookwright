@@ -29,29 +29,59 @@ def test_first_person_outside_dialogue_warns(project_root: Path) -> None:
     assert any(f.severity == Severity.warning and "first-person" in f.message for f in findings)
 
 
-def test_head_hopping_on_non_focal_character_warns(project_root: Path) -> None:
+# The verbatim reason the validator raises when a parseable limited-third voice is
+# declared — head-hopping is a move-3 semantic judgment (iteration 045, FR-002).
+_REASON_HEAD_HOPPING = (
+    "head-hopping / interiority attribution requires semantic judgment (move 3); "
+    "the deterministic heuristic was measured nearly dormant on real prose"
+)
+
+
+def test_limited_third_abstains_as_capability_gap(project_root: Path) -> None:
+    # FR-001/FR-002: a parseable third-person-LIMITED focal voice makes the whole
+    # validator abstain (pending_capability) instead of running the near-dormant
+    # head-hopping heuristic. Mirrors iteration 043's open-set unknown-mention abstainer.
     write_project(
         project_root,
         characters=["Aparici", "Peña"],
         constitution="Voz narrativa: tercera persona limitada, focalizada en Aparici\n",
         manuscript={"cap-01.md": "Aparici observó la sala.\nPeña pensó que todo acababa.\n"},
     )
-    findings = _run(project_root)
-    hops = [f for f in findings if "head-hopping" in f.message]
-    assert len(hops) == 1
-    assert "Peña" in hops[0].message
-    assert hops[0].source == "manuscript/cap-01.md:2"
+    with pytest.raises(NotEvaluated) as excinfo:
+        _run(project_root)
+    assert excinfo.value.reason == _REASON_HEAD_HOPPING
+    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
 
 
-def test_english_declaration_parses_equivalently(project_root: Path) -> None:
+def test_limited_third_with_no_named_focal_abstains_identically(project_root: Path) -> None:
+    # Edge case: a third-limited voice that names NO bible character abstains the same
+    # way — the precondition is `third AND limited`, the focal field is gone (FR-007).
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        constitution="Voz narrativa: tercera persona limitada\n",
+        manuscript={"cap-01.md": "Aparici observó la sala.\n"},
+    )
+    with pytest.raises(NotEvaluated) as excinfo:
+        _run(project_root)
+    assert excinfo.value.reason == _REASON_HEAD_HOPPING
+    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
+
+
+def test_english_declaration_abstains_under_limited_third(project_root: Path) -> None:
+    # The English label parses equivalently: "third person limited" ⇒ the whole validator
+    # abstains (pending_capability), so the first-person break ("I did not understand")
+    # no longer fires — the DEBT-019 coverage drop made concrete.
     write_project(
         project_root,
         characters=["Aparici"],
         constitution="Narrative voice: third person limited, focused on Aparici\n",
         manuscript={"cap-01.md": "Aparici walked on.\nI did not understand.\n"},
     )
-    findings = _run(project_root)
-    assert any("first-person" in f.message for f in findings)
+    with pytest.raises(NotEvaluated) as excinfo:
+        _run(project_root)
+    assert excinfo.value.reason == _REASON_HEAD_HOPPING
+    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
 
 
 def test_dialogue_line_is_exempt(project_root: Path) -> None:
@@ -175,8 +205,7 @@ def test_usable_first_person_is_evaluated_and_clean(project_root: Path) -> None:
 
 # The body shared by every parity case; `Elena Vidal` is the named focal character.
 _BODY = "Tercera persona limitada, centrada en Elena Vidal"
-_NAMES = ["Elena Vidal"]
-_BARE = _parse_declaration(prose_view(f"Voz narrativa: {_BODY}"), _NAMES)
+_BARE = _parse_declaration(prose_view(f"Voz narrativa: {_BODY}"))
 
 
 @pytest.mark.parametrize(
@@ -185,7 +214,7 @@ _BARE = _parse_declaration(prose_view(f"Voz narrativa: {_BODY}"), _NAMES)
 )
 def test_bullet_marker_parses_like_bare_form(marker: str) -> None:
     # Acceptance Scenario 4 / contract C2-C5: each bullet marker (+ space) is stripped.
-    parsed = _parse_declaration(prose_view(f"{marker} Voz narrativa: {_BODY}"), _NAMES)
+    parsed = _parse_declaration(prose_view(f"{marker} Voz narrativa: {_BODY}"))
     assert parsed == _BARE
     assert parsed is not None and parsed.person == "third"
 
@@ -203,34 +232,31 @@ def test_bullet_marker_parses_like_bare_form(marker: str) -> None:
 def test_emphasis_run_parses_like_bare_form(line: str) -> None:
     # Acceptance Scenario 4 / contract C6-C8, C10: each emphasis run is stripped
     # independently on each side of the label.
-    parsed = _parse_declaration(prose_view(line + _BODY), _NAMES)
+    parsed = _parse_declaration(prose_view(line + _BODY))
     assert parsed == _BARE
 
 
 def test_scaffold_shape_parses_to_concrete_values() -> None:
     # FR-003 / FR-004 / contract C9: the exact shape the scaffold emits.
-    parsed = _parse_declaration(prose_view(f"- **Voz narrativa**: {_BODY}"), _NAMES)
+    parsed = _parse_declaration(prose_view(f"- **Voz narrativa**: {_BODY}"))
     assert parsed is not None
     assert parsed.person == "third"
     assert parsed.limited is True
-    assert parsed.focal == "Elena Vidal"
 
 
 def test_english_scaffold_shape_parses() -> None:
     # SC-002 / contract C11: the English label under the scaffold markup.
     parsed = _parse_declaration(
         prose_view("- **Narrative voice**: third person limited, focused on Elena Vidal"),
-        _NAMES,
     )
     assert parsed is not None
     assert parsed.person == "third"
     assert parsed.limited is True
-    assert parsed.focal == "Elena Vidal"
 
 
 def test_indented_scaffold_shape_parses() -> None:
     # contract C12: leading indentation before the bullet is tolerated.
-    parsed = _parse_declaration(prose_view(f"   - **Voz narrativa**: {_BODY}"), _NAMES)
+    parsed = _parse_declaration(prose_view(f"   - **Voz narrativa**: {_BODY}"))
     assert parsed == _BARE
 
 
@@ -273,7 +299,7 @@ def test_template_binding() -> None:
     # answering it with a real voice) flips this assertion and fails the test, the
     # durable anti-drift guarantee against template↔parser divergence.
     with pytest.raises(NotEvaluated) as excinfo:
-        _parse_declaration(prose_view(voice_lines[0]), [])
+        _parse_declaration(prose_view(voice_lines[0]))
     assert excinfo.value.reason == _REASON_PENDING
 
 
@@ -327,17 +353,18 @@ def test_pending_recognition_boundary(text: str, expected_person: str | None) ->
     # wake-up (FR-008) depends on.
     if expected_person is None:
         with pytest.raises(NotEvaluated) as excinfo:
-            _parse_declaration(prose_view(text), _NAMES)
+            _parse_declaration(prose_view(text))
         assert excinfo.value.reason == _REASON_PENDING
     else:
-        parsed = _parse_declaration(prose_view(text), _NAMES)
+        parsed = _parse_declaration(prose_view(text))
         assert parsed.person == expected_person
 
 
 def test_replacing_placeholder_with_real_voice_wakes_validator(project_root: Path) -> None:
     # FR-008 / SC-002 / contract V2, V4: start from the scaffold but answer ONLY the
-    # placeholder with a real voice; a non-focal character with an interiority verb now
-    # fires head-hopping (the validator wakes) and the finding emits no graph triples.
+    # placeholder with a real voice. The [PENDING] → real-voice transition is still
+    # proven — but a limited-third voice now makes the validator abstain wholly
+    # (pending_capability) rather than fire head-hopping (iteration 045).
     constitution = _SCAFFOLD_CONSTITUTION.replace(
         "[PENDING: ¿Quién narra y desde qué distancia "
         "(primera/tercera persona, omnisciente/limitada)?]",
@@ -349,11 +376,10 @@ def test_replacing_placeholder_with_real_voice_wakes_validator(project_root: Pat
         constitution=constitution,
         manuscript={"cap-01.md": "Halia observó la sala.\nPeña pensó que todo acababa.\n"},
     )
-    findings = _run(project_root)
-    hops = [f for f in findings if "head-hopping" in f.message]
-    assert len(hops) == 1
-    assert "Peña" in hops[0].message
-    assert all(f.triples == () for f in findings)  # Principle X / FR-010 — prose only
+    with pytest.raises(NotEvaluated) as excinfo:
+        _run(project_root)
+    assert excinfo.value.reason == _REASON_HEAD_HOPPING
+    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
 
 
 # --- loosening recognition keeps the no-finding edge cases intact ---
@@ -377,7 +403,7 @@ def test_label_mid_sentence_is_not_a_declaration() -> None:
     # contract N4: a line merely mentioning the label with no colon-delimited body
     # is not a declaration — not-evaluated (no false widening, R2).
     with pytest.raises(NotEvaluated) as excinfo:
-        _parse_declaration(prose_view("La voz narrativa de la obra es lírica."), _NAMES)
+        _parse_declaration(prose_view("La voz narrativa de la obra es lírica."))
     assert excinfo.value.reason == _REASON_NO_DECLARATION
 
 

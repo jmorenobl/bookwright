@@ -525,44 +525,49 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/044-not-evaluated-kinds/plan.md` (iteration 044, design § 13.4/§ 13.5 —
-the follow-up to 043 that REPAIRS the 040 green contract 043 broke as a side
-effect). 043's `character_unknown_mentions` abstainer raises `NotEvaluated`
-UNCONDITIONALLY, so the documented green predicate `status=="ok" AND
-not_evaluated==[]` is now `False` in EVERY project (even a flawless one) and the
-`_activate_dormant_validators` nudge fires everywhere — the issue #1 alarm
-fatigue merely relocated to the `not_evaluated` channel. ROOT CAUSE: TWO kinds of
-`not_evaluated` entry share one channel that governs green — (a) INPUT-CONDITIONAL
-(could not evaluate THIS project, a missing/broken input — actionable, transient)
-and (b) PERMANENT CAPABILITY-GAP (no deterministic run evaluates this; awaits
-move 3 — not author-actionable, identical everywhere). THE FIX: a closed
-`NotEvaluatedKind(StrEnum)` in `validation/base.py` (mirrors `Severity`) with
-`missing_input` (DEFAULT) + `pending_capability`; `NotEvaluated.__init__` gains
-`kind` as the LAST param defaulting to `missing_input` (every existing raise
-byte-for-byte unchanged — FR-002), `NotEvaluatedResult` gains a `kind` field
-(last, defaulted) serialized additively in `to_json` (FR-008/SC-007). The runner
-(`runner.py:69`) stamps `skip.kind`; `character_unknown_mentions` is the ONLY
-non-default raise (`kind=pending_capability`, FR-003). REFINED GREEN PREDICATE
-(docstring + `_is_green` test helper, NOT a code property — same shape 040
-shipped): green ⟺ `status=="ok"` AND no entry has `kind=="missing_input"`;
-capability-gap entries DO NOT deny green (FR-004). `status/rules.py`
-`_activate_dormant_validators` filters `kind==missing_input` and the 043
-`_REMEDIES["character_unknown_mentions"]` clause is REMOVED (FR-005/FR-006).
-VISIBILITY non-negotiable (issue #1): the render labels each entry by a
-KIND-GENERIC tag (`_KIND_LABEL` in `report.py`, validator-specific "move 3" stays
-in `reason`) — and the line-116 clean-line early-return STAYS `not
-self.not_evaluated` (both kinds keep "no violations found" suppressed; the
-`/speckit-plan` hint's "filter line 116 by kind" is SUPERSEDED by FR-010 + the
-capability-gap-only edge case — see research.md D5). `status/model.py` needs NO
-serialization edit (`ValidationSummary.to_payload` already delegates to
-`r.to_json()` → `kind` flows automatically). CONTRACT-BEFORE-CODE: update
-`bookwright-design.md` § 13.1 (the `NotEvaluated` signature) + § 13.4 (the refined
-predicate quote) BEFORE the validators diverge (plan § 7.3). `tiny-historical`
-oracle: the entry gains `kind: pending_capability`, `next_actions` 4→3, counts
-byte-identical `{error:1, warning:1, info:0}`, manuscript/bible untouched;
-`tiny-novel`/`tiny-memoir` read GREEN again. Out of scope: `character_presence`
-(orphan rule), `io/prose.py`, move 3 itself, the `focalization` head-hopping
-not-evaluated (iteration 045). stdlib only, no new dep (Constitution II); every
-changed file ≤ 500 lines; prose validators keep `triples=()`; frozen ontology
-untouched. `uv run pytest` + four gates green.
+`specs/045-focalization-headhop-abstain/plan.md` (iteration 045, design § 13.5 —
+the head-hopping twin of 043). The `focalization` validator runs a deterministic
+head-hopping check under a declared third-person-LIMITED/focalized voice
+(interiority verbs attributed to a non-focal bible character). The 2nd dogfood
+(`sombra-en-el-puerto`) measured it as PRACTICALLY DORMANT (a false negative,
+DEBT-014): it fires only on a character's FULL bible name on the SAME physical line
+as the verb, while real prose names characters by first name/epithet across lines.
+Per issue #1 (track A — honesty), a head-hop heuristic without semantic judgment has
+a precision ceiling, so — exactly as 043 did with the open-set unknown-mention rule —
+the head-hopping rule STOPS FAKING: when a parseable limited-third voice is declared,
+`validate()` raises `NotEvaluated("head-hopping / interiority attribution requires
+semantic judgment (move 3); the deterministic heuristic was measured nearly dormant
+on real prose", kind=NotEvaluatedKind.pending_capability)` instead of running the
+near-null heuristic (FR-001/FR-002). THE DELETION (FR-007, grep-confirmed zero
+external consumers, mirrors 043 deleting its heuristic — NOT parked "for move 3"):
+`_head_hopping`, `_INTERIORITY`, the `_Declaration.focal` field, the focal-name
+computation in `_parse_declaration` (its `character_names` arg is dropped), and the
+orphaned `character_names` computation in `validate`. The FOUR input-conditional
+abstentions — (i) no constitution, (ii) no declared voice, (iii) `[PENDING]`
+placeholder (037 `_PENDING_ONLY` guard preserved byte-for-byte), (iv) no grammatical
+person — stay `missing_input` with byte-identical reasons (FR-004/FR-005). A declared
+third-person NON-LIMITED voice still runs `_first_person_breaks` and stays
+`evaluated`; a first-person voice still evaluates with no findings (FR-008). NO 044
+machinery edit (FR-009): the green predicate, `NotEvaluatedKind`, the
+`not_evaluated[]` serialization, the `status` nudge (already filters `missing_input`),
+the `_REMEDIES["focalization"]` clause (kept — focalization still has `missing_input`
+causes), and the `_KIND_LABEL` render are all UNCHANGED — 045 only CONSUMES
+`pending_capability`. CONTRACT-BEFORE-CODE: update `bookwright-design.md` § 13.2 row
++ § 13.5 (state the WHOLE-validator abstention plainly) BEFORE the code diverges
+(plan § 7.3). KNOWN REGRESSION (recorded, not dropped): `NotEvaluated` is
+all-or-nothing, so limited-third abstains the WHOLE run — `_first_person_breaks` no
+longer runs for limited-third (still runs under non-limited third). Recorded as
+DEBT-019 (already in `DEBT.md`, FR-015); remove DEBT-014 (FR-011). ORACLES (empirical,
+`uv run pytest`): `tiny-historical` gains a `focalization` `pending_capability`
+not_evaluated entry (sorted after `character_unknown_mentions`); `counts` stay
+`{error:1, warning:1, info:0}`, `next_actions` length stays 3 (head-hopping emits
+nothing on it today, so NO warning drops). `tiny-novel`/`tiny-quest` (third-limited)
+gain the entry and stay GREEN; `tiny-memoir`/`tiny-essay` (first-person) gain none.
+`test_tri_valued_validation.py::test_clean_fixture_is_green_under_refined_predicate`
+must split its `entries == {...}` literal per fixture. Out of scope: move 3 itself,
+a partial-evaluation contract (DEBT-019), `validate` skipped-input propagation
+(DEBT-018 / 046), `character_presence`/`character_unknown_mentions` (043). Single
+validator (NOT split, FR-006); stdlib only (Constitution II); each changed file ≤ 500
+lines; prose validator keeps `triples=()`; frozen ontology untouched. `uv run pytest`
++ four gates green.
 <!-- SPECKIT END -->

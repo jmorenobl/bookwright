@@ -57,13 +57,31 @@ def test_dormant_focalization_is_not_evaluated_not_green(project: Path, cli: Cli
     assert is_green(payload) is False  # SC-002: the missing_input gap ⇒ not clean
 
 
+# The capability-gap entries each clean fixture carries, by declared narrative voice.
+# A third-person-LIMITED voice adds ``focalization`` (iteration 045: head-hopping is a
+# move-3 semantic judgment, so the validator abstains wholly); a first-person voice does
+# not (focalization evaluates with no findings). Both are ``pending_capability`` and
+# neither denies green (SC-002/SC-005).
+_EXPECTED_GAPS = {
+    "tiny-novel": {  # third person limited → both abstainers
+        "character_unknown_mentions": "pending_capability",
+        "focalization": "pending_capability",
+    },
+    "tiny-memoir": {  # first person → only the open-set abstainer
+        "character_unknown_mentions": "pending_capability",
+    },
+}
+
+
 @pytest.mark.parametrize("fixture", ["tiny-novel", "tiny-memoir"])
 def test_clean_fixture_is_green_under_refined_predicate(
     fixture: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cli: CliRunner
 ) -> None:
     """SC-001/SC-005: a clean fixture reads GREEN under the refined predicate even
-    though it carries the permanent ``character_unknown_mentions`` capability-gap entry —
-    the durable regression guard 043 lacked (nothing asserted green on a real clean run)."""
+    though it carries permanent ``pending_capability`` entries — the durable regression
+    guard 043 lacked (nothing asserted green on a real clean run). A third-limited
+    fixture carries both ``character_unknown_mentions`` and ``focalization``; a
+    first-person fixture carries only ``character_unknown_mentions`` (iteration 045)."""
     root = copy_fixture(fixture, tmp_path)
     monkeypatch.chdir(root)
 
@@ -72,7 +90,7 @@ def test_clean_fixture_is_green_under_refined_predicate(
     assert result.exit_code == 0, result.stdout
     payload = json.loads(result.stdout)
 
-    # The ONLY not_evaluated entry is the abstainer, and it is a capability-gap.
+    # The not_evaluated entries are exactly the expected capability-gaps for this voice.
     entries = {r["validator"]: r["kind"] for r in payload["not_evaluated"]}
-    assert entries == {"character_unknown_mentions": "pending_capability"}, payload["not_evaluated"]
+    assert entries == _EXPECTED_GAPS[fixture], payload["not_evaluated"]
     assert is_green(payload) is True  # SC-001: clean project reads green again

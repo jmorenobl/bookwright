@@ -112,10 +112,15 @@ def test_v02_era_project_succeeds_with_empty_research_facts(
         action["skill"] not in {"bookwright-research", "bookwright-verify"}
         for action in payload["next_actions"]
     )
-    # SC-002: the only not_evaluated entry is the pending_capability abstainer, so
-    # NO activate_dormant_validators nudge fires on this clean project.
+    # SC-002: every not_evaluated entry is a pending_capability abstainer (the open-set
+    # unknown-mention rule and, since iteration 045, the head-hopping gap — tiny-novel
+    # declares a third-person-limited voice), so NO activate_dormant_validators nudge
+    # fires on this clean project.
     entries = {r["validator"]: r["kind"] for r in state["validation"]["not_evaluated"]}
-    assert entries == {"character_unknown_mentions": "pending_capability"}, entries
+    assert entries == {
+        "character_unknown_mentions": "pending_capability",
+        "focalization": "pending_capability",
+    }, entries
     assert all(
         not action["prompt"].startswith("Activate the dormant validators")
         for action in payload["next_actions"]

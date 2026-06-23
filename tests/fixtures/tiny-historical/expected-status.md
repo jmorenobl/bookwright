@@ -95,6 +95,19 @@ validation:
         open-set proper-noun discovery requires semantic judgment (move 3); the
         deterministic heuristic was measured insufficient on real prose
       kind: pending_capability
+    # The head-hopping capability-gap (iteration 045). `tiny-historical` declares
+    # «Tercera persona limitada, centrada en Elena Vidal», so `focalization` abstains
+    # from the WHOLE run rather than running the near-dormant head-hopping heuristic.
+    # Its `kind` is `pending_capability` too: like the open-set abstainer it stays
+    # VISIBLE here, does NOT fire `activate_dormant_validators`, and does NOT deny green.
+    # `validation.counts` is byte-identical (head-hopping emitted nothing here today) and
+    # `next_actions` stays length 3. Sorted by validator name (after
+    # `character_unknown_mentions`). DEBT-014 (honesty half) closed; DEBT-019 recorded.
+    - validator: focalization
+      reason: >-
+        head-hopping / interiority attribution requires semantic judgment (move 3); the
+        deterministic heuristic was measured nearly dormant on real prose
+      kind: pending_capability
 
 # The three firing rules, in priority order (research D2 / data-model § 3). `research_queue`
 # fires while ANY open question OR anchor gap remains; `review_continuity` fires on the
