@@ -113,6 +113,15 @@
 - **Por qué se difiere:** arreglarlo de verdad exige un **contrato de evaluación parcial** (un validador emitiendo hallazgos **y** una entrada `not_evaluated` en el mismo run), un cambio de la escala de 040/044 y ajeno al scope de 045 (que solo CONSUME `pending_capability`, sin tocar el contrato). Contenerlo con un hack condicional-a-hallazgos (devolver `[]` o abstenerse según si `_first_person_breaks` encontró algo) sería justo el smell que la doctrina prohíbe.
 - **Resolución sugerida / versión objetivo:** **track A (honestidad, familia 040)** o subsumida por **track C (move 3)**. (a) Introducir un contrato de evaluación parcial para que `focalization` corra `_first_person_breaks` Y declare la abstención de head-hopping a la vez. (b) El move 3 cubre consistencia de persona + focalización de forma semántica y la mitad determinista deja de hacer falta. Validador de prosa, `triples=()`, ontología congelada intacta.
 
+### DEBT-020 — `bookwright init` falla el primer commit si git no tiene identidad configurada
+- **Estado:** abierta
+- **Detectada en:** caso de onboarding real (amigo psicólogo, Windows, 2026-06-23).
+- **Ubicación:** `src/bookwright/commands/init/git.py` (`git init` + `git add` + `git commit`) y `src/bookwright/commands/init/resolve.py` (hoy solo resuelve el autor del manifest desde git config con fallback a `$USER`/"Unknown Author"; no fija la identidad de git para el commit).
+- **Clase de deuda:** brecha de onboarding — el commit inicial de `init` aborta con el error de git "Please tell me who you are" (`user.name`/`user.email` sin configurar), un muro para un autor no-técnico que acaba de instalar git.
+- **Descripción:** en una máquina con git recién instalado y sin `user.name`/`user.email` globales, `git commit` falla. `init` ya lee git config para el autor del manifest, pero no garantiza que el commit tenga identidad: si falta, el primer commit del proyecto explota con un mensaje pensado para programadores. Es justo el punto donde el onboarding del horizonte demand-pulled (roadmap § 5, «Onboarding de un comando») delega la identidad git en `init`/`doctor` en vez de en el bootstrap.
+- **Por qué se difiere:** ajeno al scope de la iteración en curso (validación, issue #1). Toca el flujo de `init` y conlleva una pequeña decisión de UX (¿preguntar nombre/email interactivamente?, ¿fijar identidad **local del repo** —nunca global a ciegas—?, ¿qué hacer en modo `--json`/no-interactivo?), propia de su iteración.
+- **Resolución sugerida / versión objetivo:** parte del onboarding demand-pulled. Cuando falte identidad git, `init` la pide (interactivo) o la deriva del autor ya resuelto y la fija **local al repo** (`git -c user.name=… -c user.email=…` para el commit, o `git config --local`), de modo que el primer commit nunca aborte; en modo no-interactivo, usar el fallback del manifest y avisar por stderr. Idealmente compartido con un futuro `bookwright doctor`.
+
 ---
 
 ## Deuda aceptada (no se arreglará)

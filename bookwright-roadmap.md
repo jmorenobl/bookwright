@@ -318,6 +318,28 @@ de diferidos (iteración 024) a escala de subsistema:
   activación:** el flujo de punta a punta se ha probado en un libro real y el
   cuello de botella pasa a ser sacarlo. El número `1.0` se **gana** cuando ese
   flujo completo está probado; no se pre-asigna al export por adelantado.
+- **Onboarding de un comando para autores no-técnicos.** Bootstrap idempotente
+  ejecutable desde URL (patrón Astral: `irm https://…/install.ps1 | iex` /
+  `curl … | sh`), un script por SO (`.ps1` Windows, `.sh` Mac/Linux), que
+  **detecta y solo instala lo que falte**: `uv` (que a su vez trae Python), la
+  CLI (`uv tool install`/`upgrade bookwright-cli`), el agente de IA (Claude Code
+  ya tiene instalador nativo sin Node/npm; Codex tiene binario sin Node — la vía
+  npm es evitable) y `git` (vía `winget` en Windows con fallback a git-scm.com).
+  Principio: el script **orquesta** instaladores oficiales auto-actualizables,
+  **no empaqueta ni fija versiones** propias (menos mantenimiento, update gratis).
+  **Reparto deliberado con git:** el bootstrap solo instala herramientas (no
+  interactivo — `irm | iex` ocupa el stdin, los prompts se rompen) y **no toca la
+  identidad de git**; configurar `user.name`/`user.email` (local del repo, nunca
+  global a ciegas) y el primer commit son responsabilidad de `bookwright init` /
+  un futuro `bookwright doctor`, donde la interactividad sí funciona (ver DEBT —
+  identidad git en `init`). **Condición de activación:** un segundo autor
+  no-técnico real lo necesita (caso fundacional 2026-06-23: amigo psicólogo en
+  Windows tuvo que instalar Python+Node+npm+permisos+Codex+git a mano — "ni de
+  broma lo habría hecho solo"). Lo barato y sin código (una página
+  «Instalación» en `docs/` con los 3 one-liners modernos) se puede adelantar; el
+  script y el `doctor` son la forma plena. Descartado por ahora: binario único
+  PyInstaller (pesado, sin cross-compile, y no resuelve agente ni git) y GUI/app
+  de escritorio (es otro producto).
 
 > **Resuelto (iteración 033).** La «decisión estructural sobre `NarrativeRole`
 > (DEBT-001)» ya está tomada: el concepto de nivel superior `NarrativeRole` se
