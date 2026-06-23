@@ -49,6 +49,12 @@ A `pending_capability` entry stays **visible** (visible gaps ≠ silence — iss
 #1 doctrine) but does not knock a clean project out of green nor ask the author
 for an action they cannot perform.
 
+## Clarifications
+
+### Session 2026-06-23
+
+- Q: Does FR-007's "delete anything that only fed the head-hopping heuristic" include the focal-character resolution chain (`_Declaration.focal`, its computation in `_parse_declaration`, and the now-orphaned `character_names` threading), or only `_head_hopping` + the interiority matcher? → A: Delete the whole chain — leave zero dead code. (Rationale: grep confirms `focal`/`_head_hopping`/`_INTERIORITY` have no consumers outside `focalization.py`; the focal field/param feed *only* head-hopping, so keeping them would be the unused-field/param smell zero-debt doctrine §3 forbids and the class-sweep §4 requires closing in full.)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Head-hopping stops dozing in green; the gap becomes visible and honest (Priority: P1)
@@ -204,11 +210,17 @@ genuinely fixable problems.
   an abstention; the validator's identity, name, registration, and discovery are
   unchanged.
 - **FR-007**: The now-unused deterministic head-hopping heuristic (the
-  `_head_hopping` routine and anything that **only** fed it, e.g. the interiority
-  verb matcher) MUST be **deleted**, not parked "for move 3" — move 3 is a
-  distinct semantic approach that does not reuse this regex; parking it is the
-  speculative plumbing scope discipline forbids (mirroring 043 deleting its
-  heuristic). Zero remaining consumers MUST be confirmed before deletion.
+  `_head_hopping` routine and anything that **only** fed it) MUST be **deleted**,
+  not parked "for move 3" — move 3 is a distinct semantic approach that does not
+  reuse this regex; parking it is the speculative plumbing scope discipline
+  forbids (mirroring 043 deleting its heuristic). The deletion sweeps the **whole**
+  head-hopping-only chain, leaving zero dead code (zero-debt doctrine §3/§4): the
+  interiority verb matcher (`_INTERIORITY`), and the focal-character resolution
+  chain that feeds head-hopping alone — the `_Declaration.focal` field, the
+  focal-name computation in `_parse_declaration`, and the `character_names`
+  parameter/computation in `validate` that becomes orphaned once focal resolution
+  is gone (confirmed: no consumers outside `focalization.py`). Zero remaining
+  consumers MUST be confirmed before each deletion.
 - **FR-008**: The non-head-hopping behavior of `focalization` that does not
   depend on the limited-third precondition MUST be preserved: a declared
   third-person **non-limited** voice still runs the first-person-break check and
