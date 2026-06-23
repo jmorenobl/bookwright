@@ -106,6 +106,15 @@
 - **Por qué se difiere:** banco fuera del repo; trivial pero ajeno al scope de cualquier iteración en curso, y conviene fijar primero la convención (¿siempre el `name` humano? ¿siempre el slug? ¿ambos?) para aplicarla a todos los validadores a la vez.
 - **Resolución sugerida / versión objetivo:** una iteración de pulido de validación (puede ir junto a DEBT-015, ambos son consistencia de mensajes). Unificar el identificador de unidad (preferiblemente el `name` humano, con el slug entre paréntesis si hace falta) en las dos reglas.
 
+### DEBT-018 — `validate` valida un corpus parcial en silencio cuando un fichero de la bible se omite (asimétrico con `status`)
+- **Estado:** abierta
+- **Detectada en:** dogfood `sombra-en-el-puerto` (2026-06-23), ronda de edge cases de ingestión.
+- **Ubicación:** `src/bookwright/commands/validate/` (no propaga los `skipped` de `map_bible` al envelope ni al canal `not_evaluated[]`), frente a `src/bookwright/commands/status` (que SÍ rechaza con `code=skipped_sources`).
+- **Clase de deuda:** **falsa confianza** — la misma clase que el resultado tri-valor de la iteración 040 cerró a nivel de validador, pero aquí a nivel de **fichero de entrada omitido**: `validate` afirma corrección sobre un corpus incompleto sin decirlo.
+- **Descripción:** un fichero de personaje con front-matter inservible (YAML roto) se OMITE en `map_bible` (canal `skipped` de `graph build`), de modo que ese personaje desaparece del grafo y de toda validación. `bookwright status` lo trata como bloqueante: devuelve `status=error, code=skipped_sources` («status will not report facts computed from a partial corpus»). Pero `bookwright validate` —el gate de CI— **procede en silencio** sobre el corpus parcial: `status=violations`, `not_evaluated: []`, y NO menciona el skip por ningún lado (ni `rota`, ni `malformed`, ni `partial`). Así, `not_evaluated: []` se lee como «todo evaluado» cuando en realidad un personaje entero quedó fuera del corpus — justo el `[]`-significa-limpio que 040 quería erradicar. Las dos órdenes discrepan sobre si un fichero omitido es reportable. Verificado: `bible/characters/rota.md` (YAML roto) → `status` error, `validate` corre limpio sin mención.
+- **Por qué se difiere:** banco fuera del repo; toca cómo `validate` ensambla su `ValidationContext`/envelope para propagar los `skipped` de la ingestión, decisión propia de su iteración (¿un `not_evaluated[]` adicional por fichero omitido?, ¿un canal `skipped[]` espejo del de `graph build`?, ¿error duro como `status`?).
+- **Resolución sugerida / versión objetivo:** una iteración futura del track de validación. Propagar los `skipped` de `map_bible` a `validate`: como mínimo, surfacearlos (un canal `skipped[]` o una entrada en `not_evaluated[]` con el motivo), para que `not_evaluated: []` no mienta. Decidir en `/speckit-plan` si `validate` debe además degradar el verde (alineándose con la negativa de `status`) o solo informar. Cerrarlo cierra la asimetría `status`↔`validate`.
+
 ---
 
 ## Deuda aceptada (no se arreglará)
