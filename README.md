@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.5.2-6f42c1" alt="Version 0.5.2"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.5.3-6f42c1" alt="Version 0.5.3"></a>
   <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License: EUPL-1.2"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Coverage ≥80%">
@@ -33,7 +33,7 @@ Bookwright derives a knowledge graph from your work and validates
 continuity (characters, settings, chronology, focalization)
 deterministically.
 
-> Status: **v0.5.2** — usable for researching, structuring, drafting and
+> Status: **v0.5.3** — usable for researching, structuring, drafting and
 > validating continuity. It researches with provenance, ingests the
 > narrative structure (units, functions and sequences) and types it
 > against the Propp and Greimas vocabularies. Validation is now robust: a

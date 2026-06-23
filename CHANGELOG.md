@@ -4,6 +4,75 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.3] — 2026-06-23
+
+Iterations **043 + 044**, released together — the **issue #1 second-dogfood
+decision** (track A — honesty). A second end-to-end dogfood (`sombra-en-el-puerto`,
+a noir novel) measured `character_presence`'s unknown-mention `warning` rule as
+**100 % noise** (4 false positives, 0 real signal) on real prose: telling
+«Naviera = organization» / «Las = article» / «Elena = undeclared character» apart
+is an **open-set** discovery a capitalization heuristic cannot do soundly — it is
+the move-3 (semantic-judgment) case, not a surface bug fixable by another seam
+patch or roster. So the open-set heuristic **stops faking**, and the move 3 (LLM
+semantic judgment) graduates from a demand-pulled idea to an **activated
+direction** (its activation condition — a concrete heuristic measured insufficient
+on real prose — is now met), pending its own design pass on determinism in the CI
+gate. The prose validators stay graph-free (`triples=()`), the frozen ontology is
+untouched (Principle X), no new runtime dependency, and the CI gate (only `error`
+fails it) is unchanged.
+
+### Added
+
+- **`character_unknown_mentions` validator** (043,
+  `src/bookwright/validation/validators/character_unknown_mentions.py`) — the
+  open-set proper-noun rule, made honest: a **pure abstainer** that raises
+  `NotEvaluated` unconditionally (reading no project state), surfacing through the
+  iteration-040 `not_evaluated[]` channel. The real signal it cannot deliver
+  deterministically is the job of move 3.
+- **`NotEvaluatedKind` (StrEnum)** (044, `src/bookwright/validation/base.py`) —
+  `missing_input` (default — an input-conditional gap the author can fix, e.g. a
+  missing voice declaration or empty manuscript) and `pending_capability` (a
+  permanent, project-independent gap awaiting move 3). `NotEvaluated`/
+  `NotEvaluatedResult` gain a `kind`; the runner stamps it; it is serialized
+  additively as `"kind"` in `--json` and `bookwright status`.
+- **Automated clean-fixture green guards** (044) — tests asserting `tiny-novel`/
+  `tiny-memoir` read green and fire no dormant-validator nudge: the regression
+  guard 043 lacked (CI had no test asserting green on a clean fixture).
+
+### Changed
+
+- **`character_presence` split into two auto-discovered validators** (043):
+  `character_presence` keeps its name and **only** the orphan rule (`error`,
+  byte-identical findings, the `not roster and not files` `NotEvaluated` guard
+  preserved — the CI gate is untouched); the unknown-mention rule moves to the new
+  abstainer. The entire deterministic heuristic (`_CANDIDATE`, `_is_sentence_initial`,
+  `_roster_slugs`, `_unknown_mentions`, the iteration-042 union-roster build) is
+  **deleted**, not parked — `character_presence.py` shrank ~223 → 72 lines.
+- **Dead-code sweep** (043): the now-zero-consumer iteration-042 accessors
+  `ValidationContext.location_names()` / `object_names()` (and their cached fields)
+  and the `conftest` `locations=` / `objects=` test knobs are removed.
+  `setting_names()` / `settings=` are retained (still consumed by
+  `setting_continuity`). **Iteration 043 thus supersedes 042**, whose union-roster
+  delta lived entirely inside the deleted unknown-mention path.
+- **Refined green predicate** (044): a run is green/clean iff `status == "ok"` AND
+  **no `not_evaluated` entry has `kind == "missing_input"`**. A `pending_capability`
+  entry stays listed (visible) but no longer denies green — so a flawless project
+  reads green again, while the permanent move-3 gap remains surfaced. Documented in
+  `bookwright-design.md` § 13.4/§ 13.5.
+- **`status` dormant-validator nudge filters on `missing_input`** (044,
+  `src/bookwright/status/rules.py`): the `bookwright-continuity` nudge fires only
+  for actionable input-conditional gaps; the always-dormant abstainer no longer
+  nudges every project. The 043-added `_REMEDIES["character_unknown_mentions"]`
+  clause is removed.
+
+### Removed
+
+- **DEBT-011 and DEBT-012** (the leading opening-quote marker and the heading-body
+  scan) — **subsumed**, not patched per-instance: both were false positives of the
+  unknown-mention rule, which now declares `not_evaluated` instead of emitting
+  `warning`. The `io/prose.py` seam is retained for the deterministic validators;
+  the per-instance seam patches planned as the old 043/044 are discarded.
+
 ## [0.5.2] — 2026-06-22
 
 The second patch of the **v0.5.x post-dogfooding track** (iteration 042),
