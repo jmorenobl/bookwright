@@ -172,11 +172,14 @@ Tres tracks, salidos de la decisión de la issue #1 tras el 2º dogfood
 
 - **Track A — honestidad** (familia 040): el heurístico de **conjunto abierto** deja de
   fingir y declara `not_evaluated`. Cierra la mentira (`[]`/dormido). Iteraciones **043**
-  (menciones-desconocidas), **044** (head-hopping de `focalization`), **045** (`validate`
-  propaga `skipped`). Un patch cada una.
-- **Track B — pulido determinista** (cerrado/estructural, real, barato): **046** (vocab
-  Propp/Greimas no fatal enumerado, DEBT-016), **047** (locators de graph-consumers,
-  DEBT-015), **048** (mensaje nombre-vs-slug, DEBT-017). Un patch cada una; independientes
+  (menciones-desconocidas → abstainer, **ya implementada**, branch `043-character-presence-split`),
+  **044** (categorías de `not_evaluated` + verde alcanzable — el refinamiento de 040 que
+  043 hizo necesario; **se apila sobre 043 y se libera con él** como `v0.5.3`), **045**
+  (head-hopping de `focalization`), **046** (`validate` propaga `skipped`). Un patch cada
+  una (043+044 comparten `v0.5.3`).
+- **Track B — pulido determinista** (cerrado/estructural, real, barato): **047** (vocab
+  Propp/Greimas no fatal enumerado, DEBT-016), **048** (locators de graph-consumers,
+  DEBT-015), **049** (mensaje nombre-vs-slug, DEBT-017). Un patch cada una; independientes
   del track A.
 - **Track C — move 3** (juicio semántico, **norte activado**): NO es una iteración lista.
   Necesita diseño propio (determinismo en el gate de CI) antes de spec. Vive como dirección
@@ -279,8 +282,8 @@ Comportamiento esperado / criterios:
 - Validador de prosa: `triples=()`, sin grafo, ontología congelada intacta (Principio X). SIN
   dependencia nueva (Constitución II). Cada archivo ≤ 500 líneas.
 
-Fuera de scope: el head-hopping de `focalization` (DEBT-014 / iteración 044, misma clase,
-su propio patch); `validate` propagando `skipped` (DEBT-018 / iteración 045); el move 3 en sí
+Fuera de scope: el head-hopping de `focalization` (DEBT-014 / iteración 045, misma clase,
+su propio patch); `validate` propagando `skipped` (DEBT-018 / iteración 046); el move 3 en sí
 (el evaluador LLM que REEMPLAZARÁ este `not_evaluated` por hallazgos reales — track C, diseño
 propio); un modo opt-in determinista de la regla (descartado por disciplina de scope; sería
 aditivo si algún día se pide).
@@ -307,12 +310,124 @@ specify workflow run bookwright-quality \
   -i spec="$SPEC" -i plan_hint="$PLAN_HINT" -i integration=claude
 ```
 
-Al verde: mergear a `main` (`Merge iteration 043: …` + `docs(claude): record iteration 043
-merged`) y cortar la release `v0.5.3` con `bookwright-release` (§ 0.4, paso 4).
+**043 está implementada y verde** en la branch `043-character-presence-split` (4 gates verdes,
+97.55% cobertura), pero **NO se mergea ni se libera sola**: dejó el predicado verde de 040
+inalcanzable en todo proyecto (efecto colateral, no defecto). La iteración **044** se apila
+sobre esta misma branch y lo corrige; **043+044 se mergean juntas y se liberan como una sola
+`v0.5.3`** (ver cierre de 044). Mantener `main` semánticamente redondo de una.
 
 ---
 
-### 2. Iteración 044 — `focalization` declara `not_evaluated` cuando su heurístico no puede atribuir interioridad (cierra DEBT-014)
+### 2. Iteración 044 — `not_evaluated` distingue capability-gap permanente de input-gap; el verde vuelve a ser alcanzable
+
+**El refinamiento de 040 que 043 hizo necesario.** 043 hizo honesto el heurístico de conjunto
+abierto (`character_unknown_mentions` declara `NotEvaluated` **incondicionalmente**). Correcto,
+pero con un efecto colateral en el contrato de 040: como ese abstainer está SIEMPRE dormido,
+(1) el predicado verde (`status == ok` Y `not_evaluated == []`, documentado en
+`validation/report.py`) es `False` en **todos** los proyectos hasta el move 3 —incluido uno
+impecable—, y (2) la regla `_activate_dormant_validators` de `status` dispara un nudge de
+`bookwright-continuity` en **todos** los proyectos. Un verde estructuralmente inalcanzable no
+informa: si pristino y roto son ambos «no verde», el autor aprende a ignorar el canal
+`not_evaluated` —la misma fatiga de alarma que issue #1 quería matar, mudada de canal. La raíz:
+hay **dos tipos** de `not_evaluated` y 043 los mezcló en el canal que gobierna el verde.
+
+El `SPEC` (Necesidad) y el `PLAN_HINT` van **rellenos verbatim** en el comando de copia-pega.
+
+**Comando del workflow** — se lanza **DESDE LA BRANCH `043-character-presence-split`** (NO desde
+main: 044 se apila sobre 043), con el árbol limpio:
+
+```bash
+SPEC=$(cat <<'EOF'
+Necesidad: la iteración 043 hizo honesto el heurístico de conjunto abierto — el validador
+`character_unknown_mentions` declara `NotEvaluated` INCONDICIONALMENTE (no lee estado del
+proyecto). Es correcto, pero tuvo un efecto colateral sobre el contrato tri-valor de la
+iteración 040: como ese abstainer está SIEMPRE dormido, (1) el predicado verde de 040
+—`status == "ok"` Y `not_evaluated == []`, documentado en `src/bookwright/validation/report.py`—
+es `False` en TODOS los proyectos para siempre hasta el move 3, incluido un proyecto impecable;
+y (2) la regla `_activate_dormant_validators` de `src/bookwright/status/rules.py` dispara un
+nudge de `bookwright-continuity` en TODOS los proyectos (incluido uno limpio). Un verde que
+NINGÚN proyecto puede alcanzar jamás no informa: si pristino y roto son ambos "no verde", el
+autor aprende a IGNORAR el canal `not_evaluated` — exactamente la fatiga de alarma que la issue
+ #1 quería erradicar, mudada del canal `warning` (que 043 vació) al canal `not_evaluated`.
+
+La causa raíz: hay DOS tipos de entrada `not_evaluated`, y 043 los mezcló en el único canal que
+gobierna el verde. (a) CONDICIONAL AL INPUT (lo que 040 diseñó): "no pude evaluar TU proyecto
+por un input que falta o está roto" — accionable (el autor arregla el input y entonces evalúa),
+por-proyecto, transitorio (p. ej. `focalization` sin declaración de voz; manuscrito vacío). (b)
+PERMANENTE POR CAPACIDAD (el abstainer de 043): "esto no lo evalúa NINGÚN run determinista;
+espera al move 3" — NO accionable por el autor, idéntico en todo proyecto, permanente.
+
+Esta iteración CATEGORIZA las entradas de `not_evaluated` y hace que SOLO las de tipo input
+gobiernen el verde y el nudge; las de tipo capability se SIGUEN mostrando (visibilidad: gaps
+visibles ≠ silencio, doctrina issue #1) pero no tumban el verde ni piden una acción que el autor
+no puede ejecutar. Así un proyecto impecable vuelve a poder estar VERDE, mientras el gap del
+move 3 queda registrado y a la vista.
+
+Comportamiento esperado / criterios:
+- `NotEvaluated` (y `NotEvaluatedResult`) gana un campo `kind` con dos valores: `missing_input`
+  (lo que 040 modeló; DEFAULT, para que TODOS los `raise NotEvaluated(...)` existentes
+  —`focalization` sin declaración / `[PENDING]`, el guard `not roster and not files` de
+  `character_presence`, manuscrito vacío— conserven su comportamiento byte a byte) y
+  `pending_capability` (permanente). `character_unknown_mentions` pasa a `raise
+  NotEvaluated(<motivo>, kind="pending_capability")`.
+- El predicado verde se REFINA y se re-documenta: GREEN = `status == "ok"` Y no hay entradas
+  `not_evaluated` de tipo `missing_input`. Las `pending_capability` NO tumban el verde. Un
+  proyecto impecable (sin `error`, sin `warning`, sin input-gaps) vuelve a estar VERDE aunque
+  lleve la entrada permanente `character_unknown_mentions: pending_capability`.
+- La regla `_activate_dormant_validators` de `status` SOLO nudge-ea por entradas `missing_input`
+  (accionables). Las `pending_capability` NO disparan el nudge de `bookwright-continuity` (el
+  autor no puede hacer nada: el move 3 no es shippable por él). Se retira el clause
+  `_REMEDIES["character_unknown_mentions"]` que 043 añadió (ya no se nudge-ea por él).
+- VISIBILIDAD PRESERVADA (innegociable, doctrina issue #1): la entrada `pending_capability`
+  SIGUE apareciendo en el sobre `--json` de `not_evaluated[]`, en `bookwright status` y en el
+  report humano, etiquetada por su `kind` como limitación conocida pendiente del move 3 — NO se
+  oculta (ocultarla reintroduciría el silencio = falsa confianza que 040 mató).
+- El sobre `--json` de `not_evaluated[]` y el payload de `status` incluyen `kind` (ADITIVO: el
+  shape gana una clave; ningún campo existente cambia de nombre o tipo).
+- El GATE no cambia: solo `error` rompe CI; `not_evaluated` de NINGÚN tipo veta. Solo cambian el
+  predicado VERDE (informativo) y el nudge de `status`.
+- Oráculos (verifícalo EMPÍRICAMENTE con `uv run pytest`): `tiny-historical/expected-status.md`
+  — la entrada `not_evaluated` gana `kind: pending_capability`, `next_actions` vuelve de 4 a 3
+  (se va el nudge universal), `validation.counts` byte-iguales, `error` sigue 1. Los fixtures
+  limpios (`tiny-novel`/`tiny-memoir`) vuelven a VERDE. Ajusta los tests del predicado verde, del
+  nudge dormido y de `base`/`runner` que 040 y 043 dejaron.
+- Cada archivo ≤ 500 líneas, SIN dependencia nueva (Constitución II), validadores de prosa con
+  `triples=()`, ontología congelada intacta (Principio X). Esta iteración NO toca
+  `character_presence` (huérfanos) ni `io/prose.py`.
+
+Fuera de scope: el head-hopping de `focalization` (iteración 045); el move 3 en sí (track C); el
+canal `errors[]` de validadores que petan (distinto de `not_evaluated`, no se toca).
+EOF
+)
+PLAN_HINT=$(cat <<'EOF'
+Apóyate en el contrato de 040 (`src/bookwright/validation/base.py`: `NotEvaluated` línea ~119 y
+`NotEvaluatedResult` línea ~135 con su `to_json`) y en el de 043 (`character_unknown_mentions.py`).
+Define un `Literal["missing_input", "pending_capability"]` (o un Enum corto); `NotEvaluated.__init__`
+gana `kind` con DEFAULT `"missing_input"` (preserva todos los raises existentes); `NotEvaluatedResult`
+gana `kind` y lo incluye en `to_json`. El runner (`runner.py:68-69`) estampa `skip.kind` al construir
+el `NotEvaluatedResult`. `character_unknown_mentions.validate` pasa `kind="pending_capability"`. El
+predicado verde vive en `validation/report.py` (docstring SC-002 ~línea 50 y la lógica "clean"
+~línea 116 `if not reported and not self.errors and not self.not_evaluated`) → cámbialo a "no hay
+`not_evaluated` de tipo `missing_input`" (filtra por kind). En `status/rules.py`,
+`_activate_dormant_validators` (~línea 136) filtra `r.kind == "missing_input"` y quita el clause
+`_REMEDIES["character_unknown_mentions"]`. Surfacea `kind` en el render humano de `report.py` (~127)
+y en los `to_payload`/`to_json` de `status/model.py` (`ValidationSummary`). Actualiza
+`bookwright-design.md` § 13.1/§ 13.4 (el predicado verde refinado) ANTES de divergir el código
+(plan § 7.3). Mira cómo 040 testeó el canal `not_evaluated[]` y extiéndelo con el `kind`. Sin
+librería externa. Diseño § 13.5.
+EOF
+)
+specify workflow run bookwright-quality \
+  -i spec="$SPEC" -i plan_hint="$PLAN_HINT" -i integration=claude
+```
+
+Al verde: **mergear 043+044 juntas a `main`** en una sola entrada (`Merge iterations 043+044: …`
++ `docs(claude): record iterations 043+044 merged`) y cortar **una sola release `v0.5.3`** con
+`bookwright-release` (§ 0.4, paso 4) — main no ve nunca el verde-inalcanzable.
+
+---
+
+### 3. Iteración 045 — `focalization` declara `not_evaluated` cuando su heurístico no puede atribuir interioridad (cierra DEBT-014)
 
 **Misma clase que 043, en el otro validador.** El head-hopping de `focalization` exige el
 nombre COMPLETO del bible (`Víctor Salas`) en la MISMA línea física que el verbo de
@@ -342,7 +457,7 @@ verde. La detección real —irreductiblemente semántica— es track C (move 3)
 
 ---
 
-### 3. Iteración 045 — `validate` propaga los `skipped` de la ingestión (cierra DEBT-018)
+### 4. Iteración 046 — `validate` propaga los `skipped` de la ingestión (cierra DEBT-018)
 
 **La familia 040 a nivel de fichero de entrada, no de validador.** Un fichero de bible con
 front-matter roto se OMITE en `map_bible` (canal `skipped` de `graph build`): ese personaje
@@ -368,7 +483,7 @@ personaje entero quedó fuera. Es justo el `[]`-miente que 040 quería erradicar
 
 Independiente del track A; puede intercalarse. Tres patches, cada uno un delta observable.
 
-### 4. Iteración 046 — vocabulario Propp/Greimas no reconocido: `warning` no fatal enumerado (cierra DEBT-016)
+### 5. Iteración 047 — vocabulario Propp/Greimas no reconocido: `warning` no fatal enumerado (cierra DEBT-016)
 
 Hoy un `functions: [intimidacion]` (no es una de las 31 funciones de Propp) se ingiere **en
 silencio** como `G10_Narrative_Function` sin `crm:P2_has_type`, mientras el vocab de research
@@ -387,7 +502,7 @@ silencio** como `G10_Narrative_Function` sin `crm:P2_has_type`, mientras el voca
   replica la enumeración, pero como `warning` no fatal. Borra DEBT-016 de `DEBT.md`.
 - **Release:** `v0.5.6`.
 
-### 5. Iteración 047 — locators resolubles en los validadores graph-consumer (cierra DEBT-015)
+### 6. Iteración 048 — locators resolubles en los validadores graph-consumer (cierra DEBT-015)
 
 `factual_anchor` identifica el anchor por su URI uuid7 y emite `source=None`; `temporal`
 emite `source=None` en sus reglas a/b (solo la d resuelve `bible/timeline.md`). Inaccionable,
@@ -404,18 +519,18 @@ y asimétrico con los validadores de prosa (que siempre dan `relpath:línea`) y 
   `validation/queries.py` (`resolve_source`). Borra DEBT-015 de `DEBT.md`.
 - **Release:** `v0.5.7`.
 
-### 6. Iteración 048 — `narrative_structure` unifica el identificador de unidad (cierra DEBT-017)
+### 7. Iteración 049 — `narrative_structure` unifica el identificador de unidad (cierra DEBT-017)
 
 Las dos reglas del validador imprimen identificadores distintos para la misma clase de
 entidad: la de rol-sin-resolver el `name` humano, la de beat-huérfano el `slug`. Pulido de
-UX, sin impacto funcional; puede ir junto a 047 (ambos son consistencia de mensajes).
+UX, sin impacto funcional; puede ir junto a 048 (ambos son consistencia de mensajes).
 
 - **Necesidad / criterios:** unificar el identificador (preferiblemente el `name` humano, con
   el slug entre paréntesis si hace falta) en las dos reglas. El locator `relpath:línea` ya es
   correcto en ambas; solo cambia qué identificador se imprime.
 - **Pista (`/speckit-plan`):** `validators/narrative_structure.py` (las dos reglas). Borra
   DEBT-017 de `DEBT.md`.
-- **Release:** `v0.5.8` (o doblada con 047).
+- **Release:** `v0.5.8` (o doblada con 048).
 
 ---
 
