@@ -2,123 +2,56 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.4 released (2026-06-23, iteration 045, the head-hopping twin of 043 — `focalization`'s deterministic head-hopping check stops faking. The 2nd dogfood (`sombra-en-el-puerto`) measured it PRACTICALLY DORMANT (DEBT-014, a near-total false negative): it fires only on a character's FULL bible name on the SAME physical line as the interiority verb, while real prose names characters by first name/epithet across lines. Per issue #1 (track A — honesty), a head-hop heuristic without semantic judgment has a precision ceiling, so — exactly as 043 did with the open-set unknown-mention rule — under a parseable third-person-LIMITED voice `validate()` now raises `NotEvaluated("head-hopping / interiority attribution requires semantic judgment (move 3); the deterministic heuristic was measured nearly dormant on real prose", kind=pending_capability)` for the WHOLE run instead of running the near-null heuristic, and the deterministic chain (`_head_hopping`/`_INTERIORITY`/`_Declaration.focal` + the focal-name computation in `_parse_declaration` + the orphaned `character_names` in `validate`) is DELETED, not parked (grep-confirmed zero external consumers, mirrors 043). A declared third-person NON-LIMITED voice still runs `_first_person_breaks` and stays `evaluated`; first-person still evaluates with no findings; the four input-conditional abstentions (no constitution / no declared voice / `[PENDING]` placeholder / no grammatical person) stay `missing_input` byte-identically (037 `_PENDING_ONLY` preserved). It only CONSUMES the 044 machinery — the green predicate, `NotEvaluatedKind`, the `not_evaluated[]` serialization, the `status` nudge and `_KIND_LABEL` are all UNCHANGED. KNOWN REGRESSION (DEBT-019, recorded not dropped): `NotEvaluated` is all-or-nothing, so limited-third abstains the WHOLE run — the still-working deterministic first-person-break check no longer runs there (it still runs under non-limited third); the honest fix is a partial-evaluation contract or move 3. DEBT-014 closed; the validator stays single + prose (`triples=()`), frozen ontology untouched (Principle X). Oracles: third-limited fixtures (`tiny-historical`/`tiny-novel`/`tiny-quest`) gain a `focalization` `pending_capability` entry (`tiny-historical` counts stay `{error:1, warning:1, info:0}`, `next_actions` length 3), first-person fixtures (`tiny-memoir`/`tiny-essay`) gain none; see `bookwright-design.md` § 13.2/§ 13.5. v0.5.3 (2026-06-23, iterations 043+044, the issue #1 2nd-dogfood decision — the open-set proper-noun heuristic stops faking. The 2nd dogfood (`sombra-en-el-puerto`, a noir novel) measured `character_presence`'s unknown-mention `warning` rule as 100% noise (4 false positives, 0 signal) on real prose: distinguishing «Naviera = organization» / «Las = article» / «Elena = undeclared character» is an open-set discovery a capitalization heuristic cannot do — it is the move-3 (semantic-judgment) case. **043** split `character_presence` into an orphan validator (`error`, keeps the name, byte-identical findings, protects the gate) and a new `character_unknown_mentions` **abstainer** that raises `NotEvaluated` unconditionally for the open-set rule, **deleting the entire deterministic heuristic** and the now-dead 042 union-roster accessors (`location_names`/`object_names` + `locations=`/`objects=` test knobs) — subsuming DEBT-011/012; per-instance seam patches (043/044 of the old plan) discarded, the real cure is move 3. **044** repaired the 040 green contract that 043's always-dormant abstainer broke: `not_evaluated` entries are now **kind-categorized** (`missing_input` default / `pending_capability`), the green predicate is refined to `status == "ok" AND no entry has kind == "missing_input"` so a flawless project reads **green again** while the permanent move-3 gap stays visible, and the `status` dormant-nudge fires only on `missing_input` — additive `kind` in `--json`/`status`, the CI gate unchanged, guarded by automated clean-fixture tests (the regression guard 043 lacked). **The move 3 (LLM semantic judgment) is now an ACTIVATED direction** — its activation condition (a concrete heuristic measured insufficient on real prose) is met — pending its own design pass on determinism in the CI gate; see `bookwright-roadmap.md` § 3/§ 5 and `bookwright-design.md` § 13.5. v0.5.2 (2026-06-22, the second post-`v0.5.0` patch, iteration 042, DEBT-010 — the `character_presence` unknown-mention `warning` rule now cross-checks proper-noun candidates against the UNION of the character, setting, location and object rosters, not the CHARACTER roster alone, so the capitalized tokens of a declared multi-word environment (`Real`/`Fábrica`/`Paños` of the bible setting "la Real Fábrica de Paños" under `bible/settings/`) stop firing spurious "no bible entry" warnings; two new cached `ValidationContext` accessors (`location_names()` G13, `object_names()` G16) mirror `setting_names()` byte-for-byte, the `error` orphan gate and the 040 `not-evaluated` guard stay character-only and untouched — file-based via the cached `bible()` map, no validator heuristic reworked, no new dep (issue #1 per-class doctrine, the same oracle-only shape 041/038 used). v0.5.1 (2026-06-22, the first post-`v0.5.0` patch, iteration 041, DEBT-009 — the single prose seam (`src/bookwright/io/prose.py`) now also strips the leading Spanish dialogue dash `—`/`–`/`―` so `character_presence` stops mis-flagging the first spoken word of every dialogue line as an unbound proper noun; the class is closed at the seam, not the validator — one `_normalize` branch, zero validator edits (issue #1 doctrine, the same mechanism 038 used for ATX headings). v0.5.0 (2026-06-22, the validation-robustness minor, issue #1) shipped 039+040 at once at the close of the milestone: a single Markdown-aware prose/structure seam now backs every prose validator, closing the surface-coupling *class* behind DEBT-004/007/008 at the root (039), and a validator's per-run verdict is now tri-valued — `evaluated` / `not-evaluated(reason)` raised as `NotEvaluated` and surfaced in an additive `not_evaluated[]` channel — so `[]` stops reading as "clean" when it meant "couldn't look" (040))
+## Repository state: v0.5.4 released (2026-06-23)
 
-Five milestones are **fully implemented and released**: `v0.1.0` (2026-06-03,
-the v0 toolkit, iterations 1–11), `v0.2.0` (2026-06-05, the M4 research &
-verification system, iterations 12–18), `v0.3.0` (2026-06-13, the M5 context
-orchestration system, iterations 19–23), the **v0.3.x hardening track**
-(iterations 024–027, shipped as successive patches `v0.3.1`…`v0.3.4`, the last on
-2026-06-15) and `v0.4.0` (2026-06-21, the narrative-structure layer:
-Propp/Greimas G7/G9/G10 + `outline/` ingestion, iterations 028–032), the
-`v0.4.1` hardening patch (2026-06-21, iteration 033: remove the dead
-`NarrativeRole` concept + close the carrier-IRI parity loophole, DEBT-001) and
-the `v0.4.2` hardening patch (2026-06-21, iteration 034: make the `focalization`
-validator tolerate the markdown-prefixed `- **Voz narrativa**: …` declaration its
-own scaffold emits, waking a check that had been silently dormant, DEBT-004) and
-the `v0.4.3` hardening patch (2026-06-21, iteration 035: emit `rdfs:label` on
-narrative units/functions and materialize a queryable `bw:sequenceOrdinal` so the
-v0.4 narrative layer is searchable by content and walkable in declared order under
-unordered RDF, DEBT-005) and the `v0.4.4` hardening patch (2026-06-21, iteration
-036: make research-source load errors actionable — enumerate the closed
-`type`/`reliability` vocabulary in the message and prefix every per-source fault
-with a single locator (`name` or 1-based `#index`), the `--json` envelope
-byte-unchanged, DEBT-006; this release also folds in the EUPL-1.2 relicense + GOLEM
-CC BY 4.0 attribution that had accumulated on `main`) and the `v0.4.5` hardening
-patch (2026-06-21, iteration 037: make the `focalization` validator treat a body
-that is *solely* an unanswered `[PENDING: …]` narrative-voice placeholder as no
-declaration — a fresh `bookwright init` constitution carries
-`- **Voz narrativa**: [PENDING: …(primera/tercera persona, omnisciente/limitada)?]`,
-whose placeholder text literally contains "tercera persona"/"limitada" and so
-parsed as a real declaration, flooding head-hopping warnings on the first
-interiority verb; one anchored `_PENDING_ONLY` guard routes it into the existing
-"no declaration → zero findings" path, DEBT-007) and the `v0.4.6` hardening patch
-(2026-06-22, iteration 038: make the `character_presence` validator strip a leading
-ATX heading marker (`#{1,6}␠`) before its proper-noun heuristic, so a chapter
-heading like `# Capítulo 1` no longer flags `Capítulo` as an unbound proper noun —
-the heading's first word lands at offset 0 and inherits the existing
-sentence-initial exemption, while a real off-roster name later in the title still
-fires, DEBT-008). All
-of it is on `main` (tagged) with a real `src/bookwright/` package, ~200 Python
-files, the full test suite, docs, and CI gates green. There is **no active
-iteration branch**. With v0.4 the ingestion-parity north star is reached.
+The current release is **v0.5.4** (iteration 045). The repo is on `main`
+(tagged) with a real `src/bookwright/` package (~200 Python files), the full
+test suite, docs, and CI gates green. **There is no active iteration branch.**
 
-A **dogfooding exercise** (a real book run end-to-end, 2026-06-21) surfaced
-actionable findings — a silently-disabled validator, a measured structural-recall
-gap, blinding error messages, a placeholder-mis-parse that flooded spurious
-warnings, and a heading-marker blind spot that mis-flagged every chapter title —
-recorded as **DEBT-004/005/006/007/008** and shipped as the **`v0.4.x`
-post-dogfooding hardening track** (iterations 034–038, one patch each:
-`v0.4.2`/`v0.4.3`/`v0.4.4`/`v0.4.5`/`v0.4.6`). All five are now closed (034, `v0.4.2`,
-DEBT-004; 035, `v0.4.3`, DEBT-005; 036, `v0.4.4`, DEBT-006; 037, `v0.4.5`,
-DEBT-007; 038, `v0.4.6`, DEBT-008) — the track is **complete** and `DEBT.md` carries no open debt. The
-ready-to-run workflow commands and the
-per-iteration debt-cancellation/release cycle live in
-`bookwright-implementation-plan.md`.
+The latest work continues the **issue #1 honesty doctrine**: a deterministic
+heuristic measured insufficient on real prose **stops faking** and abstains via
+the tri-valued `not_evaluated[]` channel rather than emitting near-null findings.
+v0.5.4 did this for `focalization`'s head-hopping check (DEBT-014); v0.5.3 did it
+for `character_presence`'s open-set unknown-mention rule, splitting off the
+`character_unknown_mentions` abstainer and making `not_evaluated` entries
+**kind-categorized** (`missing_input` / `pending_capability`) so a flawless
+project reads green again while the permanent move-3 gap stays visible.
 
-The milestone **`v0.5.0` — validation robustness** (issue #1) is **released**
-(2026-06-22, tagged): a **minor** that shipped its two ordered iterations at
-once at the close (M4→`v0.2.0`-style). The v0.4.x dogfooding made plain that
-DEBT-004/007/008 were **one class** of defect patched instance-by-instance (each
-validator re-implementing how to "see past the markdown the tool itself emits"),
-not three bugs. Issue #1 decided to **close the class at the root** rather than
-keep playing whack-a-mole. **039 — single prose/structure seam** landed a
-markdown-aware view in `io/prose.py` all prose validators consume, deleting the
-per-validator strippers and closing the surface-coupling facet. **040 —
-tri-valued result** made a validator's per-run verdict `evaluated` /
-`not-evaluated(reason)` (signalled by raising `NotEvaluated`, surfaced in an
-additive `not_evaluated[]` channel across the `--json` envelope, the human
-report, `status`'s `state.validation`, and `next_actions`), so `[]` stops
-reading as "clean" when it meant "couldn't look" — closing the false-confidence
-facet. GREEN is now the single documented predicate
-`status == "ok" AND not_evaluated == []`; the CI gate is unchanged (only
-`error` findings gate). Both iterations are **merged and released**. The LLM
-**semantic-judgment** escalation (issue #1 move 3) is parked in the demand-pulled
-horizon.
+**The per-release detail (what changed, which regex, which oracle) lives in
+`CHANGELOG.md` — not here.** This section states only the current state and the
+rules that govern work; do not grow it into an inline changelog.
 
-The **`v0.5.x` post-dogfooding track** then continues the issue #1 doctrine
-against defects the `tiny-historical` dogfood of the released `v0.5.0` surfaced.
-Iteration 041 shipped as the **`v0.5.1`** patch (2026-06-22, DEBT-009): the
-single prose seam (`io/prose.py`) now strips the leading Spanish dialogue dash
-(`—` U+2014 / `–` U+2013 / `―` U+2015) inside its existing `_normalize` loop as a
-third `elif` branch (`_DIALOGUE_MARKER = ^\s*[—–―]\s*`, `sub(count=1)`), so
-`character_presence` stops emitting one spurious unbound-proper-noun `warning` on
-the first spoken word of every dialogue line (`—Esto` → `Esto` at offset 0,
-inheriting the existing sentence-initial exemption — the same mechanism 038 used
-for ATX headings). Only the leading dash is removed (internal incise dashes
-`—dijo Arnela—` survive); **no validator is edited** (the load-bearing issue #1
-"close the class at the seam" criterion); the only pinned oracle that shifts is
-`tiny-historical/expected-status.md` (`warning 5 → 4`, manuscript untouched, as
-038 did `6 → 5`). The audit recorded **DEBT-011** (the genuinely-distinct
-*paired* leading-quote markers `«`/`"`/`'`) for a future iteration; the
-horizontal bar `―` U+2015, being the same glued dash class **and** design, was
-swept here. Iteration 042 shipped as the **`v0.5.2`** patch (2026-06-22,
-DEBT-010): the `character_presence` unknown-mention rule (`warning` — a prose
-proper noun with «no bible entry») now cross-checks proper-noun candidates
-against the **union** of the character, setting, location and object rosters, not
-the CHARACTER roster alone, so the capitalized tokens of a declared multi-word
-environment (`Real`/`Fábrica`/`Paños` of the bible setting "la Real Fábrica de
-Paños" under `bible/settings/`) stop firing spurious "no bible entry" warnings
-even though the entry exists (just under `settings/`). Two new cached accessors
-on `ValidationContext` — `location_names()` (`NarrativeLocation`, G13) and
-`object_names()` (`Object`, G16) — each a byte-for-byte mirror of `setting_names()`
-through the existing `_names_of` helper; in `validate`, the slug set
-`_unknown_mentions` consumes is built from the concatenation of the four roster
-tuples passed once through the unchanged `_roster_slugs`. `_orphans` KEEPS feeding
-from `character_names()` alone (the `error` gate untouched), the `NotEvaluated`
-guard stays clavado on `not roster and not files` with the identical reason
-string, and the `Violation` shape / `triples=()` / frozen ontology are untouched
-(file-based via the cached `bible()` map, no SPARQL, no new disk read). The only
-pinned oracle that shifts is `tiny-historical/expected-status.md`
-(`warning 4 → 1`, manuscript/bible untouched, as 041 did `5 → 4` and 038 did
-`6 → 5`); the location/object union arms and both accessors are proven by
-synthetic-project tests (extended `write_project` `locations=`/`objects=` knobs),
-not by editing a pinned fixture. DEBT-011 (the genuinely-distinct *paired*
-leading-quote markers `«`/`"`/`'`) stays recorded for a future iteration.
-The remaining longer-horizon work — semantic judgment in validation, vector
-search (ChromaDB over rdflib) and export — is deferred to an unversioned, demand-pulled
-horizon: each ships only when its activation condition is met, not on a pre-assigned
-version — see `bookwright-roadmap.md`.
+**Released versions** (the per-iteration status is the table below; the
+per-release narrative is `CHANGELOG.md`):
+
+- `v0.1.0` — the v0 toolkit (M3, iterations 1–11).
+- `v0.2.0` — the M4 research & verification system (12–18).
+- `v0.3.0` — the M5 context orchestration system (19–23), plus the **v0.3.x
+  hardening track** (024–027, patches `v0.3.1`…`v0.3.4`).
+- `v0.4.0` — the narrative-structure layer (Propp/Greimas G7/G9/G10 + `outline/`
+  ingestion, 028–032), which **reaches the ingestion-parity north star**, plus
+  the **v0.4.x post-dogfooding hardening track** (033–038, patches
+  `v0.4.1`…`v0.4.6`) that closed DEBT-001/004/005/006/007/008.
+- `v0.5.0` — the **validation-robustness** minor (issue #1, iterations 039+040):
+  a single Markdown-aware prose seam (`io/prose.py`) all prose validators consume
+  (closing the surface-coupling class at the root), and a **tri-valued** result —
+  `evaluated` / `not-evaluated(reason)` surfaced in an additive `not_evaluated[]`
+  channel — so `[]` stops reading as "clean" when it meant "couldn't look". GREEN
+  is the single documented predicate `status == "ok" AND no not_evaluated entry
+  has kind == "missing_input"`; only `error` findings gate CI.
+- The **v0.5.x post-dogfooding track** (041–045, patches `v0.5.1`…`v0.5.4`)
+  continues the issue #1 honesty doctrine: a deterministic heuristic measured
+  insufficient on real prose **abstains** (`not_evaluated`, kind-categorized
+  `missing_input`/`pending_capability`) instead of faking findings. Closed
+  DEBT-009/010/014; the `character_unknown_mentions` abstainer (043) and the
+  `focalization` head-hopping abstention (045) are the two headline moves.
+
+The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** (its
+trigger — a concrete heuristic measured insufficient on real prose — is met) but
+parked pending its own design pass on determinism in the CI gate. The remaining
+longer-horizon work — semantic judgment in validation, vector search (ChromaDB
+over rdflib) and export — is deferred to an unversioned, demand-pulled horizon:
+each ships only when its activation condition is met — see `bookwright-roadmap.md`.
 
 The canonical references:
 
@@ -128,12 +61,12 @@ The canonical references:
   MUST NOT be reopened. § 20 covers the research system (shipped in v0.2);
   § 21 the context orchestration (shipped in v0.3).
 - `bookwright-roadmap.md` (Spanish) — the **durable** intent across versions
-  (the *what* and *why*): the version line (v0.3.x → v0.4 → v0.4.x → v0.5.0 →
+  (the *what* and *why*): the version line (… → v0.4 → v0.4.x → v0.5.0 → v0.5.x →
   demand-pulled horizon), the
   ingestion-parity north star, the cancelled list. Unlike the plan, it is **not**
   emptied each milestone. A guide, not a commitment.
 - `bookwright-implementation-plan.md` (Spanish) — ordered iteration plan for the
-  **current milestone only** (now the v0.3.x hardening track); emptied of
+  **current milestone only**; emptied of
   delivered work each milestone. § 2 has the dependency map; § 3+ have one
   ready-to-paste `/speckit-specify` prompt per iteration.
 - `.specify/memory/constitution.md` — ratified, currently **v1.4.0**.
@@ -253,9 +186,9 @@ was correct) and corrupts the run's audit trail.
 
 ## Iterations (shipped + planned)
 
-`specs/` holds one directory per iteration. 001–011 are merged (v0.1.0),
-012–018 are merged (v0.2.0), and 019–023 are merged and released (v0.3.0).
-024 is merged (v0.3.1), 025 is merged (v0.3.2), 026 is merged (v0.3.3) and 027 is merged (v0.3.4) — the v0.3.x hardening track is complete. The v0.4 narrative-structure milestone is now **released**: 028–032 are all merged and shipped **once** as `v0.4.0` (2026-06-21) at the closing iteration (032), like M4→`v0.2.0` and M5→`v0.3.0`. Iteration 033 then shipped as the `v0.4.1` hardening patch (2026-06-21): it removes the dead top-level `NarrativeRole` concept (`CONCEPTS` 13→12) and hardens the ingestion-parity contract so a dead concept colliding on a carrier's class IRI can never again pass as reachable, closing DEBT-001. Iteration 034 shipped as the `v0.4.2` hardening patch (2026-06-21), the first of the v0.4.x post-dogfooding track: the `focalization` validator now normalizes the candidate line before matching, so the markdown-prefixed `- **Voz narrativa**: …` shape its own scaffold emits parses byte-identically to the bare form — waking a check that had been silently dormant on every voice-bearing fixture, closing DEBT-004. Iteration 035 shipped as the `v0.4.2`'s successor, the `v0.4.3` hardening patch (2026-06-21), the second of the v0.4.x post-dogfooding track: `NarrativeUnit`/`NarrativeFunction` now emit a single `rdfs:label` (the `CharacterRole`/`E55_Type` one-triple shape, riding the identity assertion — no new E13), and `NarrativeSequence` materializes each member's resolved position as a per-unit `bw:sequenceOrdinal` triple (`xsd:integer`, 1-based contiguous rank over the already-sorted members, reified through its own file-level E13) — so the narrative layer is queryable by content (find-by-label) and walkable in declared order (`ORDER BY`) under unordered RDF, closing DEBT-005. `bw:sequenceOrdinal` lives in `sources.ttl` outside the frozen GOLEM closure (Principle X); the CHANGELOG and the `v0.4.3` annotated tag landed with the release step (the `bookwright-release` skill). Iteration 036 shipped as the `v0.4.4` hardening patch (2026-06-21), the third and last of the v0.4.x post-dogfooding track: `_reject_unknown_vocab` now enumerates the accepted members of the closed `type`/`reliability` vocabulary in the rejection message (derived from `SOURCE_TYPE_IRI`/`RELIABILITY_IRI` in declaration order — drift-proof), and `_map_sources` wraps each per-source fault once with a `source '<name>': …` / `source #<n>: …` (1-based) locator prefix, the `--json` error envelope (`code=invalid_research`, `details={relpath, value}`) byte-unchanged — only the human `message` improves (Principle IX); the SPARQL empty-result footgun is documented (not "fixed") in the `graph query` help + docs, closing DEBT-006. This release also folds in the EUPL-1.2 relicense + GOLEM CC BY 4.0 attribution that had accumulated on `main` since `v0.4.3` (previously the CHANGELOG `[Unreleased]` section). Iteration 037 shipped as the `v0.4.5` hardening patch (2026-06-21), the fourth of the v0.4.x post-dogfooding track: a module-level `_PENDING_ONLY = re.compile(r"(?i)^\s*\[pending\b[^\]]*\]\s*$")` plus one guard in `_parse_declaration` make the `focalization` validator treat a body that is *solely* an unanswered `[PENDING: …]` narrative-voice placeholder as no declaration (routing it into the existing "no declaration → zero findings" path), so a fresh `bookwright init` constitution — whose placeholder text literally contains "tercera persona"/"limitada" — no longer parses as a real declaration and floods head-hopping warnings on the first interiority verb. The full `^…$` anchor keeps a body with real text *before or after* the token a real declaration; the guard runs on the already markdown-normalized body (iteration 034); recognition is case-insensitive and label-agnostic; no other focalization rule changed and the frozen ontology is untouched (prose validator, `triples=()`, Principle X), closing DEBT-007. Iteration 038 shipped as the `v0.4.6` hardening patch (2026-06-22), the fifth and last of the v0.4.x post-dogfooding track: a module-level `_HEADING_MARKER = re.compile(r"^#{1,6}\s+")` plus a `scan = _HEADING_MARKER.sub("", line, count=1)` step in `_unknown_mentions` strip a single leading ATX heading marker before the proper-noun heuristic, so the heading's first content word lands at offset 0 and inherits the validator's existing sentence-initial exemption — a chapter title like `# Capítulo 1` no longer reports `Capítulo` as an unbound proper noun. The marker is anchored at `^` with no leading whitespace (so `#Capítulo`, seven-plus `#`, and indented forms are out of scope and behave as before); the rest of the line is analyzed unchanged, so a real off-roster name later in the title (`Elena` in `# La caída de Elena`) still fires; `lineno` still comes from `enumerate`, so the `relpath:line` locator is unchanged. The recognizer stays local to `character_presence.py` (no shared markdown-stripping utility, mirroring 037's `_PENDING_ONLY`); the `tiny-historical` E2E oracle, which had baked the spurious `Capítulo` flag into its expected `warning` count, is corrected `6 → 5` (the fixture manuscript untouched); no other rule changed and the frozen ontology is untouched (prose validator, `triples=()`, Principle X), closing DEBT-008. `__version__` is now `0.4.6`; the CHANGELOG and the `v0.4.6` annotated tag landed with the release step.
+`specs/` holds one directory per iteration. The table below is the canonical
+per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
+iterations through 045 are merged; there is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -305,50 +238,14 @@ was correct) and corrupts the run's audit trail.
 | 044 | Kind-categorized `not_evaluated` (`missing_input`/`pending_capability`); green reachable again (issue #1, 040 green-contract repair) | v0.5.3 | ✅ merged |
 | 045 | `focalization` head-hopping abstains → `pending_capability` under limited-third; heuristic deleted (issue #1 track A; closes DEBT-014, records DEBT-019) | v0.5.4 | ✅ merged |
 
-M5/v0.3 is **complete and released** (`v0.3.0`, 2026-06-13): authored focus
-(019), `bookwright status` with deterministic `next_actions` (020), the
-status-consuming skills (021–022), and the orchestration E2E fixture/tests/docs
-(023) all merged. The current milestone is the **v0.3.x hardening track** (iterations
-024–027, released as patches `v0.3.1`…`v0.3.4`): ingestion-parity is now explicit
-(024, `v0.3.1`, merged), locations G13 are wired (025, `v0.3.2`, merged),
-objects G16 are wired (026, `v0.3.3`, merged) — the second cheap mirror of
-`settings/` — and the closing cleanup/decision pass landed (027, `v0.3.4`,
-merged): the `focus`/`graph` success envelopes are single-sourced byte-for-byte,
-the last two `"undecided"` orphan verdicts (G6/G3) are firmly deferred to v0.4,
-and the `UnresolvedParticipant` misnomer is renamed to `UnresolvedReference`. The
-v0.3.x hardening track is **complete**.
-
-**v0.4 — the narrative-structure layer** (Propp/Greimas: G7/G9/G10) plus
-`outline/` ingestion, which closes ingestion parity, is now **released** (`v0.4.0`,
-2026-06-21). It was a minor milestone: iterations 028–032 accumulated on `main` and
-shipped **once** as `v0.4.0` at the close (032), like M4→`v0.2.0` and M5→`v0.3.0` —
-no per-iteration patch tags.
-Iterations 028–031 are **merged**: `outline/units/*.md` now ingests into the graph
-as `G9_Narrative_Unit` + `G10_Narrative_Function` entities and assembles
-`G7_Narrative_Sequence` from their optional `sequence`/`order` keys (see
-`bookwright-design.md § 7.4`), taking G7/G9/G10 out of the deferral registry's set —
-the modelled-but-unfed narrative-structure layer is now alive end to end. Iteration
-030 then populates `propp.ttl`/`greimas.ttl` as `crm:E55_Type` vocabularies (31
-Propp functions + 6 Greimas actants, ES+EN labels) and types narrative functions
-(G10) and character roles (G11) via `crm:P2_has_type` when the manifest's
-`[vocabularies] active` list turns a vocabulary on — the link reified through the
-existing `E13` provenance path, with zero regression when no vocabulary is active.
-Iteration 031 adds the `narrative_structure` validator — the first *consumer* of
-that layer: an auto-discovered, `warning`-default, LLM-free check with two rules,
-orphan beat (a `G9` unit in no `G7` sequence, via SPARQL `NOT EXISTS` over
-`dlp:proper-part`) and unresolved role (re-surfaced from outline ingestion's
-`UnresolvedReference` records through a new cached `ValidationContext.outline()`
-accessor), both cited via the existing `E13` provenance path, no ontology change.
-Iteration 032 closes the milestone (merged): a source-only `tests/fixtures/tiny-quest/`
-fixture + oracle, the build→validate E2E `tests/e2e/test_narrative_workflow.py`, the
-Spanish `docs/narrative-structure.md`, and the honest G6/G3 deferral re-target
-(`"v0.4"` → the first-class `"demand-pulled"` sentinel, swept across `deferrals.py`,
-the parity test, and `DEBT.md`). The `v0.4.0` release metadata — the `__version__`
-bump to `0.4.0`, the CHANGELOG section, the CLAUDE.md/design status edits, the
-release commit and the annotated tag — landed via the `bookwright-release` skill,
-closing the milestone. Vector search and export remain deferred to an unversioned, demand-pulled
-horizon (activate on a concrete trigger, not a pre-assigned version). See
-`bookwright-roadmap.md`.
+The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
+ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles
+`G7_Narrative_Sequence` (design § 7.4); `propp.ttl`/`greimas.ttl` type functions
+(G10) and roles (G11) via `crm:P2_has_type` when a `[vocabularies] active`
+vocabulary is on; the `narrative_structure` validator is its first consumer
+(orphan-beat + unresolved-role, LLM-free). Vector search and export remain
+deferred to the unversioned, demand-pulled horizon (activate on a concrete
+trigger, not a pre-assigned version). See `bookwright-roadmap.md`.
 
 When a spec or prompt references `§ 6`, `§ 20.5`, etc., that's a section in
 `bookwright-design.md`. Open it.
@@ -450,16 +347,17 @@ in full now, not deferred. Resolving a debt entry **removes** it (git keeps the
 history); only consciously `aceptada` (won't-fix) debt stays recorded.
 
 - v0.2 / M4 (design § 20) — research & verification: shipped in `v0.2.0`.
-- v0.3 / M5 — context orchestration (design § 21): shipped in `v0.3.0`.
-- **v0.3.x hardening (current, iterations 024–027) — cancel tech debt / close v0
-  shortcuts:** ingestion-parity guard + deferral registry (024); index locations
-  G13 + `bible.py` split (025); index objects G16 (026); JSON-envelope cleanup +
-  G6/G3 decision (027). Each is a patch with one observable delta; internal
-  plumbing rides inside the patch it enables (e.g. the `bible.py` split ships
-  with locations, not as a zero-change release). Don't pull v0.4 work below into it.
+- v0.3 / M5 — context orchestration (design § 21): shipped in `v0.3.0`, plus the
+  v0.3.x hardening track (024–027).
 - v0.4 — the Propp/Greimas narrative-structure layer (G7/G9/G10) and `outline/`
-  ingestion (closes ingestion parity).
-- **Demand-pulled horizon (no version assigned)** — ships only when an explicit
+  ingestion (closes ingestion parity): shipped in `v0.4.0`, plus the v0.4.x
+  hardening track (033–038).
+- v0.5 — validation robustness (issue #1): shipped in `v0.5.0`, plus the v0.5.x
+  honesty/abstention track (041–045). The patch tracks follow one rule worth
+  keeping: each patch is one observable delta, with internal plumbing riding
+  inside the patch it enables (not a zero-change release).
+- **The current frontier is the demand-pulled horizon below** — there is no open
+  versioned milestone. **Demand-pulled horizon (no version assigned)** — ships only when an explicit
   activation condition is met, never as speculative plumbing: **vector search**
   (ChromaDB over rdflib, decoupled from Grafeo — activate on a real
   multi-book/series corpus, or measured structural-recall failure in a skill);
