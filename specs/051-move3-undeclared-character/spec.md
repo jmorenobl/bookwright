@@ -90,9 +90,15 @@ status.
 the author has no signposted way to reach the judgment the skill now provides. Closing
 the loop is what makes the contract between layers usable end to end.
 
-**Independent Test**: Empirically via `uv run pytest`: `tiny-novel`/`tiny-memoir` stay
-GREEN; `tiny-historical` gains the continuity `next_action` without losing its green
-status.
+**Independent Test**: Empirically via `uv run pytest`. Because
+`character_unknown_mentions` abstains **unconditionally**, the `pending_capability`
+entry — and therefore the new continuity `next_action` — is present on **every**
+validated project; the fixtures verify the two testable claims, not a presence/absence
+split: `tiny-historical` carries the `next_action` while its status stays GREEN, and the
+flawless controls (`tiny-novel`/`tiny-memoir`) stay GREEN with the same `next_action`
+present (the nudge is informative — it never flips green). No oracle asserts the nudge is
+*absent* on any validated project (that would contradict the validator's unconditional
+abstention).
 
 **Acceptance Scenarios**:
 
@@ -217,9 +223,13 @@ status.
   by the activation oracle.
 - **SC-003**: A flawless project (`tiny-novel`, `tiny-memoir`) stays GREEN after this
   change — the green predicate is unchanged.
-- **SC-004**: `tiny-historical` (which has a `character_unknown_mentions` abstention) gains
-  the `bookwright-continuity` `next_action` while keeping its green status, verified via
-  `uv run pytest`.
+- **SC-004**: A project whose validation report carries the
+  `character_unknown_mentions` `pending_capability` abstention gains **exactly one**
+  `bookwright-continuity` `next_action` (pointing to the semantic judgment) while keeping
+  its green status — verified via `uv run pytest` on `tiny-historical`. Since the
+  abstention is unconditional, the green controls (`tiny-novel`/`tiny-memoir`) carry the
+  same `next_action`; what distinguishes them is only that they have no errors/`missing_input`,
+  so they too stay GREEN. No oracle asserts the `next_action` is absent on a validated project.
 - **SC-005**: The deterministic `character_unknown_mentions` validator still raises
   `NotEvaluated(kind=pending_capability)` unconditionally; the CI gate (error-only) is
   unchanged and no `error` originates from an LLM.
@@ -236,8 +246,11 @@ status.
   `pending_capability` abstention from `character_unknown_mentions` yields exactly one
   continuity action, distinct from the existing `missing_input`-only "activate dormant
   validators" rule, so the 044 filter that protects green stays intact.
-- `tiny-historical` is the fixture carrying the `character_unknown_mentions` abstention used
-  to verify the new nudge; `tiny-novel`/`tiny-memoir` are the green controls.
+- `character_unknown_mentions` abstains **unconditionally** (`tests/status/test_queries.py`
+  asserts it is "ALWAYS dormant"), so its `pending_capability` entry — and the new nudge —
+  is present on every validated project. `tiny-historical` is the named fixture used to
+  assert the nudge's presence; `tiny-novel`/`tiny-memoir` are green controls that prove the
+  nudge is **informative** (green is preserved), NOT controls that lack the nudge.
 - The roster grounding documentation extends the existing `references/golem-character.md`
   rather than adding a new reference file.
 
