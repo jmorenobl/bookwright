@@ -27,7 +27,7 @@ The feature concerns **only** which of `name` / `slug` is printed — never the 
 | Element | `unit_uri` | `(unit_uri, label_or_None)` |
 | Query | `SELECT ?unit … FILTER NOT EXISTS {…}` | `+ OPTIONAL { ?unit rdfs:label ?label }`, `SELECT ?unit ?label` |
 | Order | sorted set of URIs | sorted by URI; smallest label per URI when (defensively) >1 |
-| Empty graph | `[]` | `[]` (unchanged — rule stays inert, FR-009) |
+| Empty graph | `[]` | `[]` (unchanged — rule stays inert, FR-006) |
 
 `label` is `None` ⇔ the unit carries no `rdfs:label` (the FR-004 floor; impossible by
 construction in the normal path since iteration 035 emits exactly one label per `G9`).

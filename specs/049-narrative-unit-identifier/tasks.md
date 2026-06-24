@@ -48,7 +48,7 @@ the query supplies it.
 
 **⚠️ CRITICAL**: T003 blocks the orphan-beat rendering task (T006).
 
-- [ ] T003 In `src/bookwright/validation/queries.py`, widen `load_orphan_units` from `-> list[str]` to `-> list[tuple[str, str | None]]`: add `OPTIONAL { ?unit rdfs:label ?label }` to the SPARQL, `SELECT ?unit ?label`, and return `(unit_uri, label_or_None)` pairs sorted by URI with the lexicographically smallest label per URI (determinism, D2). Empty graph still returns `[]` (FR-009). Update the `"load_orphan_units"` export/docstring if it states the old return shape.
+- [ ] T003 In `src/bookwright/validation/queries.py`, widen `load_orphan_units` from `-> list[str]` to `-> list[tuple[str, str | None]]`: add `OPTIONAL { ?unit rdfs:label ?label }` to the SPARQL, `SELECT ?unit ?label`, and return `(unit_uri, label_or_None)` pairs sorted by URI with the lexicographically smallest label per URI (determinism, D2). Empty graph still returns `[]` (rule stays inert — detection unchanged, FR-006). Update the `"load_orphan_units"` export/docstring if it states the old return shape.
 
 **Checkpoint**: Query returns `(uri, label)` pairs and type-checks; no caller updated yet (next phase).
 
