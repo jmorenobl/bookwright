@@ -126,7 +126,7 @@ src/bookwright/
 │                                            #       not from a graph label" (FR-005)
 ├── integrations/
 │   └── descriptions.py                     # EDIT: mirror the widened continuity description
-│                                            #       (SC-009 verbatim-equality gate)
+│                                            #       (FR-016 verbatim-equality gate)
 ├── status/
 │   └── rules.py                            # EDIT: add the `judge_undeclared_characters`
 │                                            #       rule (keyed on the abstaining source)
@@ -136,7 +136,7 @@ src/bookwright/
 tests/
 ├── resources/test_command_body.py          # 4th-axis body assertions for continuity
 ├── resources/test_command_activation.py    # widened bilingual trigger keywords
-├── integrations/test_descriptions.py        # SC-009 mirror gate (passes once descriptions.py mirrors)
+├── integrations/test_descriptions.py        # FR-016 mirror gate (passes once descriptions.py mirrors)
 ├── integrations/test_skill_capabilities.py  # materialization/lint stays green for the longer body
 ├── integrations/test_materialize.py         # continuity materializes + lints
 ├── status/test_rules.py                     # the new rule + retarget the capability-gap test
@@ -179,7 +179,7 @@ Headline decisions (consolidated from spec + design § 20.6.2 + the codebase):
   touches that predicate; a `pending_capability` entry does not degrade green (FR-010).
 - **D5 — Widening the description has a mirror obligation.** `SKILL_DESCRIPTIONS` in
   `integrations/descriptions.py` must mirror the source frontmatter verbatim
-  (`test_descriptions.py::test_v0_equality_gate_mirrors_source_frontmatter`, SC-009).
+  (`test_descriptions.py::test_v0_equality_gate_mirrors_source_frontmatter`, FR-016).
   Both edits are made together. Current length 551 → widened, must stay < 1024.
 - **D6 — Judgment, not gate.** § 20.6.2 decision 4: the move-3 verdict is informative;
   the CI gate stays `bookwright validate` (deterministic, error-only); no `error` is born
@@ -242,7 +242,7 @@ degraded graph, as it must.
   keywords (still bilingual, still carrying `post-draft` for the analyze↔continuity sibling
   disambiguation).
 - `tests/integrations/test_descriptions.py`: passes once `descriptions.py` mirrors the
-  widened frontmatter (SC-009).
+  widened frontmatter (FR-016).
 
 **Agent context update**: the managed `<!-- SPECKIT START -->…END -->` block in
 `CLAUDE.md` is re-pointed to this plan (Phase 1 step 4), done as part of this run.

@@ -221,6 +221,12 @@ abstention).
   the first vertical slice as landed (continuity now answers the
   `character_unknown_mentions` abstention anchored in the roster), and any milestone /
   iteration index reflecting shipped work is updated.
+- **FR-016**: The widened `description` MUST be mirrored **verbatim** into
+  `SKILL_DESCRIPTIONS["bookwright-continuity"]` in `integrations/descriptions.py`, so the
+  source frontmatter and the in-code mirror never diverge. This is enforced by the existing
+  equality gate `test_descriptions.py::test_v0_equality_gate_mirrors_source_frontmatter`
+  (the source-of-truth check that the table mirrors each source frontmatter `description`
+  byte-for-byte). The mirror edit MUST be made together with the FR-006 widening.
 
 ### Key Entities *(include if feature involves data)*
 

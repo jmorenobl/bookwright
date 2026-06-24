@@ -71,7 +71,7 @@ All unknowns resolved against the fixed design contract (`bookwright-design.md`
   "check for undeclared / unbacked characters" (ES+EN), AND make the same verbatim edit to
   `SKILL_DESCRIPTIONS["bookwright-continuity"]` in `integrations/descriptions.py`.
 - **Rationale**: `test_descriptions.py::test_v0_equality_gate_mirrors_source_frontmatter`
-  (SC-009) asserts the table mirrors each source frontmatter `description` byte-for-byte.
+  (FR-016) asserts the table mirrors each source frontmatter `description` byte-for-byte.
   Editing one without the other fails CI. The current description is 551 chars; the widened
   one must stay < 1024 (Principle VII, `lint_skill_md` Rule 3). It must keep `post-draft`
   for the analyze↔continuity sibling disambiguation

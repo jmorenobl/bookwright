@@ -15,7 +15,7 @@ quality of the judgment is NOT asserted (the verify/continuity precedent, Princi
 - MUST keep the `post-draft` keyword (analyze↔continuity sibling disambiguation,
   `test_command_activation.py::test_sibling_disambiguation_keywords`).
 - MUST be mirrored **verbatim** into `SKILL_DESCRIPTIONS["bookwright-continuity"]`
-  (`integrations/descriptions.py`) — the SC-009 equality gate
+  (`integrations/descriptions.py`) — the FR-016 equality gate
   (`test_descriptions.py::test_v0_equality_gate_mirrors_source_frontmatter`).
 
 **Verification**: `test_descriptions.py` (cap + verbatim mirror),

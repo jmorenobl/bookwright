@@ -72,7 +72,7 @@ LLM judgment quality is not asserted.
 
 - [ ] T003 [US1] Widen the frontmatter `description` in `src/bookwright/resources/commands/bookwright-continuity.md` so the skill also triggers on undeclared-character prompts in **both ES and EN** (e.g. "revisa si hay personajes sin declarar / mencionados pero sin ficha", "check for undeclared / unbacked characters"), keeping the three existing concerns and the `post-draft` sibling-disambiguation keyword, staying `< 1024` chars. (FR-006/007)
 
-- [ ] T004 [US1] Mirror the widened `description` **verbatim** into `SKILL_DESCRIPTIONS["bookwright-continuity"]` in `src/bookwright/integrations/descriptions.py` (SC-009 equality gate). Make this edit together with T003 so the source frontmatter and the mirror never diverge.
+- [ ] T004 [US1] Mirror the widened `description` **verbatim** into `SKILL_DESCRIPTIONS["bookwright-continuity"]` in `src/bookwright/integrations/descriptions.py` (FR-016 equality gate `test_descriptions.py::test_v0_equality_gate_mirrors_source_frontmatter`). Make this edit together with T003 so the source frontmatter and the mirror never diverge. (FR-016)
 
 - [ ] T005 [P] [US1] Extend `src/bookwright/resources/commands/references/golem-character.md` to document that the **person roster is read from the sheets, not from the graph**: `G1_Character` carries no `rdfs:label`; the authored name lives in the sheet's `name:` field and in the URI slug. (FR-005, D2)
 
@@ -80,7 +80,7 @@ LLM judgment quality is not asserted.
 
 - [ ] T007 [US1] Update `tests/resources/test_command_activation.py` to assert the widened bilingual undeclared-character trigger keywords for `bookwright-continuity` and that the `post-draft` sibling-disambiguation keyword is retained. (depends on T003)
 
-- [ ] T008 [US1] Run the SC-009 mirror + materialization/lint oracles green: `uv run pytest tests/integrations/test_descriptions.py tests/integrations/test_materialize.py tests/integrations/test_skill_capabilities.py` — confirms the verbatim mirror, `description` < 1024, `name` ≤ 64 matching its dir, valid YAML. Fix `descriptions.py`/frontmatter if any drift. (verifies T003/T004/T005; FR-007)
+- [ ] T008 [US1] Run the FR-016 mirror + materialization/lint oracles green: `uv run pytest tests/integrations/test_descriptions.py tests/integrations/test_materialize.py tests/integrations/test_skill_capabilities.py` — confirms the verbatim mirror, `description` < 1024, `name` ≤ 64 matching its dir, valid YAML. Fix `descriptions.py`/frontmatter if any drift. (verifies T003/T004/T005; FR-007/FR-016)
 
 **Checkpoint**: The skill materializes, lints, carries the 4th axis, triggers bilingually — US1 independently testable (SC-001/SC-002).
 
