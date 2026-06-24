@@ -2,56 +2,41 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.9 released (2026-06-24)
+## Repository state: v0.5.10 released (2026-06-24)
 
-The current release is **v0.5.9** (iteration 050). The repo is on `main`
+The current release is **v0.5.10** (iteration 051). The repo is on `main`
 (tagged) with a real `src/bookwright/` package (~200 Python files), the full
 test suite, docs, and CI gates green. **There is no active iteration branch.**
 
-The latest work continues **issue #1 track A** (evaluation honesty) and closes
-**DEBT-019**: the validator contract was **all-or-nothing** — `validate()`
-either returned `list[Violation]` **or** raised `NotEvaluated(reason, kind)`, so
-a validator could not deterministically check one dimension **and** declare
-`not_evaluated` on another in the same run. Iteration 045 hit that wall: under a
-third-person-**limited** voice, `focalization` raised
-`NotEvaluated(pending_capability)` for head-hopping **before** reaching its
-first-person-break check, so the still-working deterministic break check
-**stopped running for every focalized project** — a real but suite-**invisible**
-coverage regression (the three focalized fixtures exercise no first-person
-break). v0.5.9 introduces a **general partial-evaluation contract** — a **third**
-return shape, frozen `EvalResult(violations, not_evaluated)` carrying frozen
-`Abstention(reason, kind)` (the returned-not-raised sibling of `NotEvaluated`,
-naming only `(reason, kind)` — the runner stamps the validator name). The runner
-normalizes **three** shapes: a bare `list` and a raised `NotEvaluated` exactly as
-before, and an `EvalResult` whose findings flow into the existing dedup +
-`sort_key` while each `Abstention` becomes a `not_evaluated[]` entry — **one**
-name-stamping point (`_record`) shared by forms (b) and (c) so the authority
-cannot fork. `focalization` is the first and only consumer: under limited-third
-it now **runs** `_first_person_breaks` **and** declares the head-hopping
-`pending_capability` abstention in the same run. The contract is observationally
-conservative — `EvalResult([], [Abstention(r, k)])` is byte-identical on the wire
-to `raise NotEvaluated(r, k)` — so the three focalized fixtures stay
-byte-identical and only a focalized project that **actually has** a first-person
-break sees a new (already-correct) `warning`. The 044 green predicate, the
-`NotEvaluatedKind` enum, the `not_evaluated[]` serialization, and the error-only
-CI gate are **consumed unchanged**. The earlier track-B/track-A work continues to
-stand: v0.5.8 unified the `narrative_structure` unit identifier — both the
-orphan-beat and unresolved-role rules name the `G9_Narrative_Unit` by its human
-`rdfs:label` through one shared `_unit_identifier` point, the orphan-beat rule
-dropping the opaque slug (DEBT-017); v0.5.7 made the two **graph-consumer**
-validators resolve actionable locators + legible handles — `temporal` rules
-a/b/c adopt rule (d)'s `resolve_source` over a deterministically-chosen event
-(`bible/timeline.md:<line>` uniformly), and `factual_anchor` resolves `source`
-to the anchor's authored `bible/research/<topic>.md` and names it by the shared
-`anchor_handle` point (DEBT-015); v0.5.6 soft-warned unrecognized
-Propp/Greimas vocabulary terms (`untyped_vocab_terms`, non-fatal, node stays
-untyped — DEBT-016), under the principle (design § 4.4) **fatal ⇔ an invalid
-value breaks downstream logic**; v0.5.5 surfaced
-ingestion-skipped bible files as `not_evaluated` (DEBT-018); v0.5.4 abstained on
-`focalization`'s head-hopping check (DEBT-014); v0.5.3 split off the
-`character_unknown_mentions` abstainer and made `not_evaluated` entries
-**kind-categorized** (`missing_input` / `pending_capability`) so a flawless
-project reads green again while the permanent move-3 gap stays visible.
+The latest work activates **issue #1 track C (move 3 — semantic judgment)** and
+lands its **first vertical slice** (iteration 051). The **third dogfood**
+(`el-año-de-las-casas-vacías`, a literary multi-POV novel in third-person
+limited) measured the cost the honest open-set abstention leaves on the table:
+on real prose it silences the noise (organizations, toponyms) **and** the real
+signal (a character used but never declared — `Amelia`, left invisible) in the
+**same** gesture, so only semantic judgment separates them. v0.5.10 lands the
+move-3 contract (design § 20.6.2): the LLM judgment is an **Agent Skill**, not
+Python — `bookwright-continuity` gains a **fourth axis** that reads the authored
+person roster from the `bible/characters/*.md` `name:` sheets (the graph carries
+no character `rdfs:label`) and judges *a person used in the prose but absent from
+the bible* versus an organization / place-name / vocative, reporting each as one
+more continuity deviation. The `not_evaluated` channel **is** the contract
+between the deterministic and semantic layers: each `pending_capability`
+abstention is a judgment task the skill answers, and `bookwright status` re-adds
+a **green-preserving** `next_action` — keyed on the abstaining **source**
+(`character_unknown_mentions`), not the kind, so `focalization`'s head-hopping
+abstention does not fire it — pointing the author to the skill (the
+discoverability nudge 044 had to remove, now that the judgment is actionable).
+The verdict is **informative, not a gate**: the CLI stays deterministic with no
+LLM dependency, no `error` is born from an LLM, and the 044 green predicate is
+**byte-identical**. This slice **closes DEBT-013** (the
+organization-vs-undeclared-person distinction, delivered without a fifth roster);
+the other two move-3 dimensions — head-hopping and the pro-drop first-person
+recall (DEBT-021) — follow the same pattern in later slices, and gating an LLM
+verdict (golden-run caching) stays deferred. The prior v0.5.x work stands:
+v0.5.9's general partial-evaluation contract (`EvalResult` + `Abstention`,
+DEBT-019) and the track-A/B honesty + deterministic-polish patches (v0.5.3–v0.5.8)
+— per-release detail in `CHANGELOG.md`.
 
 **The per-release detail (what changed, which regex, which oracle) lives in
 `CHANGELOG.md` — not here.** This section states only the current state and the
@@ -245,8 +230,8 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. The table below is the canonical
 per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
-iterations through 050 are merged; iteration 051 (the move-3 first slice) is
-implemented and green on branch `051-move3-undeclared-character`, pending merge.
+iterations through 051 (the move-3 first slice, `v0.5.10`) are merged; there is
+no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -300,7 +285,7 @@ implemented and green on branch `051-move3-undeclared-character`, pending merge.
 | 048 | Actionable graph-consumer locators: `factual_anchor` resolves `source` to `bible/research/<topic>.md` + shared authored handle (`anchor_corpus()` in-process build), `temporal` rules a/b/c adopt `resolve_source` over a deterministic event (issue #1 track B; closes DEBT-015) | v0.5.7 | ✅ merged |
 | 049 | Unify `narrative_structure` unit identifier: both rules name the `G9` unit by its human `rdfs:label` via one shared `_unit_identifier` point (orphan-beat drops the opaque slug; `load_orphan_units` carries the label via `OPTIONAL`) (issue #1 track B; closes DEBT-017) | v0.5.8 | ✅ merged |
 | 050 | Partial-evaluation contract: third validator return shape (`EvalResult(violations, not_evaluated)` + `Abstention`); `focalization` runs `_first_person_breaks` AND abstains on head-hopping under limited-third in one run (issue #1 track A; closes DEBT-019) | v0.5.9 | ✅ merged |
-| 051 | Move 3 first vertical slice: `bookwright-continuity` gains a 4th axis judging characters used-but-undeclared (reads the person roster from `bible/characters/` `name:`), and `status` adds an informative `judge_undeclared_characters` nudge keyed on the `character_unknown_mentions` abstention; judgment not gate, green byte-identical (issue #1 track A move 3; closes DEBT-013) | v0.5.10 | 🚧 on branch |
+| 051 | Move 3 first vertical slice: `bookwright-continuity` gains a 4th axis judging characters used-but-undeclared (reads the person roster from `bible/characters/` `name:`), and `status` adds an informative `judge_undeclared_characters` nudge keyed on the `character_unknown_mentions` abstention; judgment not gate, green byte-identical (issue #1 track C — move 3; closes DEBT-013) | v0.5.10 | ✅ merged |
 
 The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
 ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles

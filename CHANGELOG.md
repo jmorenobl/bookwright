@@ -4,6 +4,66 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.10] — 2026-06-24
+
+Iteration **051** — issue #1 **track C** (move 3, semantic judgment): the
+**first vertical slice**. Activated and corroborated by the **third dogfood**
+(`el-año-de-las-casas-vacías`, a literary multi-POV novel in third-person
+limited): on real prose the honest open-set abstention (track A) silences the
+noise (organizations, toponyms) **and** the signal (a character used but never
+declared — `Amelia`, four mentions, no bible sheet — left **invisible**) in the
+**same** gesture; only semantic judgment separates them. The move-3 frontier
+(`bookwright-design.md` § 20.6.1) and concrete contract (§ 20.6.2) are now
+landed: the LLM judgment is an **Agent Skill** (the CLI stays deterministic,
+**no** LLM dependency), the `not_evaluated` channel **is** the contract between
+the deterministic and semantic layers (each `pending_capability` abstention is a
+judgment task the skill answers), and the verdict is **informative — not a
+gate** (the gate stays the deterministic `validate`; no `error` is born from an
+LLM). This slice covers the **undeclared-character** dimension and **closes
+DEBT-013** — the organization-vs-undeclared-person distinction it asked for is
+exactly what the skill now makes, with no fifth roster. The other two move-3
+dimensions (head-hopping and the pro-drop first-person recall, DEBT-021) follow
+the same pattern in later slices.
+
+### Added
+
+- **`bookwright-continuity` fourth axis** — «menciones de conjunto abierto /
+  personajes sin declarar» in `## Procedimiento` + `## Output`
+  (`src/bookwright/resources/commands/bookwright-continuity.md`). It reads the
+  person roster from the `bible/characters/*.md` `name:` fields (**not** the
+  graph — `G1_Character` carries no `rdfs:label`, so the authored name lives in
+  the sheet and the URI slug), scans the manuscript for proper nouns, and judges
+  *a person used in the prose but absent from the bible* (e.g. `Amelia`) versus
+  an organization / place-name / vocative / title-word, reporting each as one
+  more continuity deviation (the manuscript quote + "no entry in
+  `bible/characters/`" + a suggestion). The grounding restores the real signal
+  without the heuristic's noise.
+- **`judge_undeclared_characters` status rule** (`src/bookwright/status/rules.py`)
+  — a **green-preserving** `next_action` pointing the author to
+  `bookwright-continuity` when `character_unknown_mentions` abstains. It is keyed
+  on the abstaining **source** validator, not the `pending_capability` kind, so
+  `focalization`'s head-hopping abstention does **not** fire it. This restores
+  the discoverability nudge iteration 044 had to remove (the judgment is now
+  actionable: the author can run the skill).
+- The roster-from-sheets grounding documented in
+  `resources/commands/references/golem-character.md`; the widened `description`
+  mirrored verbatim into `SKILL_DESCRIPTIONS["bookwright-continuity"]`
+  (`integrations/descriptions.py`).
+
+### Changed
+
+- **DEBT-013 closed** and removed from `DEBT.md` — the undeclared-person /
+  organization distinction is now delivered by the continuity axis (its
+  resolution criterion was "closes when move 3 lands"; this is that landing).
+- `bookwright-design.md` § 20.6.2 marks the move-3 **first slice landed**; § 13.5
+  reframed to record the skill layer answering the `not_evaluated` channel.
+
+No new CLI surface, no new runtime dependency, no ontology change, no new
+validator (the move-3 judgment is the **skill** layer, not Python in
+`validation/`), and no LLM in the CLI. The deterministic
+`character_unknown_mentions` abstainer is **unchanged**, the 044 green predicate
+is **byte-identical**, and the error-only CI gate is untouched.
+
 ## [0.5.9] — 2026-06-24
 
 Iteration **050** — issue #1 **track A** (evaluation honesty), closing

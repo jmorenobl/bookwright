@@ -8,11 +8,12 @@
 > `bookwright-design.md` en el root del repo).
 
 > **Hito en curso: el track del move 3 — juicio semántico en validación** (norte
-> activado por la issue #1, **reforzado por el 3er dogfood**). El minor anterior `v0.5.x`
-> —honestidad de validación + pulido determinista, issue #1— está **CERRADO Y LIBERADO
-> ENTERO** (043–050, releases `v0.5.3`…`v0.5.9`, 2026-06-24). Su detalle vive en git,
-> `specs/043…050` y `CHANGELOG` — **no** aquí (este documento se vacía del trabajo
-> entregado al cerrar cada hito; conserva el andamiaje reutilizable, § 0 y § 7).
+> activado por la issue #1, **reforzado por el 3er dogfood**), que **continúa la cadencia
+> `v0.5.x`** (un patch por slice observable, no un minor diferido). La honestidad +
+> pulido determinista de la issue #1 (043–050, `v0.5.3`…`v0.5.9`) están **liberados**, y
+> la **primera rebanada del move 3 ya aterrizó** (051, `v0.5.10`, 2026-06-24): el detalle
+> vive en git, `specs/043…051` y `CHANGELOG` — **no** aquí (este documento se vacía del
+> trabajo entregado al cerrar cada hito; conserva el andamiaje reutilizable, § 0 y § 7).
 >
 > Un **3er dogfood end-to-end** —`el-año-de-las-casas-vacías`, novela literaria multi-POV
 > en 3ª persona limitada, 2026-06-24, banco desechable fuera del repo— corrió sobre
@@ -114,13 +115,16 @@ Decide por hito, no por iteración:
 - **Endurecimiento** (cancelar deuda, cerrar atajos, sin abrir capa nueva) → **un
   patch por iteración** con un delta observable cada uno, al estilo de `v0.3.x`
   (024–027 → `v0.3.1`…`v0.3.4`), `v0.4.x` (034–038 → `v0.4.2`…`v0.4.6`) y `v0.5.x`
-  (041–050 → `v0.5.1`…`v0.5.9`). Acumular hallazgos independientes en un único minor
-  escondería deltas que merecen su línea de `CHANGELOG`. (El frente actual **no** tiene
-  patches de endurecimiento pendientes: el 3er dogfood no encontró deuda determinista.)
+  (041–051 → `v0.5.1`…`v0.5.10`). Acumular hallazgos independientes en un único minor
+  escondería deltas que merecen su línea de `CHANGELOG`. **Los slices del move 3 caen aquí:**
+  cada uno es un delta observable y útil por sí solo (el primer slice, 051→`v0.5.10`, ya hace
+  visible el personaje sin declarar), así que ship como **patch** en la cadencia `v0.5.x`, no
+  acumulando hacia un minor.
 - **Capa nueva** (un sistema modelado que cobra vida) → las iteraciones **acumulan en
   `main`** y se liberan **una sola vez** como **minor** al cierre, al estilo de
-  M4→`v0.2.0`, M5→`v0.3.0` y v0.4→`v0.4.0`. **El move 3 (juicio semántico LLM) es capa
-  nueva → minor `v0.6.0`** cuando aterrice.
+  M4→`v0.2.0`, M5→`v0.3.0` y v0.4→`v0.4.0`. (El move 3 **no** entra aquí: sus slices son
+  útiles por separado, así que ship como patches — ver arriba. `v0.6.0`/`1.0` se gana con
+  un hito mayor o el flujo end-to-end probado, no se pre-asigna al move 3.)
 
 ### 0.4 Ciclo de cierre de cada iteración
 
@@ -172,29 +176,27 @@ iteración tiene un **cierre manual** fijo:
 
 ## 1+. Frente actual y lo que queda
 
-> **✅ `v0.5.x` ENTREGADO ENTERO (043–050, releases `v0.5.3`–`v0.5.9`, 2026-06-24).** Los dos
-> tracks de la issue #1 (2º dogfood) cerrados: **track A — honestidad** (043 menciones-desconocidas→
-> abstainer · 044 categorías de `not_evaluated` + verde alcanzable · 045 head-hopping→`not_evaluated`
-> · 046 `validate` propaga `skipped` · **050 contrato de evaluación PARCIAL `EvalResult`**) y **track
-> B — pulido determinista** (047 vocab Propp/Greimas no fatal · 048 locators de graph-consumers · 049
-> nombre-vs-slug). Detalle en `CHANGELOG`/git/`specs/043…050`. **No relanzar.**
+> **✅ `v0.5.x`, track de la issue #1: 043–051 liberados (`v0.5.3`–`v0.5.10`, 2026-06-24).**
+> Honestidad + pulido determinista (043–050: 043 menciones-desconocidas→abstainer · 044 categorías
+> de `not_evaluated` + verde alcanzable · 045 head-hopping→`not_evaluated` · 046 `validate` propaga
+> `skipped` · 047 vocab Propp/Greimas no fatal · 048 locators · 049 nombre-vs-slug · 050 contrato
+> `EvalResult`) **y la primera rebanada del move 3** (051: `bookwright-continuity` juzga el
+> personaje-usado-pero-no-declarado + `status` nudge `judge_undeclared_characters`; cierra DEBT-013).
+> Detalle en `CHANGELOG`/git/`specs/043…051`. **No relanzar.**
 
-**Lo que queda abierto** (origen: 3er dogfood `el-año-de-las-casas-vacías`, 2026-06-24): **un
-solo frente, el move 3** (§ 1.C). El dogfood **no dejó deck-clear determinista**: las tres
-deudas abiertas son la **misma cara** del techo semántico de conjunto abierto y se curan juntas
-con el move 3, no por separado en patches de costura.
+**Lo que queda abierto** (origen: 3er dogfood `el-año-de-las-casas-vacías`, 2026-06-24): **el move 3
+continúa** (§ 1.C). El primer slice (051, personaje-sin-declarar) cerró **DEBT-013** y restauró la
+señal que el dogfood midió perdida (`Amelia`); quedan las **otras dos dimensiones**, la **misma cara**
+del techo semántico de conjunto abierto:
 
-- **DEBT-013 (orgs/topónimos)** — un nombre de organización off-roster es indistinguible, para
-  un heurístico de mayúsculas, de un personaje sin declarar. Conjunto abierto → move 3 (§ 13.5).
 - **DEBT-021 (recall de ruptura de 1ª persona)** — "¿esta prosa está en 1ª persona?" en español
   pro-drop es morfología verbal, conjunto abierto; ningún regex lo captura sin whack-a-mole. El
   núcleo determinista sólido (`yo`/`nosotros`) se conserva (determinismo añade, no suprime).
 - **El head-hopping real** — `focalization` ya **abstiene** de él (`pending_capability`); su
   techo de precisión es el mismo juicio semántico.
 
-La señal que el 3er dogfood midió **perdida, no teórica** (el personaje `Amelia`,
-usado-pero-no-declarado, invisible) es justo lo que el move 3 restaura. Con el move 3, las tres
-salen del registro a la vez; no hay iteración determinista intermedia.
+Ambas siguen el patrón que **051 ya probó** (la skill responde a la `Abstention` del canal
+`not_evaluated`, anclada en el grafo) — cada una es su propio slice/patch en la cadencia `v0.5.x`.
 
 > Cuando el move 3 produzca iteraciones, cada una es un branch `NNN-<short-name>` con su
 > `specs/`, que **borra la(s) entrada(s) de `DEBT.md`** que cierra (§ 0.4). **Pídeme el comando
@@ -208,9 +210,9 @@ El 2º dogfood **cumplió la condición de activación** del move 3 (un heuríst
 insuficiente sobre prosa real: 4/4 FP) y el **3er dogfood la reforzó** con señal real **perdida,
 no teórica**: sobre prosa literaria fresca, un personaje usado-pero-no-declarado (`Amelia`) y un
 head-hopping real quedaron **invisibles**, abstenidos en el mismo gesto que (correctamente)
-silencia orgs y topónimos. Es el **norte del track de validación**. La frontera estaba decidida
-(§ 20.6.1) y la **pasada de diseño está hecha** (2026-06-24): el **contrato concreto** vive en
-`bookwright-design.md` § 20.6.2. La primera iteración ya es **redactable**.
+silencia orgs y topónimos. Es el **norte del track de validación**. La frontera (§ 20.6.1) y el
+**contrato concreto** (§ 20.6.2) están decididos, y el **primer slice ya aterrizó** (051,
+`v0.5.10`, 2026-06-24): el personaje-usado-pero-no-declarado. Siguen las otras dos dimensiones.
 
 - **Qué cura:** el conjunto abierto entero que el track A dejó honesto-pero-en-`not_evaluated` —
   menciones-desconocidas (orgs/topónimos/vocativos/**personaje-sin-declarar**, DEBT-013 incluida),
@@ -234,14 +236,18 @@ silencia orgs y topónimos. Es el **norte del track de validación**. La fronter
   skill nuevo; (2) **el canal `not_evaluated` ES el contrato** entre capas — cada `Abstention`
   (`pending_capability`) que `validate` publica es una tarea de juicio que continuity recoge; (3)
   **grounding** — el roster (personaje-sin-declarar) y la voz declarada (focalización/1ª persona) se
-  inyectan como contexto; los núcleos deterministas se conservan; (4) **juicio, NO gate** en
-  `v0.6.0` — el veredicto es informativo (no rompe CI); el gate sigue siendo `validate` determinista;
-  gatear veredictos LLM (golden-runs/caché por hash) queda **diferido** con su propia condición.
-- **Siguiente paso — la primera iteración (051): el personaje-usado-pero-no-declarado.** El vertical
-  slice mínimo que prueba la tubería entera (`validate` abstiene → continuity recoge la `Abstention`
-  → juzga anclado en el roster → reporta), con el grounding más simple (sólo el roster) y la señal
-  real más fuerte del 3er dogfood (`Amelia`). Las otras dos dimensiones (head-hopping / 1ª persona)
-  siguen el mismo patrón después. **Pídeme el `SPEC`/`PLAN_HINT` de 051 y lo regenero verificado
+  inyectan como contexto; los núcleos deterministas se conservan; (4) **juicio, NO gate** (en
+  cada slice, cadencia `v0.5.x`) — el veredicto es informativo (no rompe CI); el gate sigue siendo
+  `validate` determinista; gatear veredictos LLM (golden-runs/caché por hash) queda **diferido** con
+  su propia condición.
+- **Aterrizado — slice 1 (051, `v0.5.10`): personaje-usado-pero-no-declarado.** Probó la tubería
+  entera (`validate` abstiene → `bookwright-continuity` recoge la `Abstention` → juzga anclado en el
+  roster → reporta; `status` añade el nudge `judge_undeclared_characters`), con el grounding más
+  simple (sólo el roster) y la señal más fuerte del 3er dogfood (`Amelia`). Cerró DEBT-013.
+- **Siguiente slice — head-hopping o ruptura de 1ª persona (DEBT-021).** Mismo patrón que 051: la
+  skill responde a la `Abstention` correspondiente de `focalization`, anclada en la voz declarada +
+  el personaje focal del grafo; veredicto informativo, gate intacto. Es su propio patch en la
+  cadencia `v0.5.x`. **Pídeme el `SPEC`/`PLAN_HINT` del siguiente slice y lo regenero verificado
   contra el código vigente** (§ 0.4). El interim honesto del track A (declarar `not_evaluated`,
   `kind=pending_capability`) sigue siendo el fallback correcto y permanente si el path LLM no corre.
 

@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.5.9-6f42c1" alt="Version 0.5.9"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.5.10-6f42c1" alt="Version 0.5.10"></a>
   <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="License: EUPL-1.2"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Coverage ≥80%">
@@ -33,14 +33,17 @@ Bookwright derives a knowledge graph from your work and validates
 continuity (characters, settings, chronology, focalization)
 deterministically.
 
-> Status: **v0.5.9** — usable for researching, structuring, drafting and
+> Status: **v0.5.10** — usable for researching, structuring, drafting and
 > validating continuity. It researches with provenance, ingests the
 > narrative structure (units, functions and sequences) and types it
 > against the Propp and Greimas vocabularies, now flagging any unrecognized
 > term with a non-fatal warning instead of typing it in silence. Validation
 > is now robust: a
 > validator reports `not-evaluated(reason)` instead of a misleading clean
-> pass when it has nothing to look at. Change-by-change detail in
+> pass when it has nothing to look at. Semantic judgment is now landing:
+> `bookwright-continuity` flags characters used in the prose but never
+> declared in the bible — the first slice of an LLM-assisted continuity pass
+> that stays out of the deterministic gate. Change-by-change detail in
 > the [CHANGELOG](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md).
 
 ---

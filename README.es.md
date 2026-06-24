@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml"><img src="https://github.com/jmorenobl/bookwright/actions/workflows/tests.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.5.9-6f42c1" alt="Versión 0.5.9"></a>
+  <a href="https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.5.10-6f42c1" alt="Versión 0.5.10"></a>
   <a href="https://github.com/jmorenobl/bookwright/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2-blue" alt="Licencia: EUPL-1.2"></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-3776ab?logo=python&logoColor=white" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/coverage-%E2%89%A580%25-2ea44f" alt="Cobertura ≥80%">
@@ -32,14 +32,18 @@ el capítulo 3 y verdes en el 12 — antes que tu lector. Bookwright deriva un
 grafo de conocimiento de tu obra y valida la continuidad (personajes,
 settings, cronología, focalización) de forma determinista.
 
-> Estado: **v0.5.9** — usable para investigar, estructurar, redactar y
+> Estado: **v0.5.10** — usable para investigar, estructurar, redactar y
 > validar continuidad. Investiga con procedencia, ingiere la estructura
 > narrativa (unidades, funciones y secuencias) y la tipa contra los
 > vocabularios de Propp y Greimas, avisando ahora de cualquier término no
 > reconocido con un aviso no fatal en vez de tiparlo en silencio. La
 > validación ya es robusta: un validador
 > informa `no-evaluado(motivo)` en vez de pintarse verde de forma engañosa
-> cuando no tiene nada que mirar. Detalle de cambios en el
+> cuando no tiene nada que mirar. El juicio semántico empieza a aterrizar:
+> `bookwright-continuity` detecta personajes usados en la prosa pero nunca
+> declarados en la biblia — la primera rebanada de una pasada de continuidad
+> asistida por LLM que se mantiene fuera del gate determinista. Detalle de
+> cambios en el
 > [CHANGELOG](https://github.com/jmorenobl/bookwright/blob/main/CHANGELOG.md).
 
 ---
