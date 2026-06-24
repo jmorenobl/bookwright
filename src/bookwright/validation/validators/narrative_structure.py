@@ -40,16 +40,23 @@ class NarrativeStructure:
         return self._orphan_beats(indexer) + self._unresolved_roles(project, indexer)
 
     def _orphan_beats(self, indexer: Indexer) -> list[Violation]:
-        """Rule a: one finding per ``G9`` unit belonging to no ``G7`` sequence (FR-005)."""
+        """Rule a: one finding per ``G9`` unit belonging to no ``G7`` sequence (FR-005).
+
+        Names the unit by its human authored ``rdfs:label`` (carried alongside the URI
+        by the widened query, FR-003), falling back to the URI slug only when the graph
+        carries no label — the impossible-by-construction floor (FR-004).
+        """
         out: list[Violation] = []
-        for unit_uri in queries.load_orphan_units(indexer):
+        for unit_uri, label in queries.load_orphan_units(indexer):
             slug = unit_uri.rsplit("/", 1)[-1]
+            identifier = _unit_identifier(label, slug)
             out.append(
                 Violation(
                     validator=self.name,
                     severity=Severity.warning,
                     message=(
-                        f"narrative unit '{slug}' belongs to no narrative sequence (orphan beat)"
+                        f"narrative unit '{identifier}' belongs to no narrative sequence "
+                        "(orphan beat)"
                     ),
                     source=queries.resolve_source(indexer, unit_uri),
                     triples=(),
@@ -82,12 +89,14 @@ class NarrativeStructure:
             # from the one cached ``MapResult`` — so the unit URI is always indexed (D7).
             unit_uri = unit_uris[ref.entity]
             source = queries.resolve_source(indexer, unit_uri)
+            slug = unit_uri.rsplit("/", 1)[-1]
+            identifier = _unit_identifier(ref.entity, slug)
             out.append(
                 Violation(
                     validator=self.name,
                     severity=Severity.warning,
                     message=(
-                        f"narrative unit '{ref.entity}' references role '{ref.name}' "
+                        f"narrative unit '{identifier}' references role '{ref.name}' "
                         "which resolves to no character role"
                     ),
                     source=source if source is not None else ref.path,
@@ -95,6 +104,18 @@ class NarrativeStructure:
                 )
             )
         return out
+
+
+def _unit_identifier(name: str | None, slug: str) -> str:
+    """The one place a ``G9`` unit is named in a finding message (FR-005, the 048
+    ``anchor_handle`` precedent).
+
+    Returns the human authored ``name`` when present, else the URI ``slug`` — the
+    impossible-by-construction floor (FR-004). An empty-string label counts as missing
+    (so a defensive ``""`` never prints an empty identifier). Both rules render through
+    this single point, so the two surfaces cannot drift (SC-006).
+    """
+    return name if name else slug
 
 
 def _unit_uri_index(outline: MapResult) -> dict[str, str]:

@@ -72,7 +72,12 @@
 >   **iteración 047**, que hace que `graph build` emita un `warning` no fatal
 >   —canal `untyped_vocab_terms`— enumerando los términos válidos cuando un
 >   `functions:`/`narrative_roles:` con vocab activo no case ningún término; el nodo
->   se ingiere igual sin `crm:P2_has_type`. Eliminada de este registro), DEBT-017.
+>   se ingiere igual sin `crm:P2_has_type`. Eliminada de este registro), ~~DEBT-017~~
+>   (cerrada en la **iteración 049**, que unifica el identificador de unidad de las
+>   dos reglas de `narrative_structure` sobre el `name` humano autorado, a solas, vía
+>   un único punto compartido `_unit_identifier`: la regla de beat-huérfano deja de
+>   imprimir el slug y la de rol-sin-resolver queda byte-idéntica. Eliminada de este
+>   registro).
 > - **Track C — move 3** (juicio semántico, norte): DEBT-013 (decidido (b)), y el
 >   techo de precisión del head-hopping cerrado en honestidad por la iter 045.
 > - **Descartado:** parches de costura por instancia; 5º roster «organización».
@@ -87,15 +92,6 @@
 - **Descripción:** en "la Naviera Salas", `Naviera` (cabeza del nombre de la organización) se reporta como nombre propio sin entrada en la bible (`manuscript/01-marea-baja.md:13`), aunque `Salas` sí esté en el roster de personajes (`Víctor Salas`). La unión de rosters de DEBT-010 (character/setting/location/object) NO cubre organizaciones. Ninguna normalización de superficie lo cura.
 - **Por qué se difiere:** a diferencia de DEBT-011/012, esto NO se arregla en el seam. Requería una **decisión de diseño** previa: **(a)** una 5ª clase de roster (organizaciones), o **(b)** diferirlo al juicio semántico (move 3). **Resuelta en la issue #1 (2026-06-23): (b).** Un 5º roster es perseguir un conjunto abierto (tras orgs vienen topónimos, barcos, vocativos…) con una lista cerrada más; no converge y roza el Principio X. El move 3 cura el conjunto abierto entero distinguiendo «Naviera = organización» de «Elena = personaje sin declarar» sin roster nuevo.
 - **Resolución sugerida / versión objetivo:** **track C — move 3** (juicio semántico, norte activado; `bookwright-roadmap.md` § 5, `bookwright-design.md` § 13.5/§ 20.6). Interim honesto ya cubierto por el track A: la regla de menciones-desconocidas declara `not_evaluated` (no emite el FP de `Naviera`). Esta deuda se cierra cuando el move 3 aterrice; no es una iteración de costura.
-
-### DEBT-017 — `narrative_structure` identifica la unidad de forma inconsistente entre sus dos reglas (nombre vs. slug)
-- **Estado:** abierta
-- **Detectada en:** dogfood `sombra-en-el-puerto` (2026-06-23), ronda de estructura narrativa.
-- **Ubicación:** `src/bookwright/validation/validators/narrative_structure.py` (la regla de rol-sin-resolver imprime el `name` humano de la unidad; la regla de beat-huérfano imprime el `slug`).
-- **Clase de deuda:** inconsistencia de presentación dentro de un mismo validador (pulido / UX), sin impacto funcional.
-- **Descripción:** sobre la misma clase de entidad (unidad narrativa G9), los dos mensajes usan identificadores distintos: `narrative unit 'La fechoría en el muelle' references role 'informante' …` (nombre humano) vs. `narrative unit 'el-recuerdo-de-la-primera-marea' belongs to no narrative sequence …` (slug). El locator `relpath:línea` es correcto en ambos; lo inconsistente es qué identificador se imprime.
-- **Por qué se difiere:** banco fuera del repo; trivial pero ajeno al scope de cualquier iteración en curso, y conviene fijar primero la convención (¿siempre el `name` humano? ¿siempre el slug? ¿ambos?) para aplicarla a todos los validadores a la vez.
-- **Resolución sugerida / versión objetivo:** **track B (pulido determinista)** (puede ir junto a DEBT-015, ambos son consistencia de mensajes). Unificar el identificador de unidad (preferiblemente el `name` humano, con el slug entre paréntesis si hace falta) en las dos reglas.
 
 ### DEBT-019 — el contrato `NotEvaluated` todo-o-nada obliga a `focalization` a abstenerse del validador entero bajo tercera-limitada, dejando de ejecutar la comprobación determinista de ruptura de primera persona
 - **Estado:** abierta

@@ -460,63 +460,42 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/048-actionable-graph-locators/plan.md` (iteration 048, design § 13.2/§ 20.6
-— issue #1 track B *pulido determinista*, closes DEBT-015). The two GRAPH-CONSUMER
-validators emit UNACTIONABLE findings while the prose validators always give
-`relpath:line` + a readable handle. TWO INDEPENDENT HALVES. (1) `temporal`
-(mechanical): rules (a) cycle, (b) order-vs-overlap, (c) containment-vs-order emit
-`source=None`; only rule (d) numeric resolves `source=resolve_source(indexer,
-<event>)`. Events are `SluggedEntity` (stable URIs) with `E13` provenance already in
-the PASSED disk graph (why rule d works), so a/b/c just adopt rule (d)'s resolution
-over a DETERMINISTICALLY-chosen implicated event — NO rebuild. FR-002 event choice:
-rules b/c resolve from the carried triple's SUBJECT `a` (mirror d); rule a (SCC, no
-single subject) from `component[0]` = lexicographically smallest event URI. (2)
-`factual_anchor` (larger): every violation sets `source=resolve_source(indexer,
-anchor.uri)` → ALWAYS `None` (an anchor IS the reified `E13`; no `E13` points TO it)
-and names it by `_label(anchor.uri)` = the uuid7 tail. `status` already reports the
-SAME anchor legibly by joining each graph anchor to its `AnchorIdentity`
-(`promotes_id`/`constrains`/`relpath`). FIX: resolve `source` to
-`bible/research/<topic>.md` via `identity.relpath` and name by the authored handle
-(`promotes -> constrains`) through a SINGLE shared point with `status`.
-LOAD-BEARING DESIGN DECISION (research.md D1): the spec's literal "join identities to
-graph anchors BY URI, the same path status uses" does NOT survive the `graph build`→
-`validate` PROCESS BOUNDARY — `Anchor`/`Finding` are `MintedEntity` (uuid7, RE-MINTED
-every build) and `validate` reads the PERSISTED `graph.ttl` from a prior build, so a
-fresh `map_research` mints DIFFERENT uuid7s and a URI join misses for EVERY anchor.
-`status` works only because it REBUILDS in-process (`build_project_graph`) and joins
-within one process. THEREFORE: `factual_anchor` resolves over an IN-PROCESS-built
-research corpus — a memoized, NON-persisting `ValidationContext.anchor_corpus()`
-(`validation/base.py`) returning `(engine, anchor_identities)` from one `map_research`
-(built from the memoized `outline()` MapResult + `map_research`; NO `engine.save` —
-validators never write; built from `io` not `commands._graph` to keep layering) — and
-joins by URI WITHIN that single build. Honors FR-003/004/007/009 with NO
-graph-emission / ontology change. FR-010 fallback (`_label(anchor.uri)` uuid7 + `None`
-on identity miss) becomes a DEFENSIVE floor (research.md D1 reconciliation; one-line
-spec note). SHARED HELPER (D2): `anchor_handle(promotes, constrains)` in
-`io/_research_identity.py` (returns `f"{promotes} -> {constrains}"` or `promotes`
-alone), called by BOTH `status._anchor_line` (pure extraction, byte-identical) and
-`factual_anchor` — so the surfaces cannot diverge (FR-007/009). REJECTED alternatives
-(research.md D1): (A) URI-join the disk graph — resolves nothing; (B) emit anchor
-`E13` provenance + finding-id label at build — the "root fix", but contradicts FR-003
-("NOT resolve_source(anchor.uri)") and the "anchor has no E13" premise → recorded as
-the natural owner-decided follow-up, not this iteration; (C) stable-signature join —
-uniqueness not guaranteed → fragile debt. TESTS (D4): a corpus-INJECTION seam on
-`ValidationContext` lets the hand-built `AnchorSpec` unit fixtures supply
-`(engine, identities)` (mechanical update: add identities + flip expected
-source/message), production builds fresh; E2E `test_research_workflow.py` covers the
-real `graph build`→`validate` path; a cross-surface test asserts factual_anchor⇆status
-agree (SC-003). CONTRACT-BEFORE-CODE: reconcile `bookwright-design.md` § 13.2/§ 20.6
-(both graph-consumers now resolvable; file-only anchor vs `:line` event granularity is
-BY DESIGN); REMOVE DEBT-015 from `DEBT.md` + reconcile the track-B index line + the
-iteration table/milestone prose. ORACLES (empirical, `uv run pytest`): temporal a/b/c
-`source` → `bible/timeline.md:<line>` (not null) + two-build byte-stable; factual_anchor
-defective anchor → `source=bible/research/<topic>.md` (not null) + handle message (no
-uuid7); identity-less anchor still emits (FR-010); SC-005 finding count/severity/gate
-unchanged on every fixture (only source/message differ). Out of scope: changing WHAT
-rules detect; new rule/finding/severity; the gate/exit-code contract; the prose
-validators; DEBT-017 (`narrative_structure` name-vs-slug, iter 049); any new
-dependency or ontology change. ~5 source files (`temporal.py`, `factual_anchor.py`,
-`validation/base.py`, `io/_research_identity.py`, `commands/status.py`) + § 13.2/§ 20.6
-+ DEBT.md + index; no new module/dep (Constitution II); each changed file ≤ 500 lines;
-frozen ontology untouched. `uv run pytest` + four gates green.
+`specs/049-narrative-unit-identifier/plan.md` (iteration 049, design § 13 — issue #1
+track B *pulido determinista*, closes DEBT-017). `narrative_structure` names the SAME
+entity kind (a `G9_Narrative_Unit`) TWO ways: the orphan-beat rule (`_orphan_beats`)
+prints the opaque URI SLUG (`'el-recuerdo-de-la-primera-marea'`), the unresolved-role
+rule (`_unresolved_roles`) prints the HUMAN authored name (`'La fechoría en el
+muelle'`). UNIFY both onto the human name, ALONE (no parenthetical slug —
+Clarifications 2026-06-24; name-plus-slug rejected: it would change the unresolved
+rule's name-only output against FR-002 and re-introduce the opaque id the
+`relpath:line` locator already supersedes, 048 precedent). The `G9` unit already emits
+`(uri, rdfs:label, name)` (iter 035, `golem/modules/narrative.py:50`), so the name is
+SPARQL-queryable from the ALREADY-LOADED derived graph (FR-003) — NO outline
+cross-reference, NO rebuild, NO slug reconstruction (lossy). TWO source edits:
+(1) extend `queries.load_orphan_units` from `list[str]` to `list[tuple[str, str |
+None]]` via `OPTIONAL { ?unit rdfs:label ?label }` (sole caller is `_orphan_beats`,
+verified by grep; sorted by URI, smallest label per URI → byte-stable). (2) one
+module-level helper `_unit_identifier(name, slug) -> str` (`return name if name else
+slug`) in `narrative_structure.py` — the SINGLE shared formatting point (FR-005,
+mirrors 048's `anchor_handle` so the surfaces cannot drift) called by BOTH rules:
+`_orphan_beats` passes `(label, slug)` → human name (was slug); `_unresolved_roles`
+passes `(ref.entity, slug)` → `ref.entity` UNCHANGED (FR-002), now via the shared
+point. Empty-string label treated as missing (FR-004 floor; impossible by
+construction since iter 035 emits one non-empty label per `G9`). ORACLES (empirical,
+`uv run pytest` decides which actually move): `test_narrative_structure.py:51`
+`"orphan-beat" in message` → human name `"Orphan Beat"`;
+`tiny-quest/expected-narrative.md:70` `orphan_beats[0].unit: omen-beat` → `"Omen
+Beat"` (E2E `test_validate_reports_the_orphan_beat` rides the oracle); NEW FR-004 test
+pins the label-less slug fallback. Authored outline fixture cards NOT edited (FR-008).
+SC-003: finding count, severity, `relpath:line`, gate/exit-code UNCHANGED on every
+fixture — only the printed identifier text differs. CONTRACT-BEFORE-CODE: reconcile
+`bookwright-design.md` § 13 (both rules name the unit by its human name); REMOVE
+DEBT-017 from `DEBT.md` + reconcile the track-B closed-list line + the iteration
+table/milestone prose. Out of scope: changing WHAT rules detect; new
+rule/finding/severity; the gate/exit-code contract; the prose validators;
+`factual_anchor`/`temporal` locators (DEBT-015/iter 048, closed); the move-3 semantic
+work; any new dependency or ontology change. ~2 source files (`validation/queries.py`,
+`validation/validators/narrative_structure.py`) + oracles + § 13 + DEBT.md + index; no
+new module/dep (Constitution II); each changed file ≤ 500 lines; frozen ontology
+untouched (Principle X). `uv run pytest` + four gates green.
 <!-- SPECKIT END -->

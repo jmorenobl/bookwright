@@ -17,7 +17,10 @@ from bookwright.indexers import RdflibIndexer
 from bookwright.validation.base import Severity, Violation
 from bookwright.validation.registry import discover_validators, resolve_active
 from bookwright.validation.runner import run_validators
-from bookwright.validation.validators.narrative_structure import NarrativeStructure
+from bookwright.validation.validators.narrative_structure import (
+    NarrativeStructure,
+    _unit_identifier,
+)
 from tests.validation.conftest import (
     UnitSpec,
     build_indexer,
@@ -48,11 +51,21 @@ def test_orphan_beat_flagged_sequenced_not(project_root: Path) -> None:
     (finding,) = findings
     assert finding.validator == "narrative_structure"
     assert finding.severity == Severity.warning
-    assert "orphan-beat" in finding.message  # named by URI slug (research D4)
+    assert "Orphan Beat" in finding.message  # named by its human authored name (FR-001)
     assert finding.source is not None
     assert finding.source.startswith("outline/units/orphan.md")
     # The sequenced beat is never named.
     assert "anchored-beat" not in finding.message
+
+
+def test_unit_identifier_falls_back_to_slug_when_label_missing() -> None:
+    # FR-004/C4 floor: a missing (None) or empty ("") label never yields an empty
+    # identifier — the unit is named by its URI slug instead. Impossible by
+    # construction (iteration 035 emits one non-empty rdfs:label per G9), but the
+    # single shared formatting point guarantees a finding is never dropped or blank.
+    assert _unit_identifier("Omen Beat", "omen-beat") == "Omen Beat"
+    assert _unit_identifier(None, "omen-beat") == "omen-beat"
+    assert _unit_identifier("", "omen-beat") == "omen-beat"
 
 
 def test_every_beat_sequenced_no_findings(project_root: Path) -> None:

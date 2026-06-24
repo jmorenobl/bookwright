@@ -344,7 +344,7 @@ def test_narrative_structure_orphan_in_json_envelope(
     finding = orphans[0]
     assert set(finding) == {"validator", "severity", "message", "source", "triples"}
     assert finding["severity"] == "warning"
-    assert "orphan-beat" in finding["message"]
+    assert "Orphan Beat" in finding["message"]  # the unit's human authored name (iter 049)
     assert finding["source"].startswith("outline/units/orphan.md")
     assert finding["triples"] == []
 

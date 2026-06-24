@@ -201,7 +201,7 @@ converge nunca.
 | Track | Deudas | Naturaleza |
 |---|---|---|
 | **A — honestidad** (consecuencia de 040) | menciones-desconocidas→`not_evaluated` (subsume DEBT-011/012, y el *síntoma* de 013), head-hopping→`not_evaluated` (DEBT-014), `validate` propaga `skipped` (DEBT-018) | cerrar la mentira `[]`/dormido |
-| **B — pulido determinista** | locators de graph-consumers (DEBT-015, cerrada iter 048), vocab build-warning (DEBT-016, cerrada iter 047), mensaje nombre-vs-slug (DEBT-017) | cerrado/estructural, real, barato |
+| **B — pulido determinista** | locators de graph-consumers (DEBT-015, cerrada iter 048), vocab build-warning (DEBT-016, cerrada iter 047), mensaje nombre-vs-slug (DEBT-017, cerrada iter 049) | cerrado/estructural, real, barato |
 | **C — move 3** (norte activado, § 5) | conjunto abierto entero: DEBT-013 (orgs), techo de DEBT-014 | juicio semántico, diseño propio |
 | **Descartado** | 043/044 como parches de costura; 5º roster «organización» | parchear conjunto abierto con listas cerradas |
 

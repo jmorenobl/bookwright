@@ -176,28 +176,34 @@ def load_relations(indexer: Indexer) -> dict[str, set[tuple[str, str]]]:
     return relations
 
 
-def load_orphan_units(indexer: Indexer) -> list[str]:
-    """Sorted URIs of every ``G9`` unit that is a member of no ``G7`` sequence (FR-005).
+def load_orphan_units(indexer: Indexer) -> list[tuple[str, str | None]]:
+    """``(uri, label)`` for every ``G9`` unit that is a member of no ``G7`` sequence (FR-005).
 
     A unit is orphaned ⇔ no ``G7_Narrative_Sequence`` has a ``dlp:proper-part`` edge
     to it (the membership edge :class:`NarrativeSequence` emits per member). The
-    ``NOT EXISTS`` states that declaratively over the derived graph; the result is
-    sorted so the validator's output is byte-stable (research D3/D9). A graph with no
-    ``G9`` units returns ``[]`` so the orphan rule stays inert (FR-009).
+    ``NOT EXISTS`` states that declaratively over the derived graph. The unit's human
+    ``rdfs:label`` (emitted per ``G9`` since iteration 035) rides the same query via an
+    ``OPTIONAL`` so the orphan rule can name the unit by its authored name without a
+    second round trip (FR-003); ``label`` is ``None`` when the graph carries none. Each
+    ``G9`` emits exactly one ``rdfs:label`` (iteration 035), so the ``OPTIONAL`` yields
+    exactly one row per orphan URI — sorting by that unique URI is byte-stable (research
+    D3/D9), no per-URI dedup needed. A graph with no ``G9`` units returns ``[]`` so the
+    orphan rule stays inert (FR-009).
     """
     rows = _q(
         indexer,
         """
-        SELECT ?unit WHERE {
+        SELECT ?unit ?label WHERE {
           ?unit a golem:G9_Narrative_Unit .
           FILTER NOT EXISTS {
             ?seq a golem:G7_Narrative_Sequence .
             ?seq dlp:proper-part ?unit .
           }
+          OPTIONAL { ?unit rdfs:label ?label }
         }
         """,
     )
-    return sorted({row["unit"] for row in rows})
+    return sorted(((row["unit"], row.get("label")) for row in rows), key=lambda pair: pair[0])
 
 
 def resolve_source(indexer: Indexer, uri: str) -> str | None:
