@@ -82,7 +82,7 @@ validator, command, envelope, or ontology file changes (FR-016).
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-Constitution **v1.4.0**. Relevant principles:
+Constitution **v1.5.0**. Relevant principles:
 
 | Principle | Bearing on this iteration | Verdict |
 |---|---|---|

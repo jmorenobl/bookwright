@@ -210,5 +210,3 @@ Task: "US2 — test_runner.py synthetic _Partial form-(c) test"
   fixtures byte-identical (FR-012). If an oracle diverges, fix the code, not the oracle.
 - No new module, no new dependency (Constitution II); every changed file ≤ 500 lines
   (Principle IV); frozen ontology untouched (Principle X).
-</content>
-</invoke>
