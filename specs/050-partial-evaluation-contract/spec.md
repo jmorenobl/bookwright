@@ -151,6 +151,11 @@ type.
 3. **Given** the three focalized fixtures (`tiny-historical`/`tiny-novel`/
    `tiny-quest`), **When** validation runs, **Then** their emitted `violations`
    and `not_evaluated` are **byte-identical** to the current release.
+4. **Given** a **synthetic** validator returning form (c) (some `violations` plus
+   one abstention), **When** `run_validators` runs it, **Then** its findings flow
+   into `violations[]` (deduped and sorted by `sort_key`) and its abstention lands
+   in `not_evaluated[]` with the **runner-stamped** validator name and its `kind`
+   — proving the general contract independently of `focalization`.
 
 ---
 
@@ -224,7 +229,12 @@ first-person break, assert `status` reflects `violations` but the gate
   sorted by the existing total-order `sort_key` exactly as form (a)'s are; the
   abstentions from form (c) MUST be merged into `not_evaluated[]` and sorted by
   the existing `not_evaluated_sort_key` (`(validator, reason)`). No new sort key,
-  channel, or envelope key is introduced.
+  channel, or envelope key is introduced. Each form-(c) abstention carries only
+  its `(reason, kind)`; the **runner** stamps the validator name onto it exactly
+  as it already does for a raised `NotEvaluated` (form (b)) — the validator never
+  names itself (the `NotEvaluatedResult` invariant at `base.py`, where the runner
+  is the single party that knows the registered name). The name-stamping
+  authority MUST NOT fork: form (c) reuses the same stamping point as form (b).
 - **FR-003**: Under a parseable third-person **limited/focalized** voice,
   `focalization` MUST run `_first_person_breaks` over the manuscript **and**
   declare the head-hopping abstention `not_evaluated` with
@@ -288,12 +298,23 @@ first-person break, assert `status` reflects `violations` but the gate
   exception. The English limited-third test that today asserts the first-person
   break does **not** fire MUST be updated to assert it **now does** fire
   alongside the abstention.
-- **FR-015**: The change MUST be confined to the validation runner/contract seam
+- **FR-015**: A **runner-level** unit test MUST exercise the form-(c)
+  normalization **directly**, with a synthetic validator returning form (c)
+  (mirroring the existing `_Skip`/`_Good`/`_SkipCapability` fakes in
+  `tests/validation/test_runner.py`), so the runner's new branch — the heart of
+  FR-001/FR-002 — is covered **decoupled from `focalization`**: assert its
+  `violations` flow into `violations[]` (deduped and sorted), its abstention lands
+  in `not_evaluated[]` with the runner-stamped validator name and its `kind`, and
+  the synthetic validator appears in **neither** `errors[]` nor (for its findings)
+  the abstention channel. The general contract is proven by the runner test; the
+  `focalization` test (FR-013) proves the first consumer.
+- **FR-016**: The change MUST be confined to the validation runner/contract seam
   and `focalization`: approximately `validation/base.py` (the widened return
   contract / a partial-result carrier), `validation/runner.py` (normalizing the
   three forms), and `validation/validators/focalization.py` (adopting form (c)),
-  plus the focalization tests and the design/DEBT docs. No other validator, no
-  command, no envelope, and no ontology file changes.
+  plus the validation tests (the runner-contract suite per FR-015 and the
+  `focalization` suite per FR-013/FR-014) and the design/DEBT docs. No other
+  validator, no command, no envelope, and no ontology file changes.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -344,6 +365,11 @@ first-person break, assert `status` reflects `violations` but the gate
   closed-list reference to DEBT-019 is reconciled to reflect closure.
 - **SC-007**: The full suite (`uv run pytest`) and all four gates (`ruff check`,
   `ruff format --check`, `mypy --strict`, `pytest` with ≥ 80% coverage) pass.
+- **SC-008**: A runner-level unit test with a synthetic form-(c) validator
+  (independent of `focalization`) asserts the runner routes its `violations` into
+  `violations[]` and its abstention into `not_evaluated[]` with the runner-stamped
+  validator name and `kind` — the general three-shape contract is covered without
+  going through `focalization`.
 
 ## Assumptions
 
