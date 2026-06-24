@@ -9,13 +9,30 @@ import pytest
 
 from bookwright.indexers import RdflibIndexer
 from bookwright.io.prose import prose_view
-from bookwright.validation.base import NotEvaluated, NotEvaluatedKind, Severity, Violation
+from bookwright.validation.base import (
+    Abstention,
+    EvalResult,
+    NotEvaluated,
+    NotEvaluatedKind,
+    Severity,
+    Violation,
+)
 from bookwright.validation.validators.focalization import Focalization, _parse_declaration
 from tests.validation.conftest import load_context, write_project
 
 
 def _run(root: Path) -> list[Violation]:
-    return Focalization().validate(load_context(root), RdflibIndexer())
+    """Run focalization on a project that returns the bare-list shape (forms (a))."""
+    result = Focalization().validate(load_context(root), RdflibIndexer())
+    assert isinstance(result, list)  # non-limited / first-person paths return a bare list
+    return result
+
+
+def _run_partial(root: Path) -> EvalResult:
+    """Run focalization on a limited-third project — it returns the partial shape (c)."""
+    result = Focalization().validate(load_context(root), RdflibIndexer())
+    assert isinstance(result, EvalResult)
+    return result
 
 
 def test_first_person_outside_dialogue_warns(project_root: Path) -> None:
@@ -29,28 +46,63 @@ def test_first_person_outside_dialogue_warns(project_root: Path) -> None:
     assert any(f.severity == Severity.warning and "first-person" in f.message for f in findings)
 
 
-# The verbatim reason the validator raises when a parseable limited-third voice is
-# declared — head-hopping is a move-3 semantic judgment (iteration 045, FR-002).
+# The verbatim reason the validator returns/raises when a parseable limited-third voice
+# is declared — head-hopping is a move-3 semantic judgment (iteration 045, FR-002).
 _REASON_HEAD_HOPPING = (
     "head-hopping / interiority attribution requires semantic judgment (move 3); "
     "the deterministic heuristic was measured nearly dormant on real prose"
 )
 
 
+def _only_head_hop(result: EvalResult) -> Abstention:
+    """Assert the limited-third abstention list is exactly the head-hop entry; return it."""
+    assert len(result.not_evaluated) == 1
+    abstention = result.not_evaluated[0]
+    assert abstention.reason == _REASON_HEAD_HOPPING
+    assert abstention.kind is NotEvaluatedKind.pending_capability
+    return abstention
+
+
+def test_limited_third_runs_break_check_and_abstains_on_head_hop(project_root: Path) -> None:
+    # FR-013/SC-001 (iteration 050): a parseable third-person-LIMITED focal voice whose
+    # manuscript HAS a first-person marker outside dialogue now returns the PARTIAL shape
+    # (form (c) EvalResult): the deterministic first-person-break check RUNS — exactly one
+    # `focalization` warning citing the marker, with a `relpath:line` source — AND the
+    # head-hopping abstention (pending_capability) is declared in the SAME run. This is
+    # DEBT-019 closed: the break check no longer disappears under a focalized voice.
+    write_project(
+        project_root,
+        characters=["Aparici", "Peña"],
+        constitution="Voz narrativa: tercera persona limitada, focalizada en Aparici\n",
+        manuscript={"cap-01.md": "Aparici observó la sala.\nYo no entendía nada.\n"},
+    )
+    result = _run_partial(project_root)
+    # exactly one first-person-break warning, citing the marker, with a relpath:line source
+    assert len(result.violations) == 1
+    break_finding = result.violations[0]
+    assert break_finding.validator == "focalization"
+    assert break_finding.severity == Severity.warning
+    assert "first-person" in break_finding.message and "'Yo'" in break_finding.message
+    assert break_finding.source == "manuscript/cap-01.md:2"
+    assert break_finding.triples == ()  # Principle X — prose validator only
+    # …and exactly one head-hopping abstention (pending_capability) in the same EvalResult
+    _only_head_hop(result)
+
+
 def test_limited_third_abstains_as_capability_gap(project_root: Path) -> None:
-    # FR-001/FR-002: a parseable third-person-LIMITED focal voice makes the whole
-    # validator abstain (pending_capability) instead of running the near-dormant
-    # head-hopping heuristic. Mirrors iteration 043's open-set unknown-mention abstainer.
+    # FR-001/FR-014: a parseable third-person-LIMITED focal voice still abstains on
+    # head-hopping (pending_capability) — but now via the PARTIAL EvalResult shape, not a
+    # whole-run `raise`. This manuscript has NO first-person break, so `violations` is
+    # empty and the result is observationally identical to the old total abstention (C5).
     write_project(
         project_root,
         characters=["Aparici", "Peña"],
         constitution="Voz narrativa: tercera persona limitada, focalizada en Aparici\n",
         manuscript={"cap-01.md": "Aparici observó la sala.\nPeña pensó que todo acababa.\n"},
     )
-    with pytest.raises(NotEvaluated) as excinfo:
-        _run(project_root)
-    assert excinfo.value.reason == _REASON_HEAD_HOPPING
-    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
+    result = _run_partial(project_root)
+    assert result.violations == []  # no first-person break in this fixture
+    _only_head_hop(result)
 
 
 def test_limited_third_with_no_named_focal_abstains_identically(project_root: Path) -> None:
@@ -62,26 +114,26 @@ def test_limited_third_with_no_named_focal_abstains_identically(project_root: Pa
         constitution="Voz narrativa: tercera persona limitada\n",
         manuscript={"cap-01.md": "Aparici observó la sala.\n"},
     )
-    with pytest.raises(NotEvaluated) as excinfo:
-        _run(project_root)
-    assert excinfo.value.reason == _REASON_HEAD_HOPPING
-    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
+    result = _run_partial(project_root)
+    assert result.violations == []
+    _only_head_hop(result)
 
 
-def test_english_declaration_abstains_under_limited_third(project_root: Path) -> None:
-    # The English label parses equivalently: "third person limited" ⇒ the whole validator
-    # abstains (pending_capability), so the first-person break ("I did not understand")
-    # no longer fires — the DEBT-019 coverage drop made concrete.
+def test_english_declaration_runs_break_check_and_abstains(project_root: Path) -> None:
+    # FR-014 (retargeted, iteration 050): the English label parses equivalently
+    # ("third person limited"), and the first-person break ("I did not understand") now
+    # FIRES alongside the head-hopping abstention — the inverse of what 045 asserted
+    # (that the break did NOT fire). The DEBT-019 coverage drop is recovered.
     write_project(
         project_root,
         characters=["Aparici"],
         constitution="Narrative voice: third person limited, focused on Aparici\n",
         manuscript={"cap-01.md": "Aparici walked on.\nI did not understand.\n"},
     )
-    with pytest.raises(NotEvaluated) as excinfo:
-        _run(project_root)
-    assert excinfo.value.reason == _REASON_HEAD_HOPPING
-    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
+    result = _run_partial(project_root)
+    assert len(result.violations) == 1
+    assert "first-person" in result.violations[0].message and "'I'" in result.violations[0].message
+    _only_head_hop(result)
 
 
 def test_dialogue_line_is_exempt(project_root: Path) -> None:
@@ -363,8 +415,9 @@ def test_pending_recognition_boundary(text: str, expected_person: str | None) ->
 def test_replacing_placeholder_with_real_voice_wakes_validator(project_root: Path) -> None:
     # FR-008 / SC-002 / contract V2, V4: start from the scaffold but answer ONLY the
     # placeholder with a real voice. The [PENDING] → real-voice transition is still
-    # proven — but a limited-third voice now makes the validator abstain wholly
-    # (pending_capability) rather than fire head-hopping (iteration 045).
+    # proven — a limited-third voice now returns the PARTIAL EvalResult shape: it
+    # abstains on head-hopping (pending_capability) while running the break check
+    # (this manuscript has no first-person break, so `violations` is empty; iteration 050).
     constitution = _SCAFFOLD_CONSTITUTION.replace(
         "[PENDING: ¿Quién narra y desde qué distancia "
         "(primera/tercera persona, omnisciente/limitada)?]",
@@ -376,10 +429,9 @@ def test_replacing_placeholder_with_real_voice_wakes_validator(project_root: Pat
         constitution=constitution,
         manuscript={"cap-01.md": "Halia observó la sala.\nPeña pensó que todo acababa.\n"},
     )
-    with pytest.raises(NotEvaluated) as excinfo:
-        _run(project_root)
-    assert excinfo.value.reason == _REASON_HEAD_HOPPING
-    assert excinfo.value.kind is NotEvaluatedKind.pending_capability
+    result = _run_partial(project_root)
+    assert result.violations == []
+    _only_head_hop(result)
 
 
 # --- loosening recognition keeps the no-finding edge cases intact ---

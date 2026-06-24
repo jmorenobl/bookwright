@@ -9,11 +9,14 @@ Head-hopping (interiority verbs attributed to a non-focal bible character) under
 **third-person-limited / focalized** is irreducibly a semantic-judgment task (move 3):
 the deterministic heuristic was measured nearly dormant on real prose (DEBT-014). So,
 exactly as iteration 043 did with the open-set unknown-mention rule, the validator
-**stops faking** — under a parseable limited-third voice it raises ``NotEvaluated``
-with ``kind=pending_capability`` for the **whole run** rather than running the near-null
-heuristic (iteration 045). Because ``NotEvaluated`` is all-or-nothing, the still-working
-first-person-break check no longer runs for the limited-third case — a recorded coverage
-regression (DEBT-019); it keeps running under third-person **non-limited**.
+**stops faking** the head-hopping check — but the deterministic first-person-break
+check still works. Under a parseable limited-third voice the validator therefore returns
+a **partial** result (``EvalResult``, form (c), iteration 050): it **runs**
+``_first_person_breaks`` **and** declares the head-hopping abstention
+(``Abstention``, ``kind=pending_capability``) in the **same** run. Iteration 045's
+all-or-nothing ``raise NotEvaluated`` suppressed the still-working break check under a
+focalized voice (a recorded coverage regression, DEBT-019); the partial-evaluation
+contract closes it. The break check runs under third-person **limited and non-limited**.
 
 When there is no usable narrative voice to read, the validator raises
 ``NotEvaluated`` (iteration 040) rather than returning ``[]`` — so a silently dormant
@@ -33,6 +36,8 @@ from typing import ClassVar
 from bookwright.indexers import Indexer
 from bookwright.io.prose import ProseView, is_placeholder
 from bookwright.validation.base import (
+    Abstention,
+    EvalResult,
     NotEvaluated,
     NotEvaluatedKind,
     Severity,
@@ -79,7 +84,9 @@ class Focalization:
     name: ClassVar[str] = "focalization"
     severity_default: ClassVar[Severity] = Severity.warning
 
-    def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
+    def validate(
+        self, project: ValidationContext, indexer: Indexer
+    ) -> list[Violation] | EvalResult:
         if project.constitution_text() is None:  # (i) no constitution file to read at all
             raise NotEvaluated("there is no constitution to read the narrative voice from")
         # A present-but-empty constitution is NOT cause (i): it has a file, it just
@@ -96,9 +103,17 @@ class Focalization:
         if declaration.person == "third":
             if declaration.limited:
                 # Head-hopping under a focalized voice is a move-3 semantic judgment; the
-                # deterministic heuristic was measured nearly dormant on real prose. The
-                # validator stops faking and abstains for the whole run (iteration 045).
-                raise NotEvaluated(_HEAD_HOPPING_PENDING, kind=NotEvaluatedKind.pending_capability)
+                # deterministic heuristic was measured nearly dormant on real prose, so the
+                # validator abstains on it (iteration 045). But the deterministic
+                # first-person-break check still works — so under limited-third the
+                # validator RUNS that check AND declares the head-hopping abstention in
+                # the SAME run via a partial EvalResult (form (c), iteration 050). The
+                # all-or-nothing suppression that hid the break check under focalized
+                # voice (DEBT-019) is gone.
+                return EvalResult(
+                    self._first_person_breaks(project.manuscript_view()),
+                    [Abstention(_HEAD_HOPPING_PENDING, NotEvaluatedKind.pending_capability)],
+                )
             return self._first_person_breaks(project.manuscript_view())
         return []  # first person: nothing third-person to flag
 

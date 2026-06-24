@@ -1317,32 +1317,72 @@ class NotEvaluated(Exception):
         self, reason: str, kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
     ) -> None: ...
 
+@dataclass(frozen=True)
+class Abstention:
+    """Una abstención **devuelta** (no lanzada) dentro de un `EvalResult` (iter 050).
+
+    Hermana de `NotEvaluated` que lleva SOLO `(reason, kind)` —mismo vocabulario
+    cerrado `NotEvaluatedKind`, mismo default `missing_input`—; el validador NUNCA
+    se nombra: el runner estampa `validator.name` por el mismo punto que la forma
+    (b). Permite que un validador declare la abstención de UNA dimensión sin
+    abstenerse del run entero.
+    """
+    reason: str
+    kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
+
+@dataclass(frozen=True)
+class EvalResult:
+    """Resultado **parcial** (forma (c), iter 050): hallazgos Y abstenciones en el
+    mismo run. Un validador que SÍ evalúa deterministamente una dimensión pero
+    necesita juicio semántico para otra devuelve esto en lugar de elegir entre
+    `list[Violation]` y `raise NotEvaluated` (que es todo-o-nada)."""
+    violations: list[Violation]
+    not_evaluated: list[Abstention]
+
 class Validator(Protocol):
     name: str
     severity_default: Severity
 
-    def validate(self, project, indexer) -> list[Violation]:
-        """Devuelve lista de violaciones. Vacía = evaluado y limpio.
+    def validate(self, project, indexer) -> list[Violation] | EvalResult:
+        """Devuelve hallazgos, o `EvalResult`, o lanza `NotEvaluated`.
 
-        El tipo de retorno NO cambia (`list[Violation]`). Un validador que no
-        tiene entrada para NINGUNA de sus comprobaciones PUEDE
-        `raise NotEvaluated(motivo)` para declararlo; la lista vacía sigue
-        significando "evaluado, sin hallazgos" (un verde legítimo). Un validador
-        custom que devuelve una lista pelada y nunca lanza sigue funcionando y
-        cuenta siempre como **evaluado** (compatibilidad hacia atrás).
+        Tres formas aceptadas, normalizadas por el runner a los canales
+        existentes `violations[]` / `not_evaluated[]` (sin canal/clave/sort nuevo):
+        - (a) `return list[Violation]` (vacía = evaluado y limpio, un verde
+          legítimo);
+        - (b) `raise NotEvaluated(motivo[, kind])` — abstención **total**: no se
+          evaluó NINGUNA comprobación;
+        - (c) `return EvalResult(violations, not_evaluated)` — **parcial**: se
+          evaluó alguna dimensión Y se declaró abstención de otra en el mismo run.
+
+        El runner estampa el nombre del validador sobre cada abstención de (b) y
+        (c) por **un único punto compartido** (`_record(name, reason, kind)`); la
+        autoridad de estampado NO se bifurca. Un validador custom que devuelve una
+        lista pelada y nunca lanza sigue funcionando y cuenta siempre como
+        **evaluado** (compatibilidad hacia atrás).
         """
 ```
 
 **Resultado tri-valor (issue #1 cara B, § 13.4).** El veredicto por validador y
-por ejecución tiene tres estados, **a nivel de validador entero** (no por
-sub-comprobación):
+por ejecución se expresa en cuatro superficies. La abstención **total** sigue
+siendo a nivel de validador entero (forma (b)); la iteración 050 añade la
+**evaluación parcial** (forma (c)), que permite hallazgos **y** abstención de otra
+dimensión en el mismo run (cierra DEBT-019):
 
 | Veredicto | Cómo lo expresa el validador | Dónde aflora | ¿Gatea CI? |
 |---|---|---|---|
-| **evaluado, sin hallazgos** | `return []` | en ningún sitio (cuenta como limpio) | no |
-| **evaluado, con hallazgos** | `return [Violation, …]` | `violations[]` | sí, si hay algún `error` |
-| **no-evaluado(motivo, kind)** | `raise NotEvaluated(motivo[, kind])` | `not_evaluated[]` | no |
+| **evaluado, sin hallazgos** | `return []` (forma (a)) | en ningún sitio (cuenta como limpio) | no |
+| **evaluado, con hallazgos** | `return [Violation, …]` (forma (a)) | `violations[]` | sí, si hay algún `error` |
+| **no-evaluado total(motivo, kind)** | `raise NotEvaluated(motivo[, kind])` (forma (b)) | `not_evaluated[]` | no |
+| **parcial: hallazgos + abstención(es)** | `return EvalResult([Violation, …], [Abstention(motivo, kind), …])` (forma (c)) | `violations[]` Y `not_evaluated[]` | sí, si algún hallazgo es `error` |
 | **petó (load/run)** | lanza cualquier otra excepción | `errors[]` (`ValidatorError`) | no |
+
+La forma (c) es **observacionalmente idéntica** a la (b) cuando no hay hallazgos:
+`EvalResult([], [Abstention(r, k)])` produce en wire exactamente lo mismo que
+`raise NotEvaluated(r, k)` (una entrada `not_evaluated`, cero hallazgos). Sus
+hallazgos pasan por el mismo dedup + `sort_key` que la forma (a); sus abstenciones
+por el mismo `not_evaluated_sort_key`. No hay canal, clave ni orden nuevos; el
+`RunResult` sigue siendo la 4-tupla `(violations, errors, not_evaluated, ran)`.
 
 El estado **no-evaluado** lleva además un `kind` del vocabulario cerrado
 `{missing_input, pending_capability}` (iteración 044), por defecto `missing_input`
@@ -1395,7 +1435,7 @@ de salida es idéntico al de un run sin skips con los mismos hallazgos.
 | `temporal` | error | Que los eventos en la timeline sean consistentes (no contradicciones). **Las cuatro reglas** (ciclo, orden-vs-solape, contención-vs-orden, numérica) resuelven `source` a `bible/timeline.md:<línea>` vía `resolve_source` sobre un evento implicado elegido de forma determinista —subject del triple implicado en b/c/d, URI lexicográficamente menor del SCC en (a)— (iter 048; antes solo la regla d lo hacía). |
 | `character_presence` | error | Que los personajes mencionados en manuscrito existan en la bible y viceversa. |
 | `setting_continuity` | warning | Que los settings se mantengan coherentes (ej. clima, descripciones). |
-| `focalization` | warning | Que la persona narrativa declarada en constitution se respete. **Bajo tercera persona *limitada*/focalizada se abstiene del run entero** (`NotEvaluated`, `kind=pending_capability`): el head-hopping (atribución de interioridad a un personaje no-focal) es juicio semántico —move 3 (§ 13.5)— y el heurístico determinista se midió casi dormido sobre prosa real (iter 045). La comprobación de ruptura de 1ª persona fuera de diálogo solo corre bajo tercera **no-limitada** (omnisciente); 1ª persona evalúa sin hallazgos. Las cuatro abstenciones por entrada (sin constitución / sin voz / `[PENDING]` / sin persona gramatical) siguen `missing_input`. |
+| `focalization` | warning | Que la persona narrativa declarada en constitution se respete. **Bajo tercera persona *limitada*/focalizada devuelve un `EvalResult` (forma (c), iter 050)**: corre la comprobación determinista de ruptura de 1ª persona fuera de diálogo **y** declara la abstención de head-hopping (`Abstention`, `kind=pending_capability`) en el mismo run —la atribución de interioridad a un personaje no-focal es juicio semántico (move 3, § 13.5) y el heurístico se midió casi dormido sobre prosa real (iter 045)—. Antes (iter 045) `NotEvaluated` todo-o-nada abstenía el run entero y la comprobación de 1ª persona dejaba de correr bajo voz focalizada (DEBT-019, cerrada por 050). La comprobación de 1ª persona corre ahora bajo tercera limitada **y** no-limitada (omnisciente); 1ª persona evalúa sin hallazgos. Las cuatro abstenciones por entrada (sin constitución / sin voz / `[PENDING]` / sin persona gramatical) siguen siendo `raise NotEvaluated` total, `missing_input`. |
 | `factual_anchor` (v0.2) | warning (estructura) / error (anacronismo) | Integridad estructural de las anclas de investigación: que cada ancla tenga Fuente con procedencia completa, que las entidades enlazadas existan, y detección de anacronismos contra la timeline. Cada hallazgo resuelve `source` al fichero autor `bible/research/<tema>.md` (vía `AnchorIdentity.relpath`, no `resolve_source(anchor.uri)` —un ancla *es* la reificación `E13`, nada apunta a ella) e identifica el ancla por su handle autor (`promotes -> constrains`), a través del **mismo punto compartido** (`anchor_handle`) que usa `bookwright status` (iter 048). Ver § 20.6. |
 | `narrative_structure` (v0.4) | warning | Continuidad estructural sobre la capa Propp/Greimas (§ 7.4): la regla de **beat-huérfano** marca cada `G9_Narrative_Unit` que no pertenece a ninguna `G7_Narrative_Sequence`; la regla de **rol-sin-resolver** re-surfacea cada `roles:` de una ficha que no resuelve a rol de personaje. **Ambas reglas nombran la unidad por su `name` humano autorado, a solas** (no el slug de URI, no entre paréntesis), a través de un **único punto compartido** (`_unit_identifier`, el `rdfs:label` que el `G9` ya emite desde iter 035), de modo que las dos superficies no pueden divergir (iter 049, DEBT-017); el slug solo aparece como suelo defensivo cuando el grafo no lleva `rdfs:label`. Ambas resuelven `source` a `outline/units/<ficha>.md[:línea]`. |
 
@@ -1465,12 +1505,16 @@ de naturaleza opuesta** que conviven en ese validador:
    iteración 040) con motivo «conjunto abierto: requiere juicio semántico (move 3)».
    No es un parche: es el comportamiento terminal **permanente** (con el move 3
    offline, `not_evaluated` es el fallback correcto). El gate (`error`) no cambia.
-   *Matiz del head-hopping (iter 045):* como `NotEvaluated` es **todo-o-nada**, una
-   voz «tercera limitada» abstiene el validador **entero**, así que la comprobación
-   determinista de ruptura de 1ª persona —que sí funciona— deja de correr para el
-   caso focalizado (sigue corriendo bajo tercera no-limitada). Es una regresión de
-   cobertura real registrada como **DEBT-019** (la cierra un contrato de evaluación
-   parcial o el propio move 3); el contrato escrito no la oculta.
+   *Matiz del head-hopping (iter 045 → cerrado en iter 050):* la iteración 045 hizo
+   que una voz «tercera limitada» abstuviese el validador **entero** vía
+   `NotEvaluated` todo-o-nada, dejando de correr la comprobación determinista de
+   ruptura de 1ª persona —que sí funciona— para el caso focalizado (regresión real
+   registrada como **DEBT-019**). La **iteración 050** introduce un **contrato de
+   evaluación parcial** (forma (c) `EvalResult`, § 13.1): bajo tercera limitada
+   `focalization` ahora **corre** la comprobación de 1ª persona **y** declara la
+   abstención de head-hopping (`pending_capability`) en el mismo run. La frontera
+   determinismo↔LLM (§ 20.6.1) queda así realizada a nivel de sub-comprobación:
+   lo determinista corre, lo semántico se abstiene; **DEBT-019 cerrada**.
    *Matiz a nivel de fichero de entrada (iter 046):* la misma honestidad se extiende a
    la **ingestión**. Un fichero de la bible omitido por front-matter inservible
    (`map_bible.skipped`) lo **surfacéa ahora `validate`** como entrada `not_evaluated`
@@ -2069,6 +2113,15 @@ Cuatro principios fijan dónde acaba el determinismo y empieza el LLM:
 Coste, operación offline y reproducibilidad de tests se resuelven dentro de estos cuatro
 principios (sobre todo el 3 y el 4). La spec del move 3 los aterriza; hasta entonces, el
 heurístico de conjunto abierto declara `NotEvaluated` (§ 13.5).
+
+**El principio 3 realizado a nivel de sub-comprobación (iter 050).** El contrato de
+evaluación parcial (forma (c) `EvalResult`, § 13.1) materializa el principio 3 —el
+determinismo AÑADE, nunca SUPRIME— dentro de un mismo validador: bajo tercera limitada
+`focalization` ya no calla la mitad determinista para abstenerse de la semántica;
+**corre** la ruptura de 1ª persona (lo que el grafo/regex sí decide con exactitud) **y**
+declara `pending_capability` sobre el head-hopping (lo que espera al LLM). La abstención
+deja de ser todo-o-nada: el determinismo y el juicio conviven por dimensión en el mismo
+run, exactamente la tubería que el principio 2 describe (cierra DEBT-019).
 
 ### 20.7 Almacenamiento: `bible/research/`
 

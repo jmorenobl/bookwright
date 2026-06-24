@@ -22,6 +22,8 @@ if TYPE_CHECKING:
     from bookwright.io.research import AnchorIdentity
 
 __all__ = [
+    "Abstention",
+    "EvalResult",
     "NotEvaluated",
     "NotEvaluatedKind",
     "NotEvaluatedResult",
@@ -183,25 +185,65 @@ class NotEvaluatedResult:
         }
 
 
+@dataclass(frozen=True)
+class Abstention:
+    """A **returned** (not raised) abstention carried inside an :class:`EvalResult`.
+
+    The returned-not-raised sibling of :class:`NotEvaluated`: it carries ONLY
+    ``(reason, kind)`` — the same closed :class:`NotEvaluatedKind` vocabulary and the
+    same ``missing_input`` default — and the validator never names itself. The runner
+    stamps ``validator.name`` onto it through the SAME single point that stamps a
+    raised :class:`NotEvaluated` (FR-002, contract C2/C3). It lets a validator declare
+    it abstained on ONE dimension without abstaining the whole run (iteration 050).
+    """
+
+    reason: str
+    kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
+
+
+@dataclass(frozen=True)
+class EvalResult:
+    """A validator's **partial** result — findings AND abstentions in one run (form (c)).
+
+    Returned (not raised) by a validator that deterministically evaluated some
+    dimension(s) **and** consciously abstained on other(s) in the same run, instead of
+    choosing between ``list[Violation]`` (form (a)) and ``raise NotEvaluated`` (form
+    (b), the all-or-nothing total abstention). The runner normalizes it into the
+    existing channels: ``violations`` flow through the shared dedup + ``sort_key`` into
+    ``violations[]``; each ``Abstention`` becomes one ``not_evaluated[]`` entry under
+    the existing ``not_evaluated_sort_key``. ``EvalResult([], [Abstention(r, k)])`` is
+    observationally identical on the wire to ``raise NotEvaluated(r, k)`` (FR-012,
+    contract C5). No new channel, key, or sort (iteration 050, design § 13.1).
+    """
+
+    violations: list[Violation]
+    not_evaluated: list[Abstention]
+
+
 @runtime_checkable
 class Validator(Protocol):
     """The stable seam between the runner and any validator (design § 13.1).
 
     A validator examines the project (``ValidationContext``) and the already-built
-    graph (``indexer``, possibly empty) and returns a list of ``Violation`` — an
-    empty list means "evaluated, no findings" (a legitimate green, FR-001/FR-003). A
-    validator that has no input for ANY of its checks MAY ``raise NotEvaluated(reason)``
-    to declare it consciously did not look; the runner routes that to the
-    ``not_evaluated`` channel (FR-001). The ``validate`` return type is **unchanged**:
-    a custom validator returning a bare list keeps working as evaluated (FR-014). It
-    MUST be deterministic (FR-019) and MUST NOT write to disk or mutate the graph
-    (FR-020); it MAY raise — the runner isolates it (FR-014).
+    graph (``indexer``, possibly empty) and does **exactly one** of three things
+    (contract ``validator-protocol.md``): (a) ``return list[Violation]`` — an empty
+    list means "evaluated, no findings" (a legitimate green, FR-001/FR-003); (b)
+    ``raise NotEvaluated(reason)`` when it has no input for ANY of its checks — a
+    **total** abstention the runner routes to the ``not_evaluated`` channel (FR-001);
+    or (c) ``return EvalResult(violations, not_evaluated)`` — a **partial** result that
+    evaluated some dimension(s) and abstained on other(s) in the same run (iteration
+    050). A custom validator returning a bare list keeps working as evaluated and still
+    satisfies the Protocol (FR-007/FR-014). It MUST be deterministic (FR-019) and MUST
+    NOT write to disk or mutate the graph (FR-020); it MAY raise — the runner isolates
+    it (FR-014).
     """
 
     name: str
     severity_default: Severity
 
-    def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]: ...
+    def validate(
+        self, project: ValidationContext, indexer: Indexer
+    ) -> list[Violation] | EvalResult: ...
 
 
 class UnknownValidatorError(BookwrightError):
