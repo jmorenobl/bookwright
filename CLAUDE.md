@@ -75,7 +75,7 @@ per-release narrative is `CHANGELOG.md`):
   channel — so `[]` stops reading as "clean" when it meant "couldn't look". GREEN
   is the single documented predicate `status == "ok" AND no not_evaluated entry
   has kind == "missing_input"`; only `error` findings gate CI.
-- The **v0.5.x post-dogfooding track** (041–050, patches `v0.5.1`…`v0.5.9`)
+- The **v0.5.x post-dogfooding track** (041–051, patches `v0.5.1`…`v0.5.10`)
   continues the issue #1 doctrine on two tracks. **Track A — evaluation
   honesty:** a deterministic heuristic measured insufficient on real prose
   **abstains** (`not_evaluated`, kind-categorized
@@ -83,20 +83,29 @@ per-release narrative is `CHANGELOG.md`):
   partial corpus surfaces what was excluded, and a **partial-evaluation
   contract** (form (c) `EvalResult`) lets a validator emit findings **and**
   abstentions in one run — so a deterministic sub-check no longer disappears
-  behind a whole-run abstention. **Track B — authoring honesty + deterministic
+  behind a whole-run abstention, and **move 3 lands its first vertical slice** —
+  `bookwright-continuity` gains a fourth axis that judges *characters used in the
+  prose but undeclared* (the skill layer answers the `character_unknown_mentions`
+  abstention anchored in the authored roster; the CLI stays deterministic).
+  **Track B — authoring honesty + deterministic
   polish:** an unrecognized controlled-vocabulary term is no longer typed in
   silence but emits a non-fatal enumerated `graph build` warning, and the
   graph-consumer validators now emit actionable locators + legible handles.
-  Closed DEBT-009/010/014/015/016/017/018/019; the `character_unknown_mentions`
+  Closed DEBT-009/010/013/014/015/016/017/018/019; the `character_unknown_mentions`
   abstainer (043), the `focalization` head-hopping abstention (045), `validate`
   surfacing ingestion-skipped bible files (046), the `untyped_vocab_terms`
   soft-warning channel (047), the actionable graph-consumer locators (048), the
-  unified `narrative_structure` unit identifier (049), and the
-  partial-evaluation contract (050) are the headline moves.
+  unified `narrative_structure` unit identifier (049), the
+  partial-evaluation contract (050), and the **move-3 first slice** (051) are the
+  headline moves.
 
-The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** (its
-trigger — a concrete heuristic measured insufficient on real prose — is met) but
-parked pending its own design pass on determinism in the CI gate. The remaining
+The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** and
+landed its **first vertical slice** (051, design § 20.6.2): `bookwright-continuity`
+judges the character-used-but-not-declared dimension over the
+`character_unknown_mentions` abstention, anchored in the authored roster — judgment,
+not gate (the CLI stays deterministic, no LLM in CI, green byte-identical). The
+other two move-3 dimensions (head-hopping / 1st-person break, DEBT-021) follow the
+same pattern in later slices; gating an LLM verdict stays deferred. The remaining
 longer-horizon work — semantic judgment in validation, vector search (ChromaDB
 over rdflib) and export — is deferred to an unversioned, demand-pulled horizon:
 each ships only when its activation condition is met — see `bookwright-roadmap.md`.
@@ -236,7 +245,8 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. The table below is the canonical
 per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
-iterations through 050 are merged; there is no active iteration branch.
+iterations through 050 are merged; iteration 051 (the move-3 first slice) is
+implemented and green on branch `051-move3-undeclared-character`, pending merge.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -290,6 +300,7 @@ iterations through 050 are merged; there is no active iteration branch.
 | 048 | Actionable graph-consumer locators: `factual_anchor` resolves `source` to `bible/research/<topic>.md` + shared authored handle (`anchor_corpus()` in-process build), `temporal` rules a/b/c adopt `resolve_source` over a deterministic event (issue #1 track B; closes DEBT-015) | v0.5.7 | ✅ merged |
 | 049 | Unify `narrative_structure` unit identifier: both rules name the `G9` unit by its human `rdfs:label` via one shared `_unit_identifier` point (orphan-beat drops the opaque slug; `load_orphan_units` carries the label via `OPTIONAL`) (issue #1 track B; closes DEBT-017) | v0.5.8 | ✅ merged |
 | 050 | Partial-evaluation contract: third validator return shape (`EvalResult(violations, not_evaluated)` + `Abstention`); `focalization` runs `_first_person_breaks` AND abstains on head-hopping under limited-third in one run (issue #1 track A; closes DEBT-019) | v0.5.9 | ✅ merged |
+| 051 | Move 3 first vertical slice: `bookwright-continuity` gains a 4th axis judging characters used-but-undeclared (reads the person roster from `bible/characters/` `name:`), and `status` adds an informative `judge_undeclared_characters` nudge keyed on the `character_unknown_mentions` abstention; judgment not gate, green byte-identical (issue #1 track A move 3; closes DEBT-013) | v0.5.10 | 🚧 on branch |
 
 The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
 ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles
@@ -477,51 +488,57 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/050-partial-evaluation-contract/plan.md` (iteration 050, design § 13.1 +
-§ 20.6.1 — issue #1 track A *honestidad*, closes DEBT-019). The validator contract is
-ALL-OR-NOTHING: `validate()` either returns `list[Violation]` OR raises
-`NotEvaluated(reason, kind)` — a validator CANNOT deterministically check one
-dimension AND declare `not_evaluated` on another in the same run. Iteration 045 hit
-that wall: under third-person-LIMITED, `focalization` raises
-`NotEvaluated(pending_capability)` for head-hopping BEFORE reaching
-`_first_person_breaks` (`focalization.py:101`), so the deterministic 1st-person-break
-check no longer runs for ANY focalized project — a real, suite-INVISIBLE coverage
-regression (DEBT-019). Introduce a GENERAL partial-evaluation contract — a THIRD
-return shape. THREE source edits: (1) `validation/base.py` — add frozen
-`EvalResult(violations: list[Violation], not_evaluated: list[Abstention])` (form (c),
-RETURNED) + frozen `Abstention(reason, kind=missing_input)` (the returned-not-raised
-sibling of `NotEvaluated`, carrying ONLY (reason, kind) — validator never names
-itself); widen the `Validator` Protocol return to `list[Violation] | EvalResult`.
-(2) `validation/runner.py` — normalize THREE shapes: (a) `list` → findings; (b) `raise
-NotEvaluated` → one entry, no findings (UNCHANGED); (c) `EvalResult` → findings to the
-existing dedup+`sort_key`, each `Abstention` → `not_evaluated[]`. ONE name-stamping
-helper `_record(name, reason, kind) -> NotEvaluatedResult` shared by (b) AND (c) — the
-stamping authority MUST NOT fork (FR-002). `RunResult` 4-tuple + both consumers
-(`commands/validate.py`, `status/queries.py`) UNCHANGED. (3)
-`validation/validators/focalization.py` — at the ONE limited-third site
-(`focalization.py:101`), `return EvalResult(self._first_person_breaks(
-project.manuscript_view()), [Abstention(_HEAD_HOPPING_PENDING,
-NotEvaluatedKind.pending_capability)])` instead of raising. The four `missing_input`
-raises, the omniscient `list` path, the 1st-person `[]` path, the
-`_HEAD_HOPPING_PENDING` string, and `_first_person_breaks` UNTOUCHED. INVARIANT:
-`EvalResult([], [Abstention(r,k)])` is observationally equal to `raise
-NotEvaluated(r,k)` → the three focalized fixtures (`tiny-historical`/`tiny-novel`/
-`tiny-quest`) stay BYTE-IDENTICAL (FR-012; they have no 1st-person break). TESTS:
-runner-level synthetic form-(c) fake (`_Partial`, mirrors `_Skip`/`_Good`/
-`_SkipCapability`) proves the GENERAL contract decoupled from `focalization`
-(FR-015/SC-008); NEW `focalization` both-at-once case asserts ONE `warning` citing the
-marker AND ONE `pending_capability` head-hop entry in the same `EvalResult`
-(FR-013, empirical via `uv run pytest`); retarget the limited-third `pytest.raises(
-NotEvaluated)` tests to assert the `EvalResult` shape (FR-014). CONTRACT-BEFORE-CODE:
-update `bookwright-design.md` § 13.1 (third return shape) + § 13.2/§ 13.5/§ 20.6.1
-(focalization now RUNS the deterministic 1st-person check AND abstains on head-hopping
-under limited-third — the determinism↔LLM frontier realized); REMOVE DEBT-019 from
-`DEBT.md` + reconcile the track-A closed-list line. Out of scope: the 044 green
-predicate / `NotEvaluatedKind` enum / `not_evaluated[]` serialization / `status` nudge
-/ error-only gate (CONSUMED, not changed); retrofitting OTHER total abstentions
-(`character_unknown_mentions` stays total — no deterministic half); move 3; any other
-validator/command/envelope/ontology. ~3 source files + 2 test modules + § 13/§ 20.6.1
-+ DEBT.md + index; no new module/dep (Constitution II); each changed file ≤ 500 lines;
-frozen ontology untouched (Principle X); `focalization` stays prose-only
-(`triples=()`). `uv run pytest` + four gates green.
+`specs/051-move3-undeclared-character/plan.md` (iteration 051, design § 20.6.2 +
+§ 13.5 — issue #1 **move 3 first vertical slice**, *judgment, not gate*; closes
+DEBT-013). Move 3 (semantic judgment in validation, the north of issue #1) lands its
+FIRST slice: the **character used-but-not-declared** dimension. The 3rd dogfood
+(`el-año-de-las-casas-vacías`, 2026-06-24) measured a REAL character (`Amelia`,
+named in the prose, no sheet in `bible/characters/`) INVISIBLE — abstained in the
+same gesture that (correctly) silences orgs/place names by the honest deterministic
+`character_unknown_mentions`. The judgment layer is an **Agent Skill** — the CLI
+(`bookwright validate`) stays fully deterministic with NO LLM dependency
+(Constitution II); the `not_evaluated` channel is the **data contract** between the
+two layers (every `Abstention(kind=pending_capability)` is a judgment task the skill
+picks up, anchored in the authored roster). TWO behavior edits + reconciliation:
+(1) EXTEND `bookwright-continuity` (no new skill) — add a FOURTH axis ("open-set
+mentions / undeclared characters") to `## Procedimiento` + `## Output`, widen
+`description` (ES+EN triggers like "revisa si hay personajes sin declarar" /
+"check for undeclared characters", < 1024 chars). The procedure reads the **person
+roster from the SHEETS** (`bible/characters/*.md` `name:` field — `G1_Character` has
+NO `rdfs:label`; the name lives in `name:` + the URI slug), augmented with
+`bible/settings|locations|objects`, scans the manuscript for proper nouns, and JUDGES
+which name a person used in the prose but absent from the bible (vs. orgs / place
+names / vocatives / title words). Report each as one more deviation: quote + "no entry
+in `bible/characters/`" + suggestion. Document the grounding by extending
+`references/golem-character.md`. MIRROR the widened description VERBATIM into
+`SKILL_DESCRIPTIONS["bookwright-continuity"]` (`integrations/descriptions.py`, SC-009
+equality gate). (2) `status/rules.py` — add a NEW rule
+`judge_undeclared_characters` (after `activate_dormant_validators`, before
+`define_focus`) emitting ONE informative `bookwright-continuity` `next_action` when a
+`not_evaluated` entry's SOURCE validator is `character_unknown_mentions`. Key on the
+abstaining SOURCE (a module-level source-set, today the lone `character_unknown_mentions`),
+NOT on the `pending_capability` KIND — so `focalization`'s head-hopping abstention
+(also `pending_capability`) does NOT fire it this slice. This restores the nudge 044
+removed; `activate_dormant_validators` stays `missing_input`-only and the green
+predicate (`validation/report.py`) is BYTE-IDENTICAL (a `pending_capability` entry
+never tumbles green, FR-010). The validator `character_unknown_mentions` is UNCHANGED
+(pure abstainer, `kind=pending_capability`, FR-011); the error-only CI gate is
+unchanged and NO `error` is born from an LLM (FR-012, § 20.6.2 decision 4). The skill
+is LLM-judged prose: do NOT unit-assert LLM output (the verify/continuity precedent) —
+testable = materialization + lint + bilingual trigger + the new `next_action` without
+breaking green, all EMPIRICAL via `uv run pytest`. Oracles: `test_command_body.py`,
+`test_command_activation.py`, `test_descriptions.py` (skill body/desc),
+`test_rules.py` (new rule; RETARGET `test_capability_gap_only_run_suppresses_the_dormant_nudge`
+— the abstention now FIRES the continuity judge action), `test_status.py`, and
+`tiny-historical/expected-status.md` (gains the continuity judge next_action, keeps its
+GREEN status + the `pending_capability` entry); `tiny-novel`/`tiny-memoir` stay GREEN.
+CONTRACT-BEFORE-CODE: mark § 20.6.2 first slice LANDED + reframe § 13.5; REMOVE
+DEBT-013 from `DEBT.md`; update the milestone prose + iteration index (row 051). Out of
+scope: the other two move-3 dimensions (head-hopping / 1st-person break, DEBT-021 —
+same pattern, later iterations); GATING an LLM verdict (golden-runs, deferred); a 5th
+"organization" roster (the agent distinguishes without a new closed list); ANY change
+to the validator beyond the discoverability nudge; touching `bookwright-verify`;
+reopening the 044 green predicate; any new dependency (Constitution II) / frozen
+ontology (Principle X) / new validator in `validation/` (move 3 is the SKILL layer, no
+`triples=()` applies). Each changed file ≤ 500 lines. `uv run pytest` + four gates green.
 <!-- SPECKIT END -->

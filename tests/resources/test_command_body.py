@@ -87,3 +87,35 @@ def test_graph_build_is_inline(name: str) -> None:
     path = next(p for p in command_files() if p.stem == name)
     body = command_body(path)
     assert "bookwright graph build --json" in body, f"{name}: missing inline graph build"
+
+
+def _continuity_body() -> str:
+    path = next(p for p in command_files() if p.stem == "bookwright-continuity")
+    return command_body(path)
+
+
+def test_continuity_carries_the_fourth_undeclared_character_axis() -> None:
+    # Iteration 051 (move 3, first slice): the 4th axis rides inside
+    # `## Procedimiento`/`## Output` — no new required heading, the section gate above
+    # still passes. The axis names the open-set / undeclared-character judgment, reads
+    # the person roster from the SHEETS (`name:`, not a graph label), and reports each
+    # undeclared person as one more deviation.
+    body = _continuity_body()
+    lowered = body.lower()
+    # The axis itself, in the procedure.
+    assert "cuarto eje" in lowered, "continuity: no fourth axis in the procedure"
+    assert "sin declarar" in lowered or "sin ficha" in lowered, (
+        "continuity: 4th axis does not name undeclared / sheet-less characters"
+    )
+    # Grounding: the roster comes from the character sheets' `name:`, not from a graph
+    # label — `G1_Character` has no `rdfs:label` (cites references/golem-character.md).
+    assert "name:" in body and "rdfs:label" in body, (
+        "continuity: 4th axis does not ground the roster in the sheets' name: field"
+    )
+    assert "references/golem-character.md" in body, (
+        "continuity: 4th axis does not cite references/golem-character.md"
+    )
+    # Output report shape: the exact 'no entry in `bible/characters/`' phrasing.
+    assert "no entry in `bible/characters/`" in body, (
+        "continuity: ## Output does not report the undeclared mention as a deviation"
+    )

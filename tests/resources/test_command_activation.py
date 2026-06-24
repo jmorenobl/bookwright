@@ -59,3 +59,20 @@ def test_sibling_disambiguation_keywords() -> None:
     # clarify <-> checklist: dudas (open questions) vs completitud (artifact completeness).
     assert "dudas" in d["bookwright-clarify"]
     assert "completitud" in d["bookwright-checklist"]
+
+
+def test_continuity_triggers_on_undeclared_characters_bilingually() -> None:
+    # Iteration 051 (move 3, first slice): the widened description also triggers on the
+    # undeclared-character prompt in BOTH ES and EN, while keeping the three existing
+    # continuity concerns and the post-draft sibling-disambiguation keyword (asserted in
+    # test_sibling_disambiguation_keywords above).
+    d = command_metadata(next(p for p in command_files() if p.stem == "bookwright-continuity"))[
+        "description"
+    ].lower()
+    # ES trigger.
+    assert "personajes sin declarar" in d or "sin ficha" in d, "continuity: no ES trigger"
+    # EN trigger.
+    assert "undeclared" in d or "unbacked characters" in d, "continuity: no EN trigger"
+    # The three existing concerns survive (bible compliance, character-arc, timeline).
+    assert "cumplimiento de la biblia" in d
+    assert "línea de tiempo" in d or "timeline" in d

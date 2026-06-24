@@ -61,6 +61,14 @@ _DORMANT_CAP = NotEvaluatedResult(
     "open-set proper-noun discovery requires semantic judgment (move 3)",
     NotEvaluatedKind.pending_capability,
 )
+#: The focalization head-hopping capability-gap (iteration 045): also
+#: `pending_capability`, but NOT in the judge source-set — it must not fire the
+#: iteration-051 `judge_undeclared_characters` nudge (FR-009, keyed on the source).
+_DORMANT_FOCAL_CAP = NotEvaluatedResult(
+    "focalization",
+    "head-hopping / interiority attribution requires semantic judgment (move 3)",
+    NotEvaluatedKind.pending_capability,
+)
 
 #: One synthetic state per rule, exercising exactly it (SC-005).
 _TRIGGER: dict[str, StatusState] = {
@@ -69,6 +77,7 @@ _TRIGGER: dict[str, StatusState] = {
     "verify_findings": make_state(low_reliability_findings=(_LOW,)),
     "review_continuity": make_state(errors=2),
     "activate_dormant_validators": make_state(not_evaluated=(_DORMANT_FOCAL,)),
+    "judge_undeclared_characters": make_state(not_evaluated=(_DORMANT_CAP,)),
     "define_focus": make_state(focus_defined=False),
 }
 
@@ -232,11 +241,40 @@ def test_no_dormant_validators_yields_no_activation_action() -> None:
     assert "bookwright-continuity" not in skills
 
 
-def test_capability_gap_only_run_suppresses_the_dormant_nudge() -> None:
-    # SC-002: a pending_capability-only not_evaluated channel produces NO
-    # activate_dormant_validators action — the permanent capability-gap is not actionable.
+def test_capability_gap_run_fires_the_judge_nudge_not_the_dormant_one() -> None:
+    # Iteration 051 (move 3, first slice): a pending_capability
+    # `character_unknown_mentions` entry now fires the `judge_undeclared_characters`
+    # nudge (the skill can answer it) — producing exactly one `bookwright-continuity`
+    # action — while STILL producing NO `activate_dormant_validators` action (the
+    # permanent capability-gap remains non-actionable for the dormant nudge, 044).
     actions = next_actions(make_state(not_evaluated=(_DORMANT_CAP,)))
-    assert [a.skill for a in actions] == []  # nothing fires (no error, no missing_input)
+    assert [a.skill for a in actions] == ["bookwright-continuity"]
+    [action] = actions
+    assert not action.prompt.startswith("Activate the dormant validators")
+
+
+def test_judge_undeclared_characters_action_exact_match() -> None:
+    # The judge action is a fixed, byte-identical template (no minted data, SC-002).
+    [action] = next_actions(make_state(not_evaluated=(_DORMANT_CAP,)))
+    assert action.skill == "bookwright-continuity"
+    assert action.prompt == (
+        "Scan the manuscript for proper nouns, read the authored roster "
+        "(bible/characters/ `name:` plus settings/locations/objects), and report "
+        "each person used in the prose with no sheet in bible/characters/."
+    )
+    assert action.reason == (
+        "character_unknown_mentions abstained — open-set proper-noun discovery is a "
+        "capability gap; the skill provides the semantic judgment"
+    )
+
+
+def test_focalization_capability_gap_does_not_fire_the_judge_nudge() -> None:
+    # FR-009: the judge nudge keys on the SOURCE validator, not the
+    # `pending_capability` KIND — so `focalization`'s head-hopping abstention (also
+    # `pending_capability`, but a judgment the skill does not yet perform) fires NO
+    # `bookwright-continuity` judge action in this slice.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_CAP,)))
+    assert [a.skill for a in actions] == []
 
 
 def test_removed_character_unknown_mentions_remedy_clause_is_gone() -> None:
@@ -247,16 +285,22 @@ def test_removed_character_unknown_mentions_remedy_clause_is_gone() -> None:
 
 def test_both_kinds_at_once_nudges_only_the_missing_input_validator() -> None:
     # Edge case (SC-004): a run with one missing_input and one pending_capability
-    # entry fires the nudge, but its prompt names ONLY the missing_input validator.
+    # entry fires the dormant nudge naming ONLY the missing_input validator — AND,
+    # since iteration 051, the judge nudge (the pending_capability entry is the
+    # judge-source `character_unknown_mentions`). Two `bookwright-continuity` actions in
+    # table order: activate_dormant_validators, then judge_undeclared_characters.
     state = make_state(not_evaluated=(_DORMANT_CAP, _DORMANT_FOCAL))
-    [action] = next_actions(state)
-    assert action.skill == "bookwright-continuity"
-    assert action.prompt == (
+    dormant, judge = next_actions(state)
+    assert dormant.skill == "bookwright-continuity"
+    assert dormant.prompt == (
         "Activate the dormant validators: "
         "focalization — declare the narrative voice in the constitution."
     )
-    assert action.reason == "1 validator could not evaluate"  # capability-gap excluded
-    assert "character_unknown_mentions" not in action.prompt
+    assert dormant.reason == "1 validator could not evaluate"  # capability-gap excluded
+    assert "character_unknown_mentions" not in dormant.prompt
+    # The judge nudge is the second action (keyed on the abstaining source).
+    assert judge.skill == "bookwright-continuity"
+    assert judge.reason.startswith("character_unknown_mentions abstained")
 
 
 def test_activation_sits_between_continuity_and_focus() -> None:

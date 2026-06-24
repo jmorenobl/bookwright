@@ -82,28 +82,18 @@
 >   un único punto compartido `_unit_identifier`: la regla de beat-huérfano deja de
 >   imprimir el slug y la de rol-sin-resolver queda byte-idéntica. Eliminada de este
 >   registro).
-> - **Track C — move 3** (juicio semántico, norte): DEBT-013 (decidido (b)), y el
->   techo de precisión del head-hopping cerrado en honestidad por la iter 045.
+> - **Track C — move 3** (juicio semántico, norte): ~~DEBT-013~~ (cerrada en la
+>   **iteración 051**, que aterriza la **primera rebanada vertical de move 3**: el
+>   eje «menciones de conjunto abierto / personajes sin declarar» de
+>   `bookwright-continuity` lee el *roster* de personas de las fichas y juzga
+>   «`Naviera` = organización» vs. «`Amelia` = personaje sin ficha» sin roster
+>   nuevo, y `status` emite un *nudge* informativo `judge_undeclared_characters`
+>   anclado en la fuente abstinente `character_unknown_mentions`. Eliminada de este
+>   registro). Queda DEBT-021 (recall morfológico de 1ª persona) plegado con el
+>   head-hopping para rebanadas posteriores de move 3.
 > - **Descartado:** parches de costura por instancia; 5º roster «organización».
 
 ## Deuda abierta
-
-### DEBT-013 — `character_presence` marca nombres de organización (no hay roster de organizaciones)
-- **Estado:** abierta
-- **Detectada en:** dogfood `sombra-en-el-puerto` (2026-06-23). **Corroborada en el
-  3er dogfood `el-año-de-las-casas-vacías` (2026-06-24):** orgs (`Fundación Amaranta`,
-  `Conservatorio Sariñena`), topónimos (`Vilafranca del Penedès`, `Anoia`, `Sant
-  Sadurní`) y, sobre todo, un personaje **real usado-pero-no-declarado** (`Amelia`,
-  4 menciones en `manuscript/01-irene.md:7,9` sin ficha en `bible/characters/`)
-  conviven en la misma prosa. El `character_unknown_mentions` honesto los **abstiene
-  todos a la vez** (`not_evaluated`, `pending_capability`): mata el ruido (orgs/topónimos)
-  **y** la señal real (`Amelia`) en el mismo gesto. Es la prueba de que sólo el move 3
-  los separa — exactamente esta deuda, ahora con señal real perdida medida, no teórica.
-- **Ubicación:** `src/bookwright/validation/validators/character_presence.py` (`_unknown_mentions`) + el conjunto de clases GOLEM con roster (no existe una clase «Organization» ni `bible/organizations/`).
-- **Clase de deuda:** NO es acoplamiento de superficie (issue #1) — es el límite **semántico** del heurístico: un nombre de organización capitalizado y off-roster es indistinguible, para un heurístico de mayúsculas sin NER, de un nombre propio sin declarar.
-- **Descripción:** en "la Naviera Salas", `Naviera` (cabeza del nombre de la organización) se reporta como nombre propio sin entrada en la bible (`manuscript/01-marea-baja.md:13`), aunque `Salas` sí esté en el roster de personajes (`Víctor Salas`). La unión de rosters de DEBT-010 (character/setting/location/object) NO cubre organizaciones. Ninguna normalización de superficie lo cura.
-- **Por qué se difiere:** a diferencia de DEBT-011/012, esto NO se arregla en el seam. Requería una **decisión de diseño** previa: **(a)** una 5ª clase de roster (organizaciones), o **(b)** diferirlo al juicio semántico (move 3). **Resuelta en la issue #1 (2026-06-23): (b).** Un 5º roster es perseguir un conjunto abierto (tras orgs vienen topónimos, barcos, vocativos…) con una lista cerrada más; no converge y roza el Principio X. El move 3 cura el conjunto abierto entero distinguiendo «Naviera = organización» de «Elena = personaje sin declarar» sin roster nuevo.
-- **Resolución sugerida / versión objetivo:** **track C — move 3** (juicio semántico, norte activado; `bookwright-roadmap.md` § 5, `bookwright-design.md` § 13.5/§ 20.6). Interim honesto ya cubierto por el track A: la regla de menciones-desconocidas declara `not_evaluated` (no emite el FP de `Naviera`). Esta deuda se cierra cuando el move 3 aterrice; no es una iteración de costura.
 
 ### DEBT-021 — el recall completo de la ruptura de 1ª persona en `focalization` es juicio semántico (techo de conjunto abierto), no determinista
 - **Estado:** abierta
@@ -136,8 +126,9 @@
   confianza, nunca suprime" (principio 3): cortocircuita el caso inequívoco; el LLM cubre el
   recall morfológico anclado en la voz declarada del grafo (principio 2).
 - **Resolución sugerida / versión objetivo:** **track C — move 3**, plegada con el
-  head-hopping (`focalization` ya abstiene de él) y las menciones-desconocidas (DEBT-013) —
-  son **la misma cara** del techo semántico. No es iteración propia ni deck-clear: confirma
+  head-hopping (`focalization` ya abstiene de él) y las menciones-desconocidas (la
+  primera rebanada de move 3, ~~DEBT-013~~, cerrada en la iteración 051) — son **la
+  misma cara** del techo semántico. No es iteración propia ni deck-clear: confirma
   que el 3er dogfood no encontró nada cheaply-fixable en determinista. No bloquea el gate
   (`focalization` es `warning`). El núcleo determinista del pronombre explícito se mantiene
   intacto entretanto.

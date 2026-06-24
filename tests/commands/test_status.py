@@ -125,6 +125,16 @@ def test_v02_era_project_succeeds_with_empty_research_facts(
         not action["prompt"].startswith("Activate the dormant validators")
         for action in payload["next_actions"]
     )
+    # Iteration 051: the move-3 judge nudge DOES fire (the `character_unknown_mentions`
+    # abstention is present) — informative, never degrading green. The status stays "ok".
+    judge_actions = [
+        a
+        for a in payload["next_actions"]
+        if a["skill"] == "bookwright-continuity"
+        and a["reason"].startswith("character_unknown_mentions abstained")
+    ]
+    assert len(judge_actions) == 1
+    assert payload["status"] == "ok"
 
 
 def test_stale_graph_cache_is_refreshed_from_the_corpus(
@@ -179,17 +189,25 @@ def test_known_state_yields_the_exact_next_actions(
 ) -> None:
     _, payload = _status_json(runner)
     actions = payload["next_actions"]
-    # The fixture carries an authored [focus] block (iteration 023), so rule ⑥
-    # (define_focus) does NOT fire. Three actions remain: the three research-derived
-    # workstreams. The dormant-validator nudge NO LONGER fires (iteration 044): the only
-    # `not_evaluated` entry is `character_unknown_mentions` with `kind: pending_capability`,
-    # and `activate_dormant_validators` now nudges only on `missing_input` gaps — so there
-    # is a single `bookwright-continuity` action (review_continuity, the `error` count).
+    # The fixture carries an authored [focus] block (iteration 023), so rule ⑦
+    # (define_focus) does NOT fire. The `activate_dormant_validators` nudge does NOT fire
+    # either (iteration 044): the `character_unknown_mentions`/`focalization` entries are
+    # both `kind: pending_capability`, and it nudges only on `missing_input` gaps. FOUR
+    # actions remain (iteration 051): the three research-derived workstreams plus a SECOND
+    # `bookwright-continuity` — `judge_undeclared_characters` fires because the
+    # `character_unknown_mentions` abstention is present (keyed on the source). The first
+    # continuity action is `review_continuity` (the `error` count); the second is the judge
+    # nudge, emitted after it.
     assert [a["skill"] for a in actions] == [
         "bookwright-research",
         "bookwright-verify",
         "bookwright-continuity",
+        "bookwright-continuity",
     ]
+    # The second continuity action is the move-3 judge nudge (semantic-judgment pointer).
+    judge = actions[3]
+    assert judge["reason"].startswith("character_unknown_mentions abstained")
+    assert "no sheet in bible/characters/" in judge["prompt"]
     research = actions[0]
     # The prompt lists the queue; the reason cites the count (FR-009).
     assert research["reason"] == "2 open research questions and 1 unresolved anchor"

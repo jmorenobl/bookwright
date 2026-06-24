@@ -1526,8 +1526,14 @@ de naturaleza opuesta** que conviven en ese validador:
 2. **El move 3 se activa** (§ 20.6, `bookwright-roadmap.md` § 5): la condición
    («heurístico concreto medido insuficiente sobre prosa real») está cumplida. Es la
    única cura de raíz del conjunto abierto; restaura la señal real (personaje usado
-   sin declarar) que el `not_evaluated` deja pendiente. **Necesita diseño propio
-   antes de spec** por la tensión de determinismo del gate (§ 20.6).
+   sin declarar) que el `not_evaluated` deja pendiente. *El diseño propio se hizo
+   (§ 20.6.2) y su **primera rebanada vertical aterrizó en la iteración 051**:*
+   `bookwright-continuity` gana el cuarto eje «personajes sin declarar» que recoge la
+   `Abstention` de `character_unknown_mentions` y la juzga anclada en el roster de las
+   fichas, y `status` la hace descubrible con un *next_action* informativo
+   (`judge_undeclared_characters`) — sin tocar el gate ni el predicado verde (juicio,
+   no gate). **DEBT-013 cerrada.** Las dimensiones de focalización (head-hopping /
+   ruptura de 1ª persona, DEBT-021) siguen el mismo patrón en rebanadas posteriores.
 3. **Vocabularios cerrados, trato consistente** (DEBT-016, capa narrativa, no
    `character_presence`) — **entregado en la iteración 047**: un término Propp/Greimas
    no reconocido —antes ingerido **en silencio** como nodo sin `crm:P2_has_type`—
@@ -2156,7 +2162,7 @@ sólo abstiene, **publica qué juzgar**.
 
 **3. Grounding por dimensión (qué inyecta el grafo).** El skill ancla cada juicio en el canon
 determinista (principio 2), nunca en el vacío:
-- **Personaje-sin-declarar** (cura DEBT-013 + restaura la señal `Amelia`): el **roster** —nombres y
+- **Personaje-sin-declarar** (cerró DEBT-013 + restauró la señal `Amelia`, iteración 051): el **roster** —nombres y
   alias de `G1_Character`, más settings/locations/objects— como contexto → "de los nombres propios de
   PERSONA en la prosa, ¿cuáles no están en el roster y tampoco son organización/topónimo?". El roster
   es lo que distingue señal (personaje real sin ficha) de ruido (org/topónimo), que ningún heurístico
@@ -2186,11 +2192,17 @@ hoy. El **gate** sigue siendo `bookwright validate` (Python, determinista, repro
   semántica que merezca bloquear merge y se acepte el coste del caché. Horizonte demand-pulled, no
   parte de `v0.6.0`.
 
-**Primer vertical slice (la spec inicial del move 3):** el **personaje-usado-pero-no-declarado** — la
-señal real más fuerte que midió el 3er dogfood (`Amelia`, hoy invisible) y la de grounding más simple
-(sólo el roster). Prueba la tubería entera en su forma mínima: `validate` abstiene → continuity recoge
-la `Abstention` → juzga anclado en el roster → reporta. Las otras dos dimensiones (focalización /
-head-hopping / 1ª persona) siguen el mismo patrón una vez probado.
+**Primer vertical slice (la spec inicial del move 3) — LANDED (iteración 051, track v0.5.x):** el
+**personaje-usado-pero-no-declarado** — la señal real más fuerte que midió el 3er dogfood (`Amelia`,
+hoy invisible) y la de grounding más simple (sólo el roster). Prueba la tubería entera en su forma
+mínima: `validate` abstiene → continuity recoge la `Abstention` → juzga anclado en el roster →
+reporta. **Aterrizado:** `bookwright-continuity` gana un **cuarto eje** ("menciones de conjunto
+abierto / personajes sin declarar") que lee el roster de personas del campo `name:` de las fichas
+(`G1_Character` no tiene `rdfs:label`; el nombre vive en `name:` + el slug) y juzga persona-sin-ficha
+vs. organización/topónimo/vocativo; y `bookwright status` emite un *next_action* informativo
+(`judge_undeclared_characters`) anclado en la fuente abstinente `character_unknown_mentions` — el
+gate determinista y el predicado verde quedan byte-idénticos (decisión 4). Las otras dos dimensiones
+(focalización / head-hopping / 1ª persona, DEBT-021) siguen el mismo patrón en rebanadas posteriores.
 
 **Lo que NO cambia:** la ontología congelada (Principio X); el gate determinista; el contrato
 `not_evaluated` / `EvalResult` / `kind` (§ 13.1, se **consume**, no se altera); y el conjunto de
