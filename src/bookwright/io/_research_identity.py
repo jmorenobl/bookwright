@@ -48,6 +48,21 @@ class AnchorIdentity:
     uri: str
 
 
+def anchor_handle(promotes: str, constrains: str | None) -> str:
+    """The author-facing handle for an anchor (048 research D2).
+
+    The promoted finding id, plus ``-> <constrains>`` when the anchor declares a
+    target (``constrains is not None``), else the promoted id alone. This is the
+    **single** spelling of the handle: both :func:`bookwright.commands.status._anchor_line`
+    (over an :class:`~bookwright.status.model.AnchorGap`) and the ``factual_anchor``
+    validator (over an :class:`AnchorIdentity`) call it, so the two surfaces can
+    never diverge in how they name the same anchor (FR-007/FR-009). Pure, total,
+    no I/O.
+    """
+    target = f" -> {constrains}" if constrains is not None else ""
+    return f"{promotes}{target}"
+
+
 def is_timeline_ref(raw: object) -> bool:
     """Whether an authored ``constrains`` value names the timeline sentinel.
 

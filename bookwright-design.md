@@ -1392,11 +1392,11 @@ de salida es idéntico al de un run sin skips con los mismos hallazgos.
 
 | Validator | Severity default | Qué valida |
 |---|---|---|
-| `temporal` | error | Que los eventos en la timeline sean consistentes (no contradicciones). |
+| `temporal` | error | Que los eventos en la timeline sean consistentes (no contradicciones). **Las cuatro reglas** (ciclo, orden-vs-solape, contención-vs-orden, numérica) resuelven `source` a `bible/timeline.md:<línea>` vía `resolve_source` sobre un evento implicado elegido de forma determinista —subject del triple implicado en b/c/d, URI lexicográficamente menor del SCC en (a)— (iter 048; antes solo la regla d lo hacía). |
 | `character_presence` | error | Que los personajes mencionados en manuscrito existan en la bible y viceversa. |
 | `setting_continuity` | warning | Que los settings se mantengan coherentes (ej. clima, descripciones). |
 | `focalization` | warning | Que la persona narrativa declarada en constitution se respete. **Bajo tercera persona *limitada*/focalizada se abstiene del run entero** (`NotEvaluated`, `kind=pending_capability`): el head-hopping (atribución de interioridad a un personaje no-focal) es juicio semántico —move 3 (§ 13.5)— y el heurístico determinista se midió casi dormido sobre prosa real (iter 045). La comprobación de ruptura de 1ª persona fuera de diálogo solo corre bajo tercera **no-limitada** (omnisciente); 1ª persona evalúa sin hallazgos. Las cuatro abstenciones por entrada (sin constitución / sin voz / `[PENDING]` / sin persona gramatical) siguen `missing_input`. |
-| `factual_anchor` (v0.2) | warning (estructura) / error (anacronismo) | Integridad estructural de las anclas de investigación: que cada ancla tenga Fuente con procedencia completa, que las entidades enlazadas existan, y detección de anacronismos contra la timeline. Ver § 20.6. |
+| `factual_anchor` (v0.2) | warning (estructura) / error (anacronismo) | Integridad estructural de las anclas de investigación: que cada ancla tenga Fuente con procedencia completa, que las entidades enlazadas existan, y detección de anacronismos contra la timeline. Cada hallazgo resuelve `source` al fichero autor `bible/research/<tema>.md` (vía `AnchorIdentity.relpath`, no `resolve_source(anchor.uri)` —un ancla *es* la reificación `E13`, nada apunta a ella) e identifica el ancla por su handle autor (`promotes -> constrains`), a través del **mismo punto compartido** (`anchor_handle`) que usa `bookwright status` (iter 048). Ver § 20.6. |
 
 ### 13.3 Registry
 
@@ -1990,6 +1990,21 @@ investigación tiene **dos capas complementarias**:
   fuente o de fiabilidad baja; y, cuando un ancla lleva `time-span`, detecta
   **anacronismos** contra la timeline reutilizando la lógica de `temporal`.
   Severidad por defecto: `warning` (estructura), `error` (anacronismo duro).
+  Desde la iteración 048 (track B, DEBT-015) ambos validators graph-consumer
+  emiten un locator resoluble y un identificador legible, igual que los de prosa.
+  `factual_anchor` resuelve el ancla sobre un **corpus de investigación construido
+  en proceso** —un accesor memoizado y **no persistente** de
+  `ValidationContext` que reconstruye `map_research` y casa cada ancla con su
+  `AnchorIdentity` por URI dentro de una sola build, exactamente como hace
+  `status` (la URI uuid7 del ancla se re-acuña en cada build, así que un join por
+  URI contra el grafo persistido de una build previa fallaría siempre)—, fija
+  `source = AnchorIdentity.relpath` y nombra el ancla con el handle compartido
+  `anchor_handle(promotes, constrains)`. La granularidad difiere **por diseño**,
+  no por defecto: un evento `temporal` lleva `:línea` (su `E13` la registra),
+  mientras que un ancla es solo fichero (`AnchorIdentity` no lleva línea, y el
+  handle/fichero se ata byte a byte al que `status` ya renderiza). El corpus en
+  proceso **nunca** se guarda en disco (`validate` es lectura pura; el grafo
+  derivado lo produce solo `graph build`).
 
 - **Command/skill `bookwright-verify`** (nuevo en § 10.4, semántico). El agente
   lee el manuscrito **contra las anclas** y reporta pasajes que contradicen lo

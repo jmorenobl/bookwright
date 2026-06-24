@@ -244,3 +244,11 @@ def test_render_capability_gap_only_does_not_read_as_clean() -> None:
 def test_render_clean_line_only_when_all_channels_empty() -> None:
     report = ValidationReport(violations=(), errors=(), ran=("temporal",))
     assert "no violations found" in _render(report)
+
+
+def test_location_less_violation_renders_no_specific_location() -> None:
+    # A source=None finding still renders, labelled "(no specific location)". After 048
+    # the built-in validators resolve a locator on the normal path, so this branch now
+    # serves the defensive cases: the factual_anchor FR-010 join-miss floor and any
+    # custom validator that emits a location-less Violation. ``_ERR`` is one such finding.
+    assert "(no specific location)" in _render(_report())

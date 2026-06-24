@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 from bookwright.golem.namespaces import timeline_uri
 from bookwright.indexers import Indexer, UnknownIndexerError, resolve_indexer
-from bookwright.io.bible import build_provenance, map_bible
+from bookwright.io.bible import feed_graph, map_bible
 from bookwright.io.errors import MissingDirectoryError, ResearchError
 from bookwright.io.manuscript import manuscript_present
 from bookwright.io.outline import map_outline
@@ -101,16 +101,10 @@ def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
     # to iterate, no merge, BuildReport counters aggregate the additions for free.
     map_outline(root, root / manifest.paths.outline, uri_base, result, propp=vocabs.propp)
 
-    for mapped in result.mapped:
-        for triple in mapped.entity.to_triples():
-            engine.add_triple(*triple)
-        for assignment in build_provenance(mapped, uri_base):
-            for triple in assignment.to_triples():
-                engine.add_triple(*triple)
-
-    # Research pass: map bible/research/ and feed its triples into the same engine
-    # (one graph, one save — research D8). Research entities are already E13
-    # reifications, so they are NOT routed through build_provenance.
+    # Research pass: map bible/research/ then feed the whole corpus into the engine
+    # via the shared assembly (one graph, one save — research D8). ``feed_graph`` is
+    # the single triple-feeding both this verb and the validation corpus share, so the
+    # two graphs cannot drift (048).
     research = map_research(
         root,
         bible_dir / "research",
@@ -119,9 +113,7 @@ def build_project_graph(root: Path, manifest: Manifest) -> BuildOutcome:
         result.entity_index,
         timeline_uri(uri_base),
     )
-    for entity in research.entities:
-        for triple in entity.to_triples():
-            engine.add_triple(*triple)
+    feed_graph(engine, result, research, uri_base)
 
     graph_rel = manifest.paths.graph
     engine.save(root / graph_rel)

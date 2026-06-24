@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 from bookwright.golem.namespaces import (
     BW_CONSTRAINS,
@@ -31,6 +31,7 @@ from bookwright.golem.namespaces import (
     timeline_uri,
 )
 from bookwright.indexers import Indexer
+from bookwright.io.research import anchor_handle
 from bookwright.validation.anchor_queries import (
     FACETS,
     AnchorRecord,
@@ -44,9 +45,11 @@ from bookwright.validation.queries import (
     EventInterval,
     intervals_disjoint,
     load_intervals,
-    resolve_source,
     timeline_bounds,
 )
+
+if TYPE_CHECKING:
+    from bookwright.io.research import AnchorIdentity
 
 # The reliability scale, lowest → highest. The rating NAMES are the single
 # vocabulary source (``RELIABILITY_IRI`` keys); only the domain ordering
@@ -120,6 +123,28 @@ class _IntervalView:
     timeline: EventInterval | None
 
 
+@dataclass(frozen=True)
+class _AnchorAudit:
+    """Everything the rules need to audit one anchor (048).
+
+    A parameter object: the per-anchor data — the record, its sources, whether the
+    promoted finding is present, the interval view, the project, the corpus engine,
+    and the resolved ``(handle, source)`` locator — travels as one value instead of
+    a long parameter list threaded through every rule. ``handle`` is the author-facing
+    name (``anchor_handle`` or the FR-010 uuid7 floor); ``source`` is the resolved
+    ``bible/research/<topic>.md`` locator (or ``None`` on the floor).
+    """
+
+    anchor: AnchorRecord
+    sources: list[SourceRecord]
+    finding_present: bool
+    intervals: _IntervalView
+    project: ValidationContext
+    indexer: Indexer
+    handle: str
+    source: str | None
+
+
 class FactualAnchor:
     """Audits each research anchor's structural integrity and chronology."""
 
@@ -129,146 +154,152 @@ class FactualAnchor:
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
         if project.manifest.research.enabled is False:
             return []  # FR-015: the research system is turned off
-        anchors = load_anchors(indexer)
+        if not load_anchors(indexer):
+            return []  # FR-016: inert with no corpus build when the graph carries no anchor
+        # Resolve over an IN-PROCESS-built research corpus, not the passed (persisted)
+        # graph: an anchor's uuid7 URI is re-minted every build, so the engine and its
+        # AnchorIdentity records must come from one build for the URI join to hit — the
+        # only faithful "machinery status uses" (048 research D1). Mirrors status exactly.
+        engine, identities = project.anchor_corpus()
+        anchors = load_anchors(engine)
         if not anchors:
-            return []  # FR-016: nothing to audit on a non-research project
-        sources_by_anchor = load_sources_by_anchor(indexer)
+            return []  # the freshly built corpus carries no anchor (e.g. source removed)
+        id_by_uri = {identity.uri: identity for identity in identities}
+        sources_by_anchor = load_sources_by_anchor(engine)
         # Interval data is only loaded when at least one anchor carries a time-span —
         # a non-temporal research project pays nothing for the anachronism rule.
         spanned = any(a.span.begin is not None or a.span.end is not None for a in anchors)
-        events = load_intervals(indexer) if spanned else {}
+        events = load_intervals(engine) if spanned else {}
         intervals = _IntervalView(
             events=events,
             timeline=timeline_bounds(events) if spanned else None,
         )
         out: list[Violation] = []
         for anchor in anchors:  # already sorted by URI (deterministic, FR-003)
-            sources = sources_by_anchor.get(anchor.uri, [])
-            out.extend(self._audit(anchor, sources, intervals, project, indexer))
+            handle, source = self._resolve(anchor, id_by_uri.get(anchor.uri))
+            ctx = _AnchorAudit(
+                anchor=anchor,
+                sources=sources_by_anchor.get(anchor.uri, []),
+                finding_present=entity_present(engine, anchor.promotes, project.uri_base),
+                intervals=intervals,
+                project=project,
+                indexer=engine,
+                handle=handle,
+                source=source,
+            )
+            out.extend(self._audit(ctx))
         return out
 
-    def _audit(
-        self,
-        anchor: AnchorRecord,
-        sources: list[SourceRecord],
-        intervals: _IntervalView,
-        project: ValidationContext,
-        indexer: Indexer,
-    ) -> list[Violation]:
+    def _resolve(
+        self, anchor: AnchorRecord, identity: AnchorIdentity | None
+    ) -> tuple[str, str | None]:
+        """The ``(handle, source)`` for an anchor (FR-003/FR-004/FR-010).
+
+        With an authored identity: the shared ``anchor_handle`` and the file
+        ``AnchorIdentity.relpath`` (``bible/research/<topic>.md``). On a join miss the
+        FR-010 defensive floor — the prior ``_label(anchor.uri)`` uuid7 tail and
+        ``source=None`` — so a defective-anchor finding is never dropped (the gate
+        MUST emit it; the universal case for a freshly built corpus is the identity).
+        """
+        if identity is None:
+            return _label(anchor.uri), None
+        return anchor_handle(identity.promotes_id, identity.constrains), identity.relpath
+
+    def _audit(self, ctx: _AnchorAudit) -> list[Violation]:
         """Run every rule against one anchor, collecting its violations in order."""
-        finding_present = entity_present(indexer, anchor.promotes, project.uri_base)
         out: list[Violation] = []
-        out.extend(self._unsourced(anchor, sources, finding_present, indexer))
-        out.extend(self._incomplete(anchor, sources, project, indexer))
-        out.extend(self._under_reliable(anchor, sources, project, indexer))
-        out.extend(self._missing_entity(anchor, finding_present, project, indexer))
-        out.extend(self._anachronism(anchor, intervals, project, indexer))
+        out.extend(self._unsourced(ctx))
+        out.extend(self._incomplete(ctx))
+        out.extend(self._under_reliable(ctx))
+        out.extend(self._missing_entity(ctx))
+        out.extend(self._anachronism(ctx))
         return out
 
     def _violation(
-        self, anchor: AnchorRecord, indexer: Indexer, message: str, triple: tuple[str, str, str]
+        self, source: str | None, message: str, triple: tuple[str, str, str]
     ) -> Violation:
-        """A ``warning`` carrying the anchor's locator (``None`` today) + one edge."""
+        """A ``warning`` carrying the anchor's resolved locator + one implicated edge."""
         return Violation(
             validator=self.name,
             severity=Severity.warning,
             message=message,
-            source=resolve_source(indexer, anchor.uri),
+            source=source,
             triples=(triple,),
         )
 
     # --- R1 unsourced (FR-006) ----------------------------------------------
 
-    def _unsourced(
-        self,
-        anchor: AnchorRecord,
-        sources: list[SourceRecord],
-        finding_present: bool,
-        indexer: Indexer,
-    ) -> list[Violation]:
+    def _unsourced(self, ctx: _AnchorAudit) -> list[Violation]:
         # Suppressed when the finding is absent — R4 reports that once (no double-label).
-        if not anchor_unsourced(sources, finding_present):
+        if not anchor_unsourced(ctx.sources, ctx.finding_present):
             return []
-        message = f"anchor '{_label(anchor.uri)}' promotes a finding with no supporting source"
-        triple = (anchor.uri, str(BW_PROMOTES), anchor.promotes)
-        return [self._violation(anchor, indexer, message, triple)]
+        message = f"anchor '{ctx.handle}' promotes a finding with no supporting source"
+        triple = (ctx.anchor.uri, str(BW_PROMOTES), ctx.anchor.promotes)
+        return [self._violation(ctx.source, message, triple)]
 
     # --- R2 provenance-incomplete (FR-007) ----------------------------------
 
-    def _incomplete(
-        self,
-        anchor: AnchorRecord,
-        sources: list[SourceRecord],
-        project: ValidationContext,
-        indexer: Indexer,
-    ) -> list[Violation]:
-        book_language = project.manifest.book.language
+    def _incomplete(self, ctx: _AnchorAudit) -> list[Violation]:
+        book_language = ctx.project.manifest.book.language
         out: list[Violation] = []
-        for source in sources:
+        for src in ctx.sources:
             # The implicated edge is the real finding→source link that locates the
             # source; a missing facet has no object, so it is never a fabricated triple.
-            located = (anchor.promotes, str(BW_SUPPORTED_BY), source.uri)
+            located = (ctx.anchor.promotes, str(BW_SUPPORTED_BY), src.uri)
             for facet in FACETS:
-                if str(facet.predicate) in source.present_predicates:
+                if str(facet.predicate) in src.present_predicates:
                     continue
                 # ``translation`` is mandatory only for a foreign-language source; if
                 # the language itself is unknown it is already flagged, so skip here.
                 if facet.foreign_only and (
-                    source.original_language is None or source.original_language == book_language
+                    src.original_language is None or src.original_language == book_language
                 ):
                     continue
+                # The source keeps its own stable slug label (it was never a uuid7);
+                # only the anchor is named by the authored handle (048 data-model 2.3).
                 message = (
-                    f"source '{_label(source.uri)}' backing anchor '{_label(anchor.uri)}' "
+                    f"source '{_label(src.uri)}' backing anchor '{ctx.handle}' "
                     f"is missing its {facet.label}"
                 )
-                out.append(self._violation(anchor, indexer, message, located))
+                out.append(self._violation(ctx.source, message, located))
         return out
 
     # --- R3 under-reliable (FR-008) -----------------------------------------
 
-    def _under_reliable(
-        self,
-        anchor: AnchorRecord,
-        sources: list[SourceRecord],
-        project: ValidationContext,
-        indexer: Indexer,
-    ) -> list[Violation]:
-        minimum = project.manifest.research.min_reliability_for_anchor
-        verdict = anchor_under_reliable(sources, minimum)
+    def _under_reliable(self, ctx: _AnchorAudit) -> list[Violation]:
+        minimum = ctx.project.manifest.research.min_reliability_for_anchor
+        verdict = anchor_under_reliable(ctx.sources, minimum)
         if verdict is None:  # satisfied, or unsourced (R1's concern, no double-label)
             return []
         if verdict == "under_reliable":  # a rating is present, it is just too low
             message = (
-                f"anchor '{_label(anchor.uri)}' is backed only by sources below the "
+                f"anchor '{ctx.handle}' is backed only by sources below the "
                 f"minimum reliability '{minimum}'"
             )
         else:  # sources exist but none carries a rating at all — not "below", unrated
             message = (
-                f"anchor '{_label(anchor.uri)}' is backed by sources but none carries a "
+                f"anchor '{ctx.handle}' is backed by sources but none carries a "
                 f"reliability rating (minimum required: '{minimum}')"
             )
-        triple = (anchor.uri, str(BW_PROMOTES), anchor.promotes)
-        return [self._violation(anchor, indexer, message, triple)]
+        triple = (ctx.anchor.uri, str(BW_PROMOTES), ctx.anchor.promotes)
+        return [self._violation(ctx.source, message, triple)]
 
     # --- R4 missing entity (FR-009) -----------------------------------------
 
-    def _missing_entity(
-        self,
-        anchor: AnchorRecord,
-        finding_present: bool,
-        project: ValidationContext,
-        indexer: Indexer,
-    ) -> list[Violation]:
+    def _missing_entity(self, ctx: _AnchorAudit) -> list[Violation]:
+        anchor = ctx.anchor
         out: list[Violation] = []
-        if not finding_present:
-            message = f"anchor '{_label(anchor.uri)}' promotes a finding not present in the graph"
+        if not ctx.finding_present:
+            message = f"anchor '{ctx.handle}' promotes a finding not present in the graph"
             triple = (anchor.uri, str(BW_PROMOTES), anchor.promotes)
-            out.append(self._violation(anchor, indexer, message, triple))
+            out.append(self._violation(ctx.source, message, triple))
         target = anchor.constrains
-        target_present = target is not None and entity_present(indexer, target, project.uri_base)
+        target_present = target is not None and entity_present(
+            ctx.indexer, target, ctx.project.uri_base
+        )
         if not target_present:
             message = (
-                f"anchor '{_label(anchor.uri)}' constrains a narrative entity "
+                f"anchor '{ctx.handle}' constrains a narrative entity "
                 "that is not present in the graph"
             )
             # The dropped-link case has no constrains triple → cite the promotes edge.
@@ -277,31 +308,27 @@ class FactualAnchor:
                 if target is not None
                 else (anchor.uri, str(BW_PROMOTES), anchor.promotes)
             )
-            out.append(self._violation(anchor, indexer, message, triple))
+            out.append(self._violation(ctx.source, message, triple))
         return out
 
     # --- R5 anachronism (FR-010/FR-012) -------------------------------------
 
-    def _anachronism(
-        self,
-        anchor: AnchorRecord,
-        intervals: _IntervalView,
-        project: ValidationContext,
-        indexer: Indexer,
-    ) -> list[Violation]:
+    def _anachronism(self, ctx: _AnchorAudit) -> list[Violation]:
+        anchor = ctx.anchor
         span = anchor.span
         if span.begin is None and span.end is None:
             return []  # no time-span → nothing to compare against
         target = anchor.constrains
         if target is None:
             return []  # dropped link — already R4's concern, no interval to compare
-        target_interval = self._target_interval(target, intervals, project.uri_base)
+        target_interval = self._target_interval(target, ctx.intervals, ctx.project.uri_base)
         if target_interval is None:
             return []  # non-temporal / non-event target → no comparable interval (FR-012)
         if not intervals_disjoint(span, target_interval):
             return []
+        # The target keeps its own stable slug label; only the anchor uses the handle.
         message = (
-            f"anchor '{_label(anchor.uri)}' ({_range(span)}) constrains "
+            f"anchor '{ctx.handle}' ({_range(span)}) constrains "
             f"'{_label(target)}' ({_range(target_interval)}), but their year ranges "
             "are disjoint (anachronism)"
         )
@@ -310,7 +337,7 @@ class FactualAnchor:
                 validator=self.name,
                 severity=Severity.error,
                 message=message,
-                source=resolve_source(indexer, anchor.uri),
+                source=ctx.source,
                 triples=((anchor.uri, str(BW_CONSTRAINS), target),),
             )
         ]

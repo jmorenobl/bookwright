@@ -444,61 +444,63 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/047-vocab-term-warning/plan.md` (iteration 047, design § 4.4/§ 13.5 move-3
-item 3 — issue #1 track B, closes DEBT-016). With a closed narrative vocabulary
-active (`[vocabularies] active`, e.g. `propp`), `graph build` types each authored
-term: a MATCH gets a `crm:P2_has_type` edge, a NON-match is minted UNTYPED IN
-SILENCE — no warning, no validation finding (inconsistent with research, which
-REJECTS an unknown `type`/`reliability` FATALLY with an enumerated message). THE
-CHANGE (closed for *typing*, open for *authoring*): an unrecognized term emits a
-NON-FATAL `graph build` warning enumerating the valid terms; the node is still
-ingested unchanged, without `P2_has_type`; build does NOT abort and exit code does
-NOT change. Principle (FR-012, design § 4.4): **fatal ⇔ an invalid value breaks
-downstream logic** (`reliability` breaks the `factual_anchor` gate → fatal; an absent
-`P2_has_type` is descriptive metadata → only warn). NEW CHANNEL (sibling of
-`unknown_keys`/`unresolved_references`, direct-report-model pattern NOT the
-`research_warnings` translate pattern): `UntypedVocabTerm{path, field, term,
-vocabulary}` in `io/report.py`; `MapResult.untyped_vocab_terms` (`_bible_builders.py`)
-appended at the typing sites; `_graph.py` copies it into `BuildReport.untyped_vocab_terms`
-(`= ()` default; `to_json()` gains one key; `exit_code` NOT referenced — FR-004).
-CLASS SWEEP, TWO SITES (FR-007): (1) Propp `functions:` in `io/outline.py:_mint_functions`,
-inside `if function is None:`, warn when `ctx.propp is not None and type_uri is None`
-(inputs are already-sluggable `(slug, raw)` pairs — `_distinct_slugs` dropped
-unsluggable up front, so no extra guard; deduped across cards → warned once);
-(2) Greimas `narrative_roles:` in `_bible_builders.py:_build_character`, add an `else:`
-to the `if greimas is not None:` loop — but GUARD `try make_slug(label) except
-EmptySlugError: continue` FIRST so a blank role (mints no warnable node) does not warn
-(edge case). Thread `relpath`+`ctx.result` into `_build_character` via the existing
-`bible.py` lambda (`meta, rp` + `ctx` already in scope). UNTOUCHED (FR-008): the
-outline-unit `roles:`→character-role resolution already emits `unresolved_references`
-(a different edge, not Greimas typing) — do NOT double-handle. ENUMERATION (FR-002,
-render-derived, NOT denormalized): `VocabularyIndex` gains `terms: tuple[str,...] =
-tuple(sorted(set(rdfs:label)))` collected in `_index_turtle` (all ES+EN labels,
-sorted → byte-stable, keeps the loader manifest-free); the human render in
-`commands/graph/build.py` maps each distinct warning `vocabulary` →
-`load_vocabulary(vocabulary).terms` and prints `valid {vocabulary} terms: …` ONCE per
-vocabulary block (not per entry). The structured record carries only `{path, field,
-term, vocabulary}` — mirrors `ResearchTargetWarning` storing `{path,field,name}` and
-rendering "not in bible" as derived text. DETERMINISM (FR-016, NO new sort key): entry
-order = bible-character sorted-glob THEN outline-unit sorted-glob; intra-field =
-authored YAML list order (front-matter parser preserves it — clarified lowest-debt
-choice); enumeration = pre-sorted `terms`. CONTRACT-BEFORE-CODE: add the
-fatal-vs-warning paragraph to `bookwright-design.md` § 4.4 and reconcile § 13.5
-move-3 item 3 (planned → shipped iter 047) BEFORE the code diverges. DEBT: REMOVE
-DEBT-016 from `DEBT.md` and reconcile the track-B index line (FR-013). ORACLES
-(empirical, `uv run pytest`, reuse `tiny-quest` Propp fixture + `copy_fixture`):
-unit `functions: [struggle, intimidacion]` → `graph build --json` exit 0, ONE
-`untyped_vocab_terms` entry (`field="functions"`, `term="intimidacion"`,
-`vocabulary="propp"`) and NONE for `struggle`; graph has `narrative-function/intimidacion`
-WITHOUT `P2_has_type` and `…/struggle` WITH; Greimas `narrative_roles:` bad label →
-one `field="narrative_roles"`, `vocabulary="greimas"` entry, role node untyped;
-no-active-vocabulary build emits `[]` and is byte-identical to pre-feature; two builds
-byte-identical (entries + enumeration); blank term → no warning; valid term → no
-warning, still typed. Out of scope: making it fatal; a new validator/finding/`Severity`
-`info`; research `type`/`reliability` (already fatal); move 3; editing
-`propp.ttl`/`greimas.ttl`/`golem.ttl` (frozen) or the exit-code/gate contract.
-~7 source files (one ~12-line model, two ~6-line warn branches, three one-liners,
-one render block) + § 4.4/§ 13.5 + DEBT.md; no new module/dep (Constitution II);
-each changed file ≤ 500 lines; frozen ontology untouched. `uv run pytest` + four
-gates green.
+`specs/048-actionable-graph-locators/plan.md` (iteration 048, design § 13.2/§ 20.6
+— issue #1 track B *pulido determinista*, closes DEBT-015). The two GRAPH-CONSUMER
+validators emit UNACTIONABLE findings while the prose validators always give
+`relpath:line` + a readable handle. TWO INDEPENDENT HALVES. (1) `temporal`
+(mechanical): rules (a) cycle, (b) order-vs-overlap, (c) containment-vs-order emit
+`source=None`; only rule (d) numeric resolves `source=resolve_source(indexer,
+<event>)`. Events are `SluggedEntity` (stable URIs) with `E13` provenance already in
+the PASSED disk graph (why rule d works), so a/b/c just adopt rule (d)'s resolution
+over a DETERMINISTICALLY-chosen implicated event — NO rebuild. FR-002 event choice:
+rules b/c resolve from the carried triple's SUBJECT `a` (mirror d); rule a (SCC, no
+single subject) from `component[0]` = lexicographically smallest event URI. (2)
+`factual_anchor` (larger): every violation sets `source=resolve_source(indexer,
+anchor.uri)` → ALWAYS `None` (an anchor IS the reified `E13`; no `E13` points TO it)
+and names it by `_label(anchor.uri)` = the uuid7 tail. `status` already reports the
+SAME anchor legibly by joining each graph anchor to its `AnchorIdentity`
+(`promotes_id`/`constrains`/`relpath`). FIX: resolve `source` to
+`bible/research/<topic>.md` via `identity.relpath` and name by the authored handle
+(`promotes -> constrains`) through a SINGLE shared point with `status`.
+LOAD-BEARING DESIGN DECISION (research.md D1): the spec's literal "join identities to
+graph anchors BY URI, the same path status uses" does NOT survive the `graph build`→
+`validate` PROCESS BOUNDARY — `Anchor`/`Finding` are `MintedEntity` (uuid7, RE-MINTED
+every build) and `validate` reads the PERSISTED `graph.ttl` from a prior build, so a
+fresh `map_research` mints DIFFERENT uuid7s and a URI join misses for EVERY anchor.
+`status` works only because it REBUILDS in-process (`build_project_graph`) and joins
+within one process. THEREFORE: `factual_anchor` resolves over an IN-PROCESS-built
+research corpus — a memoized, NON-persisting `ValidationContext.anchor_corpus()`
+(`validation/base.py`) returning `(engine, anchor_identities)` from one `map_research`
+(built from the memoized `outline()` MapResult + `map_research`; NO `engine.save` —
+validators never write; built from `io` not `commands._graph` to keep layering) — and
+joins by URI WITHIN that single build. Honors FR-003/004/007/009 with NO
+graph-emission / ontology change. FR-010 fallback (`_label(anchor.uri)` uuid7 + `None`
+on identity miss) becomes a DEFENSIVE floor (research.md D1 reconciliation; one-line
+spec note). SHARED HELPER (D2): `anchor_handle(promotes, constrains)` in
+`io/_research_identity.py` (returns `f"{promotes} -> {constrains}"` or `promotes`
+alone), called by BOTH `status._anchor_line` (pure extraction, byte-identical) and
+`factual_anchor` — so the surfaces cannot diverge (FR-007/009). REJECTED alternatives
+(research.md D1): (A) URI-join the disk graph — resolves nothing; (B) emit anchor
+`E13` provenance + finding-id label at build — the "root fix", but contradicts FR-003
+("NOT resolve_source(anchor.uri)") and the "anchor has no E13" premise → recorded as
+the natural owner-decided follow-up, not this iteration; (C) stable-signature join —
+uniqueness not guaranteed → fragile debt. TESTS (D4): a corpus-INJECTION seam on
+`ValidationContext` lets the hand-built `AnchorSpec` unit fixtures supply
+`(engine, identities)` (mechanical update: add identities + flip expected
+source/message), production builds fresh; E2E `test_research_workflow.py` covers the
+real `graph build`→`validate` path; a cross-surface test asserts factual_anchor⇆status
+agree (SC-003). CONTRACT-BEFORE-CODE: reconcile `bookwright-design.md` § 13.2/§ 20.6
+(both graph-consumers now resolvable; file-only anchor vs `:line` event granularity is
+BY DESIGN); REMOVE DEBT-015 from `DEBT.md` + reconcile the track-B index line + the
+iteration table/milestone prose. ORACLES (empirical, `uv run pytest`): temporal a/b/c
+`source` → `bible/timeline.md:<line>` (not null) + two-build byte-stable; factual_anchor
+defective anchor → `source=bible/research/<topic>.md` (not null) + handle message (no
+uuid7); identity-less anchor still emits (FR-010); SC-005 finding count/severity/gate
+unchanged on every fixture (only source/message differ). Out of scope: changing WHAT
+rules detect; new rule/finding/severity; the gate/exit-code contract; the prose
+validators; DEBT-017 (`narrative_structure` name-vs-slug, iter 049); any new
+dependency or ontology change. ~5 source files (`temporal.py`, `factual_anchor.py`,
+`validation/base.py`, `io/_research_identity.py`, `commands/status.py`) + § 13.2/§ 20.6
++ DEBT.md + index; no new module/dep (Constitution II); each changed file ≤ 500 lines;
+frozen ontology untouched. `uv run pytest` + four gates green.
 <!-- SPECKIT END -->

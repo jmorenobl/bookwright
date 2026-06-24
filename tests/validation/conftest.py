@@ -44,6 +44,8 @@ from bookwright.golem.namespaces import (
 from bookwright.indexers import RdflibIndexer
 from bookwright.io.bible import build_provenance, map_bible
 from bookwright.io.outline import map_outline
+from bookwright.io.research import AnchorIdentity
+from bookwright.validation.anchor_queries import load_anchors
 from bookwright.validation.base import ValidationContext
 
 URI_BASE = "https://example.org/novel/"
@@ -382,6 +384,57 @@ def research_graph(*anchors: AnchorSpec) -> RdflibIndexer:
     return engine
 
 
+# --- Corpus-injection seam for the factual_anchor suite (048 research D4) -----
+#
+# factual_anchor resolves each anchor over an IN-PROCESS-built research corpus
+# (``ValidationContext.anchor_corpus()``) so the engine and identities share one
+# build (uuid7s match). The hand-built ``AnchorSpec`` graphs use *stable* suffix
+# URIs and carry no identities, so a fixture injects ``(engine, identities)``
+# directly: the join hits on the stable URIs and the existing graphs keep working.
+
+#: The relpath a default-built ``AnchorIdentity`` reports as the anchor's file.
+RESEARCH_RELPATH = "bible/research/topic.md"
+
+
+def _uri_segment(uri: str) -> str:
+    """The final path segment of a URI (its stable slug/suffix tail)."""
+    return uri.rstrip("/").rsplit("/", 1)[-1]
+
+
+def default_identities(
+    engine: RdflibIndexer, *, relpath: str = RESEARCH_RELPATH
+) -> tuple[AnchorIdentity, ...]:
+    """One :class:`AnchorIdentity` per anchor in ``engine``, keyed by its stable URI.
+
+    Derives the authored handle from the URI segments (``finding/f1`` → ``f1``) so a
+    fixture that does not care about the exact handle still gets a resolvable
+    ``source`` and a uuid7-free message; tests that pin the handle pass explicit
+    identities instead.
+    """
+    return tuple(
+        AnchorIdentity(
+            promotes_id=_uri_segment(record.promotes),
+            constrains=_uri_segment(record.constrains) if record.constrains is not None else None,
+            relpath=relpath,
+            uri=record.uri,
+        )
+        for record in load_anchors(engine)
+    )
+
+
+def inject_corpus(
+    ctx: ValidationContext,
+    engine: RdflibIndexer,
+    identities: tuple[AnchorIdentity, ...] | None = None,
+) -> None:
+    """Inject the ``(engine, identities)`` corpus the validator resolves over (D4).
+
+    ``identities=None`` derives :func:`default_identities`; pass ``()`` to exercise
+    the FR-010 join-miss floor, or explicit records to pin the handle/file.
+    """
+    ctx.set_anchor_corpus(engine, default_identities(engine) if identities is None else identities)
+
+
 def research_context(root: Path, *, enabled: bool = True, min_reliability: str = "media") -> Path:
     """Scaffold a project whose ``[research]`` block sets ``enabled`` / threshold."""
     root.mkdir(parents=True, exist_ok=True)
@@ -394,4 +447,55 @@ def research_context(root: Path, *, enabled: bool = True, min_reliability: str =
     (root / "manifest.toml").write_text(
         _MANIFEST.format(uri_base=URI_BASE) + block, encoding="utf-8"
     )
+    return root
+
+
+_BAJA_SOURCE = """\
+---
+sources:
+  - name: "Hoja anónima"
+    reference: "ref"
+    author: "Anónimo"
+    original_language: es
+    type: periodística
+    reliability: baja
+    reliability_justification: "rumor sin contraste"
+    access_date: 2026-06-01
+    original_quote: "Dicen que ocurrió."
+---
+"""
+
+_UNDER_RELIABLE_TOPIC = """\
+---
+findings:
+  - id: rumor
+    claim: "Un rumor de la villa."
+    asserted_by: author
+    sources: ["Hoja anónima"]
+anchors:
+  - promotes: rumor
+    constrains: "Ana"
+---
+"""
+
+
+def write_research_project(root: Path, *, min_reliability: str = "media") -> Path:
+    """A **real** research project (the reader can produce it) with one under-reliable anchor.
+
+    Unlike the hand-built :func:`research_graph` graphs, this round-trips through
+    ``map_research``, so the in-process corpus the validator / ``status`` rebuild from
+    source carries the anchor: the single ``baja`` source sits below the ``media``
+    floor, so ``factual_anchor`` R3 emits exactly one warning and no error. ``Ana`` is
+    in the bible and mentioned in the manuscript (no ``character_presence`` orphan, no
+    R4 missing-target), so the warning count is the R3 finding alone (048 D4 / SC-005).
+    """
+    research_context(root, min_reliability=min_reliability)
+    (root / "manuscript" / "c.md").write_text("Ana camina por el puerto.\n", encoding="utf-8")
+    characters = root / "bible" / "characters"
+    characters.mkdir(parents=True, exist_ok=True)
+    (characters / "ana.md").write_text('---\nname: "Ana"\n---\n', encoding="utf-8")
+    research = root / "bible" / "research"
+    research.mkdir(parents=True, exist_ok=True)
+    (research / "sources.md").write_text(_BAJA_SOURCE, encoding="utf-8")
+    (research / "tema.md").write_text(_UNDER_RELIABLE_TOPIC, encoding="utf-8")
     return root

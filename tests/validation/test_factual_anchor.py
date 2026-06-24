@@ -9,6 +9,7 @@ rule is pinned in isolation, plus the fully well-formed anchor → zero violatio
 from __future__ import annotations
 
 import datetime
+import re
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,8 @@ from bookwright.core.manifest import Manifest
 from bookwright.golem.modules.provenance import Source
 from bookwright.golem.namespaces import RELIABILITY_IRI, timeline_uri
 from bookwright.indexers import RdflibIndexer
+from bookwright.io.research import AnchorIdentity, anchor_handle
+from bookwright.status.queries import anchor_gaps
 from bookwright.validation.anchor_queries import (
     FACETS,
     entity_present,
@@ -41,6 +44,7 @@ from tests.validation.conftest import (
     add_event,
     add_present_entity,
     graph_uri,
+    inject_corpus,
     load_context,
     research_context,
     research_graph,
@@ -53,7 +57,16 @@ def _ctx(root: Path) -> ValidationContext:
     return load_context(write_project(root))
 
 
-def _run(ctx: ValidationContext, engine: RdflibIndexer) -> list[Violation]:
+def _run(
+    ctx: ValidationContext,
+    engine: RdflibIndexer,
+    *,
+    identities: tuple[AnchorIdentity, ...] | None = None,
+) -> list[Violation]:
+    # factual_anchor resolves over the injected in-process corpus (048 D4): the
+    # hand-built engine doubles as the corpus engine, with matching identities so the
+    # URI join hits. ``identities=()`` exercises the FR-010 floor.
+    inject_corpus(ctx, engine, identities)
     return FactualAnchor().validate(ctx, engine)
 
 
@@ -423,6 +436,85 @@ def test_timeline_target_uses_overall_bounds(project_root: Path) -> None:
     assert "anachronism" in errors[0].message
 
 
+# --- Actionable locator + authored handle (048) -----------------------------
+#
+# Every violation resolves source to the anchor's bible/research/<topic>.md (not
+# null) and names the anchor by its authored handle, identical to status. The sole
+# uuid7 survivor is the FR-010 join-miss floor.
+
+#: A uuid7 URI tail (8-4-4-4-12 hex) — must never appear in a normal-path message.
+_UUID7_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
+def test_defective_anchor_resolves_file_and_authored_handle(project_root: Path) -> None:
+    engine = research_graph()
+    target = add_present_entity(engine, "characters/ana")
+    add_anchor(engine, AnchorSpec(constrains=target, sources=(SourceSpec(reliability="baja"),)))
+    identity = AnchorIdentity(
+        promotes_id="paginas-arrancadas",
+        constrains="El cuaderno de bitácora",
+        relpath="bible/research/puerto.md",
+        uri=graph_uri("anchor/a1"),
+    )
+    findings = _run(_ctx(project_root), engine, identities=(identity,))
+    assert len(findings) == 1
+    violation = findings[0]
+    assert violation.source == "bible/research/puerto.md"  # SC-001: file, not null
+    assert "anchor 'paginas-arrancadas -> El cuaderno de bitácora'" in violation.message
+    assert not _UUID7_RE.search(violation.message)  # SC-004: no uuid7 on the normal path
+
+
+def test_handle_without_constrains_is_promotes_alone(project_root: Path) -> None:
+    # An anchor with no authored target → the handle is the promotes id alone, no `->`.
+    engine = research_graph()
+    add_anchor(engine, AnchorSpec(constrains=None, sources=(SourceSpec(reliability="baja"),)))
+    identity = AnchorIdentity(
+        promotes_id="rumor-incendio",
+        constrains=None,
+        relpath="bible/research/x.md",
+        uri=graph_uri("anchor/a1"),
+    )
+    findings = _run(_ctx(project_root), engine, identities=(identity,))
+    assert findings  # R3 under-reliable + R4 missing target
+    assert all(v.source == "bible/research/x.md" for v in findings)
+    assert all("anchor 'rumor-incendio'" in v.message for v in findings)
+    assert all(" -> " not in v.message for v in findings)
+
+
+def test_identity_less_anchor_still_emits_on_the_floor(project_root: Path) -> None:
+    # FR-010 defensive floor: a join miss must NOT drop the finding (the gate reports
+    # every defective anchor); it falls back to the URI label + source=None.
+    engine = research_graph()
+    target = add_present_entity(engine, "characters/ana")
+    add_anchor(engine, AnchorSpec(constrains=target, sources=(SourceSpec(reliability="baja"),)))
+    findings = _run(_ctx(project_root), engine, identities=())  # no identity → join miss
+    assert len(findings) == 1
+    assert findings[0].source is None
+    assert "anchor 'a1'" in findings[0].message  # the _label(anchor.uri) floor
+
+
+def test_factual_anchor_and_status_agreement(project_root: Path) -> None:
+    # SC-003 / FR-009: factual_anchor and status name + locate the same anchor
+    # identically, both through the shared anchor_handle resolution point.
+    engine = research_graph()
+    target = add_present_entity(engine, "characters/ana")
+    add_anchor(engine, AnchorSpec(constrains=target, sources=(SourceSpec(reliability="baja"),)))
+    identity = AnchorIdentity(
+        promotes_id="paginas-arrancadas",
+        constrains="El cuaderno de bitácora",
+        relpath="bible/research/puerto.md",
+        uri=graph_uri("anchor/a1"),
+    )
+    ctx = _ctx(project_root)
+    minimum = ctx.manifest.research.min_reliability_for_anchor
+    [violation] = _run(ctx, engine, identities=(identity,))
+    [gap] = anchor_gaps(engine, (identity,), minimum, URI_BASE)
+
+    handle = anchor_handle(gap.promotes, gap.constrains)
+    assert f"anchor '{handle}'" in violation.message  # byte-identical handle
+    assert violation.source == gap.file  # same file
+
+
 # --- discovery / selection / inert / scope ----------------------------------
 
 
@@ -459,12 +551,27 @@ def test_zero_violations_when_no_anchors(project_root: Path) -> None:
     assert _run(_ctx(project_root), engine) == []
 
 
+def test_inert_when_fresh_corpus_carries_no_anchor(project_root: Path) -> None:
+    # The persisted graph passed in carries a (defective) anchor, so the FR-016 first
+    # gate passes — but the in-process corpus the validator rebuilds is empty, e.g. the
+    # research source was deleted between `graph build` and `validate`. With nothing to
+    # audit in the fresh corpus the validator emits no finding (the divergence branch).
+    persisted = research_graph()
+    add_anchor(persisted, AnchorSpec(constrains=None, sources=()))
+    ctx = _ctx(project_root)
+    ctx.set_anchor_corpus(research_graph(), ())  # rebuilt corpus has no anchor
+    assert FactualAnchor().validate(ctx, persisted) == []
+
+
 def test_scope_drops_location_less_violations(project_root: Path) -> None:
     engine = research_graph()
     add_anchor(engine, AnchorSpec(constrains=None, sources=()))  # R1 + R4 warnings
-    findings = _run(_ctx(project_root), engine)
+    # No identities → the FR-010 join-miss floor: the findings are still emitted but
+    # carry source=None (the only location-less case after iter 048), so the scope
+    # filter can drop them — exactly what this test pins.
+    findings = _run(_ctx(project_root), engine, identities=())
     assert findings  # the unscoped run sees the defects
-    assert all(f.source is None for f in findings)  # anchors are location-less (D7)
+    assert all(f.source is None for f in findings)  # FR-010 floor → location-less
 
     report = ValidationReport(violations=tuple(findings), errors=(), ran=("factual_anchor",))
     scope = ScopeFilter(rel="bible/research", is_dir=True)
