@@ -4,6 +4,60 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.8] — 2026-06-24
+
+Iteration **049** — issue #1 **track B** (determinism / polish), closing
+**DEBT-017**. The `narrative_structure` validator named the **same** entity
+kind — a `G9_Narrative_Unit` — **two** ways: the orphan-beat rule
+(`_orphan_beats`) printed the opaque URI slug
+(`'el-recuerdo-de-la-primera-marea'`) while the unresolved-role rule
+(`_unresolved_roles`) printed the human authored name (`'La fechoría en el
+muelle'`). This patch **unifies both onto the human authored name, alone** (no
+parenthetical slug — name-plus-slug was rejected: it would change the
+unresolved rule's name-only output and re-introduce the opaque id the
+`relpath:line` locator already supersedes, the iteration-048 track-B
+precedent). The name rides the **already-loaded derived graph**: each `G9`
+emits `(uri, rdfs:label, name)` since iteration 035, so `load_orphan_units`
+carries the label alongside the URI via an `OPTIONAL` clause — **no** outline
+cross-reference, **no** rebuild, **no** lossy slug reconstruction. Both rules
+render through **one shared formatting point** (`_unit_identifier(name, slug)`,
+mirroring iteration 048's `anchor_handle`) so the two surfaces cannot drift;
+the slug survives only as the impossible-by-construction fallback (FR-004). The
+single observable delta is the orphan-beat rule's printed identifier (slug →
+human name); finding **count, severity, `relpath:line` locator, and the
+gate/exit-code contract are unchanged** on every fixture. No new CLI surface,
+no new runtime dependency, no ontology change, no new validator/finding/severity
+— pure hardening.
+
+### Changed
+
+- **`load_orphan_units`** (`src/bookwright/validation/queries.py`) — return type
+  widened `list[str]` → `list[tuple[str, str | None]]`; the orphan query gains
+  `OPTIONAL { ?unit rdfs:label ?label }` and sorts by the unique URI so the
+  output stays byte-stable. The sole caller is `_orphan_beats` (grep-verified).
+- **`narrative_structure`** (`validation/validators/narrative_structure.py`) —
+  new module-level `_unit_identifier(name, slug) -> str` (`name if name else
+  slug`), the **single** place a `G9` unit is named in a finding message. Both
+  `_orphan_beats` (now passing the graph `rdfs:label`, was the slug) and
+  `_unresolved_roles` (passing `ref.entity`, byte-identical output) render
+  through it. A dead multi-label dedup branch was removed (iteration 035 emits
+  exactly one `rdfs:label` per `G9`, so it was unreachable).
+- **Oracles** — `test_narrative_structure.py` flips the orphan oracle slug →
+  `"Orphan Beat"`; a new test pins the FR-004 slug fallback when the graph
+  carries no label; `tiny-quest/expected-narrative.md` flips `omen-beat` →
+  `"Omen Beat"`; `test_command.py`'s JSON-envelope orphan oracle flips (the one
+  other oracle that moved, found empirically).
+- **Contract before code** — `bookwright-design.md` § 13 (validator table)
+  records both rules naming the unit by its human authored name;
+  `bookwright-roadmap.md` track-B line reconciled (DEBT-017 closed in iteration
+  049).
+
+### Removed
+
+- **DEBT-017** (the inconsistent unit identifier across `narrative_structure`'s
+  two rules) — resolved and removed from `DEBT.md`; its track-B index
+  cross-reference struck through.
+
 ## [0.5.7] — 2026-06-24
 
 Iteration **048** — issue #1 **track B** (determinism / polish), closing
