@@ -2,27 +2,40 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.6 released (2026-06-24)
+## Repository state: v0.5.7 released (2026-06-24)
 
-The current release is **v0.5.6** (iteration 047). The repo is on `main`
+The current release is **v0.5.7** (iteration 048). The repo is on `main`
 (tagged) with a real `src/bookwright/` package (~200 Python files), the full
 test suite, docs, and CI gates green. **There is no active iteration branch.**
 
-The latest work opens **issue #1 track B** (determinism / authoring honesty,
-the sibling of the track-A *evaluation* honesty above): with a closed narrative
-vocabulary active, `graph build` types each authored term — a match gets a
-`crm:P2_has_type` edge — but a non-match was minted as an **untyped node in
-silence**, inconsistent with research (§ 20), which rejects an unknown
-`type`/`reliability` *fatally* with an enumerated message. v0.5.6 closes that
-asymmetry **for typing while leaving authoring open**: an unrecognized Propp
-`functions:` / Greimas `narrative_roles:` term now emits a **non-fatal**
-`graph build` warning enumerating the valid terms (new `untyped_vocab_terms`
-soft channel, sibling of `unknown_keys`/`unresolved_references`); the node is
-still ingested untyped and the build neither aborts nor changes its exit code
-(DEBT-016). The governing principle, now recorded in design § 4.4: **fatal ⇔ an
-invalid value breaks downstream logic** (`reliability` poisons the
-`factual_anchor` gate → fatal; an absent `P2_has_type` is descriptive metadata
-→ warn only). The track-A honesty work continues to stand: v0.5.5 surfaced
+The latest work continues **issue #1 track B** (determinism / polish): the two
+**graph-consumer** validators emitted unactionable findings — `factual_anchor`
+named each defective anchor by its opaque uuid7 URI with `source: null`, and
+`temporal` rules (a) cycle / (b) order-vs-overlap / (c) containment-vs-order
+also emitted `source: null` (only rule (d) numeric resolved a locator) — whereas
+the prose validators always give `relpath:line` + a readable handle. v0.5.7
+makes both consumers resolve a real locator and a legible identifier, in two
+independent halves. **`temporal`**: rules a/b/c adopt rule (d)'s `resolve_source`
+over a **deterministically-chosen** implicated event (the carried triple's
+subject for b/c; the lexicographically smallest event URI of the SCC for (a)),
+so all four rules resolve to `bible/timeline.md:<line>` uniformly. **`factual_anchor`**:
+every violation resolves `source` to the anchor's authored `bible/research/<topic>.md`
+(via `AnchorIdentity.relpath`, **not** `resolve_source(anchor.uri)` — an anchor
+*is* the reified `E13`, so nothing points at it) and names it by its authored
+handle (`promotes -> constrains`) through the **same shared point**
+(`anchor_handle`) `bookwright status` already uses, so the two surfaces cannot
+diverge (DEBT-015). The load-bearing design call (research D1): anchors are
+`MintedEntity` (uuid7, re-minted every build) and `validate` reads the
+*persisted* `graph.ttl` from a prior `graph build`, so a URI join against the
+disk graph would miss for every anchor; `factual_anchor` therefore resolves over
+an **in-process-built, non-persisting** research corpus (a memoized
+`ValidationContext.anchor_corpus()`) and joins by URI within that single build —
+exactly as `status` does. The file-only-anchor vs `:line`-event granularity is
+**by design** (an anchor carries no line; `AnchorIdentity` does not). The earlier
+track-B/track-A work continues to stand: v0.5.6 soft-warned unrecognized
+Propp/Greimas vocabulary terms (`untyped_vocab_terms`, non-fatal, node stays
+untyped — DEBT-016), under the principle (design § 4.4) **fatal ⇔ an invalid
+value breaks downstream logic**; v0.5.5 surfaced
 ingestion-skipped bible files as `not_evaluated` (DEBT-018); v0.5.4 abstained on
 `focalization`'s head-hopping check (DEBT-014); v0.5.3 split off the
 `character_unknown_mentions` abstainer and made `not_evaluated` entries
@@ -51,18 +64,20 @@ per-release narrative is `CHANGELOG.md`):
   channel — so `[]` stops reading as "clean" when it meant "couldn't look". GREEN
   is the single documented predicate `status == "ok" AND no not_evaluated entry
   has kind == "missing_input"`; only `error` findings gate CI.
-- The **v0.5.x post-dogfooding track** (041–047, patches `v0.5.1`…`v0.5.6`)
+- The **v0.5.x post-dogfooding track** (041–048, patches `v0.5.1`…`v0.5.7`)
   continues the issue #1 doctrine on two tracks. **Track A — evaluation
   honesty:** a deterministic heuristic measured insufficient on real prose
   **abstains** (`not_evaluated`, kind-categorized
   `missing_input`/`pending_capability`) instead of faking findings, and a
-  partial corpus surfaces what was excluded. **Track B — authoring honesty:** an
-  unrecognized controlled-vocabulary term is no longer typed in silence but
-  emits a non-fatal enumerated `graph build` warning. Closed
-  DEBT-009/010/014/016/018; the `character_unknown_mentions` abstainer (043), the
-  `focalization` head-hopping abstention (045), `validate` surfacing
-  ingestion-skipped bible files (046), and the `untyped_vocab_terms` soft-warning
-  channel (047) are the headline moves.
+  partial corpus surfaces what was excluded. **Track B — authoring honesty +
+  deterministic polish:** an unrecognized controlled-vocabulary term is no longer
+  typed in silence but emits a non-fatal enumerated `graph build` warning, and
+  the graph-consumer validators now emit actionable locators + legible handles.
+  Closed DEBT-009/010/014/015/016/018; the `character_unknown_mentions` abstainer
+  (043), the `focalization` head-hopping abstention (045), `validate` surfacing
+  ingestion-skipped bible files (046), the `untyped_vocab_terms` soft-warning
+  channel (047), and the actionable graph-consumer locators (048) are the
+  headline moves.
 
 The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** (its
 trigger — a concrete heuristic measured insufficient on real prose — is met) but
@@ -206,7 +221,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. The table below is the canonical
 per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
-iterations through 047 are merged; there is no active iteration branch.
+iterations through 048 are merged; there is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -257,6 +272,7 @@ iterations through 047 are merged; there is no active iteration branch.
 | 045 | `focalization` head-hopping abstains → `pending_capability` under limited-third; heuristic deleted (issue #1 track A; closes DEBT-014, records DEBT-019) | v0.5.4 | ✅ merged |
 | 046 | `validate` surfaces ingestion-skipped bible files as `not_evaluated` (`ingestion`/`missing_input`); closes `status`↔`validate` asymmetry (issue #1 track A; closes DEBT-018) | v0.5.5 | ✅ merged |
 | 047 | `graph build` soft-warns unrecognized Propp/Greimas vocab terms (`untyped_vocab_terms` channel, enumerated, non-fatal; node stays untyped) (issue #1 track B; closes DEBT-016) | v0.5.6 | ✅ merged |
+| 048 | Actionable graph-consumer locators: `factual_anchor` resolves `source` to `bible/research/<topic>.md` + shared authored handle (`anchor_corpus()` in-process build), `temporal` rules a/b/c adopt `resolve_source` over a deterministic event (issue #1 track B; closes DEBT-015) | v0.5.7 | ✅ merged |
 
 The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
 ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles

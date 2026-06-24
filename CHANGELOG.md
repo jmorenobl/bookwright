@@ -4,6 +4,82 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.7] — 2026-06-24
+
+Iteration **048** — issue #1 **track B** (determinism / polish), closing
+**DEBT-015**. The two **graph-consumer** validators emitted unactionable
+findings — `factual_anchor` named each defective anchor by its opaque uuid7 URI
+with `source: null`, and `temporal` rules (a) cycle, (b) order-vs-overlap and
+(c) containment-vs-order also emitted `source: null` while only rule (d) numeric
+resolved a locator — whereas the prose validators always give `relpath:line` +
+a readable handle. This patch makes both consumers resolve a real locator and a
+legible identifier, in **two independent halves**. **`temporal`**: rules a/b/c
+adopt rule (d)'s `resolve_source` over a **deterministically-chosen** implicated
+event — the carried triple's subject for b/c, the lexicographically smallest
+event URI of the strongly-connected component for (a) — so all four rules now
+resolve to `bible/timeline.md:<line>` uniformly. **`factual_anchor`**: every
+violation now resolves `source` to the anchor's authored
+`bible/research/<topic>.md` (via `AnchorIdentity.relpath`, **not**
+`resolve_source(anchor.uri)` — an anchor *is* the reified `E13`, so nothing
+points at it) and names the anchor by its authored handle (`promotes ->
+constrains`) through the **same shared point** (`anchor_handle`) that
+`bookwright status` already uses, so the two surfaces can never diverge. The
+load-bearing design call (research D1): anchors are `MintedEntity` (uuid7,
+re-minted every build) and `validate` reads the *persisted* `graph.ttl` from a
+prior `graph build`, so a URI join against the disk graph would miss for **every**
+anchor; `factual_anchor` therefore resolves over an **in-process-built,
+non-persisting** research corpus (a memoized `ValidationContext.anchor_corpus()`)
+and joins by URI within that single build — exactly as `status` does. No new CLI
+surface, no new runtime dependency, no ontology change, no new
+validator/finding/severity, and the gate/exit-code contract is unchanged
+(findings differ only in their `source`/message identifiers) — pure hardening.
+
+### Added
+
+- **`ValidationContext.anchor_corpus()`** (`src/bookwright/validation/base.py`)
+  — a memoized, **non-persisting** accessor returning `(engine, anchor_identities)`
+  from one in-process `map_research` pass (reusing the memoized `outline()`
+  `MapResult`), so an anchor's uuid7 URI and its `AnchorIdentity` come from the
+  same build and join coherently. The validator never writes: the corpus calls
+  no `engine.save`. A `set_anchor_corpus()` injection seam lets hand-built
+  fixtures supply the corpus directly.
+- **`anchor_handle(promotes, constrains)`** (`io/_research_identity.py`,
+  re-exported from `io/research.py`) — the **single** spelling of an anchor's
+  author-facing handle (`promotes -> constrains`, or `promotes` alone when no
+  target), called by **both** `commands/status._anchor_line` and
+  `factual_anchor`, so the two surfaces name the same anchor byte-identically.
+- Oracles — a defective-anchor unit asserts `source == bible/research/<topic>.md`
+  (not null) + an authored-handle message with no uuid7 tail; a cross-surface
+  test asserts `factual_anchor` and `status` name/locate the same anchor
+  identically; the FR-010 join-miss floor still emits (uuid7 label + `source=None`);
+  `temporal` a/b/c resolve to the timeline file and are byte-stable across two
+  builds; the E2E `test_research_workflow.py` covers the real `graph build` →
+  `validate` path (non-null source, no uuid7) and that `validate` never rewrites
+  the derived graph.
+
+### Changed
+
+- **`temporal` rules a/b/c** (`validation/validators/temporal.py`) — now resolve
+  `source` via `resolve_source` over a deterministically-chosen implicated event
+  instead of emitting `source=None`.
+- **`factual_anchor`** (`validation/validators/factual_anchor.py`) — resolves
+  each violation's `source` to the anchor's research file and names it by the
+  shared authored handle; the uuid7/`None` fallback is retained only as a
+  defensive floor on an identity join miss.
+- **Shared graph-feeding extracted** — `io/bible.feed_graph` is now the single
+  triple-assembly both the persisted `graph build` (`commands/_graph`) and the
+  in-process validation corpus route through, so the two graphs cannot drift.
+- **Contract before code** — `bookwright-design.md` § 13.2 (validator table) and
+  § 20.6 record both graph-consumers as resolvable, with the file-only-anchor vs
+  `:line`-event granularity stated as **by design**; `bookwright-roadmap.md`
+  track-B line reconciled (DEBT-015 closed in iteration 048).
+
+### Removed
+
+- **DEBT-015** (the unactionable locators/identifiers of the graph-consumer
+  validators) — resolved and removed from `DEBT.md`; its track-B index
+  cross-reference struck through.
+
 ## [0.5.6] — 2026-06-24
 
 Iteration **047** — issue #1 **track B** (determinism / polish), closing
