@@ -57,6 +57,20 @@ El *slug* de un personaje se deriva de su `name` (p. ej. `name: "Ana Soler"` →
 `timeline.md` y `relationships.md` (que listan slugs en `participants`)
 resuelvan correctamente.
 
+## El *roster* de personas se lee de las fichas, no del grafo
+
+`G1_Character` **no** lleva `rdfs:label`: el nombre legible de un personaje vive
+en el campo `name:` de su ficha y en el slug de su URI, no en una etiqueta del
+grafo. Por eso, para enumerar *quién está declarado como persona*, se lee el
+`name:` de cada `bible/characters/*.md` directamente de las fichas — no se
+consulta el grafo por una etiqueta que no existe. Este *roster* es la base de
+juicio del cuarto eje de `bookwright-continuity` ("personajes mencionados pero
+sin ficha"): un nombre propio que nombra a una persona en la prosa pero que no
+está en el *roster* —y que no es una organización, un topónimo, un vocativo ni
+una palabra de título— es un personaje sin declarar. Los nombres ya declarados
+que **no** son personas (`bible/settings/`, `bible/locations/`, `bible/objects/`)
+se leen aparte para no confundirlos con personajes ausentes.
+
 ## Secciones de cuerpo (de la plantilla)
 
 La ficha estampada trae secciones en prosa que **no** se indexan pero anclan al

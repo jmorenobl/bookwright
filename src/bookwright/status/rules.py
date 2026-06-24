@@ -152,6 +152,33 @@ def _activate_dormant_validators(state: StatusState) -> Action:
     )
 
 
+#: The set of abstaining source validators whose `pending_capability` gap
+#: `bookwright-continuity` can now answer with semantic judgment (iteration 051,
+#: move 3 first slice). Keyed on the SOURCE validator, never on the
+#: `pending_capability` kind — so `focalization`'s head-hopping abstention (also
+#: `pending_capability`, but a judgment the skill does not yet perform) does NOT fire
+#: this nudge. Future move-3 dimensions join by adding their source validator name.
+_JUDGE_SOURCES: frozenset[str] = frozenset({"character_unknown_mentions"})
+
+
+def _judge_undeclared_characters(_state: StatusState) -> Action:
+    # One fixed, byte-identical action (no minted data): the abstaining validator named
+    # the open-set gap; the skill closes it with the authored roster as grounding
+    # (§ 20.6.2 decision 2). Informative only — it never degrades green (FR-010).
+    return Action(
+        skill="bookwright-continuity",
+        prompt=(
+            "Scan the manuscript for proper nouns, read the authored roster "
+            "(bible/characters/ `name:` plus settings/locations/objects), and report "
+            "each person used in the prose with no sheet in bible/characters/."
+        ),
+        reason=(
+            "character_unknown_mentions abstained — open-set proper-noun discovery is a "
+            "capability gap; the skill provides the semantic judgment"
+        ),
+    )
+
+
 def _define_focus(_state: StatusState) -> Action:
     return Action(
         skill="bookwright focus set",
@@ -191,6 +218,11 @@ RULES: tuple[Rule, ...] = (
             r.kind is NotEvaluatedKind.missing_input for r in s.validation.not_evaluated
         ),
         build=_activate_dormant_validators,
+    ),
+    Rule(
+        name="judge_undeclared_characters",
+        applies=lambda s: any(r.validator in _JUDGE_SOURCES for r in s.validation.not_evaluated),
+        build=_judge_undeclared_characters,
     ),
     Rule(
         name="define_focus",

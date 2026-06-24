@@ -3,12 +3,15 @@ name: bookwright-continuity
 description: >-
   Revisa la consistencia POST-redacción del manuscrito frente a la biblia:
   cumplimiento de la biblia, coherencia de los arcos de personaje y de la línea de
-  tiempo. Check POST-draft continuity of the manuscript against the bible: bible
-  compliance, character-arc consistency and timeline coherence. Úsalo cuando el
-  autor pida "revisa si mi manuscrito es coherente con la biblia" / "check my
-  manuscript against the bible". Es de solo lectura y trabaja en fase POST-draft.
-  NO revisa la planificación antes de redactar (eso es pre-draft:
-  bookwright-analyze).
+  tiempo, y personajes mencionados en la prosa pero sin ficha en
+  bible/characters/. Check POST-draft continuity of the manuscript against the
+  bible: bible compliance, character-arc consistency, timeline coherence, and
+  characters used in the prose but undeclared (no sheet in bible/characters/).
+  Úsalo cuando el autor pida "revisa si mi manuscrito es coherente con la biblia"
+  / "check my manuscript against the bible", o "revisa si hay personajes sin
+  declarar / mencionados pero sin ficha" / "check for undeclared / unbacked
+  characters". Es de solo lectura y trabaja en fase POST-draft. NO revisa la
+  planificación antes de redactar (eso es pre-draft: bookwright-analyze).
 ---
 
 # /bookwright-continuity
@@ -30,26 +33,52 @@ manuscrito y la biblia.
 2. Ejecuta `bookwright graph build --json` y consume el JSON que devuelve:
    razona sobre el grafo del proyecto (entidades, eventos, relaciones,
    referencias sin resolver) para cotejar el manuscrito contra él.
-3. Revisa tres ejes: **cumplimiento de la biblia** (¿el texto respeta los hechos
-   de las fichas y las invariantes de la constitución?), **coherencia de arcos**
-   (¿la evolución de cada personaje sigue su arco?) y **coherencia temporal**
-   (¿el orden de los hechos encaja con `bible/timeline.md`? — ver
-   `references/golem-events-timeline.md` y `references/golem-relationships.md`).
-4. Si no hay manuscrito todavía, repórtalo como "prerrequisito ausente" (nada que
+3. Revisa cuatro ejes: **cumplimiento de la biblia** (¿el texto respeta los
+   hechos de las fichas y las invariantes de la constitución?), **coherencia de
+   arcos** (¿la evolución de cada personaje sigue su arco?), **coherencia
+   temporal** (¿el orden de los hechos encaja con `bible/timeline.md`? — ver
+   `references/golem-events-timeline.md` y `references/golem-relationships.md`) y
+   **menciones de conjunto abierto / personajes sin declarar** (ver el eje 4
+   abajo).
+4. **Cuarto eje — personajes mencionados pero sin ficha.** Construye el *roster*
+   de personas declaradas leyendo el campo `name:` de cada
+   `bible/characters/*.md` — el nombre vive en la **ficha**, no en una etiqueta
+   del grafo: `G1_Character` no tiene `rdfs:label`, el nombre está en `name:` y
+   en el slug de la URI (ver `references/golem-character.md`). Lee también los
+   nombres de `bible/settings/`, `bible/locations/` y `bible/objects/` para saber
+   qué nombres propios ya están declarados (y no son personas). Recorre el
+   manuscrito buscando nombres propios y **juzga** cuáles nombran a una *persona
+   usada en la prosa pero sin ficha en la biblia* (p. ej. una `Amelia` que
+   aparece en el texto pero no tiene `bible/characters/amelia.md`),
+   distinguiéndolos del ruido que **no** necesita ficha: organizaciones, nombres
+   de lugar, vocativos y palabras de título. El *roster* es la base de juicio que
+   separa la señal (un personaje real sin ficha) del ruido (una organización o un
+   topónimo).
+5. Si no hay manuscrito todavía, repórtalo como "prerrequisito ausente" (nada que
    verificar), no falles de forma opaca.
-5. Redacta los hallazgos como una lista de **desviaciones**, cada una con la cita
+6. Redacta los hallazgos como una lista de **desviaciones**, cada una con la cita
    del manuscrito, el hecho de la biblia que contradice y una sugerencia.
 
 ## Output
 
-Un reporte en prosa con las desviaciones por eje (biblia, arcos, cronología) y el
-resultado del `graph build`. **No escribe nada** en el proyecto.
+Un reporte en prosa con las desviaciones por eje (biblia, arcos, cronología,
+personajes sin declarar) y el resultado del `graph build`. Cada mención de una
+persona usada en la prosa pero **sin ficha** se reporta como **una desviación
+más**: la cita del manuscrito, la frase "no entry in `bible/characters/`" (sin
+ficha en `bible/characters/`) y una sugerencia (crear la ficha, o confirmar que
+no es un personaje). Es un juicio, no una `error` de validación: no nace ningún
+`error` de este eje. **No escribe nada** en el proyecto.
 
 ## Archivos a leer
 
 - `manuscript/`, `bible/` (fichas, `timeline.md`, `relationships.md`,
   `constitution.md`).
-- `references/golem-events-timeline.md`, `references/golem-relationships.md`.
+- `bible/characters/*.md` (el campo `name:` — el *roster* de personas),
+  `bible/settings/`, `bible/locations/`, `bible/objects/` (nombres ya declarados
+  que no son personas), para el cuarto eje.
+- `references/golem-events-timeline.md`, `references/golem-relationships.md`,
+  `references/golem-character.md` (el *roster* se lee de las fichas, no de una
+  etiqueta del grafo).
 
 ## Archivos a escribir
 

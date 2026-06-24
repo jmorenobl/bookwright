@@ -7,13 +7,16 @@ Walks the M5 work loop in-process (``typer.testing.CliRunner``) exactly like
 assertion is **state convergence**, not a shorter ``next_actions`` list (research D2):
 the merged 020 engine aggregates per workstream, so ``research_queue`` keeps firing
 while *any* open question OR anchor gap remains. Resolving one question therefore
-leaves ``len(next_actions) == 3`` unchanged; only ``state.open_questions`` and the
+leaves ``len(next_actions) == 4`` unchanged; only ``state.open_questions`` and the
 ``research_queue`` prompt/reason converge, while every other fact is byte-identical.
 (The ``not_evaluated`` channel is never empty — ``character_unknown_mentions`` abstains
 unconditionally, issue #1 track A — but its entry is ``kind: pending_capability`` since
 iteration 044, so ``activate_dormant_validators`` NO LONGER fires: the nudge nudges only
-on actionable ``missing_input`` gaps. The three actions are the research workstreams plus
-the single ``review_continuity`` (the ``error`` count), byte-identical across runs.)
+on actionable ``missing_input`` gaps. Since iteration 051 the abstention DOES fire the
+informative ``judge_undeclared_characters`` nudge (keyed on the source), a second
+``bookwright-continuity``. The four actions are the research workstreams, the single
+``review_continuity`` (the ``error`` count), and that judge nudge — byte-identical across
+runs.)
 
 Four groups, mapped 1:1 to ``contracts/e2e-orchestration-contract.md``:
 
@@ -302,10 +305,12 @@ def test_second_status_converges(cli: CliRunner, historical: Path, oracle: dict[
         assert entry["kind"] == "pending_capability"
 
     # Invariant: everything else byte-identical; the list length is unchanged (NOT N-1).
-    # Three actions: the capability-gap entry no longer fires the dormant nudge (044), so
-    # only the research workstreams plus the single review_continuity remain.
-    assert len(after["next_actions"]) == 3
-    assert len(before["next_actions"]) == 3
+    # Four actions: the research workstreams plus review_continuity, plus the iteration-051
+    # judge nudge (`judge_undeclared_characters`, a second `bookwright-continuity` keyed on
+    # the `character_unknown_mentions` abstention). The capability-gap entries still do not
+    # fire `activate_dormant_validators` (044).
+    assert len(after["next_actions"]) == 4
+    assert len(before["next_actions"]) == 4
     assert _invariant_view(after) == _invariant_view(before)
 
 
@@ -366,11 +371,13 @@ def test_focus_free_project_recommends_no_research_workstream(
     assert state["low_reliability_findings"]["count"] == 0
 
     # The *research-derived* workstreams must not fire on a research-free project. Note
-    # `bookwright-continuity` is dual-purpose — `review_continuity` (not firing here, no
-    # errors) AND `activate_dormant_validators` (which also does NOT fire since iteration
-    # 044: the only `not_evaluated` entry is `character_unknown_mentions` with
-    # `kind: pending_capability`, and the nudge nudges only on `missing_input` gaps) — so
-    # the inertness check covers research/verify; continuity is simply absent here too.
+    # `bookwright-continuity` is multi-purpose — `review_continuity` (not firing here, no
+    # errors), `activate_dormant_validators` (also NOT firing since iteration 044: the
+    # `not_evaluated` entries are `pending_capability`, and that nudge nudges only on
+    # `missing_input` gaps), AND `judge_undeclared_characters` (iteration 051), which DOES
+    # fire on the `character_unknown_mentions` abstention — informative, never degrading
+    # green. So the inertness check covers research/verify; the judge continuity nudge may
+    # legitimately appear.
     research_skills = {"bookwright-research", "bookwright-verify"}
     assert research_skills.isdisjoint(_skills(payload))
 
