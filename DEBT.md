@@ -48,9 +48,13 @@
 > `not_evaluated` (familia 040), y el **move 3** (juicio semántico) se **activa**
 > como su cura de raíz. Eso reparte estas 8 deudas en tres destinos (ver
 > `bookwright-roadmap.md` § 3, `bookwright-design.md` § 13.5):
-> - **Track A — honestidad** (`not_evaluated`): DEBT-019
->   (abierta por spec-045 como efecto colateral de que `focalization`
->   deje de fingir el head-hopping y se abstenga bajo tercera-limitada;
+> - **Track A — honestidad** (`not_evaluated`): la regresión de cobertura de
+>   `focalization` bajo tercera-limitada —la abstención todo-o-nada de spec-045
+>   dejaba de correr la ruptura determinista de 1ª persona— la **cerró la
+>   iteración 050**, que introduce el contrato de **evaluación parcial** (forma
+>   (c) `EvalResult`, § 13.1) para que `focalization` corra esa ruptura Y declare
+>   la abstención de head-hopping en el mismo run. Eliminada de este registro
+>   (git conserva el historial).
 >   DEBT-018 —`validate` validaba un corpus parcial en silencio— la **cerró la
 >   iteración 046**, que surfacéa cada fichero de la bible omitido como entrada
 >   `not_evaluated` `validator="ingestion"`, así que sale de este registro). El
@@ -92,15 +96,6 @@
 - **Descripción:** en "la Naviera Salas", `Naviera` (cabeza del nombre de la organización) se reporta como nombre propio sin entrada en la bible (`manuscript/01-marea-baja.md:13`), aunque `Salas` sí esté en el roster de personajes (`Víctor Salas`). La unión de rosters de DEBT-010 (character/setting/location/object) NO cubre organizaciones. Ninguna normalización de superficie lo cura.
 - **Por qué se difiere:** a diferencia de DEBT-011/012, esto NO se arregla en el seam. Requería una **decisión de diseño** previa: **(a)** una 5ª clase de roster (organizaciones), o **(b)** diferirlo al juicio semántico (move 3). **Resuelta en la issue #1 (2026-06-23): (b).** Un 5º roster es perseguir un conjunto abierto (tras orgs vienen topónimos, barcos, vocativos…) con una lista cerrada más; no converge y roza el Principio X. El move 3 cura el conjunto abierto entero distinguiendo «Naviera = organización» de «Elena = personaje sin declarar» sin roster nuevo.
 - **Resolución sugerida / versión objetivo:** **track C — move 3** (juicio semántico, norte activado; `bookwright-roadmap.md` § 5, `bookwright-design.md` § 13.5/§ 20.6). Interim honesto ya cubierto por el track A: la regla de menciones-desconocidas declara `not_evaluated` (no emite el FP de `Naviera`). Esta deuda se cierra cuando el move 3 aterrice; no es una iteración de costura.
-
-### DEBT-019 — el contrato `NotEvaluated` todo-o-nada obliga a `focalization` a abstenerse del validador entero bajo tercera-limitada, dejando de ejecutar la comprobación determinista de ruptura de primera persona
-- **Estado:** abierta
-- **Detectada en:** spec-045 (2026-06-23), paso de endurecimiento de la spec.
-- **Ubicación:** `src/bookwright/validation/validators/focalization.py` (`validate()` se abstiene del run entero bajo tercera-limitada tras 045) + el contrato de `src/bookwright/validation/base.py` (`NotEvaluated` es todo-o-nada: un validador o devuelve `list[Violation]` o lanza `NotEvaluated`, nunca ambos en un mismo run).
-- **Clase de deuda:** ausencia de **evaluación parcial** — un validador que SÍ puede comprobar deterministamente una dimensión (ruptura de 1ª persona) pero necesita juicio semántico para otra (head-hopping) debe abstenerse del validador ENTERO, perdiendo la dimensión determinista. Es familia 040 (honestidad), pero a nivel de *sub-comprobación* dentro de un validador, no de fichero de entrada (DEBT-018) ni de regla de conjunto abierto (043).
-- **Descripción:** tras 045, una declaración de voz «Tercera persona limitada, focalizada en X» hace que `focalization` declare `not_evaluated` (`kind=pending_capability`) para TODO el run, así que `_first_person_breaks` (marcadores de 1ª persona fuera de diálogo bajo 3ª declarada) ya **no** se ejecuta para proyectos focalizados — aunque sí siga ejecutándose bajo 3ª **no-limitada** (omnisciente). Verificado: las tres fixtures focalizadas (`tiny-historical`, `tiny-novel`, `tiny-quest`) emiten hoy cero hallazgos de `focalization`, así que la regresión es **real pero invisible** en la suite (ninguna fixture ejercita un break de 1ª persona bajo 3ª-limitada). La razón fija del `not_evaluated` (FR-002 de 045) habla solo de head-hopping, de modo que la pérdida de la comprobación de persona no queda ni siquiera nombrada en la entrada.
-- **Por qué se difiere:** arreglarlo de verdad exige un **contrato de evaluación parcial** (un validador emitiendo hallazgos **y** una entrada `not_evaluated` en el mismo run), un cambio de la escala de 040/044 y ajeno al scope de 045 (que solo CONSUME `pending_capability`, sin tocar el contrato). Contenerlo con un hack condicional-a-hallazgos (devolver `[]` o abstenerse según si `_first_person_breaks` encontró algo) sería justo el smell que la doctrina prohíbe.
-- **Resolución sugerida / versión objetivo:** **track A (honestidad, familia 040)** o subsumida por **track C (move 3)**. (a) Introducir un contrato de evaluación parcial para que `focalization` corra `_first_person_breaks` Y declare la abstención de head-hopping a la vez. (b) El move 3 cubre consistencia de persona + focalización de forma semántica y la mitad determinista deja de hacer falta. Validador de prosa, `triples=()`, ontología congelada intacta.
 
 ---
 

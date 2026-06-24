@@ -462,42 +462,51 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/049-narrative-unit-identifier/plan.md` (iteration 049, design § 13 — issue #1
-track B *pulido determinista*, closes DEBT-017). `narrative_structure` names the SAME
-entity kind (a `G9_Narrative_Unit`) TWO ways: the orphan-beat rule (`_orphan_beats`)
-prints the opaque URI SLUG (`'el-recuerdo-de-la-primera-marea'`), the unresolved-role
-rule (`_unresolved_roles`) prints the HUMAN authored name (`'La fechoría en el
-muelle'`). UNIFY both onto the human name, ALONE (no parenthetical slug —
-Clarifications 2026-06-24; name-plus-slug rejected: it would change the unresolved
-rule's name-only output against FR-002 and re-introduce the opaque id the
-`relpath:line` locator already supersedes, 048 precedent). The `G9` unit already emits
-`(uri, rdfs:label, name)` (iter 035, `golem/modules/narrative.py:50`), so the name is
-SPARQL-queryable from the ALREADY-LOADED derived graph (FR-003) — NO outline
-cross-reference, NO rebuild, NO slug reconstruction (lossy). TWO source edits:
-(1) extend `queries.load_orphan_units` from `list[str]` to `list[tuple[str, str |
-None]]` via `OPTIONAL { ?unit rdfs:label ?label }` (sole caller is `_orphan_beats`,
-verified by grep; sorted by URI, smallest label per URI → byte-stable). (2) one
-module-level helper `_unit_identifier(name, slug) -> str` (`return name if name else
-slug`) in `narrative_structure.py` — the SINGLE shared formatting point (FR-005,
-mirrors 048's `anchor_handle` so the surfaces cannot drift) called by BOTH rules:
-`_orphan_beats` passes `(label, slug)` → human name (was slug); `_unresolved_roles`
-passes `(ref.entity, slug)` → `ref.entity` UNCHANGED (FR-002), now via the shared
-point. Empty-string label treated as missing (FR-004 floor; impossible by
-construction since iter 035 emits one non-empty label per `G9`). ORACLES (empirical,
-`uv run pytest` decides which actually move): `test_narrative_structure.py:51`
-`"orphan-beat" in message` → human name `"Orphan Beat"`;
-`tiny-quest/expected-narrative.md:70` `orphan_beats[0].unit: omen-beat` → `"Omen
-Beat"` (E2E `test_validate_reports_the_orphan_beat` rides the oracle); NEW FR-004 test
-pins the label-less slug fallback. Authored outline fixture cards NOT edited (FR-008).
-SC-003: finding count, severity, `relpath:line`, gate/exit-code UNCHANGED on every
-fixture — only the printed identifier text differs. CONTRACT-BEFORE-CODE: reconcile
-`bookwright-design.md` § 13 (both rules name the unit by its human name); REMOVE
-DEBT-017 from `DEBT.md` + reconcile the track-B closed-list line + the iteration
-table/milestone prose. Out of scope: changing WHAT rules detect; new
-rule/finding/severity; the gate/exit-code contract; the prose validators;
-`factual_anchor`/`temporal` locators (DEBT-015/iter 048, closed); the move-3 semantic
-work; any new dependency or ontology change. ~2 source files (`validation/queries.py`,
-`validation/validators/narrative_structure.py`) + oracles + § 13 + DEBT.md + index; no
-new module/dep (Constitution II); each changed file ≤ 500 lines; frozen ontology
-untouched (Principle X). `uv run pytest` + four gates green.
+`specs/050-partial-evaluation-contract/plan.md` (iteration 050, design § 13.1 +
+§ 20.6.1 — issue #1 track A *honestidad*, closes DEBT-019). The validator contract is
+ALL-OR-NOTHING: `validate()` either returns `list[Violation]` OR raises
+`NotEvaluated(reason, kind)` — a validator CANNOT deterministically check one
+dimension AND declare `not_evaluated` on another in the same run. Iteration 045 hit
+that wall: under third-person-LIMITED, `focalization` raises
+`NotEvaluated(pending_capability)` for head-hopping BEFORE reaching
+`_first_person_breaks` (`focalization.py:101`), so the deterministic 1st-person-break
+check no longer runs for ANY focalized project — a real, suite-INVISIBLE coverage
+regression (DEBT-019). Introduce a GENERAL partial-evaluation contract — a THIRD
+return shape. THREE source edits: (1) `validation/base.py` — add frozen
+`EvalResult(violations: list[Violation], not_evaluated: list[Abstention])` (form (c),
+RETURNED) + frozen `Abstention(reason, kind=missing_input)` (the returned-not-raised
+sibling of `NotEvaluated`, carrying ONLY (reason, kind) — validator never names
+itself); widen the `Validator` Protocol return to `list[Violation] | EvalResult`.
+(2) `validation/runner.py` — normalize THREE shapes: (a) `list` → findings; (b) `raise
+NotEvaluated` → one entry, no findings (UNCHANGED); (c) `EvalResult` → findings to the
+existing dedup+`sort_key`, each `Abstention` → `not_evaluated[]`. ONE name-stamping
+helper `_record(name, reason, kind) -> NotEvaluatedResult` shared by (b) AND (c) — the
+stamping authority MUST NOT fork (FR-002). `RunResult` 4-tuple + both consumers
+(`commands/validate.py`, `status/queries.py`) UNCHANGED. (3)
+`validation/validators/focalization.py` — at the ONE limited-third site
+(`focalization.py:101`), `return EvalResult(self._first_person_breaks(
+project.manuscript_view()), [Abstention(_HEAD_HOPPING_PENDING,
+NotEvaluatedKind.pending_capability)])` instead of raising. The four `missing_input`
+raises, the omniscient `list` path, the 1st-person `[]` path, the
+`_HEAD_HOPPING_PENDING` string, and `_first_person_breaks` UNTOUCHED. INVARIANT:
+`EvalResult([], [Abstention(r,k)])` is observationally equal to `raise
+NotEvaluated(r,k)` → the three focalized fixtures (`tiny-historical`/`tiny-novel`/
+`tiny-quest`) stay BYTE-IDENTICAL (FR-012; they have no 1st-person break). TESTS:
+runner-level synthetic form-(c) fake (`_Partial`, mirrors `_Skip`/`_Good`/
+`_SkipCapability`) proves the GENERAL contract decoupled from `focalization`
+(FR-015/SC-008); NEW `focalization` both-at-once case asserts ONE `warning` citing the
+marker AND ONE `pending_capability` head-hop entry in the same `EvalResult`
+(FR-013, empirical via `uv run pytest`); retarget the limited-third `pytest.raises(
+NotEvaluated)` tests to assert the `EvalResult` shape (FR-014). CONTRACT-BEFORE-CODE:
+update `bookwright-design.md` § 13.1 (third return shape) + § 13.2/§ 13.5/§ 20.6.1
+(focalization now RUNS the deterministic 1st-person check AND abstains on head-hopping
+under limited-third — the determinism↔LLM frontier realized); REMOVE DEBT-019 from
+`DEBT.md` + reconcile the track-A closed-list line. Out of scope: the 044 green
+predicate / `NotEvaluatedKind` enum / `not_evaluated[]` serialization / `status` nudge
+/ error-only gate (CONSUMED, not changed); retrofitting OTHER total abstentions
+(`character_unknown_mentions` stays total — no deterministic half); move 3; any other
+validator/command/envelope/ontology. ~3 source files + 2 test modules + § 13/§ 20.6.1
++ DEBT.md + index; no new module/dep (Constitution II); each changed file ≤ 500 lines;
+frozen ontology untouched (Principle X); `focalization` stays prose-only
+(`triples=()`). `uv run pytest` + four gates green.
 <!-- SPECKIT END -->

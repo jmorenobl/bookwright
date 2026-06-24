@@ -11,6 +11,8 @@ from pathlib import Path
 
 from bookwright.indexers import Indexer, RdflibIndexer
 from bookwright.validation.base import (
+    Abstention,
+    EvalResult,
     NotEvaluated,
     NotEvaluatedKind,
     Severity,
@@ -68,6 +70,43 @@ class _SkipCapability:
 
     def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
         raise NotEvaluated("awaits move 3", kind=NotEvaluatedKind.pending_capability)
+
+
+class _Partial:
+    """A synthetic form-(c) validator: one finding AND one abstention in the same run.
+
+    Mirrors _Good/_Skip/_SkipCapability but returns the partial EvalResult shape, so the
+    runner's three-shape contract is proven decoupled from `focalization` (FR-015).
+    """
+
+    name = "partial"
+    severity_default = Severity.warning
+
+    def validate(self, project: ValidationContext, indexer: Indexer) -> EvalResult:
+        return EvalResult(
+            [Violation("partial", Severity.warning, "partial finding", "manuscript/c.md:3")],
+            [Abstention("partial abstains on one dimension", NotEvaluatedKind.pending_capability)],
+        )
+
+
+class _PartialEmpty:
+    """A form-(c) validator with NO findings — the C5 observational-equivalence case."""
+
+    name = "partial_empty"
+    severity_default = Severity.warning
+
+    def validate(self, project: ValidationContext, indexer: Indexer) -> EvalResult:
+        return EvalResult([], [Abstention("nothing to look at")])
+
+
+class _SkipEmptyTwin:
+    """The raise-form twin of _PartialEmpty: same (reason) → must be wire-identical (C5)."""
+
+    name = "partial_empty"
+    severity_default = Severity.warning
+
+    def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
+        raise NotEvaluated("nothing to look at")
 
 
 def _ctx(project_root: Path) -> ValidationContext:
@@ -145,3 +184,57 @@ def test_runner_stamps_kind_from_the_signal(project_root: Path) -> None:
     kinds = {r.validator: r.kind for r in not_evaluated}
     assert kinds["abstainer"] is NotEvaluatedKind.pending_capability
     assert kinds["skip"] is NotEvaluatedKind.missing_input  # default preserved
+
+
+def test_partial_eval_result_routes_findings_and_abstention(project_root: Path) -> None:
+    # FR-015/SC-008 (iteration 050): a form-(c) EvalResult routes its findings to
+    # violations[] (deduped against `seen`, sorted by sort_key) and its abstention to
+    # not_evaluated[] as a runner-STAMPED NotEvaluatedResult; it appears in `ran` and in
+    # NEITHER errors[] nor — for its finding — the abstention channel. Proven with a
+    # synthetic fake, decoupled from `focalization` (the general contract, not one site).
+    ctx = _ctx(project_root)
+    violations, errors, not_evaluated, ran = run_validators([_Partial()], ctx, RdflibIndexer())
+
+    assert [v.message for v in violations] == ["partial finding"]  # finding → violations[]
+    assert errors == []  # form (c) is not a crash
+    assert len(not_evaluated) == 1
+    entry = not_evaluated[0]
+    assert entry.validator == "partial"  # runner-STAMPED, not self-named (C2)
+    assert entry.reason == "partial abstains on one dimension"
+    assert entry.kind is NotEvaluatedKind.pending_capability
+    assert ran == ["partial"]
+
+
+def test_partial_finding_is_deduped_against_seen(project_root: Path) -> None:
+    # The form-(c) findings flow into the SAME shared dedup loop (C4): the identical
+    # finding emitted by a bare-list validator AND the partial validator collapses to one.
+    class _PartialDup:
+        name = "dupv"
+        severity_default = Severity.warning
+
+        def validate(self, project: ValidationContext, indexer: Indexer) -> EvalResult:
+            v = Violation("dupv", Severity.warning, "shared", "manuscript/c.md:9")
+            return EvalResult([v], [Abstention("half", NotEvaluatedKind.pending_capability)])
+
+    class _BareDup:
+        name = "dupv"
+        severity_default = Severity.warning
+
+        def validate(self, project: ValidationContext, indexer: Indexer) -> list[Violation]:
+            return [Violation("dupv", Severity.warning, "shared", "manuscript/c.md:9")]
+
+    ctx = _ctx(project_root)
+    violations, _, _, _ = run_validators([_PartialDup(), _BareDup()], ctx, RdflibIndexer())
+    assert len([v for v in violations if v.message == "shared"]) == 1  # one, not two
+
+
+def test_empty_partial_is_observationally_equal_to_raise(project_root: Path) -> None:
+    # C5 invariant (FR-012): `EvalResult([], [Abstention(r, k)])` is indistinguishable on
+    # the wire from `raise NotEvaluated(r, k)` — both yield ONE not_evaluated entry and
+    # ZERO findings, with the same runner-stamped validator/reason/kind.
+    ctx = _ctx(project_root)
+    via_return = run_validators([_PartialEmpty()], ctx, RdflibIndexer())
+    via_raise = run_validators([_SkipEmptyTwin()], ctx, RdflibIndexer())
+    assert via_return[0] == via_raise[0] == []  # violations: none either way
+    assert via_return[2] == via_raise[2]  # not_evaluated: byte-identical NotEvaluatedResult
+    assert [r.to_json() for r in via_return[2]] == [r.to_json() for r in via_raise[2]]

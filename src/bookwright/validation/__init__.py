@@ -7,6 +7,8 @@ engine seam the command wires together (discovery, the runner, the report).
 from __future__ import annotations
 
 from bookwright.validation.base import (
+    Abstention,
+    EvalResult,
     NotEvaluated,
     NotEvaluatedResult,
     Severity,
@@ -21,6 +23,8 @@ from bookwright.validation.report import ScopeFilter, ValidationReport
 from bookwright.validation.runner import run_validators
 
 __all__ = [
+    "Abstention",
+    "EvalResult",
     "NotEvaluated",
     "NotEvaluatedResult",
     "ScopeFilter",

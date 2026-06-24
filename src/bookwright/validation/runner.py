@@ -11,7 +11,9 @@ from __future__ import annotations
 from bookwright.indexers import Indexer
 from bookwright.validation.base import (
     _RANK,
+    EvalResult,
     NotEvaluated,
+    NotEvaluatedKind,
     NotEvaluatedResult,
     ValidationContext,
     Validator,
@@ -40,6 +42,17 @@ def sort_key(violation: Violation) -> tuple[str, int, str, str, tuple[tuple[str,
         violation.message,
         violation.triples,
     )
+
+
+def _record(name: str, reason: str, kind: NotEvaluatedKind) -> NotEvaluatedResult:
+    """Stamp the validator ``name`` onto one abstention (the single naming authority).
+
+    The ONE place a ``not_evaluated`` entry is name-stamped — shared by BOTH the raised
+    total abstention (form (b), ``except NotEvaluated``) and each returned partial
+    abstention (form (c), an ``EvalResult``'s :class:`Abstention`). The validator never
+    names itself; this authority MUST NOT fork (FR-002, contract C2).
+    """
+    return NotEvaluatedResult(name, reason, kind)
 
 
 def not_evaluated_sort_key(result: NotEvaluatedResult) -> tuple[str, str]:
@@ -79,13 +92,19 @@ def run_validators(
         ran.append(validator.name)
         try:
             found = validator.validate(project, indexer)
-        except NotEvaluated as skip:  # conscious skip → not_evaluated channel (FR-005)
-            not_evaluated.append(NotEvaluatedResult(validator.name, skip.reason, skip.kind))
+        except NotEvaluated as skip:  # form (b): total abstention → not_evaluated (FR-005)
+            not_evaluated.append(_record(validator.name, skip.reason, skip.kind))
             continue
         except Exception as exc:  # per-validator isolation (FR-014) — never abort the run
             errors.append(ValidatorError(validator.name, f"{type(exc).__name__}: {exc}", "run"))
             continue
-        for violation in found:
+        if isinstance(found, EvalResult):  # form (c): findings AND abstention(s) in one run
+            findings: list[Violation] = found.violations
+            for abstention in found.not_evaluated:
+                not_evaluated.append(_record(validator.name, abstention.reason, abstention.kind))
+        else:  # form (a): a bare list[Violation] — unchanged (FR-007)
+            findings = found
+        for violation in findings:
             if violation not in seen:
                 seen.add(violation)
                 violations.append(violation)
