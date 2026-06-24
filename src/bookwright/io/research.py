@@ -41,6 +41,7 @@ from ._research_identity import (
     AnchorIdentity,
     FindingIdentity,
     _constrains_identity,
+    anchor_handle,
     is_timeline_ref,
 )
 from .errors import ResearchError
@@ -53,6 +54,7 @@ __all__ = [
     "FindingIdentity",
     "ResearchResult",
     "ResearchWarning",
+    "anchor_handle",
     "map_research",
 ]
 

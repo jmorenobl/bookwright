@@ -30,6 +30,7 @@ from bookwright.errors import BookwrightError
 from bookwright.io.errors import ProjectNotFoundError, SlugCollisionError
 from bookwright.io.project import find_project_root
 from bookwright.io.report import EXIT_SKIPPED
+from bookwright.io.research import anchor_handle
 from bookwright.status import (
     Action,
     AnchorGap,
@@ -242,8 +243,10 @@ def _question_line(question: OpenQuestion) -> str:
 
 
 def _anchor_line(gap: AnchorGap) -> str:
-    target = f" -> {gap.constrains}" if gap.constrains is not None else ""
-    return f"{gap.promotes}{target}: {', '.join(gap.problems)} ({gap.file})"
+    # The handle is the single shared spelling factual_anchor also renders (048 D2),
+    # so the two surfaces name the same anchor byte-identically (FR-007/FR-009).
+    handle = anchor_handle(gap.promotes, gap.constrains)
+    return f"{handle}: {', '.join(gap.problems)} ({gap.file})"
 
 
 def _finding_line(finding: LowReliabilityFinding) -> str:

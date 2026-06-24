@@ -2,7 +2,8 @@
 
 SC-001: a project with one inconsistency per built-in validator → the human report
 names each (validator / rule / why) and exits 1. SC-002: a clean project → "no
-violations found", exit 0. A location-less finding still renders its rule.
+violations found", exit 0. A temporal cycle renders its resolved timeline locator
+(post-048: all four temporal rules carry a source).
 """
 
 from __future__ import annotations
@@ -126,7 +127,7 @@ def test_clean_project_reports_none_and_exits_zero(
     )
 
 
-def test_location_less_finding_still_renders(
+def test_temporal_cycle_renders_with_resolved_location(
     runner: CliRunner, project_root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     write_project(
@@ -149,7 +150,10 @@ def test_location_less_finding_still_renders(
     result = runner.invoke(app, ["validate"])
     assert result.exit_code == 1
     assert "temporal:" in result.stdout
-    assert "(no specific location)" in result.stdout  # a cycle has no source (FR-003/012)
+    # Post-048 the cycle resolves a source from the SCC's smallest event (FR-001/SC-002),
+    # so it renders the timeline locator, not "(no specific location)".
+    assert "bible/timeline.md" in result.stdout
+    assert "(no specific location)" not in result.stdout
 
 
 def test_no_project_exits_two(

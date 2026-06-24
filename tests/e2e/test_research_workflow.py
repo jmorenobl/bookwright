@@ -21,6 +21,7 @@ those slugs and the assertions resolve each anchor's target through the graph.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -28,11 +29,18 @@ import pytest
 from typer.testing import CliRunner
 
 from bookwright.cli import app
+from bookwright.golem.slug import make_slug
 from bookwright.io.frontmatter import parse_frontmatter
 from tests.conftest import FIXTURES_DIR, copy_fixture
 
 HISTORICAL = "tiny-historical"
 NOVEL = "tiny-novel"
+
+#: A uuid7 URI tail — must NOT appear in a normal-path factual_anchor message (048 SC-004).
+_UUID7_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+#: The authored handle a factual_anchor message names the anchor by: ``anchor '<handle>'``.
+_HANDLE_RE = re.compile(r"anchor '([^']*)'")
 
 #: The Bookwright vocabulary IRI stem; its absence from a serialized graph proves the
 #: research layer contributed nothing (FR-013).
@@ -117,12 +125,6 @@ def _factual(violations: list[dict[str, Any]], severity: str) -> list[dict[str, 
     ]
 
 
-def _constrains_target(cli: CliRunner, anchor_uri: str) -> str | None:
-    """The URI an anchor ``bw:constrains`` — the stable handle the oracle records."""
-    rows = _query(cli, f"SELECT ?t WHERE {{ <{anchor_uri}> bw:constrains ?t }}")
-    return rows[0]["t"] if rows else None
-
-
 # --------------------------------------------------------------------------------------
 # Group A — the deterministic flow over tiny-historical (FR-008..FR-011).
 # --------------------------------------------------------------------------------------
@@ -174,17 +176,39 @@ def test_validate_reports_exactly_the_planted_findings(
     assert len(errors) == expected["error"]
     assert len(warnings) == expected["warning"]
 
-    # The error is the time-span anachronism on the dated event the oracle names.
+    # The error is the time-span anachronism on the dated event the oracle names. The
+    # implicated constrains triple still carries the (stable-slug) event target URI.
     error_anchor = oracle["factual_anchor"]["error_anchor"]
     assert any(triple[2].endswith(error_anchor) for triple in errors[0]["triples"])
     assert "anachronism" in errors[0]["message"]
 
-    # The warning is the under-reliable anchor; resolve its constrained entity to match.
+    # The warning is the under-reliable anchor. Post-048 the anchor is named by its
+    # authored handle (promotes -> constrains), not the uuid7 URI, so match the oracle
+    # via the handle's constrains target (the anchor's uuid7 is re-minted in-process and
+    # is NOT a stable handle — research D1).
     warning_anchor = oracle["factual_anchor"]["warning_anchor"]
-    warn_anchor_uri = warnings[0]["triples"][0][0]
-    target = _constrains_target(cli, warn_anchor_uri)
-    assert target is not None and target.endswith(warning_anchor)
+    handle = _HANDLE_RE.search(warnings[0]["message"])
+    assert handle is not None and " -> " in handle.group(1)
+    assert make_slug(handle.group(1).split(" -> ", 1)[1]) == warning_anchor
     assert "minimum reliability" in warnings[0]["message"]
+
+    # 048 (SC-001/SC-004): both findings resolve source to the anchor's research file
+    # (not null) and no message names the anchor by a raw uuid7 tail.
+    for finding in (errors[0], warnings[0]):
+        assert finding["source"] == "bible/research/telar-y-fabrica.md"
+        assert not _UUID7_RE.search(finding["message"])
+
+
+def test_validate_never_rewrites_the_derived_graph(cli: CliRunner, historical: Path) -> None:
+    """The in-process anchor corpus persists nothing — validate writes no graph (FR-013)."""
+    _build(cli)
+    graph = historical / "bible" / "graph.ttl"
+    before = graph.read_bytes()
+    result = cli.invoke(app, ["validate", "--json"])
+    assert result.exit_code != 0  # the planted anachronism gates, so validate did run
+    # factual_anchor's in-process corpus build never calls engine.save, and validate is
+    # a pure read: graph.ttl is byte-for-byte what `graph build` wrote (research D1/FR-013).
+    assert graph.read_bytes() == before
 
 
 # --------------------------------------------------------------------------------------

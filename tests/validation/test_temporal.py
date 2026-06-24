@@ -41,6 +41,9 @@ def test_rule_a_cycle(project_root: Path) -> None:
     finding = _only_error(_run(project_root))
     assert "cycle" in finding.message.lower()
     assert finding.triples  # carries the implicated follows edges
+    # Rule (a) now resolves source from the lexicographically smallest event in the SCC.
+    assert finding.source is not None
+    assert finding.source_file() == "bible/timeline.md"
 
 
 def test_rule_b_order_and_overlap(project_root: Path) -> None:
@@ -59,6 +62,9 @@ def test_rule_b_order_and_overlap(project_root: Path) -> None:
     finding = _only_error(_run(project_root))
     assert "overlap" in finding.message.lower()
     assert any("temporally-overlaps" in p for _, p, _ in finding.triples)
+    # Rule (b) now resolves source from the carried triple's subject (mirror rule d).
+    assert finding.source is not None
+    assert finding.source_file() == "bible/timeline.md"
 
 
 def test_rule_c_containment_vs_order(project_root: Path) -> None:
@@ -77,6 +83,9 @@ def test_rule_c_containment_vs_order(project_root: Path) -> None:
     finding = _only_error(_run(project_root))
     assert "containment" in finding.message.lower()
     assert any("temporally-includes" in p for _, p, _ in finding.triples)
+    # Rule (c) now resolves source from the carried triple's subject (mirror rule d).
+    assert finding.source is not None
+    assert finding.source_file() == "bible/timeline.md"
 
 
 def test_rule_d_numeric_contradiction(project_root: Path) -> None:
@@ -191,3 +200,36 @@ def test_open_interval_is_handled(project_root: Path) -> None:
 def test_no_events_no_findings(project_root: Path) -> None:
     write_project(project_root, characters=["A"], manuscript={"c.md": "A"})
     assert _run(project_root) == []
+
+
+def test_rules_abc_resolve_timeline_source_byte_stable(project_root: Path) -> None:
+    # One timeline triggering rule (a) cycle, rule (b) order+overlap and rule (c)
+    # containment+order. All three carry a resolved bible/timeline.md source (not
+    # null), like rule (d), and the source is byte-identical across two builds (FR-002).
+    write_project(
+        project_root,
+        timeline="""\
+        ---
+        events:
+          - name: "A"
+            follows: ["B"]
+          - name: "B"
+            follows: ["A"]
+          - name: "C"
+            precedes: ["D"]
+            overlaps: ["D"]
+          - name: "D"
+          - name: "E"
+            includes: ["F"]
+            precedes: ["F"]
+          - name: "F"
+        ---
+        """,
+    )
+    first = [(f.message, f.source) for f in _run(project_root)]
+    second = [(f.message, f.source) for f in _run(project_root)]
+    assert first == second  # byte-identical across two independent builds (FR-002/SC-002)
+    assert len(first) >= 3  # rules a, b and c each fired at least once
+    assert all(source is not None for _, source in first)  # SC-002: no null source
+    for finding in _run(project_root):
+        assert finding.source_file() == "bible/timeline.md"

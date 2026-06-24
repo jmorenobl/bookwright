@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from bookwright.golem.base import SluggedEntity
     from bookwright.io.bible import MapResult
     from bookwright.io.prose import ProseView
+    from bookwright.io.research import AnchorIdentity
 
 __all__ = [
     "NotEvaluated",
@@ -238,6 +239,7 @@ class ValidationContext:
     _constitution_text: Any = field(default=_UNSET, repr=False, compare=False)
     _manuscript_view: Any = field(default=_UNSET, repr=False, compare=False)
     _constitution_view: Any = field(default=_UNSET, repr=False, compare=False)
+    _anchor_corpus: Any = field(default=_UNSET, repr=False, compare=False)
 
     @property
     def uri_base(self) -> str:
@@ -273,6 +275,62 @@ class ValidationContext:
             map_outline(self.root, self.root / self.manifest.paths.outline, self.uri_base, result)
             self._outline = result
         return cast("MapResult", self._outline)
+
+    def anchor_corpus(self) -> tuple[Indexer, tuple[AnchorIdentity, ...]]:
+        """An in-process research corpus engine + its anchor identities (048 research D1).
+
+        Returns a fresh, **non-persisting** engine carrying the bible + outline +
+        ``bible/research/`` triples and the ``AnchorIdentity`` records from one
+        ``map_research`` pass, so the anchor URIs in the engine and the identities
+        come from the **same build** and join by URI coherently — exactly how
+        ``status`` resolves the same anchors. This is the only faithful realization
+        of "the machinery ``status`` uses": anchors are ``MintedEntity`` (uuid7,
+        re-minted every build), so a URI join against the *persisted* graph from a
+        prior ``graph build`` would miss for every anchor (research D1).
+
+        Built from ``io``/``indexers``/``golem`` directly (reusing the memoized
+        :meth:`outline` ``MapResult``), **not** via ``commands._graph.build_project_graph``,
+        which persists (``engine.save``) and would invert the layer direction. A
+        validator never writes (FR-013): ``engine.save`` is **not** called.
+        Memoized once per run; an injected corpus (:meth:`set_anchor_corpus`) is
+        returned as-is (test seam, research D4)."""
+        if self._anchor_corpus is _UNSET:
+            from bookwright.golem.namespaces import timeline_uri  # noqa: PLC0415
+            from bookwright.indexers import resolve_indexer  # noqa: PLC0415
+            from bookwright.io.bible import build_provenance  # noqa: PLC0415
+            from bookwright.io.research import map_research  # noqa: PLC0415
+
+            uri_base = self.uri_base
+            result = self.outline()
+            engine = resolve_indexer(self.manifest.bookwright.indexer)()
+            for mapped in result.mapped:
+                for triple in mapped.entity.to_triples():
+                    engine.add_triple(*triple)
+                for assignment in build_provenance(mapped, uri_base):
+                    for triple in assignment.to_triples():
+                        engine.add_triple(*triple)
+            research = map_research(
+                self.root,
+                self.root / self.manifest.paths.bible / "research",
+                uri_base,
+                self.manifest.book.language,
+                result.entity_index,
+                timeline_uri(uri_base),
+            )
+            for entity in research.entities:
+                for triple in entity.to_triples():
+                    engine.add_triple(*triple)
+            self._anchor_corpus = (engine, research.anchor_identities)
+        return cast("tuple[Indexer, tuple[AnchorIdentity, ...]]", self._anchor_corpus)
+
+    def set_anchor_corpus(self, engine: Indexer, identities: tuple[AnchorIdentity, ...]) -> None:
+        """Inject a pre-built ``(engine, identities)`` corpus (test seam, 048 D4).
+
+        Pre-setting the memo slot **is** the whole seam: :meth:`anchor_corpus`
+        returns the injected value instead of building. Lets a hand-built
+        ``AnchorSpec`` fixture supply the corpus directly; production builds it lazily.
+        """
+        self._anchor_corpus = (engine, identities)
 
     def _names_of(self, concept_cls: type[SluggedEntity]) -> tuple[tuple[str, str], ...]:
         """Sorted ``(name, bible_relpath)`` pairs for one bible concept class."""

@@ -40,6 +40,7 @@ from tests.validation.conftest import (
     load_context,
     research_graph,
     write_project,
+    write_research_project,
 )
 
 _TOPIC = "bible/research/tema.md"
@@ -220,9 +221,12 @@ def test_validation_summary_counts_and_ran(tmp_path: Path) -> None:
 
 
 def test_validation_summary_counts_real_violations(tmp_path: Path) -> None:
-    root = write_project(tmp_path / "novel")
+    # A real research project (factual_anchor resolves over the in-process corpus it
+    # rebuilds from source — 048 D1 — so the defect must live in the source, not in a
+    # hand-built graph). One under-reliable anchor → one R3 warning, no error.
+    root = write_research_project(tmp_path / "novel")
     context = load_context(root)
-    engine = research_graph(AnchorSpec(constrains=None, sources=()))  # R1 + R4 warnings
+    engine, _identities = context.anchor_corpus()  # an engine carrying the real anchors
     summary = validation_summary(root, context.manifest, engine)
     assert summary.counts["warning"] > 0
     assert summary.counts["error"] == 0

@@ -32,8 +32,8 @@ Structure Decision). No new module, no new dependency (Constitution II).
 
 **Purpose**: Confirm the working tree and the touched files' current state before any edit.
 
-- [ ] T001 Confirm clean working tree on branch `048-actionable-graph-locators` and the four gates green at baseline: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (records the pre-change SC-005 finding set as the no-regression baseline).
-- [ ] T002 Read the current line counts of the five source files to verify ≤ 500-line headroom (Principle IV / FR-008): `src/bookwright/validation/validators/temporal.py`, `src/bookwright/validation/validators/factual_anchor.py`, `src/bookwright/validation/base.py`, `src/bookwright/commands/status.py`, `src/bookwright/io/_research_identity.py`.
+- [X] T001 Confirm clean working tree on branch `048-actionable-graph-locators` and the four gates green at baseline: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (records the pre-change SC-005 finding set as the no-regression baseline).
+- [X] T002 Read the current line counts of the five source files to verify ≤ 500-line headroom (Principle IV / FR-008): `src/bookwright/validation/validators/temporal.py`, `src/bookwright/validation/validators/factual_anchor.py`, `src/bookwright/validation/base.py`, `src/bookwright/commands/status.py`, `src/bookwright/io/_research_identity.py`.
 
 ---
 
@@ -45,10 +45,10 @@ stories and MUST land first.
 
 **⚠️ CRITICAL**: No source/test edits in Phase 3+ begin until this phase is complete.
 
-- [ ] T003 [P] Reconcile `bookwright-design.md` § 13.2 (`temporal` + `factual_anchor` rows) and § 20.6 (in Spanish — language convention): both graph-consumer validators now emit a resolvable `relpath[:line]` locator + readable identifier; record the D1 mechanism (in-process corpus, `AnchorIdentity.relpath`-resolved file, shared `anchor_handle`) and the file-vs-`:line` granularity that differs **by design** (event = `:line` via `E13`; anchor = file-only via `AnchorIdentity.relpath`).
-- [ ] T004 [P] Remove the **DEBT-015** entry from `DEBT.md` (its class is resolved; git keeps the history — FR-011).
-- [ ] T005 [P] Reconcile `CLAUDE.md`: flip the iteration table row 048 to ✅ / shipped-state and update the v0.5.x track-B milestone prose + index line referencing DEBT-015 → shipped iter 048 (FR-011).
-- [ ] T006 [P] Add the one-line FR-010 note to `specs/048-actionable-graph-locators/spec.md`: the uuid7/`source=None` fallback is a **defensive floor** for an identity join-miss, not the normal path (research D1 reconciliation), so spec and code agree.
+- [X] T003 [P] Reconcile `bookwright-design.md` § 13.2 (`temporal` + `factual_anchor` rows) and § 20.6 (in Spanish — language convention): both graph-consumer validators now emit a resolvable `relpath[:line]` locator + readable identifier; record the D1 mechanism (in-process corpus, `AnchorIdentity.relpath`-resolved file, shared `anchor_handle`) and the file-vs-`:line` granularity that differs **by design** (event = `:line` via `E13`; anchor = file-only via `AnchorIdentity.relpath`).
+- [X] T004 [P] Remove the **DEBT-015** entry from `DEBT.md` (its class is resolved; git keeps the history — FR-011).
+- [X] T005 [P] Reconcile `CLAUDE.md`: flip the iteration table row 048 to ✅ / shipped-state and update the v0.5.x track-B milestone prose + index line referencing DEBT-015 → shipped iter 048 (FR-011).
+- [X] T006 [P] Add the one-line FR-010 note to `specs/048-actionable-graph-locators/spec.md`: the uuid7/`source=None` fallback is a **defensive floor** for an identity join-miss, not the normal path (research D1 reconciliation), so spec and code agree.
 
 **Checkpoint**: Plain-text contract reconciled — code may now diverge from it.
 
@@ -68,18 +68,18 @@ and its message cites the authored handle (not the uuid7 tail); cross-check that
 
 ### Implementation for User Story 1
 
-- [ ] T007 [US1] Add the shared free function `anchor_handle(promotes: str, constrains: str | None) -> str` to `src/bookwright/io/_research_identity.py` — returns `f"{promotes} -> {constrains}"` when `constrains is not None`, else `promotes` alone (pure, total, no I/O; D2 / data-model 2.1). Co-locate with `AnchorIdentity` / `is_timeline_ref`.
-- [ ] T008 [US1] Refactor `_anchor_line` in `src/bookwright/commands/status.py` to call `anchor_handle(gap.promotes, gap.constrains)` instead of the inline format — output MUST be **byte-identical** to today (pure extraction; the single shared resolution point, FR-007).
-- [ ] T009 [P] [US1] Add the memoized `anchor_corpus()` accessor to `ValidationContext` in `src/bookwright/validation/base.py`: returns `tuple[Indexer, tuple[AnchorIdentity, ...]]` from one in-process, **non-persisting** build — reuse the memoized `self.outline()` `MapResult`, index into a fresh `resolve_indexer(manifest.bookwright.indexer)()`, add `map_research(...)` triples, **no `engine.save`** (FR-013); `_anchor_corpus` slot with `_UNSET` sentinel + an optional injectable pre-set corpus (test seam, D1/D4 / data-model 2.2). Build from `io`/`indexers`/`golem` only — do **not** import `commands._graph` (keeps the layer direction; plan Complexity Tracking).
-- [ ] T010 [US1] Rewrite anchor resolution in `src/bookwright/validation/validators/factual_anchor.py`: build `id_by_uri` from `context.anchor_corpus()`; per anchor, when the identity is found set `source = identity.relpath` and the message identifier = `anchor_handle(identity.promotes_id, identity.constrains)`; on a join miss keep the defensive floor `source = None` + `_label(anchor.uri)` (FR-010). Replace every `_label(anchor.uri)` in messages and the `resolve_source(indexer, anchor.uri)` in `_violation`/`_anachronism`; leave the *source* entity's `_label(source.uri)` stable slug unchanged. Preserve the inert path (`[]` with no corpus build when `[research]` disabled / no anchors). (FR-003/FR-004/FR-005/FR-010 / data-model 2.3)
+- [X] T007 [US1] Add the shared free function `anchor_handle(promotes: str, constrains: str | None) -> str` to `src/bookwright/io/_research_identity.py` — returns `f"{promotes} -> {constrains}"` when `constrains is not None`, else `promotes` alone (pure, total, no I/O; D2 / data-model 2.1). Co-locate with `AnchorIdentity` / `is_timeline_ref`.
+- [X] T008 [US1] Refactor `_anchor_line` in `src/bookwright/commands/status.py` to call `anchor_handle(gap.promotes, gap.constrains)` instead of the inline format — output MUST be **byte-identical** to today (pure extraction; the single shared resolution point, FR-007).
+- [X] T009 [P] [US1] Add the memoized `anchor_corpus()` accessor to `ValidationContext` in `src/bookwright/validation/base.py`: returns `tuple[Indexer, tuple[AnchorIdentity, ...]]` from one in-process, **non-persisting** build — reuse the memoized `self.outline()` `MapResult`, index into a fresh `resolve_indexer(manifest.bookwright.indexer)()`, add `map_research(...)` triples, **no `engine.save`** (FR-013); `_anchor_corpus` slot with `_UNSET` sentinel + an optional injectable pre-set corpus (test seam, D1/D4 / data-model 2.2). Build from `io`/`indexers`/`golem` only — do **not** import `commands._graph` (keeps the layer direction; plan Complexity Tracking).
+- [X] T010 [US1] Rewrite anchor resolution in `src/bookwright/validation/validators/factual_anchor.py`: build `id_by_uri` from `context.anchor_corpus()`; per anchor, when the identity is found set `source = identity.relpath` and the message identifier = `anchor_handle(identity.promotes_id, identity.constrains)`; on a join miss keep the defensive floor `source = None` + `_label(anchor.uri)` (FR-010). Replace every `_label(anchor.uri)` in messages and the `resolve_source(indexer, anchor.uri)` in `_violation`/`_anachronism`; leave the *source* entity's `_label(source.uri)` stable slug unchanged. Preserve the inert path (`[]` with no corpus build when `[research]` disabled / no anchors). (FR-003/FR-004/FR-005/FR-010 / data-model 2.3)
 
 ### Tests for User Story 1
 
-- [ ] T011 [US1] Extend `tests/validation/conftest.py`: add an `AnchorIdentity` builder for the hand-built `AnchorSpec` fixtures (matching the stable `anchor/aN` URIs) and the corpus-injection seam that supplies `(engine, identities)` to `ValidationContext` so existing fixtures keep their shape (D4 / plan Testing).
-- [ ] T012 [US1] Update/extend `tests/validation/test_factual_anchor.py`: a defective anchor reports `source == "bible/research/<topic>.md"` (not `null`) and a message citing the authored handle (`promotes -> constrains`, and `promotes` alone when `constrains is None`), **never** the uuid7 tail; add the FR-010 identity-less anchor case asserting the finding still emits with `source = None` + uuid7 label (defensive floor).
-- [ ] T013 [US1] Add the cross-surface agreement test (in `tests/validation/test_factual_anchor.py`, `-k agreement`): for the same anchor, the `factual_anchor` finding and the `status` `anchor_gaps` entry carry a **byte-identical** handle and the **same** file (SC-003 / FR-009).
-- [ ] T014 [P] [US1] Add an E2E assertion to `tests/e2e/test_research_workflow.py`: after a real `graph build` → `validate --json` over the committed research fixture, the `factual_anchor` findings carry a non-`null` `bible/research/<topic>.md` `source` and a uuid7-free, handle-based message (proves the in-process corpus resolves across the build→validate process boundary — research D1 / SC-001/SC-004). Additionally assert the **non-persist** guarantee (FR-013): capture `bible/graph.ttl`'s bytes after `graph build`, then assert they are **byte-unchanged** after `validate` runs (the in-process corpus build never `engine.save`s; `validate` writes nothing).
-- [ ] T015 [US1] Confirm `tests/status/test_queries.py` `_anchor_line`/handle parity is unaffected by the T008 extraction (run it; byte-identical output guarantees no update needed — if it requires a change, the extraction was not pure).
+- [X] T011 [US1] Extend `tests/validation/conftest.py`: add an `AnchorIdentity` builder for the hand-built `AnchorSpec` fixtures (matching the stable `anchor/aN` URIs) and the corpus-injection seam that supplies `(engine, identities)` to `ValidationContext` so existing fixtures keep their shape (D4 / plan Testing).
+- [X] T012 [US1] Update/extend `tests/validation/test_factual_anchor.py`: a defective anchor reports `source == "bible/research/<topic>.md"` (not `null`) and a message citing the authored handle (`promotes -> constrains`, and `promotes` alone when `constrains is None`), **never** the uuid7 tail; add the FR-010 identity-less anchor case asserting the finding still emits with `source = None` + uuid7 label (defensive floor).
+- [X] T013 [US1] Add the cross-surface agreement test (in `tests/validation/test_factual_anchor.py`, `-k agreement`): for the same anchor, the `factual_anchor` finding and the `status` `anchor_gaps` entry carry a **byte-identical** handle and the **same** file (SC-003 / FR-009).
+- [X] T014 [P] [US1] Add an E2E assertion to `tests/e2e/test_research_workflow.py`: after a real `graph build` → `validate --json` over the committed research fixture, the `factual_anchor` findings carry a non-`null` `bible/research/<topic>.md` `source` and a uuid7-free, handle-based message (proves the in-process corpus resolves across the build→validate process boundary — research D1 / SC-001/SC-004). Additionally assert the **non-persist** guarantee (FR-013): capture `bible/graph.ttl`'s bytes after `graph build`, then assert they are **byte-unchanged** after `validate` runs (the in-process corpus build never `engine.save`s; `validate` writes nothing).
+- [X] T015 [US1] Confirm `tests/status/test_queries.py` `_anchor_line`/handle parity is unaffected by the T008 extraction (run it; byte-identical output guarantees no update needed — if it requires a change, the extraction was not pure).
 
 **Checkpoint**: `factual_anchor` is fully actionable and agrees with `status`; US1 testable independently.
 
@@ -98,11 +98,11 @@ each emitted `temporal` violation's `source` resolves to `bible/timeline.md` (no
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] In `src/bookwright/validation/validators/temporal.py`, set `source = resolve_source(indexer, <event>)` for rules a/b/c over the **passed** indexer (no rebuild): rule (b)/(c) resolve from the carried triple's **subject `a`** (mirror rule d); rule (a) resolves from `component[0]` — the lexicographically smallest event URI in the SCC. All four rules end uniform; rule (d) is unchanged (FR-001/FR-002 / data-model 2.4).
+- [X] T016 [US2] In `src/bookwright/validation/validators/temporal.py`, set `source = resolve_source(indexer, <event>)` for rules a/b/c over the **passed** indexer (no rebuild): rule (b)/(c) resolve from the carried triple's **subject `a`** (mirror rule d); rule (a) resolves from `component[0]` — the lexicographically smallest event URI in the SCC. All four rules end uniform; rule (d) is unchanged (FR-001/FR-002 / data-model 2.4).
 
 ### Tests for User Story 2
 
-- [ ] T017 [US2] Update/extend `tests/validation/test_temporal.py`: a fixture triggering rules a, b and c each reports a `source` resolving to `bible/timeline.md` (line-bearing `bible/timeline.md:<line>`, like rule d), not `null`; add a two-build assertion that the `source` is byte-identical across builds (FR-002 / SC-002 / C5).
+- [X] T017 [US2] Update/extend `tests/validation/test_temporal.py`: a fixture triggering rules a, b and c each reports a `source` resolving to `bible/timeline.md` (line-bearing `bible/timeline.md:<line>`, like rule d), not `null`; add a two-build assertion that the `source` is byte-identical across builds (FR-002 / SC-002 / C5).
 
 **Checkpoint**: All four `temporal` rules emit a resolvable timeline locator; US2 testable independently.
 
@@ -112,9 +112,9 @@ each emitted `temporal` violation's `source` resolves to `bible/timeline.md` (no
 
 **Purpose**: Whole-iteration verification that nothing semantic moved and all gates pass.
 
-- [ ] T018 Run quickstart.md Scenarios A–D (`tests/validation/test_temporal.py`, `tests/validation/test_factual_anchor.py`, `-k agreement`, `tests/e2e/test_research_workflow.py`) and confirm each expected outcome.
-- [ ] T019 Verify SC-005 no-regression: the finding **count / severity / gate & exit-code** on every existing fixture is unchanged from the T001 baseline — only `source` and message identifiers differ.
-- [ ] T020 Run the full gate green: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (≥ 80% coverage single-sourced; FR-012). Re-confirm all five touched source files are still ≤ 500 lines.
+- [X] T018 Run quickstart.md Scenarios A–D (`tests/validation/test_temporal.py`, `tests/validation/test_factual_anchor.py`, `-k agreement`, `tests/e2e/test_research_workflow.py`) and confirm each expected outcome.
+- [X] T019 Verify SC-005 no-regression: the finding **count / severity / gate & exit-code** on every existing fixture is unchanged from the T001 baseline — only `source` and message identifiers differ.
+- [X] T020 Run the full gate green: `uv run ruff check && uv run ruff format --check && uv run mypy --strict && uv run pytest` (≥ 80% coverage single-sourced; FR-012). Re-confirm all five touched source files are still ≤ 500 lines.
 
 ---
 

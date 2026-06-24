@@ -61,7 +61,14 @@
 >   menciones-desconocidas— y la **iteración 043** las cerró: partió esa regla al
 >   abstainer `character_unknown_mentions`, que declara `not_evaluated`, así que los
 >   parches de costura por instancia ya no aplican. Eliminadas de este registro.)
-> - **Track B — pulido determinista:** DEBT-015, ~~DEBT-016~~ (cerrada en la
+> - **Track B — pulido determinista:** ~~DEBT-015~~ (cerrada en la **iteración
+>   048**, que hace que los dos validators graph-consumer —`factual_anchor`,
+>   `temporal`— emitan un locator resoluble y un identificador legible:
+>   `factual_anchor` resuelve `source` a `bible/research/<tema>.md` vía
+>   `AnchorIdentity.relpath` sobre un corpus de investigación construido en proceso
+>   y nombra el ancla con el handle compartido `anchor_handle` que ya usa `status`;
+>   `temporal` aplica `resolve_source` también en las reglas a/b/c sobre un evento
+>   implicado determinista. Eliminada de este registro), ~~DEBT-016~~ (cerrada en la
 >   **iteración 047**, que hace que `graph build` emita un `warning` no fatal
 >   —canal `untyped_vocab_terms`— enumerando los términos válidos cuando un
 >   `functions:`/`narrative_roles:` con vocab activo no case ningún término; el nodo
@@ -80,15 +87,6 @@
 - **Descripción:** en "la Naviera Salas", `Naviera` (cabeza del nombre de la organización) se reporta como nombre propio sin entrada en la bible (`manuscript/01-marea-baja.md:13`), aunque `Salas` sí esté en el roster de personajes (`Víctor Salas`). La unión de rosters de DEBT-010 (character/setting/location/object) NO cubre organizaciones. Ninguna normalización de superficie lo cura.
 - **Por qué se difiere:** a diferencia de DEBT-011/012, esto NO se arregla en el seam. Requería una **decisión de diseño** previa: **(a)** una 5ª clase de roster (organizaciones), o **(b)** diferirlo al juicio semántico (move 3). **Resuelta en la issue #1 (2026-06-23): (b).** Un 5º roster es perseguir un conjunto abierto (tras orgs vienen topónimos, barcos, vocativos…) con una lista cerrada más; no converge y roza el Principio X. El move 3 cura el conjunto abierto entero distinguiendo «Naviera = organización» de «Elena = personaje sin declarar» sin roster nuevo.
 - **Resolución sugerida / versión objetivo:** **track C — move 3** (juicio semántico, norte activado; `bookwright-roadmap.md` § 5, `bookwright-design.md` § 13.5/§ 20.6). Interim honesto ya cubierto por el track A: la regla de menciones-desconocidas declara `not_evaluated` (no emite el FP de `Naviera`). Esta deuda se cierra cuando el move 3 aterrice; no es una iteración de costura.
-
-### DEBT-015 — los validadores que consumen el grafo (`factual_anchor`, `temporal`) emiten locators ausentes/inconsistentes e identificadores opacos
-- **Estado:** abierta
-- **Detectada en:** dogfood `sombra-en-el-puerto` (2026-06-23), rondas de `factual_anchor` y `temporal`.
-- **Ubicación:** `src/bookwright/validation/validators/factual_anchor.py` (mensaje de anchor infrasostenido: identifica el anchor por su URI uuid7 y emite `source=None`) y `src/bookwright/validation/validators/temporal.py` (reglas a/b emiten `source=None`; solo la regla numérica d resuelve `bible/timeline.md` vía `resolve_source`).
-- **Clase de deuda:** brecha de **accionabilidad** común a los validadores graph-consumer: leen por SPARQL y no resuelven uniformemente el locator `relpath:línea` ni un identificador legible, a diferencia de los validadores de prosa (`character_presence`, `narrative_structure`, `focalization`), que siempre dan `relpath:línea`.
-- **Descripción:** (1) `factual_anchor` reporta `anchor '019ef2c4-bc50-7b81-…' is backed only by sources below the minimum reliability 'media'` con `source: null` — el anchor sale identificado por un UUID opaco y sin fichero, **inaccionable**; mientras tanto `bookwright status` reporta EL MISMO anchor de forma legible (`promotes: paginas-arrancadas, constrains: El cuaderno de bitácora, file: bible/research/puerto.md, problems: [under_reliable]`), prueba de que el dato existe. (2) `temporal` es inconsistente consigo mismo: la regla d adjunta `source: "bible/timeline.md"` pero las reglas a (ciclo) y b (solape+orden) emiten `source: None`, aunque todos los eventos viven en `timeline.md`; la capacidad de resolver el fichero existe (`resolve_source`, que la regla d usa) y solo falta aplicarla uniforme. El grafo lleva la procedencia `file:line` reificada en los `E13`, así que el locator es resoluble.
-- **Por qué se difiere:** banco fuera del repo; toca dos validadores y la capa de `queries.py` (`resolve_source`), más una decisión de presentación (¿identificar el anchor por su `constrains`-target y/o el `promotes`-finding, como hace `status`?), mayor que un parche puntual y propia de su iteración.
-- **Resolución sugerida / versión objetivo:** **track B (pulido determinista)** — locator/identificador resoluble, nada semántico. (a) `factual_anchor`: identificar el anchor en el mensaje por su target/finding (el handle determinista que el fixture ya documenta) y resolver `bible/research/<tema>.md` como `source`. (b) `temporal`: aplicar `resolve_source` también en las reglas a y b. Idealmente, un helper compartido de "resuelve el locator E13 de este sujeto/triple" para todos los graph-consumers. Severidades y gate sin cambios.
 
 ### DEBT-017 — `narrative_structure` identifica la unidad de forma inconsistente entre sus dos reglas (nombre vs. slug)
 - **Estado:** abierta

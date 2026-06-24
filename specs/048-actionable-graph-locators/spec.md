@@ -229,7 +229,12 @@ locator because `resolve_source` prefers a `:line`-bearing provenance) rather th
   finding. The fallback for that case is today's exact behavior: identifier =
   the prior `_label(anchor.uri)` uuid7 tail and `source = None`. This is the
   no-regression, deterministic floor; it adds no guard, and it is the **only**
-  place a uuid7 may still appear in a message (see SC-004's scope).
+  place a uuid7 may still appear in a message (see SC-004's scope). *Note (plan
+  research D1 reconciliation):* because resolution joins anchors and identities
+  **within one in-process `map_research` build** (not by URI against a possibly
+  stale persisted graph), every freshly built anchor always has a matching
+  identity — so this fallback is a **defensive floor** (e.g. a hand-built test
+  graph with no identities, or a future divergence), never the normal path.
 - **FR-011**: The `DEBT-015` entry MUST be removed from `DEBT.md` (its class is
   resolved); the track-B index/roadmap lines that reference it MUST be reconciled
   to show it shipped in this iteration.

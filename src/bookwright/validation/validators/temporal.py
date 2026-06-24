@@ -60,9 +60,9 @@ class Temporal:
             before_triple[(b, a)] = (a, _PRED["follows"], b)
 
         out: list[Violation] = []
-        out.extend(self._cycles(before, before_triple))
-        out.extend(self._order_vs_overlap(before, relations))
-        out.extend(self._containment_vs_order(before, relations))
+        out.extend(self._cycles(before, before_triple, indexer))
+        out.extend(self._order_vs_overlap(before, relations, indexer))
+        out.extend(self._containment_vs_order(before, relations, indexer))
         out.extend(self._numeric(relations, intervals, indexer))
         return out
 
@@ -72,6 +72,7 @@ class Temporal:
         self,
         before: set[tuple[str, str]],
         before_triple: dict[tuple[str, str], tuple[str, str, str]],
+        indexer: Indexer,
     ) -> list[Violation]:
         adjacency: dict[str, list[str]] = {}
         for x, y in before:
@@ -94,7 +95,9 @@ class Temporal:
                         f"temporal cycle: events {{{names}}} are each asserted to come "
                         "before another in the group (follows/precedes form a loop)"
                     ),
-                    source=None,
+                    # No single subject spans the SCC → resolve from the lexicographically
+                    # smallest event URI in the (already-sorted) component (FR-002).
+                    source=resolve_source(indexer, component[0]),
                     triples=triples,
                 )
             )
@@ -106,6 +109,7 @@ class Temporal:
         self,
         before: set[tuple[str, str]],
         relations: dict[str, set[tuple[str, str]]],
+        indexer: Indexer,
     ) -> list[Violation]:
         out: list[Violation] = []
         for a, b in _unordered_pairs(relations["overlaps"]):
@@ -118,7 +122,8 @@ class Temporal:
                             f"'{_label(a)}' and '{_label(b)}' are asserted to overlap, "
                             "yet one is also strictly ordered before the other"
                         ),
-                        source=None,
+                        # Resolve from the carried triple's subject `a`, mirroring rule (d).
+                        source=resolve_source(indexer, a),
                         triples=((a, _PRED["overlaps"], b),),
                     )
                 )
@@ -130,6 +135,7 @@ class Temporal:
         self,
         before: set[tuple[str, str]],
         relations: dict[str, set[tuple[str, str]]],
+        indexer: Indexer,
     ) -> list[Violation]:
         out: list[Violation] = []
         containments = [("includes", a, b) for a, b in relations["includes"]]
@@ -144,7 +150,8 @@ class Temporal:
                             f"'{_label(a)}' and '{_label(b)}' are in a containment relation "
                             f"({key}), which is incompatible with a strict before/after order"
                         ),
-                        source=None,
+                        # Resolve from the carried triple's subject `a`, mirroring rule (d).
+                        source=resolve_source(indexer, a),
                         triples=((a, _PRED[key], b),),
                     )
                 )
