@@ -82,11 +82,17 @@ testable on its own and delivers the complete value.
   and MUST NOT cross-reference the outline to obtain it.
 - **FR-004**: If (defensively) a unit has no `rdfs:label` in the graph, the
   orphan-beat rule MUST fall back to the slug so a finding is still emitted.
-- **FR-005**: If a trace identifier (the slug, for URI traceability) is included
-  alongside the human name, it MUST be included the **same** way in both rules —
-  never one rule with a trace suffix and the other without. (The exact format —
-  whether to include the slug, and how — is a planning decision, but consistency
-  across the two rules is mandatory.)
+- **FR-005**: The two rules MUST format the narrative-unit identifier through a
+  **single shared point** — one helper that takes the unit's `(name, slug)` and
+  returns the printed identifier, called by *both* `_orphan_beats` and
+  `_unresolved_roles`. Two independently-built strings that merely *happen* to
+  match are forbidden: consistency MUST be structural (divergence impossible by
+  construction), not asserted. This mirrors the iteration-048 precedent
+  (`anchor_handle` shared between `factual_anchor` and `status` so the surfaces
+  cannot drift, DEBT-015). The exact rendered format (human name alone, or human
+  name plus a parenthetical slug for URI traceability) is a `/speckit-plan`
+  decision, but because both rules render through the one helper, whatever format
+  is chosen — including any trace suffix — is applied identically by construction.
 - **FR-006**: Only the **printed identifier** changes. The locator
   (`resolve_source` / `relpath:line`), the severity, the gate behavior, and
   **what each rule detects** MUST NOT change.
@@ -127,6 +133,9 @@ testable on its own and delivers the complete value.
   `mypy --strict`, `pytest` with ≥80% coverage) are green.
 - **SC-005**: `DEBT.md` no longer contains a DEBT-017 entry, and no plain-text
   record still describes DEBT-017 as open.
+- **SC-006**: Both rules render the unit identifier through one shared formatting
+  point (FR-005): no second, independent identifier-formatting expression exists in
+  `narrative_structure.py` — verified by the diff (one helper, two call sites).
 
 ## Assumptions
 
@@ -141,7 +150,19 @@ testable on its own and delivers the complete value.
   defensive floor for an impossible-by-construction missing-label case.
 - The unresolved-role rule's current human-name identifier (sourced from
   `ref.entity`) is the canonical form to converge on; the orphan-beat rule is the
-  only one that changes.
+  only one whose *resolution* changes (slug → graph `rdfs:label`). Both still feed
+  the one shared formatting helper (FR-005). The two name *sources* differ by
+  necessity — the orphan rule reads `rdfs:label` from the graph (it has no
+  `UnresolvedReference`), the unresolved rule already holds `ref.entity` — but the
+  values are byte-identical by construction: iteration 035 emits
+  `(uri, rdfs:label, name)` where `name` is the same authored `NarrativeUnit.name`
+  that `_unit_uri_index` keys on to produce `ref.entity`. So "the same identifier"
+  (FR-001) is true in value, not merely in label, and is testable as such.
+- A repo-wide sweep of the debt class (a single validator naming one entity-kind
+  two different ways across its rules, doctrine §4) confirms `narrative_structure`
+  is the **sole** remaining instance: `temporal` and `factual_anchor` were unified
+  in iteration 048 (DEBT-015, closed), and the prose validators each name their
+  entity one consistent way. No other instance is left unswept.
 - This is a single-validator presentation polish (issue #1 track B, deterministic
   polish). It does not touch `factual_anchor`/`temporal` locators (DEBT-015 /
   iteration 048, already closed), the move-3 semantic-judgment work, or any
