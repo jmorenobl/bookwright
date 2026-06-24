@@ -2,33 +2,43 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.8 released (2026-06-24)
+## Repository state: v0.5.9 released (2026-06-24)
 
-The current release is **v0.5.8** (iteration 049). The repo is on `main`
+The current release is **v0.5.9** (iteration 050). The repo is on `main`
 (tagged) with a real `src/bookwright/` package (~200 Python files), the full
 test suite, docs, and CI gates green. **There is no active iteration branch.**
 
-The latest work continues **issue #1 track B** (determinism / polish): the
-`narrative_structure` validator named the **same** entity kind — a
-`G9_Narrative_Unit` — **two** ways: the orphan-beat rule (`_orphan_beats`)
-printed the opaque URI slug (`el-recuerdo-de-la-primera-marea`) while the
-unresolved-role rule (`_unresolved_roles`) printed the human authored name
-(`La fechoría en el muelle`). v0.5.8 **unifies both onto the human authored
-name, alone** (no parenthetical slug — name-plus-slug was rejected: it would
-change the unresolved rule's name-only output and re-introduce the opaque id the
-`relpath:line` locator already supersedes, the 048 precedent — DEBT-017). The
-name rides the **already-loaded derived graph**: each `G9` emits
-`(uri, rdfs:label, name)` since iteration 035, so `load_orphan_units` carries
-the label alongside the URI via an `OPTIONAL` clause (sorted by the unique URI →
-byte-stable) — **no** outline cross-reference, **no** rebuild, **no** lossy slug
-reconstruction. Both rules render through **one shared formatting point**
-(`_unit_identifier(name, slug)`, mirroring 048's `anchor_handle`) so the two
-surfaces cannot drift; the slug survives only as the impossible-by-construction
-fallback (each `G9` emits exactly one non-empty label). The single observable
-delta is the orphan-beat rule's printed identifier (slug → human name) — finding
-count, severity, `relpath:line` locator, and the gate/exit-code contract are
-unchanged on every fixture. The earlier
-track-B/track-A work continues to stand: v0.5.7 made the two **graph-consumer**
+The latest work continues **issue #1 track A** (evaluation honesty) and closes
+**DEBT-019**: the validator contract was **all-or-nothing** — `validate()`
+either returned `list[Violation]` **or** raised `NotEvaluated(reason, kind)`, so
+a validator could not deterministically check one dimension **and** declare
+`not_evaluated` on another in the same run. Iteration 045 hit that wall: under a
+third-person-**limited** voice, `focalization` raised
+`NotEvaluated(pending_capability)` for head-hopping **before** reaching its
+first-person-break check, so the still-working deterministic break check
+**stopped running for every focalized project** — a real but suite-**invisible**
+coverage regression (the three focalized fixtures exercise no first-person
+break). v0.5.9 introduces a **general partial-evaluation contract** — a **third**
+return shape, frozen `EvalResult(violations, not_evaluated)` carrying frozen
+`Abstention(reason, kind)` (the returned-not-raised sibling of `NotEvaluated`,
+naming only `(reason, kind)` — the runner stamps the validator name). The runner
+normalizes **three** shapes: a bare `list` and a raised `NotEvaluated` exactly as
+before, and an `EvalResult` whose findings flow into the existing dedup +
+`sort_key` while each `Abstention` becomes a `not_evaluated[]` entry — **one**
+name-stamping point (`_record`) shared by forms (b) and (c) so the authority
+cannot fork. `focalization` is the first and only consumer: under limited-third
+it now **runs** `_first_person_breaks` **and** declares the head-hopping
+`pending_capability` abstention in the same run. The contract is observationally
+conservative — `EvalResult([], [Abstention(r, k)])` is byte-identical on the wire
+to `raise NotEvaluated(r, k)` — so the three focalized fixtures stay
+byte-identical and only a focalized project that **actually has** a first-person
+break sees a new (already-correct) `warning`. The 044 green predicate, the
+`NotEvaluatedKind` enum, the `not_evaluated[]` serialization, and the error-only
+CI gate are **consumed unchanged**. The earlier track-B/track-A work continues to
+stand: v0.5.8 unified the `narrative_structure` unit identifier — both the
+orphan-beat and unresolved-role rules name the `G9_Narrative_Unit` by its human
+`rdfs:label` through one shared `_unit_identifier` point, the orphan-beat rule
+dropping the opaque slug (DEBT-017); v0.5.7 made the two **graph-consumer**
 validators resolve actionable locators + legible handles — `temporal` rules
 a/b/c adopt rule (d)'s `resolve_source` over a deterministically-chosen event
 (`bible/timeline.md:<line>` uniformly), and `factual_anchor` resolves `source`
@@ -65,20 +75,24 @@ per-release narrative is `CHANGELOG.md`):
   channel — so `[]` stops reading as "clean" when it meant "couldn't look". GREEN
   is the single documented predicate `status == "ok" AND no not_evaluated entry
   has kind == "missing_input"`; only `error` findings gate CI.
-- The **v0.5.x post-dogfooding track** (041–049, patches `v0.5.1`…`v0.5.8`)
+- The **v0.5.x post-dogfooding track** (041–050, patches `v0.5.1`…`v0.5.9`)
   continues the issue #1 doctrine on two tracks. **Track A — evaluation
   honesty:** a deterministic heuristic measured insufficient on real prose
   **abstains** (`not_evaluated`, kind-categorized
-  `missing_input`/`pending_capability`) instead of faking findings, and a
-  partial corpus surfaces what was excluded. **Track B — authoring honesty +
-  deterministic polish:** an unrecognized controlled-vocabulary term is no longer
-  typed in silence but emits a non-fatal enumerated `graph build` warning, and
-  the graph-consumer validators now emit actionable locators + legible handles.
-  Closed DEBT-009/010/014/015/016/017/018; the `character_unknown_mentions` abstainer
-  (043), the `focalization` head-hopping abstention (045), `validate` surfacing
-  ingestion-skipped bible files (046), the `untyped_vocab_terms` soft-warning
-  channel (047), the actionable graph-consumer locators (048), and the unified
-  `narrative_structure` unit identifier (049) are the headline moves.
+  `missing_input`/`pending_capability`) instead of faking findings, a
+  partial corpus surfaces what was excluded, and a **partial-evaluation
+  contract** (form (c) `EvalResult`) lets a validator emit findings **and**
+  abstentions in one run — so a deterministic sub-check no longer disappears
+  behind a whole-run abstention. **Track B — authoring honesty + deterministic
+  polish:** an unrecognized controlled-vocabulary term is no longer typed in
+  silence but emits a non-fatal enumerated `graph build` warning, and the
+  graph-consumer validators now emit actionable locators + legible handles.
+  Closed DEBT-009/010/014/015/016/017/018/019; the `character_unknown_mentions`
+  abstainer (043), the `focalization` head-hopping abstention (045), `validate`
+  surfacing ingestion-skipped bible files (046), the `untyped_vocab_terms`
+  soft-warning channel (047), the actionable graph-consumer locators (048), the
+  unified `narrative_structure` unit identifier (049), and the
+  partial-evaluation contract (050) are the headline moves.
 
 The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** (its
 trigger — a concrete heuristic measured insufficient on real prose — is met) but
@@ -222,7 +236,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. The table below is the canonical
 per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
-iterations through 049 are merged; there is no active iteration branch.
+iterations through 050 are merged; there is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -275,6 +289,7 @@ iterations through 049 are merged; there is no active iteration branch.
 | 047 | `graph build` soft-warns unrecognized Propp/Greimas vocab terms (`untyped_vocab_terms` channel, enumerated, non-fatal; node stays untyped) (issue #1 track B; closes DEBT-016) | v0.5.6 | ✅ merged |
 | 048 | Actionable graph-consumer locators: `factual_anchor` resolves `source` to `bible/research/<topic>.md` + shared authored handle (`anchor_corpus()` in-process build), `temporal` rules a/b/c adopt `resolve_source` over a deterministic event (issue #1 track B; closes DEBT-015) | v0.5.7 | ✅ merged |
 | 049 | Unify `narrative_structure` unit identifier: both rules name the `G9` unit by its human `rdfs:label` via one shared `_unit_identifier` point (orphan-beat drops the opaque slug; `load_orphan_units` carries the label via `OPTIONAL`) (issue #1 track B; closes DEBT-017) | v0.5.8 | ✅ merged |
+| 050 | Partial-evaluation contract: third validator return shape (`EvalResult(violations, not_evaluated)` + `Abstention`); `focalization` runs `_first_person_breaks` AND abstains on head-hopping under limited-third in one run (issue #1 track A; closes DEBT-019) | v0.5.9 | ✅ merged |
 
 The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
 ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles

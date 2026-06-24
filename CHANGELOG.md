@@ -4,6 +4,84 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.9] — 2026-06-24
+
+Iteration **050** — issue #1 **track A** (evaluation honesty), closing
+**DEBT-019**. The validator contract had been **all-or-nothing**: `validate()`
+either returned `list[Violation]` **or** raised `NotEvaluated(reason, kind)` —
+a validator could not deterministically check one dimension **and** declare
+`not_evaluated` on another in the same run. Iteration 045 hit that wall: under
+a third-person-**limited** voice, `focalization` raised
+`NotEvaluated(pending_capability)` for head-hopping **before** reaching its
+first-person-break check, so the still-working deterministic break check
+**stopped running for every focalized project** — a real, suite-**invisible**
+coverage regression (DEBT-019; the three focalized fixtures exercise no
+first-person break, so nothing went red). This patch introduces a **general
+partial-evaluation contract** — a **third** return shape — so a validator can
+emit findings **and** abstentions together. `focalization` is its first and
+only consumer: under limited-third it now **runs** `_first_person_breaks`
+**and** declares the head-hopping `pending_capability` abstention in the same
+run. The contract is observationally conservative: `EvalResult([],
+[Abstention(r, k)])` is byte-identical on the wire to `raise NotEvaluated(r,
+k)`, so the three focalized fixtures stay byte-identical and only a focalized
+project that **actually has** a first-person break sees a new (already-correct)
+`warning`. No new CLI surface, no new runtime dependency, no ontology change;
+the 044 green predicate, the `NotEvaluatedKind` enum, the `not_evaluated[]`
+serialization, and the error-only CI gate are **consumed unchanged**.
+
+### Added
+
+- **`Abstention(reason, kind=missing_input)`** and **`EvalResult(violations,
+  not_evaluated)`** (`src/bookwright/validation/base.py`) — both frozen
+  dataclasses. `Abstention` is the returned-not-raised sibling of
+  `NotEvaluated`, carrying **only** `(reason, kind)`; the validator never names
+  itself. `EvalResult` is the form-(c) carrier. Both added to `__all__` and
+  re-exported from `validation/__init__.py` alongside the widened Protocol.
+- **`_record(name, reason, kind)`** (`validation/runner.py`) — the **single**
+  name-stamping authority, shared by both the raised total abstention (form
+  (b)) and each returned partial abstention (form (c)). The stamping authority
+  does not fork (FR-002).
+- **Runner-level form-(c) tests** (`tests/validation/test_runner.py`) — a
+  synthetic `_Partial` validator proves the general three-shape contract
+  **decoupled** from `focalization`; `_PartialEmpty`/`_SkipEmptyTwin` pin the
+  observational-equivalence invariant (comparing serialized `to_json()`);
+  `_PartialDup` proves form-(c) findings flow through the shared dedup.
+
+### Changed
+
+- **`Validator` Protocol** (`validation/base.py`) — `validate` return widened
+  `list[Violation]` → `list[Violation] | EvalResult`. Back-compat preserved: a
+  bare-list validator still satisfies the Protocol under `mypy --strict`.
+- **`run_validators`** (`validation/runner.py`) — normalizes all three shapes:
+  a bare list and a raised `NotEvaluated` exactly as before; an `EvalResult`
+  routes its `violations` into the existing dedup + `sort_key` and each
+  `Abstention` into `not_evaluated[]` via `_record`. `RunResult` stays the
+  4-tuple; both consumers (`commands/validate.py`, `status/queries.py`) are
+  untouched.
+- **`focalization`** (`validation/validators/focalization.py`) — at the one
+  limited-third site, returns `EvalResult(self._first_person_breaks(...),
+  [Abstention(_HEAD_HOPPING_PENDING, pending_capability)])` instead of raising.
+  The four `missing_input` raises, the omniscient `list` path, the first-person
+  `[]` path, `_first_person_breaks`, and `_HEAD_HOPPING_PENDING` are untouched;
+  the validator stays prose-only (`triples=()`).
+- **Oracles** (`tests/validation/test_focalization.py`) — a new both-at-once
+  case asserts exactly one `warning` citing the marker **and** one
+  `pending_capability` head-hop entry in the same `EvalResult`; the
+  limited-third ES/EN tests are retargeted from `pytest.raises(NotEvaluated)` to
+  the `EvalResult` shape; the English break test now asserts the break **fires**
+  (the inverse of what iteration 045 asserted — DEBT-019 made concrete).
+- **Contract before code** — `bookwright-design.md` § 13.1 (third return shape),
+  § 13.2 / § 13.5 / § 20.6.1 (focalization now runs the deterministic
+  first-person check **and** abstains on head-hopping under limited-third — the
+  determinism↔LLM frontier realized at sub-check level).
+
+### Removed
+
+- **DEBT-019** (the all-or-nothing contract suppressing `focalization`'s
+  deterministic first-person-break check under limited-third) — resolved and
+  removed from `DEBT.md`; the track-A index line reconciled to cite iteration
+  050 as its closure.
+
 ## [0.5.8] — 2026-06-24
 
 Iteration **049** — issue #1 **track B** (determinism / polish), closing
