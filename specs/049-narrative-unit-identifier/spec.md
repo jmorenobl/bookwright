@@ -8,6 +8,12 @@
 
 **Input**: User description: "Unify the unit identifier printed by the two `narrative_structure` rules — the orphan-beat rule prints the slug, the unresolved-role rule prints the human authored name — onto the human name, consistently (DEBT-017)."
 
+## Clarifications
+
+### Session 2026-06-24
+
+- Q: Printed format — human name alone vs. human name plus a parenthetical slug for URI traceability? → A: Human authored name **alone** (no parenthetical slug). Rationale (zero-debt doctrine §2 / §3, 048 track-B precedent): the unresolved-role rule already prints name-only and FR-002/FR-006 require its output to stay unchanged, so name-alone keeps the iteration to a **single** observable delta (only the orphan-beat rule changes); name-plus-slug would re-introduce an opaque identifier that iteration 048 deliberately dropped in favor of the `relpath:line` locator the finding already carries (FR-006), and would silently change the unresolved-role rule's output too — widening scope against FR-002. The slug stays available defensively via the FR-004 fallback.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - One species of unit identifier, not two (Priority: P1)
@@ -44,8 +50,8 @@ testable on its own and delivers the complete value.
    narrative sequence (orphan beat)`), not by its slug.
 2. **Given** the same project, **When** both the orphan-beat rule and the
    unresolved-role rule fire, **Then** both findings present the unit identifier
-   in the identical chosen format (human name, plus a trace suffix if the format
-   includes one — applied the same way in both rules).
+   in the identical format — the human authored name alone (no parenthetical slug),
+   rendered the same way in both rules.
 3. **Given** a project with an orphan unit, **When** validate runs, **Then** the
    finding's `relpath:line` locator, severity, and the gate/exit-code outcome are
    exactly what they were before this change (only the printed identifier
@@ -84,15 +90,16 @@ testable on its own and delivers the complete value.
   orphan-beat rule MUST fall back to the slug so a finding is still emitted.
 - **FR-005**: The two rules MUST format the narrative-unit identifier through a
   **single shared point** — one helper that takes the unit's `(name, slug)` and
-  returns the printed identifier, called by *both* `_orphan_beats` and
-  `_unresolved_roles`. Two independently-built strings that merely *happen* to
-  match are forbidden: consistency MUST be structural (divergence impossible by
-  construction), not asserted. This mirrors the iteration-048 precedent
-  (`anchor_handle` shared between `factual_anchor` and `status` so the surfaces
-  cannot drift, DEBT-015). The exact rendered format (human name alone, or human
-  name plus a parenthetical slug for URI traceability) is a `/speckit-plan`
-  decision, but because both rules render through the one helper, whatever format
-  is chosen — including any trace suffix — is applied identically by construction.
+  returns the printed identifier (the human authored `name` when present, else the
+  `slug` per FR-004), called by *both* `_orphan_beats` and `_unresolved_roles`. Two
+  independently-built strings that merely *happen* to match are forbidden:
+  consistency MUST be structural (divergence impossible by construction), not
+  asserted. This mirrors the iteration-048 precedent (`anchor_handle` shared between
+  `factual_anchor` and `status` so the surfaces cannot drift, DEBT-015). The rendered
+  format is **the human authored name alone, with no parenthetical slug** (Clarifications
+  2026-06-24): both rules render through the one helper, so the format is applied
+  identically by construction, and the unresolved-role rule's existing name-only output
+  is unchanged.
 - **FR-006**: Only the **printed identifier** changes. The locator
   (`resolve_source` / `relpath:line`), the severity, the gate behavior, and
   **what each rule detects** MUST NOT change.
@@ -120,9 +127,9 @@ testable on its own and delivers the complete value.
 ### Measurable Outcomes
 
 - **SC-001**: For every finding emitted by either `narrative_structure` rule, the
-  narrative-unit identifier is the human authored name (or the agreed
-  name-plus-trace format), in a format identical between the two rules — verified
-  by running `bookwright validate` on a project that triggers both rules.
+  narrative-unit identifier is the human authored name alone (no parenthetical slug),
+  in a format identical between the two rules — verified by running `bookwright
+  validate` on a project that triggers both rules.
 - **SC-002**: 0 findings from `narrative_structure` identify a unit by a slug-only
   identifier when that unit has a label (the prior orphan-beat behavior is fully
   gone).
@@ -139,11 +146,12 @@ testable on its own and delivers the complete value.
 
 ## Assumptions
 
-- The exact printed format — human name alone (e.g. `'El recuerdo de la primera
-  marea'`) versus human name with a parenthetical slug for URI traceability
-  (e.g. `'El recuerdo de la primera marea' (el-recuerdo-de-la-primera-marea)`) —
-  is deferred to `/speckit-plan`. The spec mandates only that whatever format is
-  chosen is applied **consistently** across both rules.
+- The printed format is **resolved** (Clarifications 2026-06-24): the human authored
+  name alone (e.g. `'El recuerdo de la primera marea'`), with no parenthetical slug.
+  The name-plus-slug alternative was rejected because it would change the
+  unresolved-role rule's existing name-only output (against FR-002) and re-introduce
+  an opaque identifier the `relpath:line` locator already supersedes (048 precedent).
+  The format is applied **consistently** across both rules via the FR-005 shared helper.
 - Iteration 035's guarantee holds: every `G9_Narrative_Unit` emits a single
   `(uri, rdfs:label, name)` triple, so the human name is always SPARQL-queryable
   from the derived graph in the normal path; the slug fallback (FR-004) is a

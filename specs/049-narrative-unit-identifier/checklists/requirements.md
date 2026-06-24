@@ -31,11 +31,12 @@
 
 ## Notes
 
-- The exact printed format (human name alone vs. name-plus-parenthetical-slug) is
-  intentionally deferred to `/speckit-plan` per the user's instruction. This is a
-  bounded planning choice, not an underspecification — the spec mandates
-  consistency across both rules regardless of which format is chosen, so it is
-  **not** a [NEEDS CLARIFICATION] blocker.
+- The exact printed format (human name alone vs. name-plus-parenthetical-slug) was
+  resolved during `/speckit-clarify` (Session 2026-06-24) to **human name alone**,
+  on zero-debt grounds (single observable delta; the unresolved-role rule's name-only
+  output stays unchanged; the `relpath:line` locator supersedes an opaque slug). It
+  was never a [NEEDS CLARIFICATION] blocker — the spec already mandated consistency
+  across both rules — but the choice is now locked rather than carried into planning.
 - Internal symbol names (`_orphan_beats`, `_unresolved_roles`, `rdfs:label`,
   `ref.entity`) are referenced for precision against the existing DEBT-017 entry;
   they describe *which* surfaces change, not *how* to implement, so they do not
