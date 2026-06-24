@@ -208,8 +208,9 @@ El 2º dogfood **cumplió la condición de activación** del move 3 (un heuríst
 insuficiente sobre prosa real: 4/4 FP) y el **3er dogfood la reforzó** con señal real **perdida,
 no teórica**: sobre prosa literaria fresca, un personaje usado-pero-no-declarado (`Amelia`) y un
 head-hopping real quedaron **invisibles**, abstenidos en el mismo gesto que (correctamente)
-silencia orgs y topónimos. Es el **norte del track de validación** — pero **no se redacta como
-iteración aún**: su frontera ya está decidida, falta la spec que la aterrice.
+silencia orgs y topónimos. Es el **norte del track de validación**. La frontera estaba decidida
+(§ 20.6.1) y la **pasada de diseño está hecha** (2026-06-24): el **contrato concreto** vive en
+`bookwright-design.md` § 20.6.2. La primera iteración ya es **redactable**.
 
 - **Qué cura:** el conjunto abierto entero que el track A dejó honesto-pero-en-`not_evaluated` —
   menciones-desconocidas (orgs/topónimos/vocativos/**personaje-sin-declarar**, DEBT-013 incluida),
@@ -228,16 +229,21 @@ iteración aún**: su frontera ya está decidida, falta la spec que la aterrice.
   **juicio** (LLM, informativo, no rompe CI, estilo `bookwright-verify`) de **gate** (determinista
   o veredictos LLM cacheados/golden-runs). La iteración 050 ya materializó el principio 3 a nivel
   de sub-comprobación (`focalization` corre lo determinista Y abstiene lo semántico en un run).
-- **Lo que falta antes de la spec:** aterrizar esos 4 principios en un **contrato concreto** —
-  cómo se inyecta el grounding del grafo, dónde vive el caché/golden-run de veredictos para que
-  el re-run sea reproducible, cómo opera offline, y la separación juicio/gate en código (reusando
-  el path LLM de `bookwright-verify`, iteración 015). Coste y disciplina de test determinista son
-  parte de la decisión, no un detalle posterior.
-- **Siguiente paso (no una spec todavía):** abrir/profundizar el hilo de diseño que fije ese
-  contrato (issue `design` o `bookwright-design.md` § 20.6.x); recién entonces se redacta la
-  primera iteración del move 3 con su `SPEC`/`PLAN_HINT`. Hasta ahí, el interim honesto del track
-  A (declarar `not_evaluated`, `kind=pending_capability`) es el estado correcto y
-  permanente-como-fallback (si el path LLM está offline, abstener es la respuesta correcta).
+- **El contrato (decidido, `bookwright-design.md` § 20.6.2):** (1) **superficie** — se **extiende
+  `bookwright-continuity`** (su mandato ya es manuscrito-vs-canon, anclado en el grafo), no se añade
+  skill nuevo; (2) **el canal `not_evaluated` ES el contrato** entre capas — cada `Abstention`
+  (`pending_capability`) que `validate` publica es una tarea de juicio que continuity recoge; (3)
+  **grounding** — el roster (personaje-sin-declarar) y la voz declarada (focalización/1ª persona) se
+  inyectan como contexto; los núcleos deterministas se conservan; (4) **juicio, NO gate** en
+  `v0.6.0` — el veredicto es informativo (no rompe CI); el gate sigue siendo `validate` determinista;
+  gatear veredictos LLM (golden-runs/caché por hash) queda **diferido** con su propia condición.
+- **Siguiente paso — la primera iteración (051): el personaje-usado-pero-no-declarado.** El vertical
+  slice mínimo que prueba la tubería entera (`validate` abstiene → continuity recoge la `Abstention`
+  → juzga anclado en el roster → reporta), con el grounding más simple (sólo el roster) y la señal
+  real más fuerte del 3er dogfood (`Amelia`). Las otras dos dimensiones (head-hopping / 1ª persona)
+  siguen el mismo patrón después. **Pídeme el `SPEC`/`PLAN_HINT` de 051 y lo regenero verificado
+  contra el código vigente** (§ 0.4). El interim honesto del track A (declarar `not_evaluated`,
+  `kind=pending_capability`) sigue siendo el fallback correcto y permanente si el path LLM no corre.
 
 ---
 

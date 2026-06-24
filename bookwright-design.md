@@ -2123,6 +2123,80 @@ declara `pending_capability` sobre el head-hopping (lo que espera al LLM). La ab
 deja de ser todo-o-nada: el determinismo y el juicio conviven por dimensión en el mismo
 run, exactamente la tubería que el principio 2 describe (cierra DEBT-019).
 
+#### 20.6.2 El contrato del move 3 — superficie, grounding y juicio-no-gate (pasada de diseño)
+
+> **Aterriza los 4 principios de § 20.6.1 en un contrato concreto**, tras el 3er dogfood
+> (`el-año-de-las-casas-vacías`, novela literaria multi-POV, 2026-06-24; § 13.5,
+> `bookwright-roadmap.md` § 5). Es el *qué/cómo* previo a la spec; el detalle por iteración se
+> fija en su `specs/`. **Hallazgo que lo motiva:** sobre prosa real, la abstención honesta del
+> track A silencia el ruido (orgs/topónimos) **y** la señal (un personaje usado-pero-no-declarado,
+> `Amelia`, invisible) en el mismo gesto — sólo el juicio semántico los separa.
+
+Cuatro decisiones fijan el primer aterrizaje (minor `v0.6.0`):
+
+**1. Superficie: se EXTIENDE `bookwright-continuity`, no se añade un skill nuevo.** El juicio del
+move 3 —"¿esta prosa nombra a una persona que no está en el roster?", "¿rompe la voz declarada?",
+"¿hay head-hopping?"— es *manuscrito contra canon declarado*, exactamente el mandato de
+`bookwright-continuity` (POST-draft, solo-lectura, anclado en el grafo; § 20.6, § 10). Ya carga lo
+que el juicio necesita: el roster de `bible/characters/`, la voz de `constitution.md` y el grafo vía
+`graph build --json`. Un skill aparte duplicaría ese grounding para un subconjunto del mismo concern
+y fragmentaría la "continuidad semántica". La extensión es: continuity **consume sistemáticamente el
+canal `not_evaluated`** que `validate` publica y emite un veredicto por cada dimensión que el
+validador determinista declaró que no podía juzgar. (Alternativa considerada y descartada: un skill
+`bookwright-judge` atado 1-a-1 al canal; más explícito pero re-implementa el grounding de continuity.
+Si algún día el juicio semántico crece más allá de la continuidad bible/constitución, se re-evalúa.)
+
+**2. El canal `not_evaluated` ES el contrato entre las dos capas.** El acoplamiento
+determinismo↔LLM no es código compartido sino un **dato**: cada `Abstention(reason,
+kind=pending_capability)` que `validate` emite —menciones-desconocidas (§ 13.5), head-hopping de
+`focalization`, y, tras DEBT-021, el recall de ruptura de 1ª persona— es una **tarea de juicio
+pendiente** que continuity recoge y responde. El validador determinista **nombra** el hueco; el skill
+lo **cierra** con el grafo como grounding. Así la tubería del principio 2 es literal: el validador no
+sólo abstiene, **publica qué juzgar**.
+
+**3. Grounding por dimensión (qué inyecta el grafo).** El skill ancla cada juicio en el canon
+determinista (principio 2), nunca en el vacío:
+- **Personaje-sin-declarar** (cura DEBT-013 + restaura la señal `Amelia`): el **roster** —nombres y
+  alias de `G1_Character`, más settings/locations/objects— como contexto → "de los nombres propios de
+  PERSONA en la prosa, ¿cuáles no están en el roster y tampoco son organización/topónimo?". El roster
+  es lo que distingue señal (personaje real sin ficha) de ruido (org/topónimo), que ningún heurístico
+  de mayúsculas separa.
+- **Focalización / head-hopping / ruptura de 1ª persona** (cura el techo de 045/050 + DEBT-021): la
+  **voz declarada** (`constitution.md`, ya parseada por el validador) + el personaje focal → "bajo 3ª
+  limitada focalizada en X, ¿la prosa entra en la interioridad de otro personaje, o se desliza a 1ª
+  persona —incluida la morfología verbal pro-drop que el regex no ve—?".
+- En ambas, el **núcleo determinista sólido se conserva** y se pasa al skill como confirmación de
+  bajo coste (principio 3): los huérfanos (`error`), el pronombre sujeto explícito ya marcado, las
+  relaciones temporales del grafo. El determinismo **acota y confirma**; nunca suprime un candidato
+  que el LLM debería ver.
+
+**4. Juicio, NO gate (la línea dura del principio 4).** En `v0.6.0` el veredicto del move 3 es
+**informativo**: un reporte post-borrador de continuity que **no rompe CI**, como verify/continuity
+hoy. El **gate** sigue siendo `bookwright validate` (Python, determinista, reproducible): sólo
+`error` veta merge, y ningún `error` nace de un LLM. Esto resuelve "gratis" tres tensiones:
+- **Reproducibilidad de tests:** no hay LLM en CI, así que la suite determinista (la disciplina del
+  proyecto, Principio VIII) no se toca; el skill se prueba como verify/continuity (fixtures +
+  procedimiento + queries de grounding), no con aserciones sobre la salida del LLM.
+- **Operación offline / coste:** si el agente no puede juzgar, el estado correcto es el
+  `not_evaluated` que el validador ya emite —el fallback permanente del track A—. El skill **mejora**
+  la señal cuando corre; su ausencia no rompe nada.
+- **Gatear** un veredicto LLM (un `error` semántico que vete merge) queda **diferido** con su propia
+  condición de activación: veredictos **cacheados/fijados por hash de la entrada** (golden-runs) para
+  que el re-run sea estable (principio 4). No se construye hasta que exista una contradicción
+  semántica que merezca bloquear merge y se acepte el coste del caché. Horizonte demand-pulled, no
+  parte de `v0.6.0`.
+
+**Primer vertical slice (la spec inicial del move 3):** el **personaje-usado-pero-no-declarado** — la
+señal real más fuerte que midió el 3er dogfood (`Amelia`, hoy invisible) y la de grounding más simple
+(sólo el roster). Prueba la tubería entera en su forma mínima: `validate` abstiene → continuity recoge
+la `Abstention` → juzga anclado en el roster → reporta. Las otras dos dimensiones (focalización /
+head-hopping / 1ª persona) siguen el mismo patrón una vez probado.
+
+**Lo que NO cambia:** la ontología congelada (Principio X); el gate determinista; el contrato
+`not_evaluated` / `EvalResult` / `kind` (§ 13.1, se **consume**, no se altera); y el conjunto de
+validators deterministas (se conservan como grounding). El move 3 **no** es un validator nuevo en
+`validation/`: es la capa skill (§ 20.6) respondiendo al canal que la capa determinista publica.
+
 ### 20.7 Almacenamiento: `bible/research/`
 
 `bible/research.md` (un único fichero) se sustituye por un **directorio**
