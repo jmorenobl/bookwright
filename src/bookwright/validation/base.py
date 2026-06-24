@@ -288,27 +288,23 @@ class ValidationContext:
         re-minted every build), so a URI join against the *persisted* graph from a
         prior ``graph build`` would miss for every anchor (research D1).
 
-        Built from ``io``/``indexers``/``golem`` directly (reusing the memoized
-        :meth:`outline` ``MapResult``), **not** via ``commands._graph.build_project_graph``,
-        which persists (``engine.save``) and would invert the layer direction. A
-        validator never writes (FR-013): ``engine.save`` is **not** called.
-        Memoized once per run; an injected corpus (:meth:`set_anchor_corpus`) is
-        returned as-is (test seam, research D4)."""
+        Assembled by the shared :func:`bookwright.io.bible.feed_graph` — the same
+        triple-feeding ``commands._graph.build_project_graph`` uses — over ``io``/
+        ``indexers``/``golem`` directly (reusing the memoized :meth:`outline`
+        ``MapResult``), **not** via ``build_project_graph`` itself, which persists
+        (``engine.save``) and would invert the layer direction. A validator never
+        writes (FR-013): ``feed_graph`` saves nothing and ``engine.save`` is **not**
+        called. Memoized once per run; an injected corpus (:meth:`set_anchor_corpus`)
+        is returned as-is (test seam, research D4)."""
         if self._anchor_corpus is _UNSET:
             from bookwright.golem.namespaces import timeline_uri  # noqa: PLC0415
             from bookwright.indexers import resolve_indexer  # noqa: PLC0415
-            from bookwright.io.bible import build_provenance  # noqa: PLC0415
+            from bookwright.io.bible import feed_graph  # noqa: PLC0415
             from bookwright.io.research import map_research  # noqa: PLC0415
 
             uri_base = self.uri_base
             result = self.outline()
             engine = resolve_indexer(self.manifest.bookwright.indexer)()
-            for mapped in result.mapped:
-                for triple in mapped.entity.to_triples():
-                    engine.add_triple(*triple)
-                for assignment in build_provenance(mapped, uri_base):
-                    for triple in assignment.to_triples():
-                        engine.add_triple(*triple)
             research = map_research(
                 self.root,
                 self.root / self.manifest.paths.bible / "research",
@@ -317,9 +313,7 @@ class ValidationContext:
                 result.entity_index,
                 timeline_uri(uri_base),
             )
-            for entity in research.entities:
-                for triple in entity.to_triples():
-                    engine.add_triple(*triple)
+            feed_graph(engine, result, research, uri_base)
             self._anchor_corpus = (engine, research.anchor_identities)
         return cast("tuple[Indexer, tuple[AnchorIdentity, ...]]", self._anchor_corpus)
 

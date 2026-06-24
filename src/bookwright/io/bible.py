@@ -19,7 +19,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from rdflib.term import URIRef
@@ -59,6 +59,11 @@ from .frontmatter import Frontmatter, parse_frontmatter
 from .report import SkippedFile, UnknownKey
 from .vocabularies import VocabularyIndex
 
+if TYPE_CHECKING:
+    from bookwright.indexers import Indexer
+
+    from .research import ResearchResult
+
 __all__ = [
     "CHARACTER_KEYS",
     "EVENT_ITEM_KEYS",
@@ -85,6 +90,7 @@ __all__ = [
     "_resolve_refs",
     "_resolve_setting",
     "build_provenance",
+    "feed_graph",
     "map_bible",
 ]
 
@@ -255,6 +261,28 @@ def build_provenance(mapped: MappedEntity, uri_base: str) -> Iterable[AttributeA
             attribute=assertion.attribute,
             source=source,
         )
+
+
+def feed_graph(engine: Indexer, result: MapResult, research: ResearchResult, uri_base: str) -> None:
+    """Feed a mapped bible/outline ``MapResult`` + its ``ResearchResult`` into ``engine``.
+
+    The single triple-assembly the persisted ``graph build``
+    (``commands/_graph.build_project_graph``) and the in-process validation corpus
+    (``ValidationContext.anchor_corpus``) share, so the two graphs they reason over
+    cannot drift (048): each entity's own triples plus its CIDOC ``E13`` provenance,
+    then the research entities (already ``E13`` reifications, so NOT re-provenanced).
+    Writes nothing to disk — the caller owns ``engine.save`` (``graph build``) or
+    deliberately omits it (the validation corpus never persists, FR-013).
+    """
+    for mapped in result.mapped:
+        for triple in mapped.entity.to_triples():
+            engine.add_triple(*triple)
+        for assignment in build_provenance(mapped, uri_base):
+            for triple in assignment.to_triples():
+                engine.add_triple(*triple)
+    for entity in research.entities:
+        for triple in entity.to_triples():
+            engine.add_triple(*triple)
 
 
 # --- internals --------------------------------------------------------------

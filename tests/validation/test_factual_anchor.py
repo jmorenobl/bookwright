@@ -551,6 +551,18 @@ def test_zero_violations_when_no_anchors(project_root: Path) -> None:
     assert _run(_ctx(project_root), engine) == []
 
 
+def test_inert_when_fresh_corpus_carries_no_anchor(project_root: Path) -> None:
+    # The persisted graph passed in carries a (defective) anchor, so the FR-016 first
+    # gate passes — but the in-process corpus the validator rebuilds is empty, e.g. the
+    # research source was deleted between `graph build` and `validate`. With nothing to
+    # audit in the fresh corpus the validator emits no finding (the divergence branch).
+    persisted = research_graph()
+    add_anchor(persisted, AnchorSpec(constrains=None, sources=()))
+    ctx = _ctx(project_root)
+    ctx.set_anchor_corpus(research_graph(), ())  # rebuilt corpus has no anchor
+    assert FactualAnchor().validate(ctx, persisted) == []
+
+
 def test_scope_drops_location_less_violations(project_root: Path) -> None:
     engine = research_graph()
     add_anchor(engine, AnchorSpec(constrains=None, sources=()))  # R1 + R4 warnings
