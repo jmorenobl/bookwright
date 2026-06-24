@@ -310,14 +310,16 @@ de diferidos (iteración 024) a escala de subsistema:
   **Condición de activación — cumplida (2026-06-23):** el 2º dogfood
   (`sombra-en-el-puerto`) midió la regla de menciones-desconocidas como **100%
   ruido** sobre prosa real (4 FP, 0 señal); ese es el disparador concreto que el
-  roadmap exigía, no "mejor validación" en abstracto. **Lo que falta antes de
-  spec (no es un sprint ciego):** una pasada de diseño (design § 20.6) que resuelva
-  la **tensión de determinismo** —todo el proyecto es disciplina de test
-  determinista, y un LLM en el gate de CI no lo es: cómo cachear/fijar veredictos,
-  si el move 3 vive fuera del gate (informativo) o dentro (con golden-runs), coste,
-  operación offline. El interim honesto ya está: el heurístico declara
-  `not_evaluated` (track A, § 3), no finge. El move 3 restaura la señal que ese
-  `not_evaluated` deja pendiente.
+  roadmap exigía, no "mejor validación" en abstracto. **La pasada de diseño ya está
+  hecha** (2026-06-24): los cuatro principios que fijan la frontera determinismo/LLM
+  viven en `bookwright-design.md` § 20.6.1 — (1) la frontera es el *sustrato* (grafo
+  determinista vs. prosa LLM), no la dificultad; (2) LLM-primero **anclado en el
+  grafo** (grounding, donde enchufa la búsqueda vectorial de abajo); (3) el
+  determinismo añade confianza o ahorra coste pero **nunca suprime** un candidato; (4)
+  separar *juicio* (LLM, informativo, no rompe CI) de *gate* (determinista o veredictos
+  LLM cacheados). Lo que falta es la spec que los aterrice. El interim honesto ya está:
+  el heurístico declara `not_evaluated` (track A, § 3), no finge; el move 3 restaura la
+  señal que ese `not_evaluated` deja pendiente.
 - **Búsqueda vectorial.** ChromaDB (o equivalente) **sobre `rdflib`**, desacoplada
   del grafo, detrás del `Indexer` Protocol. Sin Grafeo (cancelado). Su valor real
   es la capa RAG (lo que las skills recuperan como contexto) y la detección

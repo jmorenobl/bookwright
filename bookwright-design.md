@@ -2023,15 +2023,52 @@ investigado?) lo hace el LLM vía skill.
 > reencuadre del 2º dogfood (§ 13.5) activó el escalado a juicio semántico de los
 > heurísticos de **conjunto abierto** —menciones-desconocidas (¿«Naviera» es
 > organización o personaje sin declarar?), voz/focalización— sobre este mismo path
-> `bookwright-verify`, con el regex como **pre-filtro barato** (acota candidatos), no
-> como veredicto. **Tensión a resolver antes de spec:** todo el proyecto es
-> disciplina de test **determinista**, y un LLM en el gate de CI no lo es. El diseño
-> de la iteración debe decidir: ¿el veredicto semántico vive **fuera** del gate
-> (informativo, como `bookwright-verify`/`bookwright-continuity` hoy — un reporte
-> post-borrador que nunca rompe CI) o **dentro** (con golden-runs/caché de veredictos
-> para fijar el no-determinismo)? Coste, operación offline y reproducibilidad de
-> tests son parte de esa decisión. Mientras tanto, el heurístico declara
-> `NotEvaluated` (§ 13.5), no finge.
+> `bookwright-verify`. Mientras tanto, el heurístico declara `NotEvaluated` (§ 13.5),
+> no finge.
+
+#### 20.6.1 Determinismo vs. LLM — dónde va la frontera (dirección de diseño del move 3)
+
+> **Decidido en el hilo de la issue #1 (2026-06-24), transcrito aquí (Principio I).**
+> Es la *dirección* del move 3; el contrato concreto y la spec llegan cuando se
+> implemente. Reemplaza el viejo encuadre "regex pre-filtro → LLM juez", que tenía un
+> fallo fatal (ver principio 3).
+
+Cuatro principios fijan dónde acaba el determinismo y empieza el LLM:
+
+1. **La frontera es el *sustrato*, no la dificultad.** El determinismo no es "para lo
+   mecánico"; es para el **grafo derivado**, donde la verdad es relacional y exacta
+   (presencia de un personaje, ciclo temporal, ancla sin fuente fiable, ojos azules en
+   cap 3 / verdes en cap 12). Ahí es **superior**, no un fallback: exacto, reproducible,
+   gratis, explicable (señala los triples). El LLM es para juzgar **prosa / lenguaje de
+   conjunto abierto** (¿esto es head-hopping?, ¿este término es una organización?, ¿este
+   párrafo contradice lo investigado?), donde la enumeración por reglas no escala (el
+   whack-a-mole que la issue #1 demostró). Intentar capturar palabras/símbolos concretos
+   con reglas deterministas **no escala**; eso es territorio del LLM.
+2. **LLM-primero, pero *anclado en el grafo* (grounding).** El LLM no juzga la prosa en
+   el vacío: la juzga **contra el canon que el grafo determinista contiene**, que se le
+   inyecta como contexto (el roster para decidir «¿personaje sin declarar?», la voz
+   declarada para «¿rompe la focalización?»). Determinismo y LLM no son dos validadores
+   paralelos sino **una tubería**: el grafo *alimenta* el juicio. Aquí enchufa la
+   búsqueda vectorial del horizonte demand-pulled (recuperar el trozo de canon relevante
+   por juicio).
+3. **El determinismo puede AÑADIR confianza o ahorrar coste, nunca SUPRIMIR.** El viejo
+   "regex pre-filtro" fallaba porque un punto ciego del regex *descartaba* el candidato y
+   el LLM no lo veía nunca (el falso negativo del head-hop dormido). En la capa de prosa
+   el determinismo es **optimización de coste** (cortocircuita lo inequívoco, hace
+   viable correr el LLM sobre un libro entero), nunca una frontera de correctitud que
+   pueda esconder algo.
+4. **Separar *juicio* de *gate*.** Es la restricción dura que mantiene la disciplina de
+   test del proyecto. El **juicio** (¿qué le pasa a esta prosa?) es LLM-primero y
+   **informativo** — un reporte post-borrador que NO rompe CI, como
+   `bookwright-verify`/`bookwright-continuity` hoy. El **gate** (¿esto bloquea el merge?)
+   se queda **determinista y reproducible**: solo hechos del grafo, o veredictos del LLM
+   **cacheados/fijados** (golden runs, por hash de la entrada) para que el re-run sea
+   estable. Un LLM en vivo **no** decide pasa/falla de CI. LLM-primero para opinar;
+   determinista para bloquear.
+
+Coste, operación offline y reproducibilidad de tests se resuelven dentro de estos cuatro
+principios (sobre todo el 3 y el 4). La spec del move 3 los aterriza; hasta entonces, el
+heurístico de conjunto abierto declara `NotEvaluated` (§ 13.5).
 
 ### 20.7 Almacenamiento: `bible/research/`
 
