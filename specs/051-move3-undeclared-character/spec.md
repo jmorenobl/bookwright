@@ -33,6 +33,22 @@ abstained in the very same gesture that (correctly) silences orgs/place names. A
 agent anchored in the roster **separates them**: it restores the signal without
 reintroducing the noise.
 
+## Clarifications
+
+### Session 2026-06-24
+
+- Q: Should the new `bookwright status` nudge key its trigger on the specific abstaining
+  validator (`character_unknown_mentions`) or broadly on any `kind=pending_capability`
+  abstention? → A: Narrowly on the abstaining **source** — match the set of abstention
+  sources continuity actually judges (today only `character_unknown_mentions`), emit
+  exactly one continuity action whose text names the *undeclared-character* judgment, and
+  do NOT fire merely because `kind == pending_capability`. Rationale: `focalization`'s
+  head-hopping abstention (reactivated in iteration 050) is also `pending_capability` but
+  this slice's skill does **not** yet judge it; broad kind-keying would signpost a judgment
+  the skill doesn't perform — a Scope-Discipline / track-A-honesty violation. Future
+  dimensions join the matched-source set as their skill judgment lands; the 044
+  `missing_input`-only green filter is untouched.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The author surfaces a character used but never declared (Priority: P1)
@@ -129,9 +145,15 @@ abstention).
   `name:` field and in the URI slug — so the person roster is read from the **sheets**,
   not from a graph label. The skill's procedure must say so.
 - **Multiple `pending_capability` abstentions** (today only `character_unknown_mentions`,
-  later head-hopping / 1st-person break): the status nudge must remain coherent — it
-  points to `bookwright-continuity` as the single place those judgment tasks are
-  answered, without producing one redundant action per abstention.
+  later head-hopping / 1st-person break): the status nudge keys on the abstention's
+  **source validator**, not on the `pending_capability` *kind* (see Clarifications). It
+  matches the set of sources continuity actually judges — today the single member
+  `character_unknown_mentions` — and emits **exactly one** continuity action naming the
+  undeclared-character judgment. `focalization`'s head-hopping abstention is also
+  `pending_capability` but does NOT trigger the nudge in this slice (the skill does not yet
+  judge it); when a later slice teaches continuity that dimension, its source joins the
+  matched set and the rule still emits one coherent action, never one redundant action per
+  abstention.
 - **The agent cannot judge (offline / no model)**: the correct resting state is the
   `not_evaluated` the validator already emits — the permanent track-A fallback. The
   skill *improves* the signal when it runs; its absence breaks nothing.
@@ -170,9 +192,13 @@ abstention).
 - **FR-008**: The skill MUST remain **read-only and POST-draft** (like all of continuity):
   it writes nothing to the project.
 - **FR-009**: `bookwright status` MUST add **one** `next_action` pointing to
-  `bookwright-continuity` when the validation report carries a `not_evaluated` entry from
-  `character_unknown_mentions`. This restores the nudge iteration 044 removed (now that
-  running the skill is an actionable remedy).
+  `bookwright-continuity` when the validation report carries a `not_evaluated` entry whose
+  **source validator** is `character_unknown_mentions`. The rule MUST key on the abstaining
+  **source** (the set of sources continuity actually judges, today the single member
+  `character_unknown_mentions`), NOT on the `pending_capability` *kind* — so an abstention
+  the skill does not yet judge (e.g. `focalization` head-hopping, also `pending_capability`)
+  does NOT trigger the nudge in this slice. This restores the nudge iteration 044 removed
+  (now that running the skill is an actionable remedy).
 - **FR-010**: That `next_action` MUST be **informative**: it MUST NOT degrade green. The
   iteration-044 green predicate (`GREEN = status ok AND no not_evaluated entry has
   kind == missing_input`) MUST stay byte-for-byte identical; a `pending_capability` entry
@@ -242,10 +268,13 @@ abstention).
 
 - The semantic-judgment quality is exercised by the agent at runtime, not asserted in unit
   tests — consistent with how `bookwright-verify`/`bookwright-continuity` are tested today.
-- The discoverability `next_action` is added by introducing/relaxing a `status` rule so a
-  `pending_capability` abstention from `character_unknown_mentions` yields exactly one
-  continuity action, distinct from the existing `missing_input`-only "activate dormant
-  validators" rule, so the 044 filter that protects green stays intact.
+- The discoverability `next_action` is added by introducing a **new, separate** `status`
+  rule (distinct from the existing `missing_input`-only "activate dormant validators" rule,
+  so the 044 filter that protects green stays intact) that matches the abstention's
+  **source validator** — `character_unknown_mentions` (the lone member, today, of the set
+  of sources continuity judges) — and yields exactly one continuity action. It keys on the
+  source, not on the `pending_capability` kind, so dimensions the skill does not yet judge
+  do not fire it (see Clarifications).
 - `character_unknown_mentions` abstains **unconditionally** (`tests/status/test_queries.py`
   asserts it is "ALWAYS dormant"), so its `pending_capability` entry — and the new nudge —
   is present on every validated project. `tiny-historical` is the named fixture used to
