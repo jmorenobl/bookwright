@@ -62,6 +62,17 @@ Nothing semantic changes; severities and the exit-code gate are untouched.
   `status`'s identity format (ideally a single shared resolution point) is the
   lowest-debt choice and guarantees the two surfaces never diverge in how they
   name the same anchor (FR-003/FR-009).
+- Q: When a defective anchor's authored identity is unavailable to the
+  `factual_anchor` validator (a join miss — e.g. a stale derived graph still
+  carrying an anchor whose `bible/research/` source was since removed), what
+  exact identifier and `source` must the still-emitted finding carry? → A:
+  Today's spelling exactly — identifier = `_label(anchor.uri)` (the uuid7 tail)
+  and `source = None`. The validator is a CI **gate**, so unlike `status` (a
+  projection that may `continue` past an identity-less anchor) it MUST NOT drop
+  the finding; the no-regression deterministic floor is the current behavior,
+  which needs no new guard and is the *only* place a uuid7 may still surface
+  (FR-010). SC-004's "no uuid7" guarantee is therefore scoped to anchors with an
+  available identity — the universal case for a freshly built graph.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -212,10 +223,13 @@ locator because `resolve_source` prefers a `:line`-bearing provenance) rather th
   handle MUST be byte-identical for the same anchor — verified empirically by a
   test that asserts the two surfaces agree.
 - **FR-010**: If a defective anchor's authored identity is unavailable to the
-  validator, the violation MUST still be emitted (no finding is ever dropped); the
-  fallback identifier/locator for that case MUST be defined explicitly (e.g. the
-  prior uuid7 label and a `None` source) so behavior is deterministic rather than
-  an error.
+  validator (a join miss against the identity set), the violation MUST still be
+  emitted — unlike `status`'s `anchor_gaps`, which `continue`s past such an
+  anchor, the validator is a CI **gate** and MUST NOT drop a defective-anchor
+  finding. The fallback for that case is today's exact behavior: identifier =
+  the prior `_label(anchor.uri)` uuid7 tail and `source = None`. This is the
+  no-regression, deterministic floor; it adds no guard, and it is the **only**
+  place a uuid7 may still appear in a message (see SC-004's scope).
 - **FR-011**: The `DEBT-015` entry MUST be removed from `DEBT.md` (its class is
   resolved); the track-B index/roadmap lines that reference it MUST be reconciled
   to show it shipped in this iteration.
@@ -267,7 +281,10 @@ locator because `resolve_source` prefers a `:line`-bearing provenance) rather th
   the same anchor (zero divergence) — verified by a test that compares the two.
 - **SC-004**: No `factual_anchor` or `temporal` message names an anchor or
   event by a raw uuid7 URI tail; every message uses an authored, human-readable
-  handle.
+  handle — scoped to anchors with an available authored identity (the universal
+  case for a freshly built graph). The sole exception is the FR-010 identity
+  join-miss fallback, where the uuid7 label is the deliberate no-regression
+  floor for the gate; no normal-path message uses a uuid7.
 - **SC-005**: The set of findings (count, severity, and gate/exit-code
   outcome) on every existing fixture is unchanged before and after this change —
   only `source` and message identifiers differ.
