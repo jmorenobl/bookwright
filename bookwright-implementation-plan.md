@@ -164,42 +164,37 @@ iteración tiene un **cierre manual** fijo:
 
 ---
 
-## 1+. Iteraciones del track en curso — `v0.5.x` (honestidad + pulido determinista)
+## 1+. Estado del track `v0.5.x` y lo que queda
 
-Tres tracks, salidos de la decisión de la issue #1 tras el 2º dogfood
-(`bookwright-roadmap.md` § 3, `bookwright-design.md` § 13.5; mapeo deuda→track en
-`DEBT.md`):
+> **✅ `v0.5.x` ENTREGADO ENTERO (043–049, releases `v0.5.3`–`v0.5.8`, 2026-06-24).** Los dos
+> tracks de la issue #1 (2º dogfood) están cerrados: **track A — honestidad** (043
+> menciones-desconocidas→abstainer · 044 categorías de `not_evaluated` + verde alcanzable · 045
+> head-hopping de `focalization`→`not_evaluated` · 046 `validate` propaga `skipped`) y **track B —
+> pulido determinista** (047 vocab Propp/Greimas no fatal · 048 locators de graph-consumers · 049
+> nombre-vs-slug). Detalle en `CHANGELOG`/git/`specs/043…049`. **Los bloques § 1.A/§ 1.B de abajo
+> (043–049) son referencia histórica — NO relanzar.**
 
-- **Track A — honestidad** (familia 040): el heurístico de **conjunto abierto** deja de
-  fingir y declara `not_evaluated`. Cierra la mentira (`[]`/dormido). Iteraciones **043**
-  (menciones-desconocidas → abstainer — **✅ released `v0.5.3`**) y **044** (categorías de
-  `not_evaluated` + verde alcanzable, el refinamiento de 040 que 043 hizo necesario — **✅
-  released `v0.5.3`**, junto con 043); **045** (head-hopping de `focalization`) y **046**
-  (`validate` propaga `skipped`) quedan pendientes. Un patch cada una (043+044 compartieron
-  `v0.5.3`).
-- **Track B — pulido determinista** (cerrado/estructural, real, barato): **047** (vocab
-  Propp/Greimas no fatal enumerado, DEBT-016), **048** (locators de graph-consumers,
-  DEBT-015), **049** (mensaje nombre-vs-slug, DEBT-017). Un patch cada una; independientes
-  del track A.
-- **Track C — move 3** (juicio semántico, **norte activado**): NO es una iteración lista.
-  Necesita diseño propio (determinismo en el gate de CI) antes de spec. Vive como dirección
-  en § 1.C; subsume DEBT-013 (orgs) y el techo de DEBT-014.
+**Lo que queda abierto.** Dos deudas cerrables (orden recomendado abajo) y el **move 3** (§ 1.C —
+dirección activada, diseño-primero). Cerradas las dos deudas, el único registro abierto será
+DEBT-013, conscientemente diferida al move 3 (= "cero deuda" en este proyecto).
 
-El orden recomendado es A → B (A es la consecuencia directa de la decisión y quita el
-ruido; B es independiente y puede intercalarse). Cada iteración es un branch
-`NNN-<short-name>` con su `specs/`, un **patch** con delta observable, y borra su entrada
-de `DEBT.md` al cerrarse.
+- **DEBT-020 — `bookwright init` no debe petar el primer commit sin identidad git.** Papercut de
+  onboarding (sensible para el escritor no-técnico). Patch corto, shippable (`v0.5.9`). Deck-clear
+  barato, primero.
+- **DEBT-019 — contrato de evaluación PARCIAL** (un validador emite hallazgos Y declara
+  `not_evaluated` solo de lo que no pudo). El contrato todo-o-nada obligó a la 045 a abstener
+  `focalization` ENTERO, perdiendo su comprobación determinista de ruptura de 1ª persona;
+  recupérala. Determinista (familia 040/044) y **prerrequisito que des-riesga el move 3**.
+  Sustantivo (`v0.5.10`).
 
-> **Profundidad de este documento.** La iteración **piedra angular (043)** va con su
-> `SPEC`/`PLAN_HINT` y comando de workflow **completos** (fija el patrón). Las demás van con
-> su **Necesidad + criterios + Pista** sustantivos; el envoltorio `bash`/heredoc es mecánico
-> (forma en § 0.4) y se rellena al llegarle el turno a cada una, copiando el de 043. Esto no
-> es un atajo de la *decisión* (que está entera en roadmap/design/DEBT), sino batching de la
-> autoría de prompts.
+> Cada iteración es un branch `NNN-<short-name>` con su `specs/`, un patch con delta observable,
+> que **borra su entrada de `DEBT.md`** al cerrarse (§ 0.4). **Pídeme el comando de la que vayas a
+> lanzar y lo regenero verificado contra el código vigente** — no copies un sketch a ciegas (es
+> donde se colaron los descuidos que la revisión de mitad de track pilló).
 
 ---
 
-## 1.A — Track de honestidad (familia 040)
+## 1.A — Track de honestidad (familia 040) — ✅ ENTREGADO (histórico, no relanzar)
 
 > **✅ 043 y 044 están RELEASED como `v0.5.3`** (2026-06-23: mergeadas a `main` con
 > `48bb8a0`, release `f62922a`, tag `v0.5.3`). Sus bloques `SPEC`/comando se conservan abajo
@@ -496,7 +491,7 @@ personaje entero quedó fuera. Es justo el `[]`-miente que 040 quería erradicar
 
 ---
 
-## 1.B — Track de pulido determinista (cerrado/estructural)
+## 1.B — Track de pulido determinista (cerrado/estructural) — ✅ ENTREGADO (histórico, no relanzar)
 
 Independiente del track A; puede intercalarse. Tres patches, cada uno un delta observable.
 

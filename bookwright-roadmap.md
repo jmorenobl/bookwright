@@ -35,9 +35,10 @@ validación robusta** (issue #1) **está entregada** (2026-06-22, iteraciones
 041/042). Un **segundo dogfooding** (`sombra-en-el-puerto`, novela negra,
 2026-06-23) reencuadró el norte: lo que queda no son tres parches de costura más,
 sino **una decisión de fondo** sobre dónde acaba el heurístico determinista (§ 3).
-El siguiente hito es el **track de honestidad de validación** que sale de esa
-decisión; tras él, el **move 3** (juicio semántico) deja de ser demand-pulled-sin-
-disparador y pasa a **dirección activada** (§ 5). Lo entregado hasta hoy:
+Ese track —honestidad + pulido determinista (`v0.5.3`–`v0.5.8`, iteraciones 043–049)—
+**está entregado** (2026-06-24); el **move 3** (juicio semántico) queda como **dirección
+activada, diseño-primero** (§ 5), con dos deudas cerrables (DEBT-019/020) antes de él. Lo
+entregado hasta hoy:
 
 - **`v0.1.0`** (M0–M3) — el toolkit v0: manifiesto, modelo GOLEM sobre `rdflib`,
   los 10 commands de autoría materializados como Agent Skills, validación.
@@ -75,6 +76,18 @@ disparador y pasa a **dirección activada** (§ 5). Lo entregado hasta hoy:
   (`tiny-historical`): la costura strippea la raya de diálogo `—`/`–`/`―` (041,
   DEBT-009), y la regla de menciones-desconocidas cruza contra la **unión** de
   rosters character/setting/location/object (042, DEBT-010).
+- **`v0.5.3`…`v0.5.8`** (track issue #1 tras el 2º dogfood, iteraciones 043–049) —
+  **honestidad + pulido determinista, entregado**. *Track A (honestidad):*
+  `character_presence` partido en regla de huérfanos + abstainer
+  `character_unknown_mentions`, con `not_evaluated` categorizado por `kind`
+  (`missing_input`/`pending_capability`) y verde alcanzable de nuevo (043+044→`v0.5.3`);
+  head-hopping de `focalization`→`not_evaluated` (045→`v0.5.4`); `validate` propaga los
+  `skipped` de ingestión (046→`v0.5.5`). *Track B (pulido determinista):* vocab
+  Propp/Greimas no reconocido → `warning` no fatal enumerado (047→`v0.5.6`); locators
+  resolubles en los graph-consumers (048→`v0.5.7`); identificador de unidad unificado en
+  `narrative_structure` (049→`v0.5.8`). Cerró DEBT-009…018 salvo DEBT-013 (diferida al
+  move 3); abrió DEBT-019 (contrato de evaluación parcial) y DEBT-020 (identidad git en
+  `init`).
 
 Todo en `main`, con suite de tests, docs y los cuatro gates (`ruff`,
 `ruff format`, `mypy --strict`, `pytest` ≥ 80 %) verdes.
@@ -90,12 +103,12 @@ v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)           
 v0.4.x  ──  endurecimiento post-dogfooding (issue #1, instancia a instancia)  ✅ cerrado (v0.4.6)
 v0.5.0  ──  validación robusta: cerrar la CLASE del defecto de superficie     ✅ entregada (v0.5.0)
             (costura única + estado tri-valor; verde = evaluado).  issue #1.
-v0.5.x  ──  honestidad de validación: el heurístico de conjunto ABIERTO        ← AQUÍ
-            deja de fingir y declara no-evaluado (familia 040); pulido
-            determinista (locators, vocab, mensajes).  issue #1, 2º dogfood.
+v0.5.x  ──  honestidad de validación + pulido determinista (043–049)        ✅ entregado (v0.5.8)
+            conjunto ABIERTO declara no-evaluado (familia 040); locators,
+            vocab, mensajes.  issue #1, 2º dogfood.  Restan DEBT-019/020.
 ──── el move 3 ASCIENDE de demand-pulled-sin-disparador a dirección ACTIVADA ────
-juicio    ─  escalado semántico (voz/focalización/menciones-desconocidas) vía el
-semántico    path LLM de bookwright-verify, con el regex como pre-filtro. Condición
+juicio    ─  escalado semántico (voz/focalización/menciones-desconocidas) vía el  ← AQUÍ
+semántico    path LLM de bookwright-verify, con el regex como pre-filtro. Condición  (diseño-1º)
    (norte)   CUMPLIDA por el 2º dogfood (heurístico medido 100% ruido sobre prosa
              real). Es el norte del track de validación; necesita diseño propio
              (determinismo en el gate de CI) antes de spec — no es un sprint ciego.
