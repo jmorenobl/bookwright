@@ -1,6 +1,6 @@
 # Phase 1 Data Model — Actionable locators for graph-consumer validators
 
-In-memory only (the subsystem persists nothing — FR-020). This iteration adds **no**
+In-memory only (the subsystem persists nothing — FR-013). This iteration adds **no**
 new entity and **no** new serialized field; it adds one accessor, one shared helper,
 and changes two value-fields of existing `Violation`s. The frozen GOLEM ontology is
 untouched (Principle X / FR-008).
@@ -52,7 +52,7 @@ is coherent within this single build).
   outline triples + `build_provenance`) indexed into a fresh
   `resolve_indexer(manifest.bookwright.indexer)()`, then `map_research(root,
   bible/research, uri_base, book.language, result.entity_index, timeline_uri(...))`
-  triples added. **No `engine.save`** (a validator never writes — FR-020). Active
+  triples added. **No `engine.save`** (a validator never writes — FR-013). Active
   vocabularies are omitted (they only add `P2_has_type` typing, irrelevant to
   anchors/findings/intervals — same rationale as `outline()`).
 - **Memoization**: a `_anchor_corpus` slot (`_UNSET` sentinel), like the other
@@ -89,7 +89,7 @@ graph with no rebuild.
 
 ## 3. Determinism & invariants
 
-- **Byte-stability (FR-002/FR-016)**: `temporal` `source` is reproducible across
+- **Byte-stability (FR-002)**: `temporal` `source` is reproducible across
   two builds (slug URIs + fixed event choice). `factual_anchor` `source` and
   `message` are reproducible (stable authored `relpath`/handle); `triples` keep the
   minted anchor URI — **pre-existing**, out of scope.

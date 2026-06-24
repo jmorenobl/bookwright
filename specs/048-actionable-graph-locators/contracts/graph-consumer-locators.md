@@ -53,7 +53,7 @@ defective-anchor finding), with the pre-048 spelling: identifier =
 not the normal path; for a freshly built corpus every anchor has an identity (C2/C3
 hold universally). (FR-010)
 
-## C5 — Determinism (FR-002, FR-016)
+## C5 — Determinism (FR-002)
 
 - `temporal` resolves `source` from a fixed, total event choice: the carried
   triple's subject (rules b/c/d) or the lexicographically smallest event URI in the

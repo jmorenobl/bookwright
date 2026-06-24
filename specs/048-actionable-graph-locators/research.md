@@ -153,7 +153,7 @@ inherit the same `bible/timeline.md:<line>` granularity rule (d) produces.
 **Alternatives considered.** Resolving from *all* implicated events and joining —
 rejected: a single deterministic event already yields the correct file
 (`bible/timeline.md`), and the spec's Assumption confirms the choice "affects only
-determinism, not the resulting relpath." A new sort key — rejected (FR-016): the
+determinism, not the resulting relpath." A new sort key — rejected (FR-002): the
 existing component/triple ordering already gives a total order.
 
 ---

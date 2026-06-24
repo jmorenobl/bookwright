@@ -60,7 +60,7 @@ annotations` throughout.
 
 **Storage**: the derived graph (`bible/graph.ttl`) is read by `validate`; the
 new in-process corpus build is **non-persisting** — a validator MUST NOT write to
-disk (`Validator` protocol, FR-020). `build_project_graph`'s `engine.save(...)` is
+disk (`Validator` protocol, FR-013). `build_project_graph`'s `engine.save(...)` is
 **not** reused; the accessor indexes into a fresh in-memory engine and never saves.
 
 **Testing**: `uv run pytest` (≥ 80% coverage, single-sourced `fail_under`). New
@@ -84,7 +84,7 @@ the in-process corpus build is the same cost `status` already pays once per run.
 sizes: `temporal.py` 277, `factual_anchor.py` 325, `base.py` 355,
 `status.py` 251, `_research_identity.py` 72 — all with headroom). Frozen GOLEM
 ontology untouched (Principle X / FR-008): **no** new class, predicate, or `.ttl`
-change. Deterministic output (FR-002/FR-016): byte-identical `source` across two
+change. Deterministic output (FR-002): byte-identical `source` across two
 builds of the same fixture.
 
 **Scale/Scope**: ~5 source files touched (`temporal.py`, `factual_anchor.py`,

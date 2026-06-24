@@ -240,6 +240,11 @@ locator because `resolve_source` prefers a `:line`-bearing provenance) rather th
   a/b/c reports `source = bible/timeline.md` (not `null`); `factual_anchor` and
   `status` agree on naming/locating the same anchor. All four CI gates
   (`ruff check`, `ruff format --check`, `mypy --strict`, `pytest`) stay green.
+- **FR-013**: The in-process research corpus the `factual_anchor` resolution
+  builds MUST NOT persist to disk — a validator never writes (`engine.save` is
+  **not** reused, and the corpus is discarded after the run). The derived
+  `bible/graph.ttl` is produced **only** by `graph build`; validation stays a pure
+  read (Principle I — the graph is a derived cache, never written by `validate`).
 
 ### Key Entities *(include if feature involves data)*
 
