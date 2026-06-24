@@ -319,7 +319,18 @@ de diferidos (iteración 024) a escala de subsistema:
   separar *juicio* (LLM, informativo, no rompe CI) de *gate* (determinista o veredictos
   LLM cacheados). Lo que falta es la spec que los aterrice. El interim honesto ya está:
   el heurístico declara `not_evaluated` (track A, § 3), no finge; el move 3 restaura la
-  señal que ese `not_evaluated` deja pendiente.
+  señal que ese `not_evaluated` deja pendiente. **Corroborado por el 3er dogfood
+  (`el-año-de-las-casas-vacías`, novela literaria multi-POV, 2026-06-24):** sobre prosa
+  fresca de un género distinto (3ª limitada multi-voz), la abstención honesta del track A
+  funciona sin ruido, pero el hueco semántico **muerde con señal real perdida, no
+  teórica** — un personaje usado-pero-no-declarado (`Amelia`, 4 menciones, sin ficha) y un
+  head-hopping real (interioridad de Irene en el capítulo focalizado en Teo) quedan
+  **invisibles**, abstenidos en el mismo gesto que (correctamente) silencia orgs y
+  topónimos. Es decir: la única respuesta determinista honesta (abstener) no puede separar
+  ruido de señal; sólo el juicio semántico lo hace. El 3er dogfood **confirma el move 3
+  como la próxima roca** sobre onboarding (que no aportó muro nuevo: el flujo
+  `init→autoría→graph→validate→status` fue sin fricción; la fricción documentada es la
+  cadena externa, condición de activación aún no disparada).
 - **Búsqueda vectorial.** ChromaDB (o equivalente) **sobre `rdflib`**, desacoplada
   del grafo, detrás del `Indexer` Protocol. Sin Grafeo (cancelado). Su valor real
   es la capa RAG (lo que las skills recuperan como contexto) y la detección
