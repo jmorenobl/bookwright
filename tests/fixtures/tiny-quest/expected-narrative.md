@@ -67,7 +67,7 @@ roles_resolved:                # unit slug -> resolved character-role slugs (sor
 # --- Validate-time findings (asserted in workflow Group B) — EXACT set ---------
 narrative_structure:
   orphan_beats:                # Rule a: G9 units in no G7 sequence
-    - unit: omen-beat          # the unit slug, as it appears in the message
+    - unit: "Omen Beat"        # the unit's human name, as it appears in the message
       source: "outline/units/06-omen.md:3"
   unresolved_roles:            # Rule c: roles: slug resolving to no character role
     - unit: "Omen Beat"        # the UnresolvedReference.entity (the unit's `name`)

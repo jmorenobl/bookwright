@@ -33,8 +33,8 @@ Single project, src-layout: `src/bookwright/`, `tests/` at repo root (per plan.m
 **Purpose**: Establish a green baseline and ground the exact edit sites before
 changing behavior.
 
-- [ ] T001 Confirm a clean green baseline on branch `049-narrative-unit-identifier`: run `uv run pytest tests/validation/test_narrative_structure.py tests/e2e/test_narrative_workflow.py` and record that they pass BEFORE any edit (so SC-003's "only the printed identifier differs" is provable as a delta).
-- [ ] T002 Re-confirm the two edit sites and their invariants by reading `src/bookwright/validation/queries.py:179` (`load_orphan_units`, currently `-> list[str]`) and `src/bookwright/validation/validators/narrative_structure.py:42` (`_orphan_beats`, slug at line 46) and `:60` (`_unresolved_roles`, `ref.entity` at line 90); verify by grep that `_orphan_beats` is the SOLE caller of `load_orphan_units` across `src/` and `tests/` (D2).
+- [X] T001 Confirm a clean green baseline on branch `049-narrative-unit-identifier`: run `uv run pytest tests/validation/test_narrative_structure.py tests/e2e/test_narrative_workflow.py` and record that they pass BEFORE any edit (so SC-003's "only the printed identifier differs" is provable as a delta).
+- [X] T002 Re-confirm the two edit sites and their invariants by reading `src/bookwright/validation/queries.py:179` (`load_orphan_units`, currently `-> list[str]`) and `src/bookwright/validation/validators/narrative_structure.py:42` (`_orphan_beats`, slug at line 46) and `:60` (`_unresolved_roles`, `ref.entity` at line 90); verify by grep that `_orphan_beats` is the SOLE caller of `load_orphan_units` across `src/` and `tests/` (D2).
 
 **Checkpoint**: Baseline green, edit sites and sole-caller assumption verified.
 
@@ -48,7 +48,7 @@ the query supplies it.
 
 **⚠️ CRITICAL**: T003 blocks the orphan-beat rendering task (T006).
 
-- [ ] T003 In `src/bookwright/validation/queries.py`, widen `load_orphan_units` from `-> list[str]` to `-> list[tuple[str, str | None]]`: add `OPTIONAL { ?unit rdfs:label ?label }` to the SPARQL, `SELECT ?unit ?label`, and return `(unit_uri, label_or_None)` pairs sorted by URI with the lexicographically smallest label per URI (determinism, D2). Empty graph still returns `[]` (rule stays inert — detection unchanged, FR-006). Update the `"load_orphan_units"` export/docstring if it states the old return shape.
+- [X] T003 In `src/bookwright/validation/queries.py`, widen `load_orphan_units` from `-> list[str]` to `-> list[tuple[str, str | None]]`: add `OPTIONAL { ?unit rdfs:label ?label }` to the SPARQL, `SELECT ?unit ?label`, and return `(unit_uri, label_or_None)` pairs sorted by URI with the lexicographically smallest label per URI (determinism, D2). Empty graph still returns `[]` (rule stays inert — detection unchanged, FR-006). Update the `"load_orphan_units"` export/docstring if it states the old return shape.
 
 **Checkpoint**: Query returns `(uri, label)` pairs and type-checks; no caller updated yet (next phase).
 
@@ -67,9 +67,9 @@ finding count, severity, `relpath:line`, and the gate outcome are unchanged.
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] In `src/bookwright/validation/validators/narrative_structure.py`, add the module-level pure helper `_unit_identifier(name: str | None, slug: str) -> str` returning `name if name else slug` (D3/D4 — empty-string label treated as missing); this is the SINGLE shared formatting point (FR-005/SC-006). No call site wired yet.
-- [ ] T005 [US1] Wire `_unresolved_roles` (`narrative_structure.py:60`) to render its identifier through the new helper: replace the inline `'{ref.entity}'` in the message (line 90) with `_unit_identifier(ref.entity, <slug from unit_uri>)`, deriving `slug = unit_uri.rsplit("/", 1)[-1]`. Output MUST stay byte-identical to today (`ref.entity` is always present → helper returns it; FR-002/C2).
-- [ ] T006 [US1] Wire `_orphan_beats` (`narrative_structure.py:42`) to the widened query (T003): iterate `(unit_uri, label)` pairs, derive `slug = unit_uri.rsplit("/", 1)[-1]` (line 46), and render the message identifier as `_unit_identifier(label, slug)` — human name in the normal path, slug fallback when `label` is falsy (FR-002/FR-003/FR-004/C1/C4). The `resolve_source`/`relpath:line` locator and `warning` severity stay exactly as they are (FR-006/C5).
+- [X] T004 [US1] In `src/bookwright/validation/validators/narrative_structure.py`, add the module-level pure helper `_unit_identifier(name: str | None, slug: str) -> str` returning `name if name else slug` (D3/D4 — empty-string label treated as missing); this is the SINGLE shared formatting point (FR-005/SC-006). No call site wired yet.
+- [X] T005 [US1] Wire `_unresolved_roles` (`narrative_structure.py:60`) to render its identifier through the new helper: replace the inline `'{ref.entity}'` in the message (line 90) with `_unit_identifier(ref.entity, <slug from unit_uri>)`, deriving `slug = unit_uri.rsplit("/", 1)[-1]`. Output MUST stay byte-identical to today (`ref.entity` is always present → helper returns it; FR-002/C2).
+- [X] T006 [US1] Wire `_orphan_beats` (`narrative_structure.py:42`) to the widened query (T003): iterate `(unit_uri, label)` pairs, derive `slug = unit_uri.rsplit("/", 1)[-1]` (line 46), and render the message identifier as `_unit_identifier(label, slug)` — human name in the normal path, slug fallback when `label` is falsy (FR-002/FR-003/FR-004/C1/C4). The `resolve_source`/`relpath:line` locator and `warning` severity stay exactly as they are (FR-006/C5).
 
 **Checkpoint**: Both rules emit the unit identifier through one helper; orphan-beat now prints the human name, unresolved-role unchanged. User Story 1 is functionally complete — verify next via oracles.
 
@@ -81,10 +81,10 @@ finding count, severity, `relpath:line`, and the gate outcome are unchanged.
 FR-004 floor, and confirm everything else is invariant — all verified empirically
 (FR-008). Which oracles actually move is decided by `uv run pytest`, not assumed (D5).
 
-- [ ] T007 [P] [US1] In `tests/validation/test_narrative_structure.py`, update `test_orphan_beat_flagged_sequenced_not` (~line 51): assert the human name `"Orphan Beat"` is in the message (was the `orphan-beat` slug). Leave line 55's negative `"anchored-beat" not in` assertion unchanged (C1).
-- [ ] T008 [P] [US1] In `tests/fixtures/tiny-quest/expected-narrative.md` (~line 70), change `orphan_beats[0].unit: omen-beat` → `unit: "Omen Beat"` (the human name) and update the trailing comment "the unit slug, as it appears in the message" → "the unit's human name". The E2E `test_validate_reports_the_orphan_beat` rides this oracle (C1). Do NOT edit the authored outline card `tests/fixtures/tiny-quest/outline/units/06-omen.md` (FR-008).
-- [ ] T009 [US1] Add a NEW unit test to `tests/validation/test_narrative_structure.py` pinning FR-004/C4: an orphan unit with no `rdfs:label` (or empty label) falls back to its slug in the message — exercised either by a `G9` type triple without a label, or by asserting `_unit_identifier(None, slug) == slug` and `_unit_identifier("", slug) == slug` directly.
-- [ ] T010 [US1] Run `uv run pytest tests/validation/test_narrative_structure.py tests/e2e/test_narrative_workflow.py` and reconcile any OTHER moved oracle empirically (FR-008/D5). Confirm the unresolved-role assertions (`test_unresolved_role_flagged_with_location`, E2E `test_validate_reports_the_unresolved_role`) and the invariance assertions (`test_deterministic_and_read_only`, finding-count/source tests) still pass unchanged (C2/C5/SC-003).
+- [X] T007 [P] [US1] In `tests/validation/test_narrative_structure.py`, update `test_orphan_beat_flagged_sequenced_not` (~line 51): assert the human name `"Orphan Beat"` is in the message (was the `orphan-beat` slug). Leave line 55's negative `"anchored-beat" not in` assertion unchanged (C1).
+- [X] T008 [P] [US1] In `tests/fixtures/tiny-quest/expected-narrative.md` (~line 70), change `orphan_beats[0].unit: omen-beat` → `unit: "Omen Beat"` (the human name) and update the trailing comment "the unit slug, as it appears in the message" → "the unit's human name". The E2E `test_validate_reports_the_orphan_beat` rides this oracle (C1). Do NOT edit the authored outline card `tests/fixtures/tiny-quest/outline/units/06-omen.md` (FR-008).
+- [X] T009 [US1] Add a NEW unit test to `tests/validation/test_narrative_structure.py` pinning FR-004/C4: an orphan unit with no `rdfs:label` (or empty label) falls back to its slug in the message — exercised either by a `G9` type triple without a label, or by asserting `_unit_identifier(None, slug) == slug` and `_unit_identifier("", slug) == slug` directly.
+- [X] T010 [US1] Run `uv run pytest tests/validation/test_narrative_structure.py tests/e2e/test_narrative_workflow.py` and reconcile any OTHER moved oracle empirically (FR-008/D5). Confirm the unresolved-role assertions (`test_unresolved_role_flagged_with_location`, E2E `test_validate_reports_the_unresolved_role`) and the invariance assertions (`test_deterministic_and_read_only`, finding-count/source tests) still pass unchanged (C2/C5/SC-003).
 
 **Checkpoint**: Unit + E2E suites green; orphan-beat oracle is the human name; FR-004 floor pinned; invariants confirmed.
 
@@ -96,9 +96,9 @@ FR-004 floor, and confirm everything else is invariant — all verified empirica
 contract-before-code design note. Per the iteration prompt this is CONTRACT-BEFORE-CODE
 for § 13; if not already done, it is reconciled here alongside the debt/index.
 
-- [ ] T011 [P] Remove the `### DEBT-017` entry from `DEBT.md` (~line 91) and reconcile the reference at line 75 so no plain-text record still describes DEBT-017 as open (FR-009/SC-005). Git preserves the history.
-- [ ] T012 [P] Reconcile `bookwright-design.md § 13` so it states that BOTH `narrative_structure` rules name the unit by its human authored name (the contract this iteration ships). Keep the edit in Spanish (language convention).
-- [ ] T013 [P] In `CLAUDE.md`, reconcile the issue #1 track-B closed-list line + milestone prose to record DEBT-017 closed, and add the iteration-049 row to the iterations table.
+- [X] T011 [P] Remove the `### DEBT-017` entry from `DEBT.md` (~line 91) and reconcile the reference at line 75 so no plain-text record still describes DEBT-017 as open (FR-009/SC-005). Git preserves the history.
+- [X] T012 [P] Reconcile `bookwright-design.md § 13` so it states that BOTH `narrative_structure` rules name the unit by its human authored name (the contract this iteration ships). Keep the edit in Spanish (language convention).
+- [~] T013 [P] In `CLAUDE.md`, reconcile the issue #1 track-B closed-list line + milestone prose to record DEBT-017 closed, and add the iteration-049 row to the iterations table. **DEFERRED to the release/merge step**: CLAUDE.md's own governance mandates the iteration-table row flip and milestone-prose update happen in the `docs(claude): record iteration NNN merged` commit *after* merging to `main` (implement "does not push, merge, bump the version, or tag"). Iteration 049 is not yet merged/released (no v0.5.8), so flipping the released-state table/prose now would record a false state. The DEBT-017 closure itself is fully recorded in plain text by T011 (`DEBT.md`), T012 (`bookwright-design.md § 13`), and the `bookwright-roadmap.md` track-B line — SC-005 is satisfied without touching CLAUDE.md's released-state section.
 
 **Checkpoint**: No plain-text record describes DEBT-017 as open; design § 13 and the index reflect the unified identifier.
 
@@ -108,8 +108,8 @@ for § 13; if not already done, it is reconciled here alongside the debt/index.
 
 **Purpose**: Prove SC-004 and the full quickstart.
 
-- [ ] T014 Run the full gate sweep — `uv run ruff check && uv run ruff format --check`, `uv run mypy --strict` (confirm `load_orphan_units`'s widened `list[tuple[str, str | None]]` type-checks), and `uv run pytest` (≥80% coverage) — all green (SC-004).
-- [ ] T015 Walk `specs/049-narrative-unit-identifier/quickstart.md` Scenarios 1–3 and confirm the "Done when" checklist: both rules print the human name alone identically (SC-001/SC-002), invariants hold (SC-003), one helper / two call sites (SC-006), DEBT-017 gone (SC-005), gates green (SC-004).
+- [X] T014 Run the full gate sweep — `uv run ruff check && uv run ruff format --check`, `uv run mypy --strict` (confirm `load_orphan_units`'s widened `list[tuple[str, str | None]]` type-checks), and `uv run pytest` (≥80% coverage) — all green (SC-004).
+- [X] T015 Walk `specs/049-narrative-unit-identifier/quickstart.md` Scenarios 1–3 and confirm the "Done when" checklist: both rules print the human name alone identically (SC-001/SC-002), invariants hold (SC-003), one helper / two call sites (SC-006), DEBT-017 gone (SC-005), gates green (SC-004).
 
 ---
 
