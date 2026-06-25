@@ -212,6 +212,32 @@ def _judge_head_hopping(_state: StatusState) -> Action:
     )
 
 
+def _judge_first_person_recall(_state: StatusState) -> Action:
+    # The third move-3 judge nudge (iteration 054, the judgment half of the third
+    # dimension). `focalization` abstained on first-person recall under ANY declared
+    # third-person voice (limited OR non-limited) — a `pending_capability` gap: its
+    # explicit-pronoun check (`yo`/`nosotros`) is blind to Spanish pro-drop verbal
+    # morphology, an open set (DEBT-021). The skill closes it grounded ONLY in the
+    # declared voice — NO POV calendar, NO roster (a 1st-person break is grammatical
+    # person, not character identity). One fixed, byte-identical action (no minted data)
+    # — distinct from the undeclared-character and head-hopping nudges above. Informative
+    # only: it never degrades green (FR-011/FR-012).
+    return Action(
+        skill="bookwright-continuity",
+        prompt=(
+            "Read the declared narrative voice (bible/constitution.md); under any "
+            "third-person voice (limited or non-limited), judge per passage whether the "
+            "prose slides into first person — including the pro-drop verbal morphology "
+            "(Caminé, Me senté) the explicit-pronoun check cannot see — and report each "
+            "slip as a continuity deviation."
+        ),
+        reason=(
+            "focalization abstained on first-person recall — the deterministic check only "
+            "covers the explicit subject pronoun; the skill provides the semantic judgment"
+        ),
+    )
+
+
 def _define_focus(_state: StatusState) -> Action:
     return Action(
         skill="bookwright focus set",
@@ -261,6 +287,11 @@ RULES: tuple[Rule, ...] = (
         name="judge_head_hopping",
         applies=_judges("focalization", "head_hopping"),
         build=_judge_head_hopping,
+    ),
+    Rule(
+        name="judge_first_person_recall",
+        applies=_judges("focalization", "first_person_recall"),
+        build=_judge_first_person_recall,
     ),
     Rule(
         name="define_focus",

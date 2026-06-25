@@ -195,28 +195,37 @@ def test_known_state_yields_the_exact_next_actions(
     # The fixture carries an authored [focus] block (iteration 023), so rule ⑧
     # (define_focus) does NOT fire. The `activate_dormant_validators` nudge does NOT fire
     # either (iteration 044): the `character_unknown_mentions`/`focalization` entries are
-    # both `kind: pending_capability`, and it nudges only on `missing_input` gaps. FIVE
-    # actions remain (iteration 052): the three research-derived workstreams plus THREE
-    # `bookwright-continuity` actions — `review_continuity` (the `error` count), then both
-    # move-3 judge nudges: `judge_undeclared_characters` (keyed on the
-    # `character_unknown_mentions` abstention) and `judge_head_hopping` (keyed on the
-    # `focalization` `pending_capability` abstention), in table order.
+    # all `kind: pending_capability`, and it nudges only on `missing_input` gaps. SIX
+    # actions remain (iteration 054): the three research-derived workstreams plus FOUR
+    # `bookwright-continuity` actions — `review_continuity` (the `error` count), then all
+    # three move-3 judge nudges in table order: `judge_undeclared_characters` (keyed on the
+    # `character_unknown_mentions` abstention), `judge_head_hopping` (keyed on the
+    # `focalization` head-hopping abstention) and `judge_first_person_recall` (keyed on the
+    # `focalization` first-person-recall abstention — tiny-historical declares third-person
+    # limited, so `focalization` emits both `pending_capability` codes).
     assert [a["skill"] for a in actions] == [
         "bookwright-research",
         "bookwright-verify",
         "bookwright-continuity",
         "bookwright-continuity",
         "bookwright-continuity",
+        "bookwright-continuity",
     ]
-    # The second continuity action is the undeclared-character judge nudge; the third is
-    # the head-hopping judge nudge — distinct prompts/reasons (FR-011).
+    # The three move-3 judge nudges are distinct prompts/reasons, keyed by `(validator,
+    # code)` (FR-011): undeclared-character, then head-hopping, then first-person recall.
     undeclared = actions[3]
     assert undeclared["reason"].startswith("character_unknown_mentions abstained")
     assert "no sheet in bible/characters/" in undeclared["prompt"]
     head_hop = actions[4]
     assert head_hop["reason"].startswith("focalization abstained on head-hopping")
     assert "bible/pov-structure.md" in head_hop["prompt"]
-    assert undeclared["prompt"] != head_hop["prompt"]
+    first_person = actions[5]
+    assert first_person["reason"].startswith("focalization abstained on first-person recall")
+    # The first-person nudge is grounded in the declared voice ONLY — no POV calendar, no
+    # roster (research D1): a 1st-person break is grammatical person, not character identity.
+    assert "bible/constitution.md" in first_person["prompt"]
+    assert "bible/pov-structure.md" not in first_person["prompt"]
+    assert len({undeclared["prompt"], head_hop["prompt"], first_person["prompt"]}) == 3
     research = actions[0]
     # The prompt lists the queue; the reason cites the count (FR-009).
     assert research["reason"] == "2 open research questions and 1 unresolved anchor"

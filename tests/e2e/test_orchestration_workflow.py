@@ -7,7 +7,7 @@ Walks the M5 work loop in-process (``typer.testing.CliRunner``) exactly like
 assertion is **state convergence**, not a shorter ``next_actions`` list (research D2):
 the merged 020 engine aggregates per workstream, so ``research_queue`` keeps firing
 while *any* open question OR anchor gap remains. Resolving one question therefore
-leaves ``len(next_actions) == 5`` unchanged; only ``state.open_questions`` and the
+leaves ``len(next_actions) == 6`` unchanged; only ``state.open_questions`` and the
 ``research_queue`` prompt/reason converge, while every other fact is byte-identical.
 (The ``not_evaluated`` channel is never empty — ``character_unknown_mentions`` abstains
 unconditionally, issue #1 track A — but its entry is ``kind: pending_capability`` since
@@ -16,9 +16,11 @@ on actionable ``missing_input`` gaps. Since iteration 051 the abstention DOES fi
 informative ``judge_undeclared_characters`` nudge (keyed on the source), a second
 ``bookwright-continuity``; since iteration 052 the ``focalization`` head-hopping
 ``pending_capability`` abstention fires the peer ``judge_head_hopping`` nudge, a third
-``bookwright-continuity``. The five actions are the research workstreams, the single
-``review_continuity`` (the ``error`` count), and both judge nudges — byte-identical across
-runs.)
+``bookwright-continuity``; since iteration 054 the ``focalization`` first-person-recall
+``pending_capability`` abstention fires the peer ``judge_first_person_recall`` nudge, a
+fourth ``bookwright-continuity``. The six actions are the research workstreams, the single
+``review_continuity`` (the ``error`` count), and all three judge nudges — byte-identical
+across runs.)
 
 Four groups, mapped 1:1 to ``contracts/e2e-orchestration-contract.md``:
 
@@ -307,13 +309,14 @@ def test_second_status_converges(cli: CliRunner, historical: Path, oracle: dict[
         assert entry["kind"] == "pending_capability"
 
     # Invariant: everything else byte-identical; the list length is unchanged (NOT N-1).
-    # Five actions: the research workstreams plus review_continuity, plus BOTH move-3 judge
-    # nudges — `judge_undeclared_characters` (iteration 051, keyed on the
-    # `character_unknown_mentions` abstention) and `judge_head_hopping` (iteration 052, keyed
-    # on the `focalization` `pending_capability` abstention), each a `bookwright-continuity`.
-    # The capability-gap entries still do not fire `activate_dormant_validators` (044).
-    assert len(after["next_actions"]) == 5
-    assert len(before["next_actions"]) == 5
+    # Six actions: the research workstreams plus review_continuity, plus ALL THREE move-3
+    # judge nudges — `judge_undeclared_characters` (iteration 051, `character_unknown_mentions`),
+    # `judge_head_hopping` (iteration 052, `focalization`/`head_hopping`) and
+    # `judge_first_person_recall` (iteration 054, `focalization`/`first_person_recall`), each a
+    # `bookwright-continuity`. The capability-gap entries still do not fire
+    # `activate_dormant_validators` (044).
+    assert len(after["next_actions"]) == 6
+    assert len(before["next_actions"]) == 6
     assert _invariant_view(after) == _invariant_view(before)
 
 

@@ -4,13 +4,13 @@ description: >-
   Revisa la consistencia POST-redacción del manuscrito frente a la biblia:
   cumplimiento de la biblia, coherencia de los arcos de personaje y de la línea de
   tiempo, personajes mencionados en la prosa pero sin ficha en bible/characters/,
-  y head-hopping / saltos de punto de vista. Check POST-draft continuity of the
-  manuscript against the bible: bible compliance, character-arc consistency,
-  timeline coherence, characters used in the prose but undeclared (no sheet in
-  bible/characters/), and head-hopping / POV breaks. Úsalo cuando el autor pida
-  "revisa si mi manuscrito es coherente con la biblia" / "check my manuscript
-  against the bible", "revisa si hay personajes sin declarar / mencionados pero
-  sin ficha" / "check for undeclared / unbacked characters", o "revisa
+  y head-hopping / rupturas de voz o de persona narrativa. Check POST-draft
+  continuity of the manuscript against the bible: bible compliance, character-arc
+  consistency, timeline coherence, characters used in the prose but undeclared (no
+  sheet in bible/characters/), and head-hopping / voice or narrative-person
+  breaks. Úsalo cuando el autor pida "revisa si mi manuscrito es coherente con la
+  biblia" / "check my manuscript against the bible", "revisa si hay personajes sin
+  declarar / sin ficha" / "check for undeclared / unbacked characters", o "revisa
   head-hopping / saltos de punto de vista / focalización rota" / "check for
   head-hopping / POV breaks". Es de solo lectura y trabaja en fase POST-draft. NO
   revisa la planificación antes de redactar (eso es pre-draft: bookwright-analyze).
@@ -35,14 +35,15 @@ manuscrito y la biblia.
 2. Ejecuta `bookwright graph build --json` y consume el JSON que devuelve:
    razona sobre el grafo del proyecto (entidades, eventos, relaciones,
    referencias sin resolver) para cotejar el manuscrito contra él.
-3. Revisa cinco ejes: **cumplimiento de la biblia** (¿el texto respeta los
+3. Revisa seis ejes: **cumplimiento de la biblia** (¿el texto respeta los
    hechos de las fichas y las invariantes de la constitución?), **coherencia de
    arcos** (¿la evolución de cada personaje sigue su arco?), **coherencia
    temporal** (¿el orden de los hechos encaja con `bible/timeline.md`? — ver
    `references/golem-events-timeline.md` y `references/golem-relationships.md`),
    **menciones de conjunto abierto / personajes sin declarar** (ver el eje 4
-   abajo) y **head-hopping / saltos de punto de vista / focalización rota** (ver
-   el eje 5 abajo).
+   abajo), **head-hopping / saltos de punto de vista / focalización rota** (ver
+   el eje 5 abajo) y **ruptura de voz / de persona narrativa** (ver el eje 6
+   abajo).
 4. **Cuarto eje — personajes mencionados pero sin ficha.** Construye el *roster*
    de personas declaradas leyendo el campo `name:` de cada
    `bible/characters/*.md` — el nombre vive en la **ficha**, no en una etiqueta
@@ -83,24 +84,53 @@ manuscrito y la biblia.
    Cita siempre el anclaje de este eje: la **voz declarada** + el **calendario de
    POV** (`bible/pov-structure.md`) + el ***roster*** — exactamente lo que el
    heurístico determinista no podía resolver.
-6. Si no hay manuscrito todavía, repórtalo como "prerrequisito ausente" (nada que
+6. **Sexto eje — ruptura de voz / de persona narrativa (deslizamiento a 1ª
+   persona).** Este eje es **semántico**: lo juzgas tú, anclado en la biblia, no
+   un heurístico. A diferencia del quinto eje (acotado a tercera limitada), este
+   se aplica bajo **cualquier tercera persona declarada — limitada O no limitada
+   (omnisciente en tercera)**. El procedimiento, en orden:
+   - **(a) Lee la voz narrativa declarada** en `bible/constitution.md`
+     ("Voz narrativa: …") y procede **solo** bajo una voz declarada en **tercera
+     persona** — **limitada o no limitada**. Bajo **primera persona** declarada
+     este eje **no aplica** (la prosa ES primera persona): no reportes nada.
+   - **(b) Recorre el manuscrito fuera del diálogo.**
+   - **(c) Juzga** si la narración se desliza a **primera persona**, **incluida la
+     morfología verbal pro-drop sin pronombre explícito** (`Caminé`, `Me senté`,
+     `Escribí`) que el chequeo determinista (solo `yo` / `nosotros`) no puede ver.
+   - **(d) Hueco de anclaje**: cuando la voz declarada está **ausente**, no
+     declarada, o es un marcador **`[PENDING: …]`**, **reporta el hueco de anclaje
+     y NO adivines** la persona narrativa (igual que el quinto eje ante un
+     `[PENDING]`).
+
+   El anclaje de este eje es **solo la voz declarada** (`bible/constitution.md`):
+   **no** necesita el ***roster*** ni el calendario de POV — una ruptura de 1ª
+   persona es cuestión de **persona gramatical**, no de identidad del personaje.
+   Este eje **añade** la recuperación morfológica **sobre** —nunca suprime— los
+   `warning`s de pronombre explícito (`yo` / `nosotros`) que `focalization` ya
+   emite.
+7. Si no hay manuscrito todavía, repórtalo como "prerrequisito ausente" (nada que
    verificar), no falles de forma opaca.
-7. Redacta los hallazgos como una lista de **desviaciones**, cada una con la cita
+8. Redacta los hallazgos como una lista de **desviaciones**, cada una con la cita
    del manuscrito, el hecho de la biblia que contradice y una sugerencia.
 
 ## Output
 
 Un reporte en prosa con las desviaciones por eje (biblia, arcos, cronología,
-personajes sin declarar, head-hopping) y el resultado del `graph build`. Cada
-mención de una persona usada en la prosa pero **sin ficha** se reporta como **una
-desviación más**: la cita del manuscrito, la frase "no entry in `bible/characters/`"
-(sin ficha en `bible/characters/`) y una sugerencia (crear la ficha, o confirmar
-que no es un personaje). Cada **head-hop** se reporta también como **una desviación
-más**: la cita del manuscrito, la frase que nombra *la interioridad de un personaje
-no focal bajo el POV focal del capítulo* (p. ej. "interiority of *Irene* under the
-POV of *Teo* in *<capítulo>*") y una sugerencia (reescribir el pasaje desde el POV
-focal, o confirmar el calendario de POV). Es un **juicio, no una `error`** de
-validación: no nace ningún `error` de estos ejes. **No escribe nada** en el
+personajes sin declarar, head-hopping, ruptura de 1ª persona) y el resultado del
+`graph build`. Cada mención de una persona usada en la prosa pero **sin ficha** se
+reporta como **una desviación más**: la cita del manuscrito, la frase
+"no entry in `bible/characters/`" (sin ficha en `bible/characters/`) y una
+sugerencia (crear la ficha, o confirmar que no es un personaje). Cada **head-hop**
+se reporta también como **una desviación más**: la cita del manuscrito, la frase
+que nombra *la interioridad de un personaje no focal bajo el POV focal del
+capítulo* (p. ej. "interiority of *Irene* under the POV of *Teo* in *<capítulo>*")
+y una sugerencia (reescribir el pasaje desde el POV focal, o confirmar el
+calendario de POV). Cada **ruptura de 1ª persona** se reporta igualmente como **una
+desviación más**: la cita del manuscrito, la frase
+"first-person voice under a narration declared in third person"
+(voz de 1ª persona bajo una narración declarada en 3ª) y una sugerencia (reescribir
+en tercera persona, o confirmar la voz declarada). Es un **juicio, no una `error`**
+de validación: no nace ningún `error` de estos ejes. **No escribe nada** en el
 proyecto.
 
 ## Archivos a leer
@@ -112,7 +142,9 @@ proyecto.
   que no son personas), para el cuarto eje.
 - `bible/constitution.md` (la "Voz narrativa: …" — acota el quinto eje a tercera
   persona limitada) y `bible/pov-structure.md` (la sección "Calendario de POV" —
-  el POV focal por capítulo), para el quinto eje (head-hopping).
+  el POV focal por capítulo), para el quinto eje (head-hopping). La misma "Voz
+  narrativa: …" es **el único anclaje** del sexto eje (ruptura de 1ª persona): le
+  basta la voz declarada — no usa el *roster* ni el calendario de POV.
 - `references/golem-events-timeline.md`, `references/golem-relationships.md`,
   `references/golem-character.md` (el *roster* se lee de las fichas, no de una
   etiqueta del grafo).

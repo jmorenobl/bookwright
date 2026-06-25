@@ -53,6 +53,17 @@
 # predicate (validator + `pending_capability`), so `judge_undeclared_characters` stays
 # byte-identical. Green, `validation.counts` and the `not_evaluated` entries are byte-
 # identical. § 20.6.2 second slice LANDED; DEBT-021 (1st-person pro-drop) stays open.)
+# (Iteration 053, move 3 third dimension HONESTY half: `focalization` adds a third
+# `pending_capability` abstention — `(focalization, first_person_recall)` — under BOTH
+# third-person branches, declaring the pro-drop recall ceiling honestly. The `code`
+# discriminator (`undeclared_characters` / `head_hopping` / `first_person_recall`) lands and
+# `_judges(validator)` is generalized to `_judges(validator, code)`. No new nudge yet, so
+# `next_actions` stays 5. (Iteration 054, the JUDGMENT half: a THIRD peer rule
+# `judge_first_person_recall` — keyed on `(focalization, first_person_recall)` — now fires a
+# FOURTH INFORMATIVE `bookwright-continuity` nudge over that abstention, grounded ONLY in the
+# declared voice (no POV calendar, no roster). `next_actions` goes 5 → 6. Green,
+# `validation.counts` and the `not_evaluated` entries are byte-identical. § 20.6.2 third
+# dimension LANDED, first move-3 wave COMPLETE; DEBT-021 CLOSED.)
 
 # The authored focus the E2E (re)stamps via `bookwright focus set` at the loop's start.
 focus:
@@ -120,10 +131,11 @@ validation:
       code: undeclared_characters
     # The first-person-recall capability-gap (iteration 053, honesty half). `focalization`
     # runs `_first_person_breaks` (the CLOSED explicit-pronoun set) but is blind to Spanish
-    # pro-drop verbal morphology — an OPEN set no regex captures (DEBT-021). So under ANY
-    # third-person voice it declares this recall ceiling honestly. `pending_capability`,
-    # stays VISIBLE, does NOT fire `activate_dormant_validators`, does NOT deny green, and
-    # fires NO nudge yet (the move-3 judgment half is iteration 054). DEBT-021 stays open.
+    # pro-drop verbal morphology — an OPEN set no regex captures (was DEBT-021). So under
+    # ANY third-person voice it declares this recall ceiling honestly. `pending_capability`,
+    # stays VISIBLE, does NOT fire `activate_dormant_validators`, does NOT deny green. Since
+    # iteration 054 (the judgment half) it fires the peer `judge_first_person_recall` nudge,
+    # keyed on `(focalization, first_person_recall)`. DEBT-021 closed (honesty 053 + 054).
     - validator: focalization
       reason: >-
         full first-person recall requires semantic judgment (move 3); the deterministic
@@ -136,9 +148,10 @@ validation:
     # `pending_capability`: like the others it stays VISIBLE, does NOT fire
     # `activate_dormant_validators`, and does NOT deny green. Since iteration 052 it DOES
     # fire the peer `judge_head_hopping` nudge — keyed since iteration 053 on
-    # `(focalization, head_hopping)` (validator + code) — so `next_actions` stays length 5
-    # (the third `bookwright-continuity`). `validation.counts` is byte-identical (head-
-    # hopping emitted nothing here today). DEBT-014 (honesty half) closed; DEBT-019 recorded.
+    # `(focalization, head_hopping)` (validator + code) — the THIRD `bookwright-continuity`
+    # (its peer `judge_first_person_recall`, iteration 054, adds a fourth, so `next_actions`
+    # is length 6). `validation.counts` is byte-identical (head-hopping emitted nothing here
+    # today). DEBT-014 (honesty half) closed; DEBT-019 recorded.
     - validator: focalization
       reason: >-
         head-hopping / interiority attribution requires semantic judgment (move 3); the
@@ -146,23 +159,25 @@ validation:
       kind: pending_capability
       code: head_hopping
 
-# The five firing rules, in priority order (research D2 / data-model § 3). `research_queue`
+# The six firing rules, in priority order (research D2 / data-model § 3). `research_queue`
 # fires while ANY open question OR anchor gap remains; `review_continuity` fires on the
-# `error: 1` count. `activate_dormant_validators` does NOT fire (iteration 044): both
+# `error: 1` count. `activate_dormant_validators` does NOT fire (iteration 044): all three
 # `not_evaluated` entries are `pending_capability`, and that rule nudges only on
-# `missing_input` gaps. BOTH move-3 judge rules fire, each keyed on its abstaining SOURCE +
-# `pending_capability` (iteration 052 generalized the keying to `_judges(validator)`):
-# `judge_undeclared_characters` (iteration 051, source `character_unknown_mentions`) adds a
-# SECOND `bookwright-continuity` after `review_continuity`, and `judge_head_hopping`
-# (iteration 052, source `focalization`) adds a THIRD — both informative pointers to the
-# semantic-judgment skill. Neither degrades green (both entries are `pending_capability`, not
-# `missing_input`); `validation.counts` and the `not_evaluated` entries stay byte-identical.
-# The LENGTH stays 5 across both runs (NOT N-1) — only the research-queue prompt/reason
-# converge.
+# `missing_input` gaps. ALL THREE move-3 judge rules fire, each keyed on `(validator, code)`
+# (iteration 053 generalized `_judges(validator)` → `_judges(validator, code)`):
+# `judge_undeclared_characters` (iteration 051, `character_unknown_mentions`/
+# `undeclared_characters`) adds a SECOND `bookwright-continuity` after `review_continuity`,
+# `judge_head_hopping` (iteration 052, `focalization`/`head_hopping`) adds a THIRD, and
+# `judge_first_person_recall` (iteration 054, `focalization`/`first_person_recall`) adds a
+# FOURTH — all informative pointers to the semantic-judgment skill. None degrades green (all
+# entries are `pending_capability`, not `missing_input`); `validation.counts` and the
+# `not_evaluated` entries stay byte-identical. The LENGTH stays 6 across both runs (NOT N-1)
+# — only the research-queue prompt/reason converge.
 next_actions:
   skills:
     - bookwright-research
     - bookwright-verify
+    - bookwright-continuity
     - bookwright-continuity
     - bookwright-continuity
     - bookwright-continuity
@@ -181,22 +196,26 @@ un *anchor* infrasostenido permanente y un hallazgo de fiabilidad baja permanent
 1. **Primer `status`.** Dos preguntas abiertas (`q-libro-de-jornales`, `q-origen-telares`),
    un *anchor gap* (`rumor-incendio → El almacén viejo`), un hallazgo de baja fiabilidad
    (`rumor-incendio`) y la cuenta de validación `{error: 1, warning: 1, info: 0}`.
-   `next_actions` enumera **cinco** workstreams: `bookwright-research`, `bookwright-verify`,
+   `next_actions` enumera **seis** workstreams: `bookwright-research`, `bookwright-verify`,
    `bookwright-continuity` (los errores de continuidad), un **segundo**
    `bookwright-continuity` (el *nudge* de juicio de personajes sin declarar, move 3 primera
-   rebanada) y un **tercer** `bookwright-continuity` (el *nudge* de juicio de head-hopping,
-   move 3 segunda rebanada). El *nudge* de validadores dormidos ya **no** dispara: las
-   entradas `not_evaluated` (`character_unknown_mentions`, `focalization`) son ambas
+   rebanada), un **tercer** `bookwright-continuity` (el *nudge* de juicio de head-hopping,
+   move 3 segunda rebanada) y un **cuarto** `bookwright-continuity` (el *nudge* de juicio de
+   ruptura de 1ª persona, move 3 tercera dimensión, mitad de juicio). El *nudge* de
+   validadores dormidos ya **no** dispara: las entradas `not_evaluated`
+   (`character_unknown_mentions`, las dos de `focalization`) son todas
    `kind: pending_capability` (huecos de capacidad permanentes, no accionables para
    `activate_dormant_validators`, que —refinada en la iteración 044— solo dispara ante
-   huecos `missing_input`). Pero las dos reglas de juicio de move 3 **sí** disparan, cada
-   una anclada a su fuente abstinente más `pending_capability` (la iteración 052 generalizó
-   la clave de la frozenset por-nombre a un predicado compartido `_judges(validator)`):
-   `judge_undeclared_characters` (iteración 051, fuente `character_unknown_mentions`) y
-   `judge_head_hopping` (iteración 052, fuente `focalization`). Son **informativos** —las
-   entradas siguen `pending_capability`, así que no deniegan verde— y permanecen
-   **visibles** en `not_evaluated` (issue #1 track C: move 3 contesta los huecos que la 044
-   dejó visibles).
+   huecos `missing_input`). Pero las tres reglas de juicio de move 3 **sí** disparan, cada
+   una anclada a su `(validator, code)` (la iteración 053 generalizó la clave a
+   `_judges(validator, code)`, porque `focalization` emite ahora DOS abstenciones
+   `pending_capability`): `judge_undeclared_characters` (iteración 051,
+   `character_unknown_mentions`/`undeclared_characters`), `judge_head_hopping` (iteración
+   052, `focalization`/`head_hopping`) y `judge_first_person_recall` (iteración 054,
+   `focalization`/`first_person_recall`, anclado SOLO en la voz declarada — sin calendario
+   de POV ni *roster*). Son **informativos** —las entradas siguen `pending_capability`, así
+   que no deniegan verde— y permanecen **visibles** en `not_evaluated` (issue #1 track C:
+   move 3 contesta los huecos que la 044 dejó visibles).
 
 2. **Tras aplicar la resolución pre-cocinada** (`_resolution/q-libro-de-jornales.md` →
    `bible/research/`, y se elimina `q-libro-de-jornales` de `_index.md`) y reconstruir:
@@ -205,7 +224,7 @@ un *anchor* infrasostenido permanente y un hallazgo de fiabilidad baja permanent
    **todo lo demás es byte-idéntico** —`focus`, `phase`, `unresolved_anchors`,
    `low_reliability_findings`, `validation` (incluidas las entradas `not_evaluated` de los
    abstainers, con su `kind: pending_capability`), y las acciones `verify`/`continuity` (las
-   tres)— y `len(next_actions)` **sigue siendo 5** (agregación por workstream, no `N−1`).
+   cuatro)— y `len(next_actions)` **sigue siendo 6** (agregación por workstream, no `N−1`).
 
 `state.graph` (entidades/triples) se asevera *presente* en cada corrida pero se **excluye**
 de la igualdad byte cross-run: cerrar un hallazgo emite triples distintos de forma
