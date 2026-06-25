@@ -2,47 +2,50 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.11 released (2026-06-25)
+## Repository state: v0.5.12 released (2026-06-25)
 
-The current release is **v0.5.11** (iteration 052). The repo is on `main`
+The current release is **v0.5.12** (iteration 053). The repo is on `main`
 (tagged) with a real `src/bookwright/` package (~200 Python files), the full
 test suite, docs, and CI gates green. **There is no active iteration branch.**
 
-The latest work lands the **second vertical slice** of **issue #1 track C
-(move 3 — semantic judgment)** (iteration 052), the same pattern as 051 with
-only the judged dimension changed. The **third dogfood**
-(`el-año-de-las-casas-vacías`, third-person limited) measured a **real head-hop**
-— the interiority of `Irene` inside a chapter focalized on `Teo` — left
-**invisible**, because `focalization` honestly abstains under limited-third
-(`Abstention(_HEAD_HOPPING_PENDING, pending_capability)`, iteration 050) rather
-than fake the judgment. v0.5.11 closes that gap (design § 20.6.2): the LLM
-judgment is an **Agent Skill**, not Python — `bookwright-continuity` gains a
-**fifth axis** that, **only** under a declared third-person *limited* voice
-(`bible/constitution.md`), reads the focal POV per chapter from the prose **POV
-calendar** (`bible/pov-structure.md`, "Calendario de POV") and the roster, then
-judges per chapter whether the prose attributes interiority to a **non-focal**
-POV character, reporting each head-hop as one more continuity deviation (and
-reporting the grounding gap, never guessing, when the calendar is absent /
-`[PENDING]`). The `not_evaluated` channel **is** the contract: each
-`pending_capability` abstention is a judgment task the skill answers, and
-`bookwright status` adds a peer **green-preserving** `next_action`
-(`judge_head_hopping`). The 051 name-only `_JUDGE_SOURCES` frozenset is
-**generalized** to a shared `_judges(validator)` predicate requiring
-`validator == … AND kind is pending_capability` — `judge_undeclared_characters`
-adopts it **byte-identically**, while the new predicate also expresses what
-name-only keying could not: `focalization` emits **both** abstention kinds, and
-only the `pending_capability` one fires the nudge (its `missing_input` gap stays
-with `activate_dormant_validators`). The verdict is **informative, not a gate**:
-the CLI stays deterministic with no LLM dependency, no `error` is born from an
-LLM, the 044 green predicate is **byte-identical**, and `focalization` and all of
-`validation/` are untouched. Head-hopping carries no debt of its own, so **no
-`DEBT.md` entry is removed** — the third move-3 dimension (the pro-drop
-first-person recall, DEBT-021) stays open and follows the same pattern in a later
-slice; gating an LLM verdict (golden-run caching) stays deferred. The prior
-v0.5.x work stands: the move-3 first slice (v0.5.10, undeclared characters,
-closed DEBT-013), v0.5.9's general partial-evaluation contract (`EvalResult` +
-`Abstention`, DEBT-019) and the track-A/B honesty + deterministic-polish patches
-(v0.5.3–v0.5.8) — per-release detail in `CHANGELOG.md`.
+The latest work lands the **third move-3 dimension, first half (honesty)** of
+**issue #1 track C** (iteration 053) — the same split head-hopping took, honesty
+(045/050) before judgment (052). Today `focalization` runs `_first_person_breaks`
+over a **closed** explicit-pronoun set (`yo`/`nosotros`/…/`i`/`we`) under a
+third-person voice and is **silent** about everything that set cannot see —
+Spanish pro-drop verbal morphology (`Caminé`, `Me senté`), an **open** set no
+regex captures without reopening issue #1's whack-a-mole (**DEBT-021**). That
+silence is the `[]`-means-clean lie at the sub-check level. v0.5.12 closes it
+(design §§ 13.4/13.5/20.6): `focalization` declares the recall ceiling
+**honestly** with a `pending_capability`
+`Abstention(_FIRST_PERSON_RECALL_PENDING, …, code="first_person_recall")` under
+**both** third-person branches (under limited-third it joins the head-hopping
+abstention in one partial `EvalResult`; the non-limited bare `list` is now
+wrapped in an `EvalResult`), while the explicit-pronoun `warning`s, the
+`_FIRST_PERSON` regex, and the four `missing_input` raises stay
+**byte-identical**. The forced contract plumbing rides inside the patch that
+needs it, exactly as iteration 044 added `kind`: both `Abstention` and
+`NotEvaluatedResult` gain an **optional** `code: str | None = None` discriminator,
+serialized **additively** (`code: null` for a raised abstention), stamped through
+the runner's **single** `_record` naming point (the raised `NotEvaluated`
+*exception* does not gain `code`); `not_evaluated_sort_key` stays
+`(validator, reason)` (`code` is **not** a sort term). Because `focalization` now
+emits **two** `pending_capability` abstentions, `status` `_judges(validator)` is
+generalized to `_judges(validator, code)`, so `judge_head_hopping` keys precisely
+on `(focalization, head_hopping)` and never mis-fires on the recall abstention;
+`judge_undeclared_characters` re-points to
+`(character_unknown_mentions, undeclared_characters)`, which forces that validator
+from a raised total abstention (form (b)) to a returned partial one (form (c)) so
+it can carry the `code` — observationally additive (only `code` changes from
+`null`), nudge behaviour unchanged. **No** first-person nudge yet (that, plus
+DEBT-021's closure, is iteration 054); **no** gate, **no** skill change, the 044
+green predicate **byte-identical**, no `error` born, and **no `DEBT.md` entry
+removed** (DEBT-021's honesty half landed; its judgment half stays open). The
+prior v0.5.x work stands: the move-3 first two slices (v0.5.10 undeclared
+characters / closed DEBT-013, v0.5.11 head-hopping judgment), v0.5.9's general
+partial-evaluation contract (`EvalResult` + `Abstention`, DEBT-019) and the
+track-A/B honesty + deterministic-polish patches (v0.5.3–v0.5.8) — per-release
+detail in `CHANGELOG.md`.
 
 **The per-release detail (what changed, which regex, which oracle) lives in
 `CHANGELOG.md` — not here.** This section states only the current state and the
@@ -66,19 +69,23 @@ per-release narrative is `CHANGELOG.md`):
   channel — so `[]` stops reading as "clean" when it meant "couldn't look". GREEN
   is the single documented predicate `status == "ok" AND no not_evaluated entry
   has kind == "missing_input"`; only `error` findings gate CI.
-- The **v0.5.x post-dogfooding track** (041–052, patches `v0.5.1`…`v0.5.11`)
+- The **v0.5.x post-dogfooding track** (041–053, patches `v0.5.1`…`v0.5.12`)
   continues the issue #1 doctrine on two tracks. **Track A — evaluation
   honesty:** a deterministic heuristic measured insufficient on real prose
   **abstains** (`not_evaluated`, kind-categorized
-  `missing_input`/`pending_capability`) instead of faking findings, a
+  `missing_input`/`pending_capability`, plus an additive per-dimension `code`
+  discriminator from 053) instead of faking findings, a
   partial corpus surfaces what was excluded, and a **partial-evaluation
   contract** (form (c) `EvalResult`) lets a validator emit findings **and**
   abstentions in one run — so a deterministic sub-check no longer disappears
-  behind a whole-run abstention, and **move 3 lands its first two vertical
-  slices** — `bookwright-continuity` gains a fourth axis that judges *characters
-  used in the prose but undeclared* (051) and a fifth axis that judges
-  *head-hopping / broken focalization under limited-third* (052); the skill layer
-  answers the `character_unknown_mentions` and `focalization` `pending_capability`
+  behind a whole-run abstention, and **move 3 lands its first two judgment
+  slices plus a third dimension's honesty half** — `bookwright-continuity` gains
+  a fourth axis that judges *characters used in the prose but undeclared* (051)
+  and a fifth axis that judges *head-hopping / broken focalization under
+  limited-third* (052), and `focalization` declares the *first-person pro-drop
+  recall* ceiling honestly (053, the `code="first_person_recall"` abstention —
+  its judgment half is 054); the skill layer answers the
+  `character_unknown_mentions` and `focalization` `pending_capability`
   abstentions anchored in the authored roster + POV calendar, and the CLI stays
   deterministic. **Track B — authoring honesty + deterministic
   polish:** an unrecognized controlled-vocabulary term is no longer typed in
@@ -89,8 +96,9 @@ per-release narrative is `CHANGELOG.md`):
   surfacing ingestion-skipped bible files (046), the `untyped_vocab_terms`
   soft-warning channel (047), the actionable graph-consumer locators (048), the
   unified `narrative_structure` unit identifier (049), the
-  partial-evaluation contract (050), and the **move-3 first two slices** (051,
-  052) are the headline moves.
+  partial-evaluation contract (050), the **move-3 first two slices** (051,
+  052), and the **move-3 third dimension's honesty half + the `code`
+  discriminator** (053) are the headline moves.
 
 The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** and
 landed its **first two vertical slices** (051, 052, design § 20.6.2):
@@ -99,8 +107,12 @@ the `character_unknown_mentions` abstention (051) and the head-hopping / broken-
 focalization dimension over the `focalization` `pending_capability` abstention
 under limited-third (052), anchored in the authored roster + POV calendar —
 judgment, not gate (the CLI stays deterministic, no LLM in CI, green
-byte-identical). The remaining move-3 dimension (1st-person break / pro-drop
-recall, DEBT-021) follows the same pattern in a later slice; gating an LLM
+byte-identical). The third move-3 dimension (1st-person break / pro-drop recall,
+DEBT-021) landed its **honesty half** (053): `focalization` declares the recall
+ceiling with a `code="first_person_recall"` `pending_capability` abstention under
+both third-person branches; its **judgment half** (the sixth axis + a
+`judge_first_person_recall` nudge, which CLOSES DEBT-021) is iteration 054. Gating
+an LLM
 verdict stays deferred. The remaining
 longer-horizon work — semantic judgment in validation, vector search (ChromaDB
 over rdflib) and export — is deferred to an unversioned, demand-pulled horizon:
@@ -241,8 +253,8 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. The table below is the canonical
 per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
-iterations through 052 (the move-3 second slice, `v0.5.11`) are merged; there is
-no active iteration branch.
+iterations through 053 (the move-3 third-dimension honesty half, `v0.5.12`) are
+merged; there is no active iteration branch.
 
 | # | Iteration | Milestone | Status |
 |---|---|---|---|
@@ -298,7 +310,7 @@ no active iteration branch.
 | 050 | Partial-evaluation contract: third validator return shape (`EvalResult(violations, not_evaluated)` + `Abstention`); `focalization` runs `_first_person_breaks` AND abstains on head-hopping under limited-third in one run (issue #1 track A; closes DEBT-019) | v0.5.9 | ✅ merged |
 | 051 | Move 3 first vertical slice: `bookwright-continuity` gains a 4th axis judging characters used-but-undeclared (reads the person roster from `bible/characters/` `name:`), and `status` adds an informative `judge_undeclared_characters` nudge keyed on the `character_unknown_mentions` abstention; judgment not gate, green byte-identical (issue #1 track C — move 3; closes DEBT-013) | v0.5.10 | ✅ merged |
 | 052 | Move 3 second vertical slice: `bookwright-continuity` gains a 5th axis judging head-hopping / broken focalization (reads the declared voice + the `bible/pov-structure.md` POV calendar + the roster, under limited-third only), and `status` adds a peer `judge_head_hopping` nudge — the 051 name-only `_JUDGE_SOURCES` frozenset generalized to a shared `_judges(validator)` predicate (source + `pending_capability`); judgment not gate, green byte-identical, `focalization` untouched (issue #1 track C — move 3; DEBT-021 stays open) | v0.5.11 | ✅ merged |
-| 053 | Move 3 third dimension, FIRST half (honesty): `focalization` declares the first-person-recall ceiling honestly — a `pending_capability` `Abstention(code="first_person_recall")` under BOTH 3rd-person branches (pro-drop verbal morphology is an open set no regex captures, DEBT-021) — while the explicit-pronoun `warning`s stay byte-identical. The forced contract plumbing: `Abstention`/`NotEvaluatedResult` gain an optional `code` discriminator (additive, exactly as 044 added `kind`), stamped through the runner's single `_record`; `status` `_judges(validator)` → `_judges(validator, code)` so the 052 head-hop nudge keys precisely on `(focalization, head_hopping)` and never mis-fires on the new recall abstention; `character_unknown_mentions` converts form (b)→(c) to carry `code="undeclared_characters"`. No first-person nudge (that + closure is iteration 054); no gate, no skill change, green byte-identical (issue #1 track C — move 3; DEBT-021 honesty half landed, judgment is 054) | v0.5.12 | 🚧 implemented, pending release |
+| 053 | Move 3 third dimension, FIRST half (honesty): `focalization` declares the first-person-recall ceiling honestly — a `pending_capability` `Abstention(code="first_person_recall")` under BOTH 3rd-person branches (pro-drop verbal morphology is an open set no regex captures, DEBT-021) — while the explicit-pronoun `warning`s stay byte-identical. The forced contract plumbing: `Abstention`/`NotEvaluatedResult` gain an optional `code` discriminator (additive, exactly as 044 added `kind`), stamped through the runner's single `_record`; `status` `_judges(validator)` → `_judges(validator, code)` so the 052 head-hop nudge keys precisely on `(focalization, head_hopping)` and never mis-fires on the new recall abstention; `character_unknown_mentions` converts form (b)→(c) to carry `code="undeclared_characters"`. No first-person nudge (that + closure is iteration 054); no gate, no skill change, green byte-identical (issue #1 track C — move 3; DEBT-021 honesty half landed, judgment is 054) | v0.5.12 | ✅ merged |
 
 The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
 ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles

@@ -4,6 +4,71 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.12] — 2026-06-25
+
+Iteration **053** — issue #1 **track C** (move 3, semantic judgment): the third
+move-3 dimension, **first half (honesty)** — the same split head-hopping took,
+honesty (045/050) before judgment (052). Today `focalization` runs
+`_first_person_breaks` over a **closed** explicit-pronoun set
+(`yo`/`nosotros`/…/`i`/`we`) under a third-person voice and is **silent** about
+everything that set cannot see — Spanish pro-drop verbal morphology (`Caminé`,
+`Me senté`), an **open** set no regex captures without reopening issue #1's
+whack-a-mole (**DEBT-021**). That silence is the `[]`-means-clean lie at the
+sub-check level. This patch closes it: `focalization` declares the recall
+ceiling **honestly** with a `pending_capability` abstention under **both**
+third-person branches, while the explicit-pronoun `warning`s stay
+**byte-identical**. The forced contract plumbing — an additive optional `code`
+discriminator on the abstention types — rides inside the patch that needs it,
+exactly as iteration 044 added `kind`. **No** first-person nudge yet (that, plus
+DEBT-021's closure, is iteration 054); **no** gate, **no** skill change, the 044
+green predicate **byte-identical**, no `error` born, **no `DEBT.md` entry
+removed** (DEBT-021's honesty half landed; its judgment half stays open).
+
+### Added
+
+- **Optional `code` discriminator** (`src/bookwright/validation/base.py`) — both
+  `Abstention` (returned) and `NotEvaluatedResult` (recorded) gain
+  `code: str | None = None`, a short, stable per-dimension tag
+  (`"first_person_recall"`, `"head_hopping"`, `"undeclared_characters"`)
+  serialized **additively** in `NotEvaluatedResult.to_json` (`code: null` for a
+  raised abstention), precisely as iteration 044 added `kind`. The raised
+  `NotEvaluated` **exception** does not gain `code` (the discriminator is of
+  *returned* abstentions); `not_evaluated_sort_key` stays `(validator, reason)`
+  (`code` is **not** a sort term — the two `focalization` reasons already differ,
+  so the order is total).
+- **First-person-recall honesty** (`validators/focalization.py`) — a new
+  `_FIRST_PERSON_RECALL_PENDING` reason and an
+  `Abstention(…, pending_capability, code="first_person_recall")` emitted under
+  **both** third-person branches (under limited-third it joins the existing
+  head-hopping abstention in the same partial `EvalResult`; the non-limited bare
+  `list` return is now wrapped in an `EvalResult` to carry it). The
+  first-person-recall ceiling is now **visible** in `not_evaluated[]` instead of
+  silently absent.
+
+### Changed
+
+- **`status` nudges key on `(validator, code)`** (`src/bookwright/status/rules.py`)
+  — the iteration-052 `_judges(validator)` predicate is generalized to
+  `_judges(validator, code)` (`… AND r.code == code`), because `focalization` now
+  emits **two** `pending_capability` abstentions. `judge_head_hopping` re-points
+  to `(focalization, head_hopping)` and `judge_undeclared_characters` to
+  `(character_unknown_mentions, undeclared_characters)` — now **precise**: the
+  head-hop nudge never mis-fires on the new recall abstention, and no first-person
+  nudge exists yet (iteration 054).
+- **`character_unknown_mentions` converted form (b)→(c)**
+  (`validators/character_unknown_mentions.py`) — from a raised `NotEvaluated`
+  (which cannot carry a `code`) to a returned
+  `EvalResult([], [Abstention(…, code="undeclared_characters")])`, so the
+  code-keyed nudge can match it. Observationally additive (only the `code` key
+  changes from `null`); the reason, kind, and nudge behaviour are unchanged.
+- The `focalization` runner stamps `code` through its **single** `_record`
+  naming point (form (c) passes `abstention.code`, the raised path defaults
+  `None`) — no second naming authority. `bookwright-design.md` §§ 13.4/13.5/20.6
+  record the contract (`not_evaluated` gains `code`) and the move-3 honesty/
+  judgment split; **DEBT-021** is updated (honesty landed; judgment → 054), not
+  removed. `validation/report.py` (the green predicate) and `_first_person_breaks`
+  / the `_FIRST_PERSON` regex are **byte-identical**.
+
 ## [0.5.11] — 2026-06-25
 
 Iteration **052** — issue #1 **track C** (move 3, semantic judgment): the
