@@ -2268,9 +2268,9 @@ por-nombre) se **generalizó** a un predicado compartido `_judges(validator)` po
 emite a la vez `missing_input` (cubierto por `activate_dormant_validators`) y `pending_capability` (el
 head-hopping). El validador `focalization` **no se toca** (ya declaraba la abstención, iter 050); el
 gate determinista y el predicado verde quedan byte-idénticos (decisión 4). **DEBT-013 no se reabre;
-DEBT-021 (ruptura de 1ª persona / recall pro-drop) sigue abierta** — necesita una abstención NUEVA en
-`focalization` que este slice no añade. La tercera dimensión (1ª persona / pro-drop) sigue el patrón en
-rebanadas posteriores.
+DEBT-021 (ruptura de 1ª persona / recall pro-drop) quedaba abierta tras este slice** — necesitaba una
+abstención NUEVA en `focalization` que este slice no añadía (la honestidad llegó en 053, el juicio +
+cierre en 054). La tercera dimensión (1ª persona / pro-drop) siguió el patrón en rebanadas posteriores.
 
 **Tercer vertical slice, PRIMERA mitad (honestidad) — LANDED (iteración 053, track v0.5.x):** la
 **ruptura / recall de 1ª persona** (DEBT-021), partida en dos rebanadas como el head-hopping
@@ -2288,9 +2288,27 @@ gana un `code` aditivo en `Abstention`/`NotEvaluatedResult` (sellado por el úni
 `_judges(validator, code)` para que el nudge de head-hopping (052) clave **exacto** en `(focalization,
 head_hopping)` y nunca dispare sobre la abstención de recall; `character_unknown_mentions` convierte
 forma (b)→(c) para portar `code="undeclared_characters"`. **No** se añade nudge de 1ª persona — su
-destino (el **sexto eje** + el cierre de DEBT-021) es la **SEGUNDA mitad (juicio), iteración 054**. Sin
-gate, sin cambio de skill, verde byte-idéntico; **DEBT-021 sigue abierta** (la mitad de honestidad
-existe; el juicio + cierre es la 054).
+destino (el **sexto eje** + el cierre de DEBT-021) es la **SEGUNDA mitad (juicio), iteración 054** (el
+bloque inmediatamente posterior). Sin gate, sin cambio de skill, verde byte-idéntico; con esta mitad
+existe la honestidad — el juicio que **cierra DEBT-021** aterrizó en la 054.
+
+**Tercer vertical slice, SEGUNDA mitad (juicio) — LANDED (iteración 054, track v0.5.x):** el **juicio de
+la ruptura de 1ª persona** sobre la abstención `code="first_person_recall"` que la 053 dejó honesta —
+espejo exacto del head-hopping (052) sobre la OTRA abstención de `focalization`. **Aterrizado:**
+`bookwright-continuity` gana un **sexto eje** ("ruptura de 1ª persona / desliz de voz") que lee **sólo la
+voz declarada** (`bible/constitution.md`) y, bajo **cualquier** 3ª persona —limitada **o** no, a
+diferencia del 5º eje limitado-sólo—, juzga si la narración se desliza a 1ª persona **incluyendo la
+morfología verbal pro-drop** (`Caminé`, `Me senté`, `Escribí`) que el regex de pronombre explícito no
+ve; **suma sobre** (nunca suprime) los `warning`s de pronombre explícito de `focalization`, y ante voz
+ausente/`[PENDING]`/sin persona reporta el hueco de grounding sin adivinar (**ni roster ni calendario de
+POV** — una ruptura de 1ª persona es persona gramatical, no identidad de personaje). Y `bookwright
+status` emite un *next_action* informativo (`judge_first_person_recall`) keyed **exacto** en
+`(focalization, first_person_recall)` vía el `_judges(validator, code)` de la 053 —inmediatamente tras
+`judge_head_hopping` y antes de `define_focus`, distinto del 051/052, nunca dispara sobre `head_hopping`
+ni el de head-hopping sobre `first_person_recall`—. El validador `focalization` y el contrato
+`code`/`_judges` **no se tocan** (cero diff bajo `validation/`); el gate determinista y el predicado
+verde quedan byte-idénticos (decisión 4). **DEBT-021 cerrada** — la dimensión está completa (honestidad
+053 + juicio 054) y con ella se **completa la primera oleada de move 3** (051 + 052 + 053/054).
 
 **Lo que NO cambia:** la ontología congelada (Principio X); el gate determinista; el contrato
 `not_evaluated` / `EvalResult` / `kind` (§ 13.1, se **consume**, no se altera); y el conjunto de

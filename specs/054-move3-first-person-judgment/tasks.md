@@ -157,6 +157,12 @@ US1 (the 6th axis) is the substantive deliverable — it restores the lost signa
 
 ---
 
+## Phase 6: Convergence
+
+- [X] T022 In `bookwright-design.md` § 20.6.2, reconcile the per-iteration "LANDED" narrative blocks so they record iteration 054 and no longer dangle a stale forward reference per FR-018 / SC-007 (partial). The section currently runs the LANDED blocks 051 → 052 → **053 honesty** (the block ending ~line 2292–2293 with «**DEBT-021 sigue abierta** (la mitad de honestidad existe; el juicio + cierre es la 054)») with **no 054 judgment block**, so the section's terminal word on DEBT-021 says "open" while the same section's decisions list and § 13.5 both say "**DEBT-021 cerrada**" — the exact stale-forward-reference inconsistency FR-018 forbids. Fix in one edit: (a) append a new block «**Tercer vertical slice, SEGUNDA mitad (juicio) — LANDED (iteración 054, track v0.5.x):**» after the 053 honesty block, mirroring the 051/052/053 LANDED shape — `bookwright-continuity`'s **sexto eje** (ruptura de 1ª persona / voz), the `judge_first_person_recall` nudge keyed on `(focalization, first_person_recall)`, grounding **solo la voz declarada** (no roster, no calendario de POV), aplica bajo **cualquier** 3ª persona (limitada o no), juicio no gate, verde byte-idéntico, **completa la primera oleada de move 3** y **cierra DEBT-021**; and (b) resolve the 053 block's terminal «DEBT-021 sigue abierta … el cierre es la 054» so it points to the now-existing 054 block rather than leaving the dimension narrated as open. Spanish, per language conventions. Verify `grep -n "sigue abierta" bookwright-design.md` shows no DEBT-021 line left asserting it is open, and the new 054 LANDED block is present.
+
+---
+
 ## Notes
 
 - **Zero diff under `validation/`** (FR-013) is a hard invariant — re-check at T003 and T020.
