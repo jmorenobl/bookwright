@@ -321,17 +321,32 @@ one; (c) green is preserved in all cases.
   read by the skill.
 - **FR-017**: The oracles that assert the skill body / materialization, the activation
   (bilingual trigger) oracle, the description equality gate, and the `status` rule oracles
-  MUST be updated. The *quality* of the LLM judgment MUST NOT be asserted in unit tests.
-  All behavior MUST be verified empirically with `uv run pytest`, **including the negative
-  cases**: (a) a declared-first-person project does not receive the first-person nudge; (b)
-  the nudge keys on `code=first_person_recall` only (does not fire on `head_hopping`, and
-  the head-hopping nudge does not fire on `first_person_recall`); (c) green is preserved.
-  The e2e green-preserving fixture is the **existing `tiny-historical`** (it declares
-  third-person *limited* and, since iteration 053, already carries the `(focalization,
-  pending_capability, first_person_recall)` abstention; its `expected-status.md`
-  `next_actions` skills list goes **5 → 6** — a fourth `bookwright-continuity` nudge, green
-  unchanged) — **no new fixture is added**; the negative case (a) is covered at the pure
-  `test_rules.py` synthetic-state level, no disk. `tiny-novel` / `tiny-memoir` stay GREEN.
+  MUST be updated. The skill-body oracle MUST gain a **sixth-axis assertion** mirroring the
+  existing fourth/fifth-axis oracles (`test_continuity_carries_the_fourth_undeclared_character_axis`
+  / `test_continuity_carries_the_fifth_head_hopping_axis` in `tests/resources/test_command_body.py`):
+  it MUST assert the 6th axis is present in `## Procedimiento` / `## Output`, names the
+  first-person / voice-slip judgment, cites the **declared voice** (`bible/constitution.md`)
+  as its grounding, and carries the exact deviation phrasing (FR-004). The *quality* of the
+  LLM judgment MUST NOT be asserted in unit tests. All behavior MUST be verified empirically
+  with `uv run pytest`, **including the negative cases**: (a) a declared-first-person project
+  does not receive the first-person nudge; (b) the nudge keys on `code=first_person_recall`
+  only (does not fire on `head_hopping`, and the head-hopping nudge does not fire on
+  `first_person_recall`); (c) green is preserved. The e2e green-preserving fixture is the
+  **existing `tiny-historical`** (it declares third-person *limited* and, since iteration
+  053, already carries the `(focalization, pending_capability, first_person_recall)`
+  abstention; **no new fixture is added**). Updating `tiny-historical/expected-status.md` is
+  **not** a YAML-only edit: because it is a **co-located prose + YAML** oracle, the same edit
+  MUST keep the human-readable prose and the inline `# nudge:` comment block internally
+  consistent with the new state — (i) the YAML `next_actions` skills list goes **5 → 6** (a
+  fourth `bookwright-continuity` nudge); (ii) the prose enumerating the workstreams ("enumera
+  **cinco** workstreams… **tercer** `bookwright-continuity`") becomes **seis** / a **fourth**
+  `bookwright-continuity`, naming the new first-person judgment nudge alongside the 051/052
+  ones; (iii) the convergence-frame prose ("las acciones `verify`/`continuity` (las **tres**)…
+  `len(next_actions)` **sigue siendo 5**") becomes **las cuatro** / **6**; and (iv) the inline
+  `# nudge:` / iteration comments gain the 054 first-person rule. Leaving any of (ii)–(iv)
+  stale while flipping (i) is a forbidden internally-inconsistent oracle. The negative case
+  (a) is covered at the pure `test_rules.py` synthetic-state level, no disk. `tiny-novel` /
+  `tiny-memoir` stay GREEN.
 - **FR-018**: `DEBT-021` MUST be **removed** from `DEBT.md` (git keeps the history): its
   honesty half landed in 053 and its judgment half lands here, so the dimension is
   **complete**. The design / milestone record MUST be reconciled: `bookwright-design.md`
@@ -380,7 +395,9 @@ one; (c) green is preserved in all cases.
   pending_capability, first_person_recall)` abstention gains **exactly one** new
   `bookwright-continuity` first-person `next_action` (distinct from the 051 and 052
   actions) while keeping its green status — verified via `uv run pytest`
-  (`tiny-historical` `next_actions` skills list 5 → 6).
+  (`tiny-historical` `next_actions` skills list 5 → 6, with the co-located prose and inline
+  `# nudge:` comments of `expected-status.md` updated in the same edit so the oracle stays
+  internally consistent — FR-017).
 - **SC-004**: The first-person nudge keys on `code=first_person_recall` only: a
   declared-first-person project (no such abstention) does **not** gain the nudge; the nudge
   does **not** fire on a `code=head_hopping` abstention and the head-hopping nudge does
