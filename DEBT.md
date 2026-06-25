@@ -96,8 +96,25 @@
 ## Deuda abierta
 
 ### DEBT-021 — el recall completo de la ruptura de 1ª persona en `focalization` es juicio semántico (techo de conjunto abierto), no determinista
-- **Estado:** abierta
+- **Estado:** abierta — **mitad de honestidad LANDED en la iteración 053**; la mitad de
+  **juicio** (que la CIERRA) es la iteración 054.
 - **Detectada en:** 3er dogfood `el-año-de-las-casas-vacías` (2026-06-24).
+- **Avance (iteración 053, mitad de honestidad):** `focalization` ya **declara el techo
+  honestamente**. Bajo **cualquier** voz de 3ª persona emite una abstención
+  `pending_capability` `code="first_person_recall"`
+  (`Abstention(_FIRST_PERSON_RECALL_PENDING, …)`) en ambas ramas (limitada y no-limitada,
+  esta última envuelta ahora en `EvalResult`), exactamente como el head-hopping se partió en
+  honestidad (045/050) y juicio (052). El silencio `[]`-significa-limpio a nivel de
+  sub-chequeo queda cerrado: el techo de recall es **visible** en `not_evaluated[]`. El
+  contrato gana un `code` aditivo (discriminador, como la 044 añadió `kind`) para que las dos
+  abstenciones `pending_capability` de `focalization` sigan distinguibles; los nudges move-3
+  pasan a clavar `(validator, code)`. El núcleo determinista del pronombre explícito
+  (`_first_person_breaks`, el regex `_FIRST_PERSON`) queda **byte-idéntico**. **No** se añade
+  nudge de 1ª persona todavía (su destino es la 054).
+- **Lo que queda para la 054 (mitad de juicio, cierre):** el **sexto** eje de
+  `bookwright-continuity` que juzga el recall morfológico anclado en la voz declarada + el
+  roster + el calendario de POV, y su nudge `judge_first_person_recall` keyed en
+  `(focalization, first_person_recall)`. Ahí se **elimina** esta entrada.
 - **Ubicación:** `src/bookwright/validation/validators/focalization.py` (`_FIRST_PERSON`
   regex, línea ~69: `(yo|nosotros|nosotras|i|we)`; consumida por `_first_person_breaks`).
 - **Clase de deuda:** **MISMA clase que el head-hopping y las menciones-desconocidas** —el
@@ -128,10 +145,11 @@
 - **Resolución sugerida / versión objetivo:** **track C — move 3**, plegada con el
   head-hopping (`focalization` ya abstiene de él) y las menciones-desconocidas (la
   primera rebanada de move 3, ~~DEBT-013~~, cerrada en la iteración 051) — son **la
-  misma cara** del techo semántico. No es iteración propia ni deck-clear: confirma
-  que el 3er dogfood no encontró nada cheaply-fixable en determinista. No bloquea el gate
-  (`focalization` es `warning`). El núcleo determinista del pronombre explícito se mantiene
-  intacto entretanto.
+  misma cara** del techo semántico. Se parte en dos rebanadas verticales, igual que el
+  head-hopping: **honestidad** (iteración 053, LANDED — la abstención `first_person_recall`
+  + el contrato `code`) y **juicio** (iteración 054, que CIERRA esta entrada — el sexto eje
+  + su nudge). No bloquea el gate (`focalization` es `warning`). El núcleo determinista del
+  pronombre explícito se mantiene intacto entretanto.
 
 ---
 

@@ -18,6 +18,15 @@ all-or-nothing ``raise NotEvaluated`` suppressed the still-working break check u
 focalized voice (a recorded coverage regression, DEBT-019); the partial-evaluation
 contract closes it. The break check runs under third-person **limited and non-limited**.
 
+The break check itself only matches the CLOSED explicit-subject-pronoun set
+(``yo``/``nosotros``/``nosotras``/``i``/``we``); it is silent about Spanish pro-drop
+verbal morphology (``Caminé``, ``Me senté``), an OPEN set no regex captures (DEBT-021).
+That silence was the ``[]``-means-clean lie at the sub-check level. So under **both**
+third-person branches the validator now also declares a ``first_person_recall``
+``pending_capability`` abstention (``code="first_person_recall"``, iteration 053 — the
+honesty half) so the recall ceiling is honestly visible; the move-3 **judgment** half
+(its nudge, closing DEBT-021) is iteration 054.
+
 When there is no usable narrative voice to read, the validator raises
 ``NotEvaluated`` (iteration 040) rather than returning ``[]`` — so a silently dormant
 focalization (DEBT-004) can no longer read as green. There are four distinct causes,
@@ -48,6 +57,10 @@ from bookwright.validation.base import (
 _HEAD_HOPPING_PENDING = (
     "head-hopping / interiority attribution requires semantic judgment (move 3); "
     "the deterministic heuristic was measured nearly dormant on real prose"
+)
+_FIRST_PERSON_RECALL_PENDING = (
+    "full first-person recall requires semantic judgment (move 3); "
+    "the deterministic check only covers the explicit subject pronoun"
 )
 
 _LABEL = r"(?:voz narrativa|narrative voice)"
@@ -101,20 +114,41 @@ class Focalization:
             )
 
         if declaration.person == "third":
+            # The deterministic first-person-break check (`_first_person_breaks`) only
+            # covers the CLOSED explicit-subject-pronoun set (`yo`/`nosotros`/…/`i`/`we`);
+            # it is blind to Spanish pro-drop verbal morphology (`Caminé`, `Me senté`), an
+            # OPEN set no regex captures without reopening issue #1's whack-a-mole. So under
+            # ANY third-person voice the validator declares that recall ceiling honestly
+            # with a `pending_capability` abstention (DEBT-021 honesty half, iteration 053)
+            # — the move-3 judgment half (the nudge) is iteration 054.
+            recall = Abstention(
+                _FIRST_PERSON_RECALL_PENDING,
+                NotEvaluatedKind.pending_capability,
+                code="first_person_recall",
+            )
             if declaration.limited:
                 # Head-hopping under a focalized voice is a move-3 semantic judgment; the
                 # deterministic heuristic was measured nearly dormant on real prose, so the
                 # validator abstains on it (iteration 045). But the deterministic
                 # first-person-break check still works — so under limited-third the
-                # validator RUNS that check AND declares the head-hopping abstention in
-                # the SAME run via a partial EvalResult (form (c), iteration 050). The
-                # all-or-nothing suppression that hid the break check under focalized
-                # voice (DEBT-019) is gone.
+                # validator RUNS that check AND declares BOTH the head-hopping and the
+                # first-person-recall abstentions in the SAME run via a partial EvalResult
+                # (form (c), iteration 050). The all-or-nothing suppression that hid the
+                # break check under focalized voice (DEBT-019) is gone.
                 return EvalResult(
                     self._first_person_breaks(project.manuscript_view()),
-                    [Abstention(_HEAD_HOPPING_PENDING, NotEvaluatedKind.pending_capability)],
+                    [
+                        Abstention(
+                            _HEAD_HOPPING_PENDING,
+                            NotEvaluatedKind.pending_capability,
+                            code="head_hopping",
+                        ),
+                        recall,
+                    ],
                 )
-            return self._first_person_breaks(project.manuscript_view())
+            # Third-person non-limited: the break check still runs, and the recall ceiling
+            # is declared in the same partial result (was a bare list before iteration 053).
+            return EvalResult(self._first_person_breaks(project.manuscript_view()), [recall])
         return []  # first person: nothing third-person to flag
 
     def _first_person_breaks(self, view: tuple[tuple[str, ProseView], ...]) -> list[Violation]:

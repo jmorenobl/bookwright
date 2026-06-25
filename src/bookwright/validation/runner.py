@@ -44,15 +44,20 @@ def sort_key(violation: Violation) -> tuple[str, int, str, str, tuple[tuple[str,
     )
 
 
-def _record(name: str, reason: str, kind: NotEvaluatedKind) -> NotEvaluatedResult:
+def _record(
+    name: str, reason: str, kind: NotEvaluatedKind, code: str | None = None
+) -> NotEvaluatedResult:
     """Stamp the validator ``name`` onto one abstention (the single naming authority).
 
     The ONE place a ``not_evaluated`` entry is name-stamped — shared by BOTH the raised
     total abstention (form (b), ``except NotEvaluated``) and each returned partial
     abstention (form (c), an ``EvalResult``'s :class:`Abstention`). The validator never
-    names itself; this authority MUST NOT fork (FR-002, contract C2).
+    names itself; this authority MUST NOT fork (FR-002, contract C2). ``code`` is the
+    returned :class:`Abstention`'s optional discriminator (iteration 053): form (c)
+    passes ``abstention.code``; form (b) — the raised path carries no code — defaults to
+    ``None`` (FR-003/FR-004, contract C2).
     """
-    return NotEvaluatedResult(name, reason, kind)
+    return NotEvaluatedResult(name, reason, kind, code)
 
 
 def not_evaluated_sort_key(result: NotEvaluatedResult) -> tuple[str, str]:
@@ -101,7 +106,9 @@ def run_validators(
         if isinstance(found, EvalResult):  # form (c): findings AND abstention(s) in one run
             findings: list[Violation] = found.violations
             for abstention in found.not_evaluated:
-                not_evaluated.append(_record(validator.name, abstention.reason, abstention.kind))
+                not_evaluated.append(
+                    _record(validator.name, abstention.reason, abstention.kind, abstention.code)
+                )
         else:  # form (a): a bare list[Violation] — unchanged (FR-007)
             findings = found
         for violation in findings:

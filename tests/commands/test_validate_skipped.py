@@ -115,14 +115,16 @@ def test_two_skips_are_deterministically_ordered(project: Path, cli: CliRunner) 
 
 
 def test_json_skip_entry_serializes_with_kind_keys(project: Path, cli: CliRunner) -> None:
-    """Story 2 (Acceptance 1): the --json skip entry carries validator/reason/kind —
-    the existing NotEvaluatedResult.to_json shape, no new key."""
+    """Story 2 (Acceptance 1): the --json skip entry carries validator/reason/kind/code —
+    the NotEvaluatedResult.to_json shape. Iteration 053 appended the additive `code` key;
+    the ingestion skip is built on the raised/positional path, so its `code` is null."""
     _write_broken(project, "broken.md")
     cli.invoke(app, ["graph", "build", "--json"])
 
     _, payload = _validate_payload(cli)
     entry = _ingestion_entries(payload)[0]
-    assert set(entry) == {"validator", "reason", "kind"}
+    assert set(entry) == {"validator", "reason", "kind", "code"}
+    assert entry["code"] is None  # the ingestion skip carries no discriminator (FR-004)
 
 
 def test_human_report_lists_the_skip(project: Path, cli: CliRunner) -> None:

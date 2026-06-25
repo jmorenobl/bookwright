@@ -228,6 +228,33 @@ def test_partial_finding_is_deduped_against_seen(project_root: Path) -> None:
     assert len([v for v in violations if v.message == "shared"]) == 1  # one, not two
 
 
+class _PartialCoded:
+    """A form-(c) validator whose abstention carries a `code` discriminator (iter 053)."""
+
+    name = "coded"
+    severity_default = Severity.warning
+
+    def validate(self, project: ValidationContext, indexer: Indexer) -> EvalResult:
+        return EvalResult(
+            [],
+            [Abstention("coded gap", NotEvaluatedKind.pending_capability, code="some_code")],
+        )
+
+
+def test_runner_stamps_code_from_form_c_and_none_from_form_b(project_root: Path) -> None:
+    # FR-003/FR-004/FR-005 (contract C2/C3): the runner stamps the returned abstention's
+    # `code` (form (c)); a raised NotEvaluated has no code, so the recorded result is
+    # `code=None` (form (b)). Every recorded entry carries the `code` attribute + JSON key.
+    ctx = _ctx(project_root)
+    _, _, not_evaluated, _ = run_validators([_PartialCoded(), _Skip()], ctx, RdflibIndexer())
+    codes = {r.validator: r.code for r in not_evaluated}
+    assert codes["coded"] == "some_code"  # stamped from the returned Abstention
+    assert codes["skip"] is None  # raised path is code-less
+    for entry in not_evaluated:
+        payload = entry.to_json()
+        assert "code" in payload  # additive key present on EVERY entry (FR-005)
+
+
 def test_empty_partial_is_observationally_equal_to_raise(project_root: Path) -> None:
     # C5 invariant (FR-012): `EvalResult([], [Abstention(r, k)])` is indistinguishable on
     # the wire from `raise NotEvaluated(r, k)` — both yield ONE not_evaluated entry and

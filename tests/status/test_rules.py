@@ -55,20 +55,36 @@ _LOW = LowReliabilityFinding(id="f-1", best_reliability="baja", file=_FILE)
 _DORMANT_FOCAL = NotEvaluatedResult(
     "focalization", "the constitution does not declare a narrative voice"
 )
-#: A permanent capability-gap entry (iteration 044): never nudged, never denies green.
+#: A permanent capability-gap entry (iteration 044): never nudged by the dormant rule,
+#: never denies green. Since iteration 053 it carries `code="undeclared_characters"` (the
+#: form (b)→(c) conversion), the discriminator `judge_undeclared_characters` now keys on.
 _DORMANT_CAP = NotEvaluatedResult(
     "character_unknown_mentions",
     "open-set proper-noun discovery requires semantic judgment (move 3)",
     NotEvaluatedKind.pending_capability,
+    code="undeclared_characters",
 )
 #: The focalization head-hopping capability-gap (iteration 045): `pending_capability`.
 #: It must NOT fire the iteration-051 `judge_undeclared_characters` nudge (keyed on
 #: `character_unknown_mentions`), but — since iteration 052 — it DOES fire the peer
-#: `judge_head_hopping` nudge (keyed on `focalization` + `pending_capability`, FR-009).
+#: `judge_head_hopping` nudge. Since iteration 053 the nudge keys on `(validator, code)`,
+#: so the entry carries `code="head_hopping"` (FR-014).
 _DORMANT_FOCAL_CAP = NotEvaluatedResult(
     "focalization",
     "head-hopping / interiority attribution requires semantic judgment (move 3)",
     NotEvaluatedKind.pending_capability,
+    code="head_hopping",
+)
+#: The focalization first-person-recall capability-gap (iteration 053, honesty half).
+#: A `pending_capability` `focalization` abstention like head-hopping, but with
+#: `code="first_person_recall"` — it must fire NEITHER move-3 nudge (the judgment half,
+#: with its own nudge, is iteration 054). It models third-person-NON-limited (recall
+#: present, head-hopping absent).
+_DORMANT_FOCAL_RECALL = NotEvaluatedResult(
+    "focalization",
+    "full first-person recall requires semantic judgment (move 3)",
+    NotEvaluatedKind.pending_capability,
+    code="first_person_recall",
 )
 
 #: One synthetic state per rule, exercising exactly it (SC-005).
@@ -298,6 +314,26 @@ def test_judge_head_hopping_action_exact_match() -> None:
         "focalization abstained on head-hopping under limited-third — interiority "
         "attribution is a capability gap; the skill provides the semantic judgment"
     )
+
+
+def test_first_person_recall_alone_fires_no_judge_nudge() -> None:
+    # Iteration 053 keying (contract C3): a lone `(focalization, pending_capability,
+    # first_person_recall)` entry — third-person-NON-limited — fires NEITHER the
+    # head-hopping nudge (the mis-fire the `code` keying prevents) NOR any first-person
+    # nudge (its destination is iteration 054). No `bookwright-continuity` action at all.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_RECALL,)))
+    assert actions == []
+    assert all(not a.reason.startswith("focalization abstained") for a in actions)
+
+
+def test_head_hopping_and_recall_together_fire_only_the_head_hopping_judge() -> None:
+    # Iteration 053: limited-third emits BOTH `focalization` abstentions. Only the
+    # `head_hopping`-coded one fires `judge_head_hopping`; the `first_person_recall` one
+    # adds no action (no first-person nudge yet). Exactly one `bookwright-continuity`.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_CAP, _DORMANT_FOCAL_RECALL)))
+    assert [a.skill for a in actions] == ["bookwright-continuity"]
+    [action] = actions
+    assert action.reason.startswith("focalization abstained on head-hopping")
 
 
 def test_focalization_missing_input_does_not_fire_the_head_hopping_judge() -> None:

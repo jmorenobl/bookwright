@@ -1,18 +1,20 @@
 """``character_unknown_mentions`` — the open-set abstainer (issue #1, track A).
 
-The validator raises :class:`NotEvaluated` **unconditionally** — it abstains by approach,
-not by input — so no project shape produces a finding. These tests pin that across an
-empty project, a clean project, and a project full of off-roster proper nouns.
+The validator abstains **unconditionally** — it abstains by approach, not by input — so
+no project shape produces a finding. Since iteration 053 it abstains via the **returned**
+partial-evaluation shape (form (c), ``EvalResult`` with no findings and one
+:class:`Abstention`) rather than a raised total abstention (form (b)), so it can carry the
+``code="undeclared_characters"`` discriminator the ``status`` nudge keys on. These tests
+pin that across an empty project, a clean project, and a project full of off-roster proper
+nouns; ``reason`` and ``kind`` are unchanged — only the additive wire ``code`` moves.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from bookwright.indexers import RdflibIndexer
-from bookwright.validation.base import NotEvaluated, NotEvaluatedKind, Severity
+from bookwright.validation.base import Abstention, EvalResult, NotEvaluatedKind, Severity
 from bookwright.validation.validators.character_unknown_mentions import (
     CharacterUnknownMentions,
 )
@@ -24,10 +26,13 @@ _REASON = (
 )
 
 
-def _raise(root: Path) -> NotEvaluated:
-    with pytest.raises(NotEvaluated) as excinfo:
-        CharacterUnknownMentions().validate(load_context(root), RdflibIndexer())
-    return excinfo.value
+def _abstain(root: Path) -> Abstention:
+    """Run the validator; assert the form-(c) shape and return its single abstention."""
+    result = CharacterUnknownMentions().validate(load_context(root), RdflibIndexer())
+    assert isinstance(result, EvalResult)
+    assert result.violations == []  # a pure abstainer never emits a finding
+    assert len(result.not_evaluated) == 1
+    return result.not_evaluated[0]
 
 
 def test_protocol_attributes() -> None:
@@ -38,16 +43,18 @@ def test_protocol_attributes() -> None:
 
 def test_empty_project_abstains_with_open_set_reason(project_root: Path) -> None:
     write_project(project_root, characters=[], manuscript={})
-    assert _raise(project_root).reason == _REASON
+    assert _abstain(project_root).reason == _REASON
 
 
-def test_abstainer_raises_pending_capability_kind(project_root: Path) -> None:
-    # The abstainer is a PERMANENT capability-gap, not an input gap (FR-003): the raise
-    # carries kind == pending_capability, with its reason string unchanged.
+def test_abstainer_carries_pending_capability_and_code(project_root: Path) -> None:
+    # FR-013 (iteration 053): the abstainer is a PERMANENT capability-gap (the kind is
+    # unchanged from iteration 044) AND now carries `code="undeclared_characters"` — the
+    # one wire delta of the form (b)→(c) conversion; `reason`/`kind` are byte-identical.
     write_project(project_root, characters=[], manuscript={})
-    skip = _raise(project_root)
-    assert skip.kind is NotEvaluatedKind.pending_capability
-    assert skip.reason == _REASON
+    abstention = _abstain(project_root)
+    assert abstention.kind is NotEvaluatedKind.pending_capability
+    assert abstention.reason == _REASON
+    assert abstention.code == "undeclared_characters"
 
 
 def test_clean_project_still_abstains(project_root: Path) -> None:
@@ -58,7 +65,7 @@ def test_clean_project_still_abstains(project_root: Path) -> None:
         characters=["Aparici"],
         manuscript={"cap-01.md": "Aparici saludó.\n"},
     )
-    assert _raise(project_root).reason == _REASON
+    assert _abstain(project_root).reason == _REASON
 
 
 def test_off_roster_proper_nouns_still_abstain(project_root: Path) -> None:
@@ -75,4 +82,4 @@ def test_off_roster_proper_nouns_still_abstain(project_root: Path) -> None:
             )
         },
     )
-    assert _raise(project_root).reason == _REASON
+    assert _abstain(project_root).reason == _REASON
