@@ -107,7 +107,11 @@ testable is that the skill materializes, lints, triggers, and documents the grou
 2. **Given** a project whose declared voice is **omniscient** or **first person**, **When**
    the skill runs, **Then** its procedure instructs the agent that head-hopping does **not
    apply** and reports nothing for this axis (the dimension is scoped to limited-third).
-3. **Given** the materialized skill, **When** the lint gate runs, **Then** `name` ≤ 64
+3. **Given** a limited-third project whose `bible/pov-structure.md` is absent or whose
+   "Calendario de POV" is still a `[PENDING: …]` placeholder, **When** the skill runs, **Then**
+   its procedure directs the agent to report the grounding gap (no focal POV to anchor on) and
+   **not** to guess the focal POV or emit a head-hop finding.
+4. **Given** the materialized skill, **When** the lint gate runs, **Then** `name` ≤ 64
    chars (matching its directory), `description` ≤ 1024 chars, and valid YAML front-matter
    all pass.
 
@@ -159,9 +163,11 @@ head-hopping nudge; (b) green is preserved in all cases.
   skill reports nothing for this axis. (Note: `focalization` only declares the
   head-hopping `pending_capability` abstention under limited-third, so the status nudge is
   naturally absent here too.)
-- **No `bible/pov-structure.md` / no POV calendar**: the focal POV per chapter is unknown,
-  so the agent cannot anchor the judgment; it reports the grounding gap (thin input is a
-  judgment input, not an error) rather than guessing. The skill's procedure must say so.
+- **No `bible/pov-structure.md` / no POV calendar / a `[PENDING: …]` calendar**: the focal
+  POV per chapter is unknown, so the agent cannot anchor the judgment; it reports the
+  grounding gap (thin input is a judgment input, not an error) rather than guessing. The
+  template ships this file with a `[PENDING]` "Calendario de POV", so this is the common
+  early-stage state, not a rare one. The skill's procedure must say so (FR-002 clause (e)).
 - **A project with no manuscript yet**: the skill behaves as today — reports "missing
   prerequisite" (nothing to verify); the new axis simply finds no prose to scan.
 - **`focalization` abstains `missing_input` (no constitution / no voice / `[PENDING]` / no
@@ -189,9 +195,13 @@ head-hopping nudge; (b) green is preserved in all cases.
   third-person *limited* / focalized voice (under omniscient or first person, head-hopping
   does not apply — report nothing); (b) read the **focal POV per chapter** from
   `bible/pov-structure.md` (the "Calendario de POV" section); (c) read the character roster;
-  and (d) **judge**, per chapter, whether the prose attributes interiority (verbs of
+  (d) **judge**, per chapter, whether the prose attributes interiority (verbs of
   thinking / feeling / perceiving, interior monologue) to a character who is **not** the
-  focal POV of that chapter.
+  focal POV of that chapter; and (e) when the POV calendar is **absent or unresolved** (no
+  `bible/pov-structure.md`, no "Calendario de POV" section, or a `[PENDING: …]` placeholder
+  in its place — treated as no focal POV declared, consistent with how `focalization` treats
+  a `[PENDING]` voice, iteration 037), **report the grounding gap and do NOT guess** the
+  focal POV (a missing anchor is a judgment-input gap, never a fabricated head-hop).
 - **FR-003**: The procedure MUST cite the **grounding** (§ 20.6.2 decision 3): the declared
   voice + the POV calendar (`bible/pov-structure.md`) + the roster — exactly what the
   deleted deterministic heuristic could not resolve.
@@ -281,7 +291,8 @@ head-hopping nudge; (b) green is preserved in all cases.
 - **SC-001**: The `bookwright-continuity` skill materializes and passes the lint gate with
   the widened `description` (≤ 1024 chars) and the new 5th axis present in `## Procedimiento`
   and `## Output`, citing voice + POV calendar + roster as grounding, with
-  `bible/pov-structure.md` listed under "Archivos a leer".
+  `bible/pov-structure.md` listed under "Archivos a leer", and the procedure documenting the
+  absent/`[PENDING]`-calendar grounding-gap handling (report the gap, do not guess — FR-002 (e)).
 - **SC-002**: The skill triggers on head-hopping prompts in both ES and EN ("revisa
   head-hopping / saltos de punto de vista" / "check for head-hopping / POV breaks"), verified
   by the activation oracle, and the iteration-051 undeclared-character triggers still fire.
