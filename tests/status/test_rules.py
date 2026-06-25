@@ -77,9 +77,10 @@ _DORMANT_FOCAL_CAP = NotEvaluatedResult(
 )
 #: The focalization first-person-recall capability-gap (iteration 053, honesty half).
 #: A `pending_capability` `focalization` abstention like head-hopping, but with
-#: `code="first_person_recall"` — it must fire NEITHER move-3 nudge (the judgment half,
-#: with its own nudge, is iteration 054). It models third-person-NON-limited (recall
-#: present, head-hopping absent).
+#: `code="first_person_recall"`. Since iteration 054 (the judgment half) it fires the
+#: peer `judge_first_person_recall` nudge — keyed on `(focalization, first_person_recall)`
+#: — and NOT the head-hopping nudge (the `code` keying keeps the two apart). It models
+#: third-person-NON-limited (recall present, head-hopping absent).
 _DORMANT_FOCAL_RECALL = NotEvaluatedResult(
     "focalization",
     "full first-person recall requires semantic judgment (move 3)",
@@ -96,6 +97,7 @@ _TRIGGER: dict[str, StatusState] = {
     "activate_dormant_validators": make_state(not_evaluated=(_DORMANT_FOCAL,)),
     "judge_undeclared_characters": make_state(not_evaluated=(_DORMANT_CAP,)),
     "judge_head_hopping": make_state(not_evaluated=(_DORMANT_FOCAL_CAP,)),
+    "judge_first_person_recall": make_state(not_evaluated=(_DORMANT_FOCAL_RECALL,)),
     "define_focus": make_state(focus_defined=False),
 }
 
@@ -316,24 +318,98 @@ def test_judge_head_hopping_action_exact_match() -> None:
     )
 
 
-def test_first_person_recall_alone_fires_no_judge_nudge() -> None:
-    # Iteration 053 keying (contract C3): a lone `(focalization, pending_capability,
-    # first_person_recall)` entry — third-person-NON-limited — fires NEITHER the
-    # head-hopping nudge (the mis-fire the `code` keying prevents) NOR any first-person
-    # nudge (its destination is iteration 054). No `bookwright-continuity` action at all.
+def test_first_person_recall_alone_fires_the_first_person_judge_nudge() -> None:
+    # Iteration 054 (move 3, third dimension, judgment half): a lone `(focalization,
+    # pending_capability, first_person_recall)` entry — third-person-NON-limited — now
+    # fires EXACTLY ONE `bookwright-continuity` first-person action (the whole point of
+    # this slice), GREEN. (Rewrite of the 053 `test_first_person_recall_alone_fires_no_
+    # judge_nudge`, whose "no nudge yet" state is exactly what 054 closes.) The `code`
+    # keying keeps it OFF the head-hopping nudge — the mis-fire it prevents.
     actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_RECALL,)))
-    assert actions == []
-    assert all(not a.reason.startswith("focalization abstained") for a in actions)
-
-
-def test_head_hopping_and_recall_together_fire_only_the_head_hopping_judge() -> None:
-    # Iteration 053: limited-third emits BOTH `focalization` abstentions. Only the
-    # `head_hopping`-coded one fires `judge_head_hopping`; the `first_person_recall` one
-    # adds no action (no first-person nudge yet). Exactly one `bookwright-continuity`.
-    actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_CAP, _DORMANT_FOCAL_RECALL)))
     assert [a.skill for a in actions] == ["bookwright-continuity"]
     [action] = actions
-    assert action.reason.startswith("focalization abstained on head-hopping")
+    assert action.reason.startswith("focalization abstained on first-person recall")
+    # It is the first-person nudge, NOT the head-hopping one (FR-011 keying).
+    assert not action.reason.startswith("focalization abstained on head-hopping")
+
+
+def test_judge_first_person_recall_action_exact_match() -> None:
+    # The first-person judge action is a fixed, byte-identical template (SC-002), distinct
+    # from the 051 undeclared-character and 052 head-hopping actions (FR-010). Its prompt
+    # is grounded ONLY in the declared voice — it names NEITHER the POV calendar NOR the
+    # roster (a 1st-person break is grammatical person, not character identity).
+    [action] = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_RECALL,)))
+    assert action.skill == "bookwright-continuity"
+    assert action.prompt == (
+        "Read the declared narrative voice (bible/constitution.md); under any "
+        "third-person voice (limited or non-limited), judge per passage whether the "
+        "prose slides into first person — including the pro-drop verbal morphology "
+        "(Caminé, Me senté) the explicit-pronoun check cannot see — and report each "
+        "slip as a continuity deviation."
+    )
+    assert action.reason == (
+        "focalization abstained on first-person recall — the deterministic check only "
+        "covers the explicit subject pronoun; the skill provides the semantic judgment"
+    )
+    # Grounded in the declared voice ONLY — no POV calendar, no roster (research D1).
+    assert "bible/pov-structure.md" not in action.prompt
+    assert "roster" not in action.prompt.lower()
+
+
+def test_head_hopping_nudge_never_fires_on_the_first_person_recall_abstention() -> None:
+    # FR-011 keying (negative): a `head_hopping`-only state yields the head-hopping nudge
+    # and NO first-person action; the first-person nudge never fires on `head_hopping`.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_CAP,)))
+    assert [a.skill for a in actions] == ["bookwright-continuity"]
+    assert all(
+        not a.reason.startswith("focalization abstained on first-person recall") for a in actions
+    )
+
+
+def test_no_first_person_abstention_yields_no_first_person_nudge() -> None:
+    # FR-011 negative (declared-first-person analogue): a state with NO `first_person_recall`
+    # abstention gains NO first-person nudge. The undeclared-character abstention alone
+    # fires only its own judge nudge.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_CAP,)))
+    assert all(
+        not a.reason.startswith("focalization abstained on first-person recall") for a in actions
+    )
+
+
+def test_flawless_third_person_state_stays_green_with_no_first_person_nudge() -> None:
+    # FR-012: a flawless third-person state (no abstentions at all) yields no actions —
+    # the informative first-person nudge never invents work, and green is preserved.
+    assert next_actions(make_state()) == []
+
+
+def test_head_hopping_and_recall_together_fire_both_judges_in_table_order() -> None:
+    # Iteration 054 (rewrite of the 053 `..._fire_only_the_head_hopping_judge`): limited-
+    # third emits BOTH `focalization` abstentions. Now BOTH fire — `judge_head_hopping`
+    # then `judge_first_person_recall`, in table order — each a distinct, coherent
+    # `bookwright-continuity` action, never merged.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_CAP, _DORMANT_FOCAL_RECALL)))
+    assert [a.skill for a in actions] == ["bookwright-continuity", "bookwright-continuity"]
+    head_hop, first_person = actions
+    assert head_hop.reason.startswith("focalization abstained on head-hopping")
+    assert first_person.reason.startswith("focalization abstained on first-person recall")
+    assert head_hop.prompt != first_person.prompt
+
+
+def test_all_three_move3_judge_nudges_co_fire_in_table_order() -> None:
+    # Contract C5 (iteration 054): a report carrying ALL THREE move-3 abstentions
+    # (`character_unknown_mentions` + `focalization` head-hopping + `focalization`
+    # first-person-recall) emits all three continuity actions — undeclared → head-hopping
+    # → first-person, in table order — each distinct, none merged. No
+    # `activate_dormant_validators` fires (every entry is `pending_capability`).
+    state = make_state(not_evaluated=(_DORMANT_CAP, _DORMANT_FOCAL_CAP, _DORMANT_FOCAL_RECALL))
+    actions = next_actions(state)
+    assert [a.skill for a in actions] == ["bookwright-continuity"] * 3
+    undeclared, head_hop, first_person = actions
+    assert undeclared.reason.startswith("character_unknown_mentions abstained")
+    assert head_hop.reason.startswith("focalization abstained on head-hopping")
+    assert first_person.reason.startswith("focalization abstained on first-person recall")
+    assert len({undeclared.prompt, head_hop.prompt, first_person.prompt}) == 3  # all distinct
+    assert all(not a.prompt.startswith("Activate the dormant validators") for a in actions)
 
 
 def test_focalization_missing_input_does_not_fire_the_head_hopping_judge() -> None:

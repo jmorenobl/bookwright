@@ -89,67 +89,16 @@
 >   «`Naviera` = organización» vs. «`Amelia` = personaje sin ficha» sin roster
 >   nuevo, y `status` emite un *nudge* informativo `judge_undeclared_characters`
 >   anclado en la fuente abstinente `character_unknown_mentions`. Eliminada de este
->   registro). Queda DEBT-021 (recall morfológico de 1ª persona) plegado con el
->   head-hopping para rebanadas posteriores de move 3.
+>   registro). ~~DEBT-021~~ (cerrada en la iteración 054, mitad de juicio — el 6º eje
+>   de `bookwright-continuity` que juzga el recall morfológico de 1ª persona, anclado
+>   SOLO en la voz declarada, + el nudge `judge_first_person_recall` keyed en
+>   `(focalization, first_person_recall)`; su mitad de honestidad fue la 053. Eliminada
+>   de este registro — completa la primera oleada de move 3).
 > - **Descartado:** parches de costura por instancia; 5º roster «organización».
 
 ## Deuda abierta
 
-### DEBT-021 — el recall completo de la ruptura de 1ª persona en `focalization` es juicio semántico (techo de conjunto abierto), no determinista
-- **Estado:** abierta — **mitad de honestidad LANDED en la iteración 053**; la mitad de
-  **juicio** (que la CIERRA) es la iteración 054.
-- **Detectada en:** 3er dogfood `el-año-de-las-casas-vacías` (2026-06-24).
-- **Avance (iteración 053, mitad de honestidad):** `focalization` ya **declara el techo
-  honestamente**. Bajo **cualquier** voz de 3ª persona emite una abstención
-  `pending_capability` `code="first_person_recall"`
-  (`Abstention(_FIRST_PERSON_RECALL_PENDING, …)`) en ambas ramas (limitada y no-limitada,
-  esta última envuelta ahora en `EvalResult`), exactamente como el head-hopping se partió en
-  honestidad (045/050) y juicio (052). El silencio `[]`-significa-limpio a nivel de
-  sub-chequeo queda cerrado: el techo de recall es **visible** en `not_evaluated[]`. El
-  contrato gana un `code` aditivo (discriminador, como la 044 añadió `kind`) para que las dos
-  abstenciones `pending_capability` de `focalization` sigan distinguibles; los nudges move-3
-  pasan a clavar `(validator, code)`. El núcleo determinista del pronombre explícito
-  (`_first_person_breaks`, el regex `_FIRST_PERSON`) queda **byte-idéntico**. **No** se añade
-  nudge de 1ª persona todavía (su destino es la 054).
-- **Lo que queda para la 054 (mitad de juicio, cierre):** el **sexto** eje de
-  `bookwright-continuity` que juzga el recall morfológico anclado en la voz declarada + el
-  roster + el calendario de POV, y su nudge `judge_first_person_recall` keyed en
-  `(focalization, first_person_recall)`. Ahí se **elimina** esta entrada.
-- **Ubicación:** `src/bookwright/validation/validators/focalization.py` (`_FIRST_PERSON`
-  regex, línea ~69: `(yo|nosotros|nosotras|i|we)`; consumida por `_first_person_breaks`).
-- **Clase de deuda:** **MISMA clase que el head-hopping y las menciones-desconocidas** —el
-  techo **semántico** de un heurístico determinista sobre prosa de **conjunto abierto**, NO
-  un hueco de recall parcheable. El chequeo que la iteración 050 (re)activó bajo
-  tercera-limitada casa el **pronombre sujeto explícito** (`yo`/`nosotros`): conjunto
-  **cerrado** y **sólido** (FP ~nulo). Pero "¿esta prosa **está** en 1ª persona?" es
-  conjunto abierto: el español es **pro-drop** y la forma natural de deslizarse a 1ª persona
-  es la **morfología verbal** sin pronombre (`Caminé`, `Me senté`, `Escribí`, `cerré`), que
-  ni el regex ve ni **ningún** regex captura sin reabrir el whack-a-mole (la morfología 1sg
-  colisiona: `-o` presente ≈ sustantivos; `-aba`/`-ía` 1sg ≈ 3sg).
-- **Descripción:** en el banco, `manuscript/02-teo.md:7` (`yo lo entendí`) **sí** se marca
-  (`warning`, el núcleo determinista sólido de 050 funcionando), pero
-  `manuscript/03-dolors.md:3-13` —un pasaje **sostenido** y flagrante en 1ª persona (`cerré
-  la escuela`, `Caminé hasta`, `Me senté`, `abrí`, `Escribí`, `guardé`, `apagué`), una
-  ruptura real de la voz declarada de 3ª limitada— produce **cero** hallazgos porque ningún
-  `yo`/`nosotros` aparece. No es que el chequeo esté "incompleto" y haya que enumerar más
-  formas: es que el recall completo es **irreductiblemente semántico**, exactamente el techo
-  que la issue #1 demostró que ninguna lista cerrada sube.
-- **Por qué NO se parchea en determinista:** ampliar el regex a la morfología verbal (p. ej.
-  `Me`/`Nos` inicial + pretérito `-é`/`-í`) **es el whack-a-mole** que la issue #1 cerró —
-  perseguir un conjunto abierto con una lista cerrada más, con FP garantizados por la
-  colisión morfológica. Por `bookwright-design.md` § 20.6.1 principio 1 (la frontera es el
-  **sustrato**: la prosa de conjunto abierto es territorio LLM) esto es **move 3**. El
-  núcleo determinista (`yo`/`nosotros`) se **conserva** como "el determinismo añade
-  confianza, nunca suprime" (principio 3): cortocircuita el caso inequívoco; el LLM cubre el
-  recall morfológico anclado en la voz declarada del grafo (principio 2).
-- **Resolución sugerida / versión objetivo:** **track C — move 3**, plegada con el
-  head-hopping (`focalization` ya abstiene de él) y las menciones-desconocidas (la
-  primera rebanada de move 3, ~~DEBT-013~~, cerrada en la iteración 051) — son **la
-  misma cara** del techo semántico. Se parte en dos rebanadas verticales, igual que el
-  head-hopping: **honestidad** (iteración 053, LANDED — la abstención `first_person_recall`
-  + el contrato `code`) y **juicio** (iteración 054, que CIERRA esta entrada — el sexto eje
-  + su nudge). No bloquea el gate (`focalization` es `warning`). El núcleo determinista del
-  pronombre explícito se mantiene intacto entretanto.
+_Ninguna por ahora._
 
 ---
 

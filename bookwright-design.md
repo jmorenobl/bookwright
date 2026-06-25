@@ -1548,10 +1548,11 @@ de naturaleza opuesta** que conviven en ese validador:
    *next_action* informativo (`judge_head_hopping`) — la clave se generalizó a
    `_judges(validator)` (fuente **+** `pending_capability`) porque `focalization` emite
    ambos `kind`s; gate y predicado verde byte-idénticos. *La tercera dimensión (ruptura de
-   1ª persona / recall pro-drop, **DEBT-021**) se parte en dos rebanadas como el
+   1ª persona / recall pro-drop, **DEBT-021**) se partió en dos rebanadas como el
    head-hopping: la **mitad de honestidad aterrizó en la iteración 053** y la **mitad de
-   juicio (que la cierra) es la iteración 054**.* En la 053 `focalization` **declara el
-   techo honestamente**: bajo **cualquier** voz de 3ª persona emite una
+   juicio (que la cierra) aterrizó en la iteración 054**, completando la **primera oleada
+   de move 3**.* En la 053 `focalization` **declara el techo honestamente**: bajo
+   **cualquier** voz de 3ª persona emite una
    `Abstention(pending_capability, code="first_person_recall")`
    (`_FIRST_PERSON_RECALL_PENDING`) en ambas ramas (limitada y no-limitada, esta última
    envuelta ahora en `EvalResult`), conservando el núcleo determinista del pronombre
@@ -1562,8 +1563,18 @@ de naturaleza opuesta** que conviven en ese validador:
    `Abstention`/`NotEvaluatedResult`, sellado por el único `_record` del runner, **igual
    que la 044 añadió `kind`**, § 13.4); los nudges move-3 (051, 052) clavan ahora
    `(validator, code)`, y `character_unknown_mentions` convierte forma (b)→(c) para portar
-   `code="undeclared_characters"`. **No** se añade nudge de 1ª persona (eso, con su sexto
-   eje + el cierre de DEBT-021, es la 054); juicio, no gate; verde byte-idéntico.
+   `code="undeclared_characters"`. *La 054 cierra la dimensión:* `bookwright-continuity`
+   gana el **sexto eje** «ruptura de voz / de persona narrativa», que recoge la
+   `Abstention(code="first_person_recall")` y juzga el recall morfológico pro-drop
+   (`Caminé`, `Me senté`) que el chequeo del pronombre explícito no ve, bajo **cualquier**
+   3ª persona (limitada **o no limitada**, a diferencia del 5º eje limitado a la limitada),
+   añadiendo sobre —nunca suprimiendo— los `warning`s deterministas. Su anclaje es **solo
+   la voz declarada** (`bible/constitution.md`): **no** usa el roster ni el calendario de
+   POV — una ruptura de 1ª persona es **persona gramatical**, no identidad de personaje
+   (esto **supersede** la antigua redacción «voz + roster + calendario de POV» de la entrada
+   DEBT-021). `status` la hace descubrible con un peer *next_action* informativo
+   (`judge_first_person_recall`) keyed en `(focalization, first_person_recall)`; juicio, no
+   gate; verde byte-idéntico. **DEBT-021 cerrada.**
 3. **Vocabularios cerrados, trato consistente** (DEBT-016, capa narrativa, no
    `character_presence`) — **entregado en la iteración 047**: un término Propp/Greimas
    no reconocido —antes ingerido **en silencio** como nodo sin `crm:P2_has_type`—
@@ -2197,10 +2208,17 @@ determinista (principio 2), nunca en el vacío:
   PERSONA en la prosa, ¿cuáles no están en el roster y tampoco son organización/topónimo?". El roster
   es lo que distingue señal (personaje real sin ficha) de ruido (org/topónimo), que ningún heurístico
   de mayúsculas separa.
-- **Focalización / head-hopping / ruptura de 1ª persona** (cura el techo de 045/050 + DEBT-021): la
-  **voz declarada** (`constitution.md`, ya parseada por el validador) + el personaje focal → "bajo 3ª
-  limitada focalizada en X, ¿la prosa entra en la interioridad de otro personaje, o se desliza a 1ª
-  persona —incluida la morfología verbal pro-drop que el regex no ve—?".
+- **Head-hopping** (cura el techo de 045/050, iteración 052): la **voz declarada**
+  (`constitution.md`, ya parseada por el validador) + el **calendario de POV**
+  (`bible/pov-structure.md`) + el roster → "bajo 3ª limitada focalizada en X, ¿la prosa entra en la
+  interioridad de otro personaje?". Aplica **sólo** bajo 3ª limitada.
+- **Ruptura de 1ª persona / recall pro-drop** (cerró DEBT-021 + completó la 1ª oleada de move 3,
+  iteración 054): **sólo** la **voz declarada** (`constitution.md`) → "bajo **cualquier** 3ª persona
+  (limitada **o no limitada**), ¿la prosa se desliza a 1ª persona —incluida la morfología verbal
+  pro-drop (`Caminé`, `Me senté`) que el regex no ve—?". A diferencia del head-hopping, **no** inyecta
+  el personaje focal ni el calendario de POV ni el roster: una ruptura de 1ª persona es **persona
+  gramatical**, no identidad de personaje (esto **supersede** la antigua redacción «voz + roster +
+  calendario de POV» de DEBT-021).
 - En ambas, el **núcleo determinista sólido se conserva** y se pasa al skill como confirmación de
   bajo coste (principio 3): los huérfanos (`error`), el pronombre sujeto explícito ya marcado, las
   relaciones temporales del grafo. El determinismo **acota y confirma**; nunca suprime un candidato
@@ -2250,9 +2268,9 @@ por-nombre) se **generalizó** a un predicado compartido `_judges(validator)` po
 emite a la vez `missing_input` (cubierto por `activate_dormant_validators`) y `pending_capability` (el
 head-hopping). El validador `focalization` **no se toca** (ya declaraba la abstención, iter 050); el
 gate determinista y el predicado verde quedan byte-idénticos (decisión 4). **DEBT-013 no se reabre;
-DEBT-021 (ruptura de 1ª persona / recall pro-drop) sigue abierta** — necesita una abstención NUEVA en
-`focalization` que este slice no añade. La tercera dimensión (1ª persona / pro-drop) sigue el patrón en
-rebanadas posteriores.
+DEBT-021 (ruptura de 1ª persona / recall pro-drop) quedaba abierta tras este slice** — necesitaba una
+abstención NUEVA en `focalization` que este slice no añadía (la honestidad llegó en 053, el juicio +
+cierre en 054). La tercera dimensión (1ª persona / pro-drop) siguió el patrón en rebanadas posteriores.
 
 **Tercer vertical slice, PRIMERA mitad (honestidad) — LANDED (iteración 053, track v0.5.x):** la
 **ruptura / recall de 1ª persona** (DEBT-021), partida en dos rebanadas como el head-hopping
@@ -2270,9 +2288,27 @@ gana un `code` aditivo en `Abstention`/`NotEvaluatedResult` (sellado por el úni
 `_judges(validator, code)` para que el nudge de head-hopping (052) clave **exacto** en `(focalization,
 head_hopping)` y nunca dispare sobre la abstención de recall; `character_unknown_mentions` convierte
 forma (b)→(c) para portar `code="undeclared_characters"`. **No** se añade nudge de 1ª persona — su
-destino (el **sexto eje** + el cierre de DEBT-021) es la **SEGUNDA mitad (juicio), iteración 054**. Sin
-gate, sin cambio de skill, verde byte-idéntico; **DEBT-021 sigue abierta** (la mitad de honestidad
-existe; el juicio + cierre es la 054).
+destino (el **sexto eje** + el cierre de DEBT-021) es la **SEGUNDA mitad (juicio), iteración 054** (el
+bloque inmediatamente posterior). Sin gate, sin cambio de skill, verde byte-idéntico; con esta mitad
+existe la honestidad — el juicio que **cierra DEBT-021** aterrizó en la 054.
+
+**Tercer vertical slice, SEGUNDA mitad (juicio) — LANDED (iteración 054, track v0.5.x):** el **juicio de
+la ruptura de 1ª persona** sobre la abstención `code="first_person_recall"` que la 053 dejó honesta —
+espejo exacto del head-hopping (052) sobre la OTRA abstención de `focalization`. **Aterrizado:**
+`bookwright-continuity` gana un **sexto eje** ("ruptura de 1ª persona / desliz de voz") que lee **sólo la
+voz declarada** (`bible/constitution.md`) y, bajo **cualquier** 3ª persona —limitada **o** no, a
+diferencia del 5º eje limitado-sólo—, juzga si la narración se desliza a 1ª persona **incluyendo la
+morfología verbal pro-drop** (`Caminé`, `Me senté`, `Escribí`) que el regex de pronombre explícito no
+ve; **suma sobre** (nunca suprime) los `warning`s de pronombre explícito de `focalization`, y ante voz
+ausente/`[PENDING]`/sin persona reporta el hueco de grounding sin adivinar (**ni roster ni calendario de
+POV** — una ruptura de 1ª persona es persona gramatical, no identidad de personaje). Y `bookwright
+status` emite un *next_action* informativo (`judge_first_person_recall`) keyed **exacto** en
+`(focalization, first_person_recall)` vía el `_judges(validator, code)` de la 053 —inmediatamente tras
+`judge_head_hopping` y antes de `define_focus`, distinto del 051/052, nunca dispara sobre `head_hopping`
+ni el de head-hopping sobre `first_person_recall`—. El validador `focalization` y el contrato
+`code`/`_judges` **no se tocan** (cero diff bajo `validation/`); el gate determinista y el predicado
+verde quedan byte-idénticos (decisión 4). **DEBT-021 cerrada** — la dimensión está completa (honestidad
+053 + juicio 054) y con ella se **completa la primera oleada de move 3** (051 + 052 + 053/054).
 
 **Lo que NO cambia:** la ontología congelada (Principio X); el gate determinista; el contrato
 `not_evaluated` / `EvalResult` / `kind` (§ 13.1, se **consume**, no se altera); y el conjunto de

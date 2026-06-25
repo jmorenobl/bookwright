@@ -95,3 +95,27 @@ def test_continuity_triggers_on_head_hopping_bilingually() -> None:
     # The iteration-051 undeclared-character trigger still fires.
     assert "personajes sin declarar" in d or "sin ficha" in d, "continuity: lost the 051 ES trigger"
     assert "undeclared" in d or "unbacked characters" in d, "continuity: lost the 051 EN trigger"
+
+
+def test_continuity_triggers_on_first_person_breaks_bilingually() -> None:
+    # Iteration 054 (move 3, third dimension, judgment half): the 1st-person trigger is
+    # FOLDED into the existing 5th-axis voice/focalization phrase (no growth past 1024) so
+    # the description ALSO triggers on the voice / narrative-person break prompt in BOTH ES
+    # and EN, while every earlier trigger stays live (the four prior axes + the 051
+    # undeclared-character trigger + the 052 head-hopping trigger, all asserted above).
+    d = command_metadata(next(p for p in command_files() if p.stem == "bookwright-continuity"))[
+        "description"
+    ].lower()
+    # ES trigger (folded into the head-hopping phrase).
+    assert "rupturas de voz" in d, "continuity: no ES voice-break trigger"
+    assert "persona narrativa" in d, "continuity: no ES narrative-person trigger"
+    # EN trigger.
+    assert "narrative-person breaks" in d, "continuity: no EN voice/narrative-person trigger"
+    # The iteration-052 head-hopping trigger still fires.
+    assert "head-hopping" in d and "saltos de punto de vista" in d, (
+        "continuity: lost the 052 ES trigger"
+    )
+    assert "pov breaks" in d, "continuity: lost the 052 EN trigger"
+    # The iteration-051 undeclared-character trigger still fires.
+    assert "personajes sin declarar" in d or "sin ficha" in d, "continuity: lost the 051 ES trigger"
+    assert "undeclared" in d or "unbacked characters" in d, "continuity: lost the 051 EN trigger"

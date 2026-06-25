@@ -153,3 +153,52 @@ def test_continuity_carries_the_fifth_head_hopping_axis() -> None:
     assert "una desviación\nmás" in body or "una desviación más" in body, (
         "continuity: ## Output does not frame the head-hop as one more deviation"
     )
+
+
+def test_continuity_carries_the_sixth_first_person_axis() -> None:
+    # Iteration 054 (move 3, third dimension, judgment half): the 6th axis ("1st-person
+    # break / voice slip") rides inside `## Procedimiento`/`## Output` — no new required
+    # heading, the section gate still passes. The LLM judgment quality is NOT asserted
+    # (FR-017, § 20.6.2 decision 4); only the body contract C1-C3.
+    body = _continuity_body()
+    lowered = body.lower()
+    # C1 — the axis itself, in the procedure, named for the first-person / voice slip.
+    assert "sexto eje" in lowered, "continuity: no sixth axis in the procedure"
+    assert "primera persona" in lowered, "continuity: 6th axis does not name the first-person slip"
+    # C1 — scope DIFFERS from the 5th axis: applies under third person LIMITED OR NOT.
+    assert "limitada o no limitada" in lowered, (
+        "continuity: 6th axis not scoped to third person limited OR non-limited"
+    )
+    # C1(c) — judges the pro-drop verbal morphology the explicit-pronoun check cannot see.
+    assert "pro-drop" in lowered, "continuity: 6th axis does not name pro-drop morphology"
+    assert "Caminé" in body and "Me senté" in body, (
+        "continuity: 6th axis does not give the pro-drop examples the deterministic check misses"
+    )
+    # C1 — grounding is the DECLARED VOICE ONLY (no roster, no POV calendar).
+    assert "voz narrativa" in lowered, "continuity: 6th axis does not cite the declared voice"
+    assert "bible/constitution.md" in body, (
+        "continuity: 6th axis does not ground in bible/constitution.md"
+    )
+    assert "solo la voz declarada" in lowered, (
+        "continuity: 6th axis does not state the declared voice is its only grounding"
+    )
+    assert "persona gramatical" in lowered, (
+        "continuity: 6th axis does not justify why it needs neither roster nor POV calendar"
+    )
+    # C1(d) — grounding-gap clause: absent / [PENDING] voice → report the gap, no guess.
+    assert "[pending:" in lowered, "continuity: 6th axis does not handle a [PENDING] voice"
+    assert "no adivines" in lowered or "no adivina" in lowered, (
+        "continuity: 6th axis does not document 'do not guess' on a missing declared voice"
+    )
+    # C1 — ADDS the morphological recall on top of, never suppresses, the explicit-pronoun
+    # `warning`s of `focalization`.
+    assert "suprime" in lowered, (
+        "continuity: 6th axis does not state it never suppresses the explicit-pronoun warnings"
+    )
+    # C2 — ## Output reports each first-person slip as one more deviation (judgment, not error).
+    assert "first-person voice under a narration declared in third person" in body, (
+        "continuity: ## Output does not carry the exact first-person deviation phrasing"
+    )
+    assert "ruptura de 1ª persona" in lowered, (
+        "continuity: ## Output axis enumeration does not include the first-person break"
+    )
