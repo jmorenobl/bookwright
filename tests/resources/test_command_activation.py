@@ -76,3 +76,22 @@ def test_continuity_triggers_on_undeclared_characters_bilingually() -> None:
     # The three existing concerns survive (bible compliance, character-arc, timeline).
     assert "cumplimiento de la biblia" in d
     assert "línea de tiempo" in d or "timeline" in d
+
+
+def test_continuity_triggers_on_head_hopping_bilingually() -> None:
+    # Iteration 052 (move 3, second slice): the widened description ALSO triggers on the
+    # head-hopping / POV-break prompt in BOTH ES and EN, while keeping every earlier
+    # trigger live (the four prior axes + the iteration-051 undeclared-character trigger
+    # + the post-draft sibling-disambiguation keyword, all asserted in the tests above).
+    d = command_metadata(next(p for p in command_files() if p.stem == "bookwright-continuity"))[
+        "description"
+    ].lower()
+    # ES trigger.
+    assert "head-hopping" in d and "saltos de punto de vista" in d, (
+        "continuity: no ES head-hop trigger"
+    )
+    # EN trigger.
+    assert "pov breaks" in d, "continuity: no EN head-hop trigger"
+    # The iteration-051 undeclared-character trigger still fires.
+    assert "personajes sin declarar" in d or "sin ficha" in d, "continuity: lost the 051 ES trigger"
+    assert "undeclared" in d or "unbacked characters" in d, "continuity: lost the 051 EN trigger"

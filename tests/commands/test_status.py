@@ -189,25 +189,31 @@ def test_known_state_yields_the_exact_next_actions(
 ) -> None:
     _, payload = _status_json(runner)
     actions = payload["next_actions"]
-    # The fixture carries an authored [focus] block (iteration 023), so rule ⑦
+    # The fixture carries an authored [focus] block (iteration 023), so rule ⑧
     # (define_focus) does NOT fire. The `activate_dormant_validators` nudge does NOT fire
     # either (iteration 044): the `character_unknown_mentions`/`focalization` entries are
-    # both `kind: pending_capability`, and it nudges only on `missing_input` gaps. FOUR
-    # actions remain (iteration 051): the three research-derived workstreams plus a SECOND
-    # `bookwright-continuity` — `judge_undeclared_characters` fires because the
-    # `character_unknown_mentions` abstention is present (keyed on the source). The first
-    # continuity action is `review_continuity` (the `error` count); the second is the judge
-    # nudge, emitted after it.
+    # both `kind: pending_capability`, and it nudges only on `missing_input` gaps. FIVE
+    # actions remain (iteration 052): the three research-derived workstreams plus THREE
+    # `bookwright-continuity` actions — `review_continuity` (the `error` count), then both
+    # move-3 judge nudges: `judge_undeclared_characters` (keyed on the
+    # `character_unknown_mentions` abstention) and `judge_head_hopping` (keyed on the
+    # `focalization` `pending_capability` abstention), in table order.
     assert [a["skill"] for a in actions] == [
         "bookwright-research",
         "bookwright-verify",
         "bookwright-continuity",
         "bookwright-continuity",
+        "bookwright-continuity",
     ]
-    # The second continuity action is the move-3 judge nudge (semantic-judgment pointer).
-    judge = actions[3]
-    assert judge["reason"].startswith("character_unknown_mentions abstained")
-    assert "no sheet in bible/characters/" in judge["prompt"]
+    # The second continuity action is the undeclared-character judge nudge; the third is
+    # the head-hopping judge nudge — distinct prompts/reasons (FR-011).
+    undeclared = actions[3]
+    assert undeclared["reason"].startswith("character_unknown_mentions abstained")
+    assert "no sheet in bible/characters/" in undeclared["prompt"]
+    head_hop = actions[4]
+    assert head_hop["reason"].startswith("focalization abstained on head-hopping")
+    assert "bible/pov-structure.md" in head_hop["prompt"]
+    assert undeclared["prompt"] != head_hop["prompt"]
     research = actions[0]
     # The prompt lists the queue; the reason cites the count (FR-009).
     assert research["reason"] == "2 open research questions and 1 unresolved anchor"
