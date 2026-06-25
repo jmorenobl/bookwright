@@ -498,64 +498,60 @@ surface-heuristic class behind DEBT-004/007/008).
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/053-move3-first-person-honesty/plan.md` (iteration 053, design § 13.4 +
-§ 13.5 / § 20.6.1 — issue #1 **move 3 THIRD dimension, FIRST half (honesty)**, plus the
-contract plumbing it forces; *no gate, no skill change*). The third move-3 dimension —
-the 1st-person break / pro-drop recall ceiling (**DEBT-021**) — is split into TWO
-iterations, exactly as head-hopping split into honesty (045/050) and judgment (052):
-THIS iteration (053) is the HONESTY half; the JUDGMENT half (the SIXTH
-`bookwright-continuity` axis + its nudge, which CLOSES DEBT-021) is iteration 054 and is
-OUT OF SCOPE. Today `focalization` runs `_first_person_breaks` (the CLOSED set
-`yo`/`nosotros`/`nosotras`/`i`/`we`, near-zero FP) under a 3rd-person voice and is
-SILENT about everything that closed set cannot see — Spanish pro-drop verbal morphology
-(`Caminé`, `Me senté`), an OPEN set no regex captures without reopening the whack-a-mole
-issue #1 closed. That silence is the `[]`-means-clean lie at the sub-check level. THREE
-things: (1) CONTRACT — `Abstention` AND `NotEvaluatedResult` gain an OPTIONAL
-`code: str | None = None` (short stable discriminator: `"head_hopping"`,
-`"first_person_recall"`, `"undeclared_characters"`), serialized ADDITIVELY in
-`NotEvaluatedResult.to_json` exactly as iter 044 added `kind`. The runner's single
-`_record` naming point gains `code=None`: form (c) `EvalResult` passes `abstention.code`,
-form (b) `raise NotEvaluated` passes `None`. The `NotEvaluated` EXCEPTION does NOT gain
-`code` (the discriminator is of RETURNED abstentions). `not_evaluated_sort_key` stays
-`(validator, reason)` — `code` is NOT a sort term (the two focalization reasons differ,
-so the order is already total). (2) HONESTY — `focalization` defines
-`_FIRST_PERSON_RECALL_PENDING` («full first-person recall requires semantic judgment
-(move 3); the deterministic check only covers the explicit subject pronoun»), puts
-`code="head_hopping"` on the existing head-hopping abstention, and adds
-`Abstention(_FIRST_PERSON_RECALL_PENDING, pending_capability, code="first_person_recall")`
-in BOTH 3rd-person branches (wrap the non-limited bare-`list` return in an `EvalResult`).
-`_first_person_breaks`, the explicit-pronoun regex, the 1st-person `return []` branch, and
-the FOUR `missing_input` raises are UNTOUCHED. (3) KEYING — `status/rules.py`
-`_judges(validator)` → `_judges(validator, code)` (`... AND r.code == code`); re-point
-`judge_undeclared_characters=_judges("character_unknown_mentions", "undeclared_characters")`
-and `judge_head_hopping=_judges("focalization", "head_hopping")` (now PRECISE: never fires
-on the first-person abstention, never mis-fires under 3rd-non-limited). Because a code-keyed
-predicate needs a `code` on the wire and the raised path stays code-less,
-`character_unknown_mentions` is CONVERTED from a raised total abstention (form (b)) to a
-returned partial abstention (form (c)): `EvalResult([], [Abstention(<reason>,
-pending_capability, code="undeclared_characters")])` — observationally additive (only the
-`code` key changes from `null`), nudge behavior unchanged. NO first-person nudge yet (that
-is 054). `code` flows into `status` for FREE (`ValidationSummary.not_evaluated` holds
-`NotEvaluatedResult` directly; `status/model.py` + `status/queries.py` are verify-only);
-`commands/validate.py` ingestion-skip `NotEvaluatedResult` call stays valid (code defaults
-None). GREEN lives in `validation/report.py` (filters `missing_input`) — DO NOT touch;
-`pending_capability` never degrades green; `activate_dormant_validators` stays
-`missing_input`-only; the error-only CI gate is unchanged and NO `error` is born.
-Tests/oracles (EMPIRICAL via `uv run pytest`): `test_base.py`, the runner + serialization
-tests, `test_report.py`, `test_focalization.py`, `test_character_unknown_mentions.py`
-(form (b)→(c); reason/kind unchanged), `test_rules.py` (keying by `code` + NEGATIVE
-3rd-non-limited → NO head-hop nudge), `test_status.py`/`test_command.py`, and the oracles
-`tests/fixtures/*/expected-status.md` (`tiny-historical` gains the `first_person_recall`
-entry → 3 `not_evaluated`; `code` keys; `next_actions` STAYS 5) and `tests/e2e/*` that
-assert `not_evaluated` (gain `code`, and in 3rd-person fixtures the `first_person_recall`
-entry); `tiny-novel`/`tiny-memoir` stay GREEN. CONTRACT-BEFORE-CODE: § 13.4 (`not_evaluated`
-gains `code`, the discriminator, as 044 added `kind`) + § 13.5 / § 20.6.1-2 (move 3
-distinguishes dimensions by `code`; first-person honesty LANDED, judgment → 054); UPDATE
-DEBT-021 (do NOT remove — honesty exists in 053, judgment + closure is 054); milestone
-prose + iteration index (row 053). Out of scope: the JUDGMENT half (054, closes DEBT-021);
-widening the explicit-pronoun regex (whack-a-mole); GATING an LLM verdict; touching
-`bookwright-verify` or any skill; reopening the 044 green predicate; REMOVING any
-`DEBT.md` entry; a closed `code` enum/registry (only three values); any new dependency
-(Constitution II) / frozen ontology (Principle X) / new validator in `validation/`. Each
-changed file ≤ 500 lines. `uv run pytest` + four gates green.
+`specs/054-move3-first-person-judgment/plan.md` (iteration 054, design § 20.6.2 +
+§ 13.5 — issue #1 **move 3 THIRD dimension, SECOND half (judgment)**, which CLOSES
+DEBT-021 and **completes the first move-3 wave**). This is the exact MIRROR of 052
+(head-hopping) over the OTHER `focalization` abstention: 053 made `focalization` HONEST
+(it already emits `Abstention(_FIRST_PERSON_RECALL_PENDING, pending_capability,
+code="first_person_recall")` in BOTH 3rd-person branches, and the `code` discriminator +
+`_judges(validator, code)` keying already ship); 054 makes `bookwright-continuity` JUDGE
+that dimension. **ZERO diff under `validation/`** — `focalization` and the `code` contract
+/ `_judges` helper are UNTOUCHED (FR-013). THREE edits: (1) SKILL — add a SIXTH axis
+("1st-person break / voice slip") to `resources/commands/bookwright-continuity.md`
+(`## Procedimiento` + `## Output`, mirror of the 5th head-hopping axis), grounded ONLY in
+the declared narrative voice (`bible/constitution.md`, already read by the 5th axis) — NO
+roster, NO POV calendar (a 1st-person break is grammatical person, not character identity).
+It applies under ALL declared 3rd person (limited OR non-limited — unlike the limited-only
+5th axis), JUDGES the pro-drop verbal morphology (`Caminé`, `Me senté`) the explicit-pronoun
+check can't see, ADDS on top of (never suppresses) `focalization`'s explicit-pronoun
+`warning`s, and on absent/`[PENDING]`/person-less voice REPORTS THE GROUNDING GAP (does not
+guess). Update the «Revisa cinco ejes» intro → seis; report each slip as one more deviation:
+quote + "first-person voice under a narration declared in third person" + a suggestion. (2)
+DESCRIPTION — it sits at 1000/1024 (measure: `uv run python -c "from
+bookwright.integrations.descriptions import SKILL_DESCRIPTIONS as D;
+print(len(D['bookwright-continuity']))"`); FOLD the 1st-person trigger into the existing
+5th-axis voice/focalization phrase WITHOUT growing (e.g. «head-hopping / saltos de punto de
+vista / focalización rota» → also «rupturas de voz / persona narrativa», EN twin too), stay
+≤1024, mirror VERBATIM into `SKILL_DESCRIPTIONS["bookwright-continuity"]`
+(`descriptions.py:27`); equality gate `tests/integrations/test_descriptions.py`. (3) NUDGE —
+in `status/rules.py` add `_judge_first_person_recall` builder + a `judge_first_person_recall`
+`Rule` with `applies=_judges("focalization", "first_person_recall")`, inserted IMMEDIATELY
+AFTER `judge_head_hopping` and BEFORE `define_focus`. `_judges(validator, code)` already
+exists (053) — only USE it. The action is fixed/byte-identical, DISTINCT from the 051/052
+ones (reason starts "focalization abstained on first-person recall"; prompt names the
+declared voice only — NO POV calendar/roster). Keys PRECISELY on `first_person_recall`:
+never fires on `head_hopping`, and head-hopping never fires on first-person. INFORMATIVE —
+never degrades green: the 044 green predicate (`validation/report.py`, missing_input-only) is
+byte-identical, `activate_dormant_validators` stays missing_input-only, NO `error` is born,
+the error-only CI gate is unchanged. Tests/oracles (EMPIRICAL via `uv run pytest`):
+`test_command_body.py` (NEW 6th-axis assertion mirroring the 5th), `test_command_activation.py`
+(folded ES+EN trigger fires; 4th/5th still fire), `test_descriptions.py`/`test_skill_capabilities.py`/
+`test_materialize.py` (lint ≤1024 + verbatim mirror), `test_rules.py` (POSITIVE
+first_person_recall → nudge — REWRITE the 053 `test_first_person_recall_alone_fires_no_judge_nudge`
+and `test_head_hopping_and_recall_together_…`; add the `judge_first_person_recall` `_TRIGGER`
+entry; NEGATIVE head_hopping-only → NO first-person nudge; all-three co-fire in table order),
+`test_status.py`, and the oracle `tests/fixtures/tiny-historical/expected-status.md`
+(`next_actions` 5 → 6 — a 4th `bookwright-continuity` — with the co-located PROSE + inline
+`# nudge:`/iteration comments updated in the SAME edit: «cinco workstreams… tercer» → «seis…
+a fourth», «(las tres)… sigue siendo 5» → «las cuatro… 6»; leaving any stale is a forbidden
+inconsistent oracle) + `tests/e2e/test_orchestration_workflow.py`; `tiny-novel`/`tiny-memoir`
+stay GREEN. Records: REMOVE DEBT-021 from `DEBT.md` (the dimension is COMPLETE — honesty 053
++ judgment 054); reconcile `bookwright-design.md` § 20.6.2 / § 13.5 (3rd dimension LANDED,
+first wave complete; the 1st-person axis grounds on the DECLARED VOICE ONLY — see
+`research.md` Decision 1, superseding the older "voz + roster + POV" phrasing); milestone
+prose + iteration index (row 054). Out of scope: GATING an LLM verdict; widening the
+explicit-pronoun regex (whack-a-mole); touching `focalization`/anything under `validation/`,
+the `code` contract, or `_judges`; touching `bookwright-verify`; reopening the 044 green
+predicate; any new dependency (Constitution II) / frozen ontology (Principle X) / new
+validator. Each changed file ≤ 500 lines. `uv run pytest` + four gates green.
 <!-- SPECKIT END -->

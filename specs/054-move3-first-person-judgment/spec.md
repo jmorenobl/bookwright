@@ -347,12 +347,23 @@ one; (c) green is preserved in all cases.
   stale while flipping (i) is a forbidden internally-inconsistent oracle. The negative case
   (a) is covered at the pure `test_rules.py` synthetic-state level, no disk. `tiny-novel` /
   `tiny-memoir` stay GREEN.
-- **FR-018**: `DEBT-021` MUST be **removed** from `DEBT.md` (git keeps the history): its
-  honesty half landed in 053 and its judgment half lands here, so the dimension is
-  **complete**. The design / milestone record MUST be reconciled: `bookwright-design.md`
-  § 20.6.2 / § 13.5 marks the third move-3 dimension (first-person break) as **landed** and
-  the **first move-3 wave complete** (051 + 052 + 053/054), and the milestone prose /
-  iteration index (row 054) is updated to reflect shipped work.
+- **FR-018**: `DEBT-021` MUST be reconciled in `DEBT.md` **following the existing
+  closed-debt convention** (git keeps the history): its honesty half landed in 053 and its
+  judgment half lands here, so the dimension is **complete**. Concretely, (a) the **open
+  `### DEBT-021` section** under `## Deuda abierta` MUST be **removed**; AND (b) the **Track C
+  — move 3** bullet of the issue-#1 re-disposición closed-debt summary blockquote (the one
+  already recording `~~DEBT-013~~`) MUST record it as a
+  **struck-through closed entry** — `~~DEBT-021~~ (cerrada en la iteración 054 …)` — mirroring
+  exactly how `~~DEBT-013~~` / `~~DEBT-015~~` / `~~DEBT-017~~` are recorded there, **replacing**
+  the now-false forward-looking sentence "Queda DEBT-021 … plegado con el head-hopping para
+  rebanadas posteriores de move 3" (leaving that stale forward reference is a forbidden
+  internally-inconsistent record). The 054 closed-record summary MUST state the grounding is
+  the **declared voice only** (no roster, no POV calendar — superseding the open entry's
+  older "voz declarada + roster + calendario de POV" phrasing). The design / milestone record
+  MUST be reconciled: `bookwright-design.md` § 20.6.2 / § 13.5 marks the third move-3
+  dimension (first-person break) as **landed** and the **first move-3 wave complete** (051 +
+  052 + 053/054), and the milestone prose / iteration index (row 054) is updated to reflect
+  shipped work.
 - **FR-019**: No new dependency (Constitution II) MUST be added; no validator (Principle X
   frozen ontology) MUST be created or modified beyond the (untouched) `focalization`; each
   changed file MUST stay ≤ 500 lines.
@@ -410,9 +421,11 @@ one; (c) green is preserved in all cases.
   `validation/`); the abstention `code` contract and the `_judges` helper are unchanged;
   the CI gate (error-only) is unchanged and no `error` originates from an LLM. The
   iteration-051 and iteration-052 nudges remain intact.
-- **SC-007**: `DEBT-021` is **removed** from `DEBT.md` (the dimension is complete:
-  honesty 053 + judgment 054), and `bookwright-design.md` § 20.6.2 / § 13.5 records the
-  third move-3 dimension landed and the first move-3 wave complete.
+- **SC-007**: `DEBT-021` is reconciled in `DEBT.md` per the closed-debt convention — the
+  open `### DEBT-021` section is **removed** and the Track-C bullet of the issue-#1
+  re-disposición closed-debt summary blockquote records it as a struck-through
+  `~~DEBT-021~~ (cerrada en la iteración 054 …)` entry (no stale forward-looking reference remains) — and `bookwright-design.md` § 20.6.2 / § 13.5 records the third move-3
+  dimension landed and the first move-3 wave complete.
 - **SC-008**: The full suite and all four gates (`ruff check`, `ruff format --check`,
   `mypy --strict`, `pytest` with ≥ 80 % coverage) pass green.
 
@@ -450,5 +463,3 @@ one; (c) green is preserved in all cases.
   creating / modifying a validator in `validation/` (move 3 is the skill layer, not a
   validator).
 - Each changed file MUST stay ≤ 500 lines.
-</content>
-</invoke>
