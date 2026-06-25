@@ -130,6 +130,15 @@ This iteration does **three** things:
   abstention now exists (053) and the judgment is deferred to 054 — exactly as 045 made
   head-hopping honest and 052 added its judgment. Rationale: the debt class is not closed
   until the semantic judgment lands.
+- Q: With `focalization` now emitting **two** `not_evaluated[]` entries that share
+  `validator="focalization"`, does `code` enter `not_evaluated_sort_key`? → A: **No.** The
+  sort key stays `(validator, reason)` unchanged; `code` is **not** a sort term. It remains a
+  total order because the head-hopping and first-person-recall abstentions carry **distinct
+  `reason` strings**, so their relative order in `not_evaluated[]` is fixed deterministically
+  by `reason` (byte-identical across runs). Rationale: the existing key already totally
+  orders the entries — adding `code` to the sort would be plumbing without need (doctrine
+  § 3) and would gratuitously change the runner's single shared sort literal; correctness
+  (determinism) is preserved without it.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -267,6 +276,11 @@ fires no head-hopping nudge.
 - **FR-005**: Every `not_evaluated[]` JSON entry MUST carry the `code` key. Entries
   originating from `raise NotEvaluated` MUST serialize `code: null`; entries from a
   returned `Abstention` that sets `code` MUST serialize that value.
+- **FR-005a**: `not_evaluated_sort_key` MUST remain `(validator, reason)` — `code` MUST NOT
+  enter the sort. That key stays a **total order** because `focalization`'s two abstentions
+  carry distinct `reason` strings, so their relative position in `not_evaluated[]` is fixed
+  deterministically by `reason` (no `code` tie-break is needed — doctrine § 3, no plumbing
+  without need). The runner's single shared sort literal MUST NOT change.
 - **FR-006**: `focalization` MUST declare a **first-person-recall** abstention
   (`Abstention(<reason>, kind=pending_capability, code="first_person_recall")`) under
   **both** third-person branches. The reason MUST state that complete first-person recall
@@ -330,9 +344,15 @@ fires no head-hopping nudge.
   untouched; explicit-pronoun `warning`s unchanged), the `character_unknown_mentions`
   validator test (return shape changes from a raised `NotEvaluated` to a returned
   `EvalResult([], [Abstention(…, code="undeclared_characters")])`; `reason` and `kind`
-  unchanged), and the `status` rule tests (keying by `code`, **including** the negative
-  third-person-non-limited case → no head-hop nudge). The *quality* of any LLM judgment is
-  NOT in scope here (no skill changes in this slice).
+  unchanged), the `status` rule tests (keying by `code`, **including** the negative
+  third-person-non-limited case → no head-hop nudge), **and every test that asserts the
+  exact key-set of a `not_evaluated[]` entry** — `tests/commands/test_validate_skipped.py`
+  (the ingestion `missing_input` skip entry), `tests/commands/test_status.py`, and
+  `tests/validation/test_report.py` all assert `set(entry) == {"validator", "reason",
+  "kind"}` today and MUST be updated to `{"validator", "reason", "kind", "code"}` (the
+  ingestion skip serializes `code: null`; `test_validate_skipped.py`'s docstring "no new
+  key" MUST be corrected to record the additive `code` key). The *quality* of any LLM
+  judgment is NOT in scope here (no skill changes in this slice).
 - **FR-019**: The third-person fixtures' `not_evaluated[]` MUST gain the
   `first_person_recall` entry, and **every** `not_evaluated[]` entry across the fixtures
   MUST gain the `code` key. After this iteration the only abstentions still **raised**
