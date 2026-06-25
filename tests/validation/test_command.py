@@ -217,6 +217,24 @@ def test_orphan_error_and_abstainer_coexist_in_one_run(
     assert all(e["validator"] != "character_unknown_mentions" for e in payload["errors"])
 
 
+def test_every_not_evaluated_entry_carries_the_code_key(
+    runner: CliRunner, project_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # FR-005 (iteration 053, contract C3): every serialized not_evaluated[] entry carries
+    # the additive `code` key. The returned abstentions set it (undeclared_characters,
+    # head_hopping, first_person_recall); a raised one serializes `code: null`.
+    root = _scaffold_bad(project_root)
+    monkeypatch.chdir(root)
+    payload = json.loads(runner.invoke(app, ["validate", "--json"]).stdout)
+
+    entries = payload["not_evaluated"]
+    assert entries  # the abstainers are always present
+    for entry in entries:
+        assert "code" in entry  # additive key on EVERY entry
+    codes = {r["validator"]: r.get("code") for r in entries}
+    assert codes["character_unknown_mentions"] == "undeclared_characters"
+
+
 def test_scope_narrows_report_but_gate_still_fails(
     runner: CliRunner, project_root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

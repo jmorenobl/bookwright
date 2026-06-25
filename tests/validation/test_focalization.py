@@ -20,11 +20,24 @@ from bookwright.validation.base import (
 from bookwright.validation.validators.focalization import Focalization, _parse_declaration
 from tests.validation.conftest import load_context, write_project
 
+# The verbatim reason the validator declares for the first-person recall ceiling under
+# ANY third-person voice (iteration 053 honesty half, DEBT-021): pro-drop verbal
+# morphology is an open set the deterministic check cannot see.
+_REASON_FIRST_PERSON_RECALL = (
+    "full first-person recall requires semantic judgment (move 3); "
+    "the deterministic check only covers the explicit subject pronoun"
+)
+
 
 def _run(root: Path) -> list[Violation]:
-    """Run focalization on a project that returns the bare-list shape (forms (a))."""
+    """Run focalization on a project that returns the bare-list shape (form (a)).
+
+    Only the FIRST-PERSON branch returns a bare list now (`return []`); the raise tests
+    short-circuit before the assert. Both third-person branches return an `EvalResult`
+    (iteration 053), so they use `_run_third_nonlimited` / `_run_partial` instead.
+    """
     result = Focalization().validate(load_context(root), RdflibIndexer())
-    assert isinstance(result, list)  # non-limited / first-person paths return a bare list
+    assert isinstance(result, list)
     return result
 
 
@@ -35,6 +48,36 @@ def _run_partial(root: Path) -> EvalResult:
     return result
 
 
+def _run_third_nonlimited(root: Path) -> list[Violation]:
+    """Run focalization on a non-limited 3rd-person project (iteration 053).
+
+    Returns the partial shape carrying EXACTLY the first-person-recall abstention (no
+    head-hopping under non-limited third); asserts that and returns its `violations`.
+    """
+    result = Focalization().validate(load_context(root), RdflibIndexer())
+    assert isinstance(result, EvalResult)
+    assert len(result.not_evaluated) == 1
+    recall = result.not_evaluated[0]
+    assert recall.reason == _REASON_FIRST_PERSON_RECALL
+    assert recall.kind is NotEvaluatedKind.pending_capability
+    assert recall.code == "first_person_recall"
+    return result.violations
+
+
+def test_first_person_voice_carries_no_recall_abstention(project_root: Path) -> None:
+    # FR-008/FR-009 (iteration 053): the recall abstention is declared ONLY under a
+    # third-person voice. A first-person voice returns the bare `[]` (no EvalResult, no
+    # abstention) — there is no third-person recall ceiling to declare.
+    write_project(
+        project_root,
+        characters=["Aparici"],
+        constitution="Voz narrativa: primera persona\n",
+        manuscript={"cap-01.md": "Caminé despacio.\nMe senté a esperar.\n"},
+    )
+    result = Focalization().validate(load_context(project_root), RdflibIndexer())
+    assert result == []  # bare list, no abstention
+
+
 def test_first_person_outside_dialogue_warns(project_root: Path) -> None:
     write_project(
         project_root,
@@ -42,7 +85,7 @@ def test_first_person_outside_dialogue_warns(project_root: Path) -> None:
         constitution="# Constitución\n\nVoz narrativa: tercera persona\n",
         manuscript={"cap-01.md": "Aparici caminaba.\nYo no entendía nada.\n"},
     )
-    findings = _run(project_root)
+    findings = _run_third_nonlimited(project_root)
     assert any(f.severity == Severity.warning and "first-person" in f.message for f in findings)
 
 
@@ -54,13 +97,23 @@ _REASON_HEAD_HOPPING = (
 )
 
 
-def _only_head_hop(result: EvalResult) -> Abstention:
-    """Assert the limited-third abstention list is exactly the head-hop entry; return it."""
-    assert len(result.not_evaluated) == 1
-    abstention = result.not_evaluated[0]
-    assert abstention.reason == _REASON_HEAD_HOPPING
-    assert abstention.kind is NotEvaluatedKind.pending_capability
-    return abstention
+def _head_hop_and_recall(result: EvalResult) -> Abstention:
+    """Assert the limited-third abstention list is EXACTLY the head-hop + recall pair.
+
+    Iteration 053: under limited-third `focalization` declares TWO `pending_capability`
+    abstentions — head-hopping (`code="head_hopping"`) AND first-person-recall
+    (`code="first_person_recall"`). Both reasons/kinds/codes are pinned; the head-hop
+    entry is returned (it is the one the 052 nudge keys on). Order-independent by `code`.
+    """
+    by_code = {a.code: a for a in result.not_evaluated}
+    assert set(by_code) == {"head_hopping", "first_person_recall"}
+    head_hop = by_code["head_hopping"]
+    assert head_hop.reason == _REASON_HEAD_HOPPING
+    assert head_hop.kind is NotEvaluatedKind.pending_capability
+    recall = by_code["first_person_recall"]
+    assert recall.reason == _REASON_FIRST_PERSON_RECALL
+    assert recall.kind is NotEvaluatedKind.pending_capability
+    return head_hop
 
 
 def test_limited_third_runs_break_check_and_abstains_on_head_hop(project_root: Path) -> None:
@@ -86,7 +139,7 @@ def test_limited_third_runs_break_check_and_abstains_on_head_hop(project_root: P
     assert break_finding.source == "manuscript/cap-01.md:2"
     assert break_finding.triples == ()  # Principle X — prose validator only
     # …and exactly one head-hopping abstention (pending_capability) in the same EvalResult
-    _only_head_hop(result)
+    _head_hop_and_recall(result)
 
 
 def test_limited_third_abstains_as_capability_gap(project_root: Path) -> None:
@@ -102,7 +155,7 @@ def test_limited_third_abstains_as_capability_gap(project_root: Path) -> None:
     )
     result = _run_partial(project_root)
     assert result.violations == []  # no first-person break in this fixture
-    _only_head_hop(result)
+    _head_hop_and_recall(result)
 
 
 def test_limited_third_with_no_named_focal_abstains_identically(project_root: Path) -> None:
@@ -116,7 +169,7 @@ def test_limited_third_with_no_named_focal_abstains_identically(project_root: Pa
     )
     result = _run_partial(project_root)
     assert result.violations == []
-    _only_head_hop(result)
+    _head_hop_and_recall(result)
 
 
 def test_english_declaration_runs_break_check_and_abstains(project_root: Path) -> None:
@@ -133,7 +186,7 @@ def test_english_declaration_runs_break_check_and_abstains(project_root: Path) -
     result = _run_partial(project_root)
     assert len(result.violations) == 1
     assert "first-person" in result.violations[0].message and "'I'" in result.violations[0].message
-    _only_head_hop(result)
+    _head_hop_and_recall(result)
 
 
 def test_dialogue_line_is_exempt(project_root: Path) -> None:
@@ -144,7 +197,7 @@ def test_dialogue_line_is_exempt(project_root: Path) -> None:
         manuscript={"cap-01.md": "Aparici asintió.\n—Yo me marcho —dijo.\n"},
     )
     # The first-person pronoun sits in dialogue (em-dash opener) → not a break.
-    assert all("first-person" not in f.message for f in _run(project_root))
+    assert all("first-person" not in f.message for f in _run_third_nonlimited(project_root))
 
 
 # --- tri-valued: the four distinct "could not read a voice" reasons (FR-008) ---
@@ -239,7 +292,9 @@ def test_usable_third_person_is_evaluated_and_clean(project_root: Path) -> None:
         constitution="Voz narrativa: tercera persona\n",
         manuscript={"cap-01.md": "Aparici caminaba despacio.\n"},
     )
-    assert _run(project_root) == []
+    # Non-limited third now returns the partial shape: violations empty, plus the honest
+    # first-person-recall abstention (asserted inside the helper) — still a legitimate green.
+    assert _run_third_nonlimited(project_root) == []
 
 
 def test_usable_first_person_is_evaluated_and_clean(project_root: Path) -> None:
@@ -321,7 +376,7 @@ def test_scaffold_shape_wakes_validator_through_validate(project_root: Path) -> 
         constitution="# Constitución\n\n- **Voz narrativa**: tercera persona\n",
         manuscript={"cap-01.md": "Aparici caminaba.\nYo no entendía nada.\n"},
     )
-    findings = _run(project_root)
+    findings = _run_third_nonlimited(project_root)
     assert any("first-person" in f.message for f in findings)
     assert all(f.triples == () for f in findings)  # Principle X — prose validator only
 
@@ -431,7 +486,7 @@ def test_replacing_placeholder_with_real_voice_wakes_validator(project_root: Pat
     )
     result = _run_partial(project_root)
     assert result.violations == []
-    _only_head_hop(result)
+    _head_hop_and_recall(result)
 
 
 # --- loosening recognition keeps the no-finding edge cases intact ---
@@ -472,7 +527,7 @@ def test_first_person_locator_is_source_line_over_raw(project_root: Path) -> Non
         constitution="Voz narrativa: tercera persona\n",
         manuscript={"cap-01.md": "# Capítulo 1\n\nYo no entendía nada.\n"},
     )
-    findings = _run(project_root)
+    findings = _run_third_nonlimited(project_root)
     breaks = [f for f in findings if "first-person" in f.message]
     assert len(breaks) == 1
     assert breaks[0].source == "manuscript/cap-01.md:3"
@@ -487,4 +542,4 @@ def test_bullet_prefixed_line_stays_dialogue_exempt(project_root: Path) -> None:
         constitution="Voz narrativa: tercera persona\n",
         manuscript={"cap-01.md": "Aparici asintió.\n- Yo me marcho.\n"},
     )
-    assert all("first-person" not in f.message for f in _run(project_root))
+    assert all("first-person" not in f.message for f in _run_third_nonlimited(project_root))

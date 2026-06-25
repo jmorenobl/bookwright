@@ -171,17 +171,25 @@ class NotEvaluatedResult:
     :attr:`NotEvaluatedKind.missing_input`) categorizes the gap as input-conditional
     or a permanent capability-gap (iteration 044); it is stamped by the runner from
     the signal and serialized as an additive key (FR-008).
+
+    The ``code`` (default ``None``) is a short, stable discriminator stamped from a
+    **returned** :class:`Abstention` (iteration 053): it keeps a single validator's
+    multiple abstentions distinguishable on the wire and in ``status`` (a nudge keys on
+    ``(validator, code)``). A **raised** :class:`NotEvaluated` carries no code, so the
+    runner stamps ``None`` — serialized additively, exactly as 044 added ``kind``.
     """
 
     validator: str
     reason: str
     kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
+    code: str | None = None
 
     def to_json(self) -> dict[str, Any]:
         return {
             "validator": self.validator,
             "reason": self.reason,
             "kind": self.kind.value,
+            "code": self.code,
         }
 
 
@@ -195,10 +203,16 @@ class Abstention:
     stamps ``validator.name`` onto it through the SAME single point that stamps a
     raised :class:`NotEvaluated` (FR-002, contract C2/C3). It lets a validator declare
     it abstained on ONE dimension without abstaining the whole run (iteration 050).
+
+    The optional ``code`` (default ``None``) is a short, stable discriminator the
+    validator sets so that, when it returns MORE THAN ONE abstention, each stays
+    distinguishable on the wire and in ``status`` (iteration 053). The runner stamps it
+    onto the recorded :class:`NotEvaluatedResult`; it is NOT a sort term (FR-005a).
     """
 
     reason: str
     kind: NotEvaluatedKind = NotEvaluatedKind.missing_input
+    code: str | None = None
 
 
 @dataclass(frozen=True)

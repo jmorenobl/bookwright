@@ -140,6 +140,7 @@ def test_to_json_carries_not_evaluated_sibling_key() -> None:
             "validator": "focalization",
             "reason": "the constitution does not declare a narrative voice",
             "kind": "missing_input",
+            "code": None,
         }
     ]
     # The channel is additive: violations/errors keep their shapes, status untouched.
@@ -161,7 +162,7 @@ def test_to_json_not_evaluated_carries_kind() -> None:
     entries = payload["not_evaluated"]
     assert isinstance(entries, list)
     for entry in entries:
-        assert set(entry) == {"validator", "reason", "kind"}
+        assert set(entry) == {"validator", "reason", "kind", "code"}
         assert entry["kind"] in {"missing_input", "pending_capability"}
         assert isinstance(entry["validator"], str)
         assert isinstance(entry["reason"], str)
@@ -180,6 +181,25 @@ def test_green_predicate_false_for_solely_not_evaluated_run() -> None:
     assert payload["status"] == "ok"
     assert payload["failed"] is False  # never gates (FR-004)
     assert is_green(payload) is False  # SC-002
+
+
+def test_green_predicate_true_for_capability_gap_with_code() -> None:
+    # FR-016/FR-005 (iteration 053, contract C5): a `pending_capability` entry CARRYING a
+    # `code` still does not deny green — the 044 predicate filters on `kind` only, never
+    # `code`. The additive discriminator is orthogonal to the gate and the green line.
+    coded = NotEvaluatedResult(
+        "focalization",
+        "head-hopping / interiority attribution requires semantic judgment (move 3)",
+        NotEvaluatedKind.pending_capability,
+        code="head_hopping",
+    )
+    report = ValidationReport(
+        violations=(), errors=(), ran=("focalization",), not_evaluated=(coded,)
+    )
+    payload = report.to_json(scope=None, severity=None)
+    assert payload["not_evaluated"][0]["code"] == "head_hopping"
+    assert payload["status"] == "ok"
+    assert is_green(payload) is True
 
 
 def test_green_predicate_true_for_capability_gap_only_run() -> None:

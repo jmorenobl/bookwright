@@ -1468,7 +1468,15 @@ validadores de prosa, con dos caras:
   `no-evaluado(motivo)`— y el runner, el report, el sobre `--json`, `status` y las
   skills exponen el tercer estado. Aditivo: el gate sigue clavado solo en hallazgos
   `error`; `no-evaluado` es un canal distinto de `errors[]` (que es para validadores
-  que petan).
+  que petan). *El canal `not_evaluated[]` crece luego solo por **claves aditivas**, sin
+  renombrar ni retipar: la **iteración 044** añadió `kind`
+  (`missing_input`/`pending_capability`, categoriza el hueco) y la **iteración 053**
+  añadió `code` (un discriminador estable corto: `head_hopping`, `first_person_recall`,
+  `undeclared_characters`) para que las **múltiples** abstenciones de un mismo validador
+  sigan distinguibles en el alambre y en `status` (donde un nudge clava `(validator,
+  code)`). Una `NotEvaluated` **lanzada** no porta `code` (el runner sella `null`); el
+  discriminador es de las abstenciones **devueltas** (`Abstention`, forma (c)). Ninguna
+  clave entra al orden (`not_evaluated_sort_key` sigue `(validator, reason)`).*
 
 Lo que **no** entró en `v0.5.0`: convertir el heurístico en **juicio semántico** vía
 el path LLM de `bookwright-verify` (§ 20.6). Era el movimiento 3 de la issue,
@@ -1539,9 +1547,23 @@ de naturaleza opuesta** que conviven en ese validador:
    (`bible/pov-structure.md`) + el roster, y `status` la hace descubrible con un peer
    *next_action* informativo (`judge_head_hopping`) — la clave se generalizó a
    `_judges(validator)` (fuente **+** `pending_capability`) porque `focalization` emite
-   ambos `kind`s; gate y predicado verde byte-idénticos. La tercera dimensión (ruptura de
-   1ª persona / recall pro-drop, **DEBT-021 — sigue abierta**, necesita una abstención
-   nueva en `focalization`) sigue el mismo patrón en una rebanada posterior.
+   ambos `kind`s; gate y predicado verde byte-idénticos. *La tercera dimensión (ruptura de
+   1ª persona / recall pro-drop, **DEBT-021**) se parte en dos rebanadas como el
+   head-hopping: la **mitad de honestidad aterrizó en la iteración 053** y la **mitad de
+   juicio (que la cierra) es la iteración 054**.* En la 053 `focalization` **declara el
+   techo honestamente**: bajo **cualquier** voz de 3ª persona emite una
+   `Abstention(pending_capability, code="first_person_recall")`
+   (`_FIRST_PERSON_RECALL_PENDING`) en ambas ramas (limitada y no-limitada, esta última
+   envuelta ahora en `EvalResult`), conservando el núcleo determinista del pronombre
+   explícito (`_first_person_breaks`) byte-idéntico — el silencio `[]`-significa-limpio a
+   nivel de sub-comprobación queda cerrado. Como `focalization` pasa a emitir **dos**
+   abstenciones `pending_capability`, la clave de `status` `_judges(validator)` se
+   generaliza a `_judges(validator, code)` (un `code` aditivo en
+   `Abstention`/`NotEvaluatedResult`, sellado por el único `_record` del runner, **igual
+   que la 044 añadió `kind`**, § 13.4); los nudges move-3 (051, 052) clavan ahora
+   `(validator, code)`, y `character_unknown_mentions` convierte forma (b)→(c) para portar
+   `code="undeclared_characters"`. **No** se añade nudge de 1ª persona (eso, con su sexto
+   eje + el cierre de DEBT-021, es la 054); juicio, no gate; verde byte-idéntico.
 3. **Vocabularios cerrados, trato consistente** (DEBT-016, capa narrativa, no
    `character_presence`) — **entregado en la iteración 047**: un término Propp/Greimas
    no reconocido —antes ingerido **en silencio** como nodo sin `crm:P2_has_type`—
@@ -2230,7 +2252,27 @@ head-hopping). El validador `focalization` **no se toca** (ya declaraba la abste
 gate determinista y el predicado verde quedan byte-idénticos (decisión 4). **DEBT-013 no se reabre;
 DEBT-021 (ruptura de 1ª persona / recall pro-drop) sigue abierta** — necesita una abstención NUEVA en
 `focalization` que este slice no añade. La tercera dimensión (1ª persona / pro-drop) sigue el patrón en
-una rebanada posterior.
+rebanadas posteriores.
+
+**Tercer vertical slice, PRIMERA mitad (honestidad) — LANDED (iteración 053, track v0.5.x):** la
+**ruptura / recall de 1ª persona** (DEBT-021), partida en dos rebanadas como el head-hopping
+(honestidad 045/050 + juicio 052). Hoy `focalization` corre `_first_person_breaks` (el conjunto
+**cerrado** `yo`/`nosotros`/…/`i`/`we`, FP ~nulo) bajo 3ª persona y **calla** sobre todo lo que ese
+conjunto no ve — la morfología verbal **pro-drop** del español (`Caminé`, `Me senté`), conjunto abierto
+que ningún regex captura sin reabrir el whack-a-mole. Ese silencio es la mentira `[]`-significa-limpio a
+nivel de sub-comprobación. La 053 la cierra **declarando el techo honestamente**: bajo **ambas** ramas
+de 3ª persona `focalization` emite una `Abstention(_FIRST_PERSON_RECALL_PENDING, pending_capability,
+code="first_person_recall")` (la no-limitada, antes `list` pelada, se envuelve en `EvalResult`),
+conservando byte-idéntico el núcleo determinista del pronombre explícito. La plumbing que la honestidad
+**fuerza**: como `focalization` pasa a emitir **dos** abstenciones `pending_capability`, el contrato
+gana un `code` aditivo en `Abstention`/`NotEvaluatedResult` (sellado por el único `_record` del runner,
+**igual que la 044 añadió `kind`**, § 13.4), y `status` repunta `_judges(validator)` →
+`_judges(validator, code)` para que el nudge de head-hopping (052) clave **exacto** en `(focalization,
+head_hopping)` y nunca dispare sobre la abstención de recall; `character_unknown_mentions` convierte
+forma (b)→(c) para portar `code="undeclared_characters"`. **No** se añade nudge de 1ª persona — su
+destino (el **sexto eje** + el cierre de DEBT-021) es la **SEGUNDA mitad (juicio), iteración 054**. Sin
+gate, sin cambio de skill, verde byte-idéntico; **DEBT-021 sigue abierta** (la mitad de honestidad
+existe; el juicio + cierre es la 054).
 
 **Lo que NO cambia:** la ontología congelada (Principio X); el gate determinista; el contrato
 `not_evaluated` / `EvalResult` / `kind` (§ 13.1, se **consume**, no se altera); y el conjunto de

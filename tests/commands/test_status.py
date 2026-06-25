@@ -77,10 +77,13 @@ def test_status_not_evaluated_entries_carry_kind(tiny_historical: Path, runner: 
     not_evaluated = payload["state"]["validation"]["not_evaluated"]
     assert not_evaluated  # the abstainer is always present
     for entry in not_evaluated:
-        assert set(entry) == {"validator", "reason", "kind"}
+        assert set(entry) == {"validator", "reason", "kind", "code"}  # +code (iteration 053)
         assert entry["kind"] in {"missing_input", "pending_capability"}
     kinds = {e["validator"]: e["kind"] for e in not_evaluated}
     assert kinds["character_unknown_mentions"] == "pending_capability"
+    # The undeclared-character abstention carries its discriminator (form (c), iteration 053).
+    codes = {e["validator"]: e["code"] for e in not_evaluated}
+    assert codes["character_unknown_mentions"] == "undeclared_characters"
 
 
 def test_facts_agree_with_the_owning_tools(tiny_historical: Path, runner: CliRunner) -> None:

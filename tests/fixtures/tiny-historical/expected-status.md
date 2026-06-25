@@ -104,28 +104,47 @@ validation:
   # `kind` is `pending_capability` (iteration 044): a permanent capability-gap, so it
   # stays VISIBLE here but does NOT fire `activate_dormant_validators` (which now nudges
   # only on `missing_input` gaps) and does NOT deny green for a clean project.
+  # Each entry now carries the additive `code` discriminator (iteration 053): a short,
+  # stable key so a single validator's MULTIPLE abstentions stay distinguishable on the
+  # wire and in `status` (the move-3 nudges key on `(validator, code)`). Sorted by
+  # `(validator, reason)`: `character_unknown_mentions`, then `focalization`'s two entries
+  # ordered by reason — "full first-person recall…" (f) precedes "head-hopping…" (h).
   not_evaluated:
     - validator: character_unknown_mentions
       reason: >-
         open-set proper-noun discovery requires semantic judgment (move 3); the
         deterministic heuristic was measured insufficient on real prose
       kind: pending_capability
+      # Since iteration 053 the open-set abstainer abstains via the returned partial shape
+      # (form (c)) so it can carry this discriminator; `reason`/`kind` are byte-identical.
+      code: undeclared_characters
+    # The first-person-recall capability-gap (iteration 053, honesty half). `focalization`
+    # runs `_first_person_breaks` (the CLOSED explicit-pronoun set) but is blind to Spanish
+    # pro-drop verbal morphology — an OPEN set no regex captures (DEBT-021). So under ANY
+    # third-person voice it declares this recall ceiling honestly. `pending_capability`,
+    # stays VISIBLE, does NOT fire `activate_dormant_validators`, does NOT deny green, and
+    # fires NO nudge yet (the move-3 judgment half is iteration 054). DEBT-021 stays open.
+    - validator: focalization
+      reason: >-
+        full first-person recall requires semantic judgment (move 3); the deterministic
+        check only covers the explicit subject pronoun
+      kind: pending_capability
+      code: first_person_recall
     # The head-hopping capability-gap (iteration 045). `tiny-historical` declares
     # «Tercera persona limitada, centrada en Elena Vidal», so `focalization` abstains
-    # from the WHOLE run rather than running the near-dormant head-hopping heuristic.
-    # Its `kind` is `pending_capability` too: like the open-set abstainer it stays
-    # VISIBLE here, does NOT fire `activate_dormant_validators`, and does NOT deny green.
-    # Since iteration 052 (move 3 second slice) it DOES fire the peer `judge_head_hopping`
-    # nudge — keyed on the SOURCE `focalization` AND `kind: pending_capability` — so
-    # `next_actions` grows length 4 → 5 (the third `bookwright-continuity`).
-    # `validation.counts` is byte-identical (head-hopping emitted nothing here today).
-    # Sorted by validator name (after `character_unknown_mentions`). DEBT-014 (honesty
-    # half) closed; DEBT-019 recorded.
+    # on head-hopping rather than running the near-dormant heuristic. Its `kind` is
+    # `pending_capability`: like the others it stays VISIBLE, does NOT fire
+    # `activate_dormant_validators`, and does NOT deny green. Since iteration 052 it DOES
+    # fire the peer `judge_head_hopping` nudge — keyed since iteration 053 on
+    # `(focalization, head_hopping)` (validator + code) — so `next_actions` stays length 5
+    # (the third `bookwright-continuity`). `validation.counts` is byte-identical (head-
+    # hopping emitted nothing here today). DEBT-014 (honesty half) closed; DEBT-019 recorded.
     - validator: focalization
       reason: >-
         head-hopping / interiority attribution requires semantic judgment (move 3); the
         deterministic heuristic was measured nearly dormant on real prose
       kind: pending_capability
+      code: head_hopping
 
 # The five firing rules, in priority order (research D2 / data-model § 3). `research_queue`
 # fires while ANY open question OR anchor gap remains; `review_continuity` fires on the

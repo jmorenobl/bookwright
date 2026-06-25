@@ -4,8 +4,45 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bookwright.validation.base import Severity, ValidationContext, Violation
+from bookwright.validation.base import (
+    Abstention,
+    NotEvaluatedKind,
+    NotEvaluatedResult,
+    Severity,
+    ValidationContext,
+    Violation,
+)
 from tests.validation.conftest import load_context, write_project
+
+
+def test_abstention_and_result_carry_optional_code_defaulting_none() -> None:
+    # FR-001/FR-002 (iteration 053, contract C1/C6): both frozen abstention dataclasses
+    # gain `code: str | None` defaulting to None; the field is hashable (still frozen).
+    assert Abstention("r").code is None
+    assert Abstention("r", NotEvaluatedKind.pending_capability, code="x").code == "x"
+    assert NotEvaluatedResult("v", "r").code is None
+    result = NotEvaluatedResult("v", "r", NotEvaluatedKind.pending_capability, code="x")
+    assert result.code == "x"
+    assert {result, NotEvaluatedResult("v", "r", NotEvaluatedKind.pending_capability, "x")}
+
+
+def test_not_evaluated_result_to_json_emits_code_key() -> None:
+    # FR-005 / contract C3: `to_json` emits `code` additively — null by default, the set
+    # value when present; the prior keys keep their name/order.
+    assert NotEvaluatedResult("focalization", "no voice").to_json() == {
+        "validator": "focalization",
+        "reason": "no voice",
+        "kind": "missing_input",
+        "code": None,
+    }
+    assert NotEvaluatedResult(
+        "focalization", "head-hop", NotEvaluatedKind.pending_capability, "head_hopping"
+    ).to_json() == {
+        "validator": "focalization",
+        "reason": "head-hop",
+        "kind": "pending_capability",
+        "code": "head_hopping",
+    }
 
 
 def test_severity_ordering_and_threshold() -> None:
