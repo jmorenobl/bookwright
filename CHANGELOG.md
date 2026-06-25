@@ -4,6 +4,65 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.11] — 2026-06-25
+
+Iteration **052** — issue #1 **track C** (move 3, semantic judgment): the
+**second vertical slice**, the same pattern as 051 with only the judged
+dimension changed. Corroborated by the **third dogfood**
+(`el-año-de-las-casas-vacías`, third-person limited): a **real head-hop** — the
+interiority of `Irene` inside a chapter focalized on `Teo` — was left
+**invisible**, because `focalization` honestly abstains under limited-third
+(`Abstention(_HEAD_HOPPING_PENDING, pending_capability)`, iteration 050) rather
+than fake the judgment. This slice closes that gap with semantic judgment: the
+LLM verdict is an **Agent Skill** (the CLI stays deterministic, **no** LLM
+dependency), the `not_evaluated` channel **is** the contract (each
+`pending_capability` abstention is a judgment task the skill answers), and the
+verdict is **informative — not a gate** (no `error` is born from an LLM; the
+044 green predicate is **byte-identical**). The third and last move-3 dimension
+(the pro-drop first-person recall, **DEBT-021**) stays open — head-hopping
+carries no debt of its own, so **no `DEBT.md` entry is removed** this slice.
+
+### Added
+
+- **`bookwright-continuity` fifth axis** — «head-hopping / saltos de punto de
+  vista / focalización rota» in `## Procedimiento` + `## Output`
+  (`src/bookwright/resources/commands/bookwright-continuity.md`). It reads the
+  declared narrative voice (`bible/constitution.md`) and proceeds **only** under
+  third-person *limited* (omniscient / first-person → nothing), reads the focal
+  POV per chapter from the prose **POV calendar** (`bible/pov-structure.md`,
+  "Calendario de POV" — newly added to "Archivos a leer"), and the person
+  roster, then judges per chapter whether the prose attributes **interiority**
+  to a non-focal POV character — reporting each head-hop as one more continuity
+  deviation (the manuscript quote + "interiority of *X* under the POV of *Y* in
+  *<chapter>*" + a suggestion). When the calendar is absent / `[PENDING]` it
+  **reports the grounding gap and does not guess** (mirroring how `focalization`
+  treats a `[PENDING]` voice, iteration 037). The widened bilingual
+  `description` is mirrored verbatim into
+  `SKILL_DESCRIPTIONS["bookwright-continuity"]` (`integrations/descriptions.py`).
+- **`judge_head_hopping` status rule** (`src/bookwright/status/rules.py`) — a
+  second **green-preserving** `next_action` pointing the author to
+  `bookwright-continuity` when `focalization` abstains on head-hopping. It is
+  keyed via the new shared `_judges(validator)` predicate, which requires
+  `validator == … AND kind is pending_capability` — so it fires on the
+  head-hopping `pending_capability` gap but **not** on `focalization`'s
+  `missing_input` gap (covered by `activate_dormant_validators`). It sits after
+  `judge_undeclared_characters`, before `define_focus`; the two move-3 nudges
+  can co-fire.
+
+### Changed
+
+- **`_JUDGE_SOURCES` frozenset removed** (`src/bookwright/status/rules.py`) — the
+  iteration-051 name-only keying is generalized to the `_judges(validator)`
+  predicate. `judge_undeclared_characters` adopts it **byte-identically**
+  (`character_unknown_mentions` always abstains `pending_capability`), while the
+  new predicate also expresses what name-only keying could not: `focalization`
+  emits **both** abstention kinds, and only the `pending_capability` one is a
+  judgment the skill answers.
+- `bookwright-design.md` § 20.6.2 marks the move-3 **second slice landed**;
+  § 13.5 reframed. No `DEBT.md` entry removed (**DEBT-021 stays open**);
+  `focalization` and all of `validation/` are untouched; the green predicate and
+  the error-only CI gate are byte-identical.
+
 ## [0.5.10] — 2026-06-24
 
 Iteration **051** — issue #1 **track C** (move 3, semantic judgment): the

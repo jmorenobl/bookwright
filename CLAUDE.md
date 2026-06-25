@@ -2,41 +2,47 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository state: v0.5.10 released (2026-06-24)
+## Repository state: v0.5.11 released (2026-06-25)
 
-The current release is **v0.5.10** (iteration 051). The repo is on `main`
+The current release is **v0.5.11** (iteration 052). The repo is on `main`
 (tagged) with a real `src/bookwright/` package (~200 Python files), the full
 test suite, docs, and CI gates green. **There is no active iteration branch.**
 
-The latest work activates **issue #1 track C (move 3 — semantic judgment)** and
-lands its **first vertical slice** (iteration 051). The **third dogfood**
-(`el-año-de-las-casas-vacías`, a literary multi-POV novel in third-person
-limited) measured the cost the honest open-set abstention leaves on the table:
-on real prose it silences the noise (organizations, toponyms) **and** the real
-signal (a character used but never declared — `Amelia`, left invisible) in the
-**same** gesture, so only semantic judgment separates them. v0.5.10 lands the
-move-3 contract (design § 20.6.2): the LLM judgment is an **Agent Skill**, not
-Python — `bookwright-continuity` gains a **fourth axis** that reads the authored
-person roster from the `bible/characters/*.md` `name:` sheets (the graph carries
-no character `rdfs:label`) and judges *a person used in the prose but absent from
-the bible* versus an organization / place-name / vocative, reporting each as one
-more continuity deviation. The `not_evaluated` channel **is** the contract
-between the deterministic and semantic layers: each `pending_capability`
-abstention is a judgment task the skill answers, and `bookwright status` re-adds
-a **green-preserving** `next_action` — keyed on the abstaining **source**
-(`character_unknown_mentions`), not the kind, so `focalization`'s head-hopping
-abstention does not fire it — pointing the author to the skill (the
-discoverability nudge 044 had to remove, now that the judgment is actionable).
-The verdict is **informative, not a gate**: the CLI stays deterministic with no
-LLM dependency, no `error` is born from an LLM, and the 044 green predicate is
-**byte-identical**. This slice **closes DEBT-013** (the
-organization-vs-undeclared-person distinction, delivered without a fifth roster);
-the other two move-3 dimensions — head-hopping and the pro-drop first-person
-recall (DEBT-021) — follow the same pattern in later slices, and gating an LLM
-verdict (golden-run caching) stays deferred. The prior v0.5.x work stands:
-v0.5.9's general partial-evaluation contract (`EvalResult` + `Abstention`,
-DEBT-019) and the track-A/B honesty + deterministic-polish patches (v0.5.3–v0.5.8)
-— per-release detail in `CHANGELOG.md`.
+The latest work lands the **second vertical slice** of **issue #1 track C
+(move 3 — semantic judgment)** (iteration 052), the same pattern as 051 with
+only the judged dimension changed. The **third dogfood**
+(`el-año-de-las-casas-vacías`, third-person limited) measured a **real head-hop**
+— the interiority of `Irene` inside a chapter focalized on `Teo` — left
+**invisible**, because `focalization` honestly abstains under limited-third
+(`Abstention(_HEAD_HOPPING_PENDING, pending_capability)`, iteration 050) rather
+than fake the judgment. v0.5.11 closes that gap (design § 20.6.2): the LLM
+judgment is an **Agent Skill**, not Python — `bookwright-continuity` gains a
+**fifth axis** that, **only** under a declared third-person *limited* voice
+(`bible/constitution.md`), reads the focal POV per chapter from the prose **POV
+calendar** (`bible/pov-structure.md`, "Calendario de POV") and the roster, then
+judges per chapter whether the prose attributes interiority to a **non-focal**
+POV character, reporting each head-hop as one more continuity deviation (and
+reporting the grounding gap, never guessing, when the calendar is absent /
+`[PENDING]`). The `not_evaluated` channel **is** the contract: each
+`pending_capability` abstention is a judgment task the skill answers, and
+`bookwright status` adds a peer **green-preserving** `next_action`
+(`judge_head_hopping`). The 051 name-only `_JUDGE_SOURCES` frozenset is
+**generalized** to a shared `_judges(validator)` predicate requiring
+`validator == … AND kind is pending_capability` — `judge_undeclared_characters`
+adopts it **byte-identically**, while the new predicate also expresses what
+name-only keying could not: `focalization` emits **both** abstention kinds, and
+only the `pending_capability` one fires the nudge (its `missing_input` gap stays
+with `activate_dormant_validators`). The verdict is **informative, not a gate**:
+the CLI stays deterministic with no LLM dependency, no `error` is born from an
+LLM, the 044 green predicate is **byte-identical**, and `focalization` and all of
+`validation/` are untouched. Head-hopping carries no debt of its own, so **no
+`DEBT.md` entry is removed** — the third move-3 dimension (the pro-drop
+first-person recall, DEBT-021) stays open and follows the same pattern in a later
+slice; gating an LLM verdict (golden-run caching) stays deferred. The prior
+v0.5.x work stands: the move-3 first slice (v0.5.10, undeclared characters,
+closed DEBT-013), v0.5.9's general partial-evaluation contract (`EvalResult` +
+`Abstention`, DEBT-019) and the track-A/B honesty + deterministic-polish patches
+(v0.5.3–v0.5.8) — per-release detail in `CHANGELOG.md`.
 
 **The per-release detail (what changed, which regex, which oracle) lives in
 `CHANGELOG.md` — not here.** This section states only the current state and the
@@ -60,7 +66,7 @@ per-release narrative is `CHANGELOG.md`):
   channel — so `[]` stops reading as "clean" when it meant "couldn't look". GREEN
   is the single documented predicate `status == "ok" AND no not_evaluated entry
   has kind == "missing_input"`; only `error` findings gate CI.
-- The **v0.5.x post-dogfooding track** (041–051, patches `v0.5.1`…`v0.5.10`)
+- The **v0.5.x post-dogfooding track** (041–052, patches `v0.5.1`…`v0.5.11`)
   continues the issue #1 doctrine on two tracks. **Track A — evaluation
   honesty:** a deterministic heuristic measured insufficient on real prose
   **abstains** (`not_evaluated`, kind-categorized
@@ -68,11 +74,13 @@ per-release narrative is `CHANGELOG.md`):
   partial corpus surfaces what was excluded, and a **partial-evaluation
   contract** (form (c) `EvalResult`) lets a validator emit findings **and**
   abstentions in one run — so a deterministic sub-check no longer disappears
-  behind a whole-run abstention, and **move 3 lands its first vertical slice** —
-  `bookwright-continuity` gains a fourth axis that judges *characters used in the
-  prose but undeclared* (the skill layer answers the `character_unknown_mentions`
-  abstention anchored in the authored roster; the CLI stays deterministic).
-  **Track B — authoring honesty + deterministic
+  behind a whole-run abstention, and **move 3 lands its first two vertical
+  slices** — `bookwright-continuity` gains a fourth axis that judges *characters
+  used in the prose but undeclared* (051) and a fifth axis that judges
+  *head-hopping / broken focalization under limited-third* (052); the skill layer
+  answers the `character_unknown_mentions` and `focalization` `pending_capability`
+  abstentions anchored in the authored roster + POV calendar, and the CLI stays
+  deterministic. **Track B — authoring honesty + deterministic
   polish:** an unrecognized controlled-vocabulary term is no longer typed in
   silence but emits a non-fatal enumerated `graph build` warning, and the
   graph-consumer validators now emit actionable locators + legible handles.
@@ -81,16 +89,19 @@ per-release narrative is `CHANGELOG.md`):
   surfacing ingestion-skipped bible files (046), the `untyped_vocab_terms`
   soft-warning channel (047), the actionable graph-consumer locators (048), the
   unified `narrative_structure` unit identifier (049), the
-  partial-evaluation contract (050), and the **move-3 first slice** (051) are the
-  headline moves.
+  partial-evaluation contract (050), and the **move-3 first two slices** (051,
+  052) are the headline moves.
 
 The LLM **semantic-judgment** escalation (issue #1 move 3) is **activated** and
-landed its **first vertical slice** (051, design § 20.6.2): `bookwright-continuity`
-judges the character-used-but-not-declared dimension over the
-`character_unknown_mentions` abstention, anchored in the authored roster — judgment,
-not gate (the CLI stays deterministic, no LLM in CI, green byte-identical). The
-other two move-3 dimensions (head-hopping / 1st-person break, DEBT-021) follow the
-same pattern in later slices; gating an LLM verdict stays deferred. The remaining
+landed its **first two vertical slices** (051, 052, design § 20.6.2):
+`bookwright-continuity` judges the character-used-but-not-declared dimension over
+the `character_unknown_mentions` abstention (051) and the head-hopping / broken-
+focalization dimension over the `focalization` `pending_capability` abstention
+under limited-third (052), anchored in the authored roster + POV calendar —
+judgment, not gate (the CLI stays deterministic, no LLM in CI, green
+byte-identical). The remaining move-3 dimension (1st-person break / pro-drop
+recall, DEBT-021) follows the same pattern in a later slice; gating an LLM
+verdict stays deferred. The remaining
 longer-horizon work — semantic judgment in validation, vector search (ChromaDB
 over rdflib) and export — is deferred to an unversioned, demand-pulled horizon:
 each ships only when its activation condition is met — see `bookwright-roadmap.md`.
@@ -230,7 +241,7 @@ was correct) and corrupts the run's audit trail.
 
 `specs/` holds one directory per iteration. The table below is the canonical
 per-iteration status; the narrative for each release is in `CHANGELOG.md`. All
-iterations through 051 (the move-3 first slice, `v0.5.10`) are merged; there is
+iterations through 052 (the move-3 second slice, `v0.5.11`) are merged; there is
 no active iteration branch.
 
 | # | Iteration | Milestone | Status |
@@ -286,7 +297,7 @@ no active iteration branch.
 | 049 | Unify `narrative_structure` unit identifier: both rules name the `G9` unit by its human `rdfs:label` via one shared `_unit_identifier` point (orphan-beat drops the opaque slug; `load_orphan_units` carries the label via `OPTIONAL`) (issue #1 track B; closes DEBT-017) | v0.5.8 | ✅ merged |
 | 050 | Partial-evaluation contract: third validator return shape (`EvalResult(violations, not_evaluated)` + `Abstention`); `focalization` runs `_first_person_breaks` AND abstains on head-hopping under limited-third in one run (issue #1 track A; closes DEBT-019) | v0.5.9 | ✅ merged |
 | 051 | Move 3 first vertical slice: `bookwright-continuity` gains a 4th axis judging characters used-but-undeclared (reads the person roster from `bible/characters/` `name:`), and `status` adds an informative `judge_undeclared_characters` nudge keyed on the `character_unknown_mentions` abstention; judgment not gate, green byte-identical (issue #1 track C — move 3; closes DEBT-013) | v0.5.10 | ✅ merged |
-| 052 | Move 3 second vertical slice: `bookwright-continuity` gains a 5th axis judging head-hopping / broken focalization (reads the declared voice + the `bible/pov-structure.md` POV calendar + the roster, under limited-third only), and `status` adds a peer `judge_head_hopping` nudge — the 051 name-only `_JUDGE_SOURCES` frozenset generalized to a shared `_judges(validator)` predicate (source + `pending_capability`); judgment not gate, green byte-identical, `focalization` untouched (issue #1 track C — move 3; DEBT-021 stays open) | v0.5.11 | 🚧 implemented, pending release |
+| 052 | Move 3 second vertical slice: `bookwright-continuity` gains a 5th axis judging head-hopping / broken focalization (reads the declared voice + the `bible/pov-structure.md` POV calendar + the roster, under limited-third only), and `status` adds a peer `judge_head_hopping` nudge — the 051 name-only `_JUDGE_SOURCES` frozenset generalized to a shared `_judges(validator)` predicate (source + `pending_capability`); judgment not gate, green byte-identical, `focalization` untouched (issue #1 track C — move 3; DEBT-021 stays open) | v0.5.11 | ✅ merged |
 
 The narrative layer (G7/G9/G10) is alive end to end as of v0.4: `outline/units/*.md`
 ingests as `G9_Narrative_Unit` + `G10_Narrative_Function` and assembles
