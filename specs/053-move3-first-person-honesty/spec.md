@@ -74,11 +74,17 @@ This iteration does **three** things:
 3. **KEYING** — the discriminator enters `status`: `_judges` keys by **(validator,
    code)** — `r.validator == validator AND r.kind is pending_capability AND r.code ==
    code`. `judge_undeclared_characters` is re-pointed to
-   `_judges("character_unknown_mentions", "undeclared_characters")` (byte-identical: that
-   source emits only that one abstention) and `judge_head_hopping` to
+   `_judges("character_unknown_mentions", "undeclared_characters")` (the nudge fires
+   identically: that source emits only that one abstention) and `judge_head_hopping` to
    `_judges("focalization", "head_hopping")` (**now precise**: it does **not** fire on the
-   first-person abstention). **No first-person nudge is added yet** — that is iteration
-   054, when the skill that answers it exists.
+   first-person abstention). Because a code-keyed predicate needs a code on the wire and
+   FR-004 forbids the **raised** path from carrying one, `character_unknown_mentions` —
+   today a **raised** total abstention (form (b)) — is **converted to a returned partial
+   abstention** (form (c)): `EvalResult([], [Abstention(<reason>, pending_capability,
+   code="undeclared_characters")])`. The conversion is observationally identical on the
+   wire **except** the additive `code` key (now `"undeclared_characters"` instead of the
+   default `null`), so the nudge behavior is unchanged. **No first-person nudge is added
+   yet** — that is iteration 054, when the skill that answers it exists.
 
 ## Clarifications
 
@@ -104,10 +110,15 @@ This iteration does **three** things:
   head-hopping one? → A: Generalize `_judges` to key on **(validator, code)** — add
   `AND r.code == code` to the existing `validator == … AND kind is pending_capability`
   predicate. Re-point `judge_undeclared_characters` to
-  `_judges("character_unknown_mentions", "undeclared_characters")` (byte-identical
-  behavior — that source emits only that abstention) and `judge_head_hopping` to
-  `_judges("focalization", "head_hopping")`. Rationale: the discriminator is exactly what
-  name-only keying cannot express; the change is the minimal precise predicate.
+  `_judges("character_unknown_mentions", "undeclared_characters")` (the nudge fires
+  identically — that source emits only that abstention) and `judge_head_hopping` to
+  `_judges("focalization", "head_hopping")`. Because a code-keyed predicate needs a code
+  on the wire and FR-004 keeps the **raised** path code-less, `character_unknown_mentions`
+  is converted from a **raised** total abstention (form (b)) to a **returned** partial
+  abstention (form (c)) so it can carry `code="undeclared_characters"`; the change is
+  observationally additive (only the new `code` key changes value). Rationale: the
+  discriminator is exactly what name-only keying cannot express; the change is the minimal
+  precise predicate.
 - Q: Does this iteration add a `status` nudge for the new first-person-recall abstention?
   → A: **No.** A nudge is added only once a skill exists to answer it; that is iteration
   054 (the judgment half, which closes DEBT-021). This iteration's first-person
@@ -285,10 +296,17 @@ fires no head-hopping nudge.
   NotEvaluatedKind.pending_capability AND r.code == code`. It takes the `code` as a second
   argument.
 - **FR-013**: `judge_undeclared_characters` MUST be re-pointed to
-  `_judges("character_unknown_mentions", "undeclared_characters")`. This MUST be
-  **byte-identical in behavior** to the iteration-052 name-only keying (that source emits
-  only the `undeclared_characters` abstention). `character_unknown_mentions` MUST therefore
-  set `code="undeclared_characters"` on the abstention it returns.
+  `_judges("character_unknown_mentions", "undeclared_characters")`. The **nudge behavior**
+  MUST be identical to the iteration-052 name-only keying (that source emits only the one
+  abstention, so it fires in exactly the same states). To make the code-keyed predicate
+  fire, `character_unknown_mentions` MUST be **converted from form (b) (`raise
+  NotEvaluated(reason, kind=pending_capability)`) to form (c) (`return EvalResult([],
+  [Abstention(reason, kind=pending_capability, code="undeclared_characters")])`)** —
+  carrying `code="undeclared_characters"`. The conversion is mandated because FR-004 keeps
+  the raised path code-less; a returned abstention is the only way it can carry a `code`.
+  It is observationally additive: `reason`, `kind`, and the `validator`/`reason` sort are
+  unchanged, and the only wire change is the `code` key moving from `null` to
+  `"undeclared_characters"`.
 - **FR-014**: `judge_head_hopping` MUST be re-pointed to `_judges("focalization",
   "head_hopping")`, so it fires on **only** the head-hopping abstention and **never** on
   the new first-person-recall abstention. The head-hopping `Abstention` MUST set
@@ -309,14 +327,20 @@ fires no head-hopping nudge.
   (`code` key additive; `code: null` for raised abstentions), the runner tests (`code`
   stamped from form (c), `None` from form (b)), the `focalization` validator tests (the new
   abstention under both third-person branches; first-person and `missing_input` branches
-  untouched; explicit-pronoun `warning`s unchanged), and the `status` rule tests (keying by
-  `code`, **including** the negative third-person-non-limited case → no head-hop nudge). The
-  *quality* of any LLM judgment is NOT in scope here (no skill changes in this slice).
+  untouched; explicit-pronoun `warning`s unchanged), the `character_unknown_mentions`
+  validator test (return shape changes from a raised `NotEvaluated` to a returned
+  `EvalResult([], [Abstention(…, code="undeclared_characters")])`; `reason` and `kind`
+  unchanged), and the `status` rule tests (keying by `code`, **including** the negative
+  third-person-non-limited case → no head-hop nudge). The *quality* of any LLM judgment is
+  NOT in scope here (no skill changes in this slice).
 - **FR-019**: The third-person fixtures' `not_evaluated[]` MUST gain the
   `first_person_recall` entry, and **every** `not_evaluated[]` entry across the fixtures
-  MUST gain the `code` key (raised ones carry `code: null`). Fixtures that are GREEN MUST
-  stay GREEN, byte-identical except for the additive `code` keys and the new
-  `first_person_recall` entry.
+  MUST gain the `code` key. After this iteration the only abstentions still **raised**
+  (form (b), hence `code: null`) are `focalization`'s four `missing_input` causes; the
+  returned `character_unknown_mentions` and `focalization` `pending_capability` entries
+  carry their set `code` (`undeclared_characters` / `head_hopping` / `first_person_recall`).
+  Fixtures that are GREEN MUST stay GREEN, byte-identical except for the additive `code`
+  keys and the new `first_person_recall` entry.
 - **FR-020**: `DEBT-021` MUST NOT be removed. Its text MUST be **updated** to record that
   the honest first-person-recall abstention now exists (053) and that the **judgment**
   half (the sixth `bookwright-continuity` axis + its nudge) is deferred to 054 — mirroring
@@ -391,7 +415,10 @@ fires no head-hopping nudge.
   values exist and they live with their validators). If a registry is later warranted it
   is its own change.
 - `character_unknown_mentions` already emits exactly one `pending_capability` abstention;
-  setting its `code="undeclared_characters"` keeps the 051/052 nudge behavior byte-identical.
+  converting it from a raised `NotEvaluated` (form (b)) to a returned `EvalResult([],
+  [Abstention(…, code="undeclared_characters")])` (form (c)) — the only way it can carry a
+  `code` under FR-004 — leaves its `reason`/`kind`/sort order unchanged, so the 051/052
+  nudge fires in exactly the same states.
 - `focalization` declares the head-hopping abstention only under limited-third (iteration
   050); the first-person-recall abstention applies under both third-person branches but not
   under first person or input gaps.
@@ -408,9 +435,11 @@ fires no head-hopping nudge.
   verbatim**.
 - **Gating** an LLM verdict (golden-runs / per-hash cache → an `error` that vetoes merge),
   deferred with its own activation condition (§ 20.6.2 decision 4).
-- The iterations-051/052 axes (undeclared characters, head-hopping) — intact; only their
-  `status` keying is re-pointed to the `code` and `character_unknown_mentions` sets its
-  `code`.
+- The iterations-051/052 skill axes (undeclared characters, head-hopping) — intact; only
+  their `status` keying is re-pointed to the `code`. `character_unknown_mentions` is
+  converted from a raised to a returned abstention solely to carry
+  `code="undeclared_characters"` (observationally additive — see FR-013); its *meaning*
+  (open-set discovery is a move-3 capability gap) is unchanged.
 - Touching `bookwright-verify`, or making **any** skill change in this slice (the
   first-person judgment is 054).
 - Reopening the iteration-044 green predicate.
