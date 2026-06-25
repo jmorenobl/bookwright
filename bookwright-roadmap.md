@@ -35,10 +35,11 @@ validación robusta** (issue #1) **está entregada** (2026-06-22, iteraciones
 041/042). Un **segundo dogfooding** (`sombra-en-el-puerto`, novela negra,
 2026-06-23) reencuadró el norte: lo que queda no son tres parches de costura más,
 sino **una decisión de fondo** sobre dónde acaba el heurístico determinista (§ 3).
-Ese track —honestidad + pulido determinista (`v0.5.3`–`v0.5.8`, iteraciones 043–049)—
-**está entregado** (2026-06-24); el **move 3** (juicio semántico) queda como **dirección
-activada, diseño-primero** (§ 5), con dos deudas cerrables (DEBT-019/020) antes de él. Lo
-entregado hasta hoy:
+Ese track —honestidad + pulido determinista (`v0.5.3`–`v0.5.9`, iteraciones 043–050)—
+**está entregado** (2026-06-24), y el **move 3** (juicio semántico) aterrizó su **primera ola
+completa** (`v0.5.10`–`v0.5.13`, iteraciones 051–054, 2026-06-24/25): las tres dimensiones del
+techo de conjunto abierto escalan a juicio en `bookwright-continuity` (§ 5). **`DEBT.md` vacío.**
+El frente pasa al horizonte demand-pulled (§ 5). Lo entregado hasta hoy:
 
 - **`v0.1.0`** (M0–M3) — el toolkit v0: manifiesto, modelo GOLEM sobre `rdflib`,
   los 10 commands de autoría materializados como Agent Skills, validación.
@@ -103,15 +104,16 @@ v0.4    ──  capa estructural narrativa (Propp/Greimas: G7/G9/G10)           
 v0.4.x  ──  endurecimiento post-dogfooding (issue #1, instancia a instancia)  ✅ cerrado (v0.4.6)
 v0.5.0  ──  validación robusta: cerrar la CLASE del defecto de superficie     ✅ entregada (v0.5.0)
             (costura única + estado tri-valor; verde = evaluado).  issue #1.
-v0.5.x  ──  honestidad de validación + pulido determinista (043–049)        ✅ entregado (v0.5.8)
+v0.5.x  ──  honestidad de validación + pulido determinista (043–050)        ✅ entregado (v0.5.9)
             conjunto ABIERTO declara no-evaluado (familia 040); locators,
-            vocab, mensajes.  issue #1, 2º dogfood.  Restan DEBT-019/020.
-──── el move 3 ASCIENDE de demand-pulled-sin-disparador a dirección ACTIVADA ────
-juicio    ─  escalado semántico (voz/focalización/menciones-desconocidas) vía el  ← AQUÍ
-semántico    path LLM de bookwright-verify, con el regex como pre-filtro. Condición  (diseño-1º)
-   (norte)   CUMPLIDA por el 2º dogfood (heurístico medido 100% ruido sobre prosa
-             real). Es el norte del track de validación; necesita diseño propio
-             (determinismo en el gate de CI) antes de spec — no es un sprint ciego.
+            vocab, mensajes; contrato de evaluación parcial.  issue #1, 2º dogfood.
+move 3  ──  juicio semántico: 1ª OLA COMPLETA (051–054)                     ✅ entregada (v0.5.13)
+            las 3 dimensiones del conjunto abierto escalan a juicio en
+            bookwright-continuity (personaje-sin-declarar / head-hopping /
+            ruptura de 1ª persona); informativo, no gate. Cierra DEBT-013/021.
+            4º dogfood: ola sana; dimensiones SIN SEMILLA observadas (2ª ola
+            espera señal real, no sondeo plantado).
+──────────────────── el frente pasa al horizonte demand-pulled ────────────────────  ← AQUÍ
 vectores  ─  ChromaDB sobre rdflib, tras el Indexer Protocol. Activar SI:
              corpus multi-libro/serie, O recall estructural medido como
              insuficiente en una skill concreta. Hasta entonces: no se implementa.
@@ -144,7 +146,12 @@ scope de la constitución).
 
 ---
 
-## 3. El norte actual: honestidad de validación + el move 3 activado (issue #1, 2º dogfood)
+## 3. El norte que fue: honestidad de validación + el move 3 (issue #1, 2º/3er dogfood)
+
+> **Estado (2026-06-25):** este norte está **entregado** — honestidad determinista
+> (`v0.5.3`–`v0.5.9`) + la **primera ola completa del move 3** (`v0.5.10`–`v0.5.13`, las tres
+> dimensiones, `DEBT.md` vacío). Se conserva esta sección como el análisis que lo guió. El
+> **frente vigente** es el horizonte demand-pulled (§ 5).
 
 `v0.5.0` (entregada) cerró las **dos caras** de la clase que el dogfooding de
 v0.4.x destapó: la **costura única** (`io/prose.py`, 039) mató el acoplamiento a la
@@ -298,8 +305,26 @@ presente. No se cancelan, pero **no se implementan hasta que su condición se
 cumpla** — y entonces se les asigna número de versión. Es el patrón del registro
 de diferidos (iteración 024) a escala de subsistema:
 
-- **Juicio semántico en validación** (movimiento 3 de la issue #1) — **CONDICIÓN
-  CUMPLIDA, dirección ACTIVADA** (ya no es demand-pulled-sin-disparador). Escalar a
+- **Juicio semántico en validación** (movimiento 3 de la issue #1) — **PRIMERA OLA
+  COMPLETA y liberada** (`v0.5.10`–`v0.5.13`, 2026-06-24/25): las tres dimensiones del
+  techo de conjunto abierto escalan a juicio anclado en el grafo en `bookwright-continuity`
+  —personaje usado-pero-no-declarado (051, cierra DEBT-013), head-hopping bajo 3ª limitada
+  (052), y ruptura de 1ª persona / recall pro-drop (053 honestidad + 054 juicio, cierra
+  DEBT-021)—, cada una con su nudge de `status`; juicio informativo, no gate (CI determinista,
+  verde byte-idéntico). **`DEBT.md` vacío.** El **4º dogfood** (`la-hora-del-eclipse`,
+  2026-06-25) confirmó la ola sana sobre prosa fresca (los tres defectos plantados abstienen y
+  nudgean, incluido el recall pro-drop sin «yo» explícito que el 3er dogfood midió perdido) y
+  observó una **dirección para una eventual 2ª ola**: hay dimensiones semánticas **sin semilla
+  determinista** (deriva de tiempo verbal vs. el declarado, contradicción de un rasgo declarado,
+  ruptura de una línea roja como deus ex machina) que, al no tener heurístico que abstenga, **no
+  llegan al canal `not_evaluated`** y son invisibles —peor que una abstención honesta—. **Es
+  observación, no compromiso:** salió de un sondeo plantado, no de señal real perdida en autoría
+  genuina; la barra de activación de abajo exige lo segundo. Una 2ª ola (p. ej. un eje de tiempo
+  verbal sembrado al estilo `focalization`→`first_person_recall`) espera ese disparador real. El
+  **registro histórico de la primera ola** (frontera, contrato, los cuatro slices) sigue abajo. ▼
+
+  *Histórico de la dirección (lo que se decidió antes de aterrizar la primera ola; se conserva
+  como registro):* escalar a
   juicio literario los validadores que lo exigen —menciones-desconocidas (orgs,
   topónimos, vocativos, personajes sin declarar), voz/focalización, continuidad
   temporal— reusando el path LLM existente (`bookwright-verify`, iteración 015), con

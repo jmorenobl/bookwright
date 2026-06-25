@@ -7,53 +7,39 @@
 > **Audiencia:** Jorge (o cualquier desarrollador con Spec Kit instalado y
 > `bookwright-design.md` en el root del repo).
 
-> **Hito en curso: el track del move 3 — juicio semántico en validación** (norte
-> activado por la issue #1, **reforzado por el 3er dogfood**), que **continúa la cadencia
-> `v0.5.x`** (un patch por slice observable, no un minor diferido). La honestidad +
-> pulido determinista de la issue #1 (043–050, `v0.5.3`…`v0.5.9`) están **liberados**, y
-> la **primera rebanada del move 3 ya aterrizó** (051, `v0.5.10`, 2026-06-24): el detalle
-> vive en git, `specs/043…051` y `CHANGELOG` — **no** aquí (este documento se vacía del
-> trabajo entregado al cerrar cada hito; conserva el andamiaje reutilizable, § 0 y § 7).
+> **No hay hito versionado abierto.** La **primera ola del move 3 — juicio semántico en
+> validación** está **completa y liberada**: las tres dimensiones del techo de conjunto
+> abierto que la issue #1 dejó honestas-pero-en-`not_evaluated` ya **escalan a juicio**
+> anclado en el grafo —personaje usado-pero-no-declarado (051, `v0.5.10`, cierra DEBT-013),
+> head-hopping bajo 3ª limitada (052, `v0.5.11`), y ruptura de 1ª persona / recall pro-drop
+> (honestidad 053 `v0.5.12` + juicio 054 `v0.5.13`, cierra DEBT-021)—. El detalle vive en
+> git, `specs/051…054` y `CHANGELOG` — **no** aquí (este documento se vacía del trabajo
+> entregado al cerrar cada hito; conserva el andamiaje reutilizable, § 0 y § 7). **DEBT.md
+> está vacío.**
 >
-> Un **3er dogfood end-to-end** —`el-año-de-las-casas-vacías`, novela literaria multi-POV
-> en 3ª persona limitada, 2026-06-24, banco desechable fuera del repo— corrió sobre
-> `v0.5.9` para **decidir con evidencia la próxima roca grande**: move 3 vs. onboarding. El
-> género se eligió para estresar lo que los dos previos (histórica + negra, ambas 3ª) no
-> tocaron: focalización/head-hopping a tope y el path de **ruptura de 1ª persona que la
-> iteración 050 (re)activó** y que ningún fixture ejercita. **Veredicto: move 3.** Evidencia
-> (registrada en `bookwright-roadmap.md` § 5 y `DEBT.md`):
+> **Frente actual: el horizonte demand-pulled** (`bookwright-roadmap.md` § 5), sin versión
+> asignada — ninguno arranca como plumbing especulativo, cada uno espera su condición de
+> activación: búsqueda vectorial (trigger = corpus multi-libro/serie o recall medido;
+> **enchufa en el grounding del move 3**, principio 2 de § 20.6.1), export a EPUB/PDF/print
+> (trigger = flujo end-to-end probado), onboarding de un comando / `bookwright doctor`
+> (trigger = 2º autor no-técnico real), una **2ª ola del move 3** (trigger = señal real
+> perdida medida en autoría genuina, no un sondeo plantado — ver abajo), y los diferidos
+> G6/G3 (`RelationshipRole`, `PsychologicalState`).
 >
-> 1. **El canal de honestidad (track A) es impecable** sobre prosa real: 2 abstenciones,
->    ambas `pending_capability`, cero ruido; el verde es alcanzable y fiable (probado: con
->    los errores plantados arreglados, `failed:false`, exit 0).
-> 2. **El hueco semántico MUERDE con señal real perdida, no teórica:** un personaje
->    usado-pero-no-declarado (`Amelia`, 4 menciones, sin ficha) y un head-hopping real
->    quedan **invisibles**, abstenidos en el mismo gesto que (bien) silencia orgs/topónimos.
->    La única respuesta determinista honesta no separa ruido de señal; sólo el juicio
->    semántico lo hace.
-> 3. **Onboarding no aportó muro nuevo:** el flujo `init→autoría→graph→validate→status` fue
->    sin fricción; la fricción documentada es la cadena externa (condición de activación aún
->    no disparada). Sigue demand-pulled (`bookwright-roadmap.md` § 5), no adelantado.
->
-> **Hallazgo nuevo → DEBT-021 (NO determinista):** el chequeo de ruptura de 1ª persona de
-> `focalization` casa el **pronombre sujeto explícito** (`yo`/`nosotros`) —conjunto cerrado,
-> sólido— pero "¿esta prosa **está** en 1ª persona?" es conjunto abierto: en español pro-drop
-> la forma natural es la **morfología verbal** sin pronombre (`Caminé`, `Me senté`), que
-> **ningún** regex captura sin reabrir el whack-a-mole. Es la **misma clase** que el
-> head-hopping y las menciones-desconocidas: techo **semántico** → move 3, no un patch.
->
-> **El frente es un solo track: C — move 3** (la roca grande, **diseño-primero**: su frontera
-> ya está decidida en `design` § 20.6.1, falta la spec que la aterrice). Los tracks A
-> (honestidad) y B (pulido determinista) están **cerrados** — el 3er dogfood **no encontró
-> nada cheaply-fixable en determinista**: las tres deudas abiertas (DEBT-013 orgs, DEBT-021
-> recall 1ª persona, y el head-hopping) son la misma cara del techo de conjunto abierto.
->
-> **Qué viene tras el move 3:** el resto del **horizonte demand-pulled**
-> (`bookwright-roadmap.md` § 5) sin versión asignada — búsqueda vectorial (trigger = corpus
-> multi-libro/serie o recall medido; **enchufa en el grounding del move 3**, principio 2 de
-> § 20.6.1), export a EPUB/PDF/print (trigger = flujo end-to-end probado), onboarding de un
-> comando / `bookwright doctor` (trigger = 2º autor no-técnico real), y los diferidos G6/G3
-> (`RelationshipRole`, `PsychologicalState`). Ninguno arranca como plumbing especulativo.
+> **4º dogfood (`la-hora-del-eclipse`, banco desechable, 2026-06-25) — verdicto:** la
+> primera ola es **sana sobre prosa fresca** — un capítulo en 3ª limitada con tres defectos
+> plantados (personaje sin declarar, head-hopping, y ruptura de 1ª persona **pro-drop sin
+> «yo» explícito**) los abstiene los tres en el canal `not_evaluated` y `status` emite los
+> tres nudges, incluido el 6º eje recién shippeado (054). La señal que el 3er dogfood midió
+> perdida **ya no se pierde**. El sondeo además observó tres dimensiones semánticas que la
+> capa determinista **no ve ni abstiene** —deriva de tiempo verbal vs. el tiempo declarado,
+> contradicción de un rasgo declarado del personaje, y ruptura de una línea roja
+> (deus ex machina)—: son **dimensiones sin semilla** (ningún heurístico abstiene → no hay
+> `Abstention` → no hay nudge → invisibles, peor que una abstención honesta). **NO se
+> promueven a DEBT ni a iteración:** son defectos que yo planté en un fixture, no señal
+> real perdida en autoría genuina; la barra de activación del move 3 (§ 20.6.1) exige lo
+> segundo. Queda como **observación de dirección** en `bookwright-roadmap.md` § 5, pendiente
+> de confirmación por un dogfood real, no como compromiso.
 
 ---
 
@@ -176,43 +162,48 @@ iteración tiene un **cierre manual** fijo:
 
 ## 1+. Frente actual y lo que queda
 
-> **✅ `v0.5.x`, track de la issue #1: 043–051 liberados (`v0.5.3`–`v0.5.10`, 2026-06-24).**
+> **✅ `v0.5.x`, track de la issue #1: 043–054 liberados (`v0.5.3`–`v0.5.13`, 2026-06-24/25).**
 > Honestidad + pulido determinista (043–050: 043 menciones-desconocidas→abstainer · 044 categorías
 > de `not_evaluated` + verde alcanzable · 045 head-hopping→`not_evaluated` · 046 `validate` propaga
 > `skipped` · 047 vocab Propp/Greimas no fatal · 048 locators · 049 nombre-vs-slug · 050 contrato
-> `EvalResult`) **y la primera rebanada del move 3** (051: `bookwright-continuity` juzga el
-> personaje-usado-pero-no-declarado + `status` nudge `judge_undeclared_characters`; cierra DEBT-013).
-> Detalle en `CHANGELOG`/git/`specs/043…051`. **No relanzar.**
+> `EvalResult`) **y la primera ola completa del move 3** (051 personaje-usado-pero-no-declarado,
+> cierra DEBT-013 · 052 head-hopping bajo 3ª limitada · 053 honestidad de recall de 1ª persona + el
+> discriminador `code` · 054 juicio de ruptura de 1ª persona, cierra DEBT-021). Detalle en
+> `CHANGELOG`/git/`specs/043…054`. **No relanzar.**
 
-**Lo que queda abierto** (origen: 3er dogfood `el-año-de-las-casas-vacías`, 2026-06-24): **el move 3
-continúa** (§ 1.C). El primer slice (051, personaje-sin-declarar) cerró **DEBT-013** y restauró la
-señal que el dogfood midió perdida (`Amelia`); quedan las **otras dos dimensiones**, la **misma cara**
-del techo semántico de conjunto abierto:
+**No queda nada abierto en el track de la issue #1.** Las **tres dimensiones** del techo semántico
+de conjunto abierto que el 3er dogfood midió perdidas (`el-año-de-las-casas-vacías`, 2026-06-24) ya
+escalan a juicio anclado en el grafo: personaje-sin-declarar (051), head-hopping (052) y ruptura de
+1ª persona / recall pro-drop (053 honestidad + 054 juicio). **DEBT-013 y DEBT-021 cerradas; `DEBT.md`
+vacío.** El 4º dogfood (`la-hora-del-eclipse`, 2026-06-25) confirmó la ola sana sobre prosa fresca
+(los tres defectos abstienen y nudgean, incluido el 6º eje de 054) y dejó una **observación de
+dirección** —dimensiones semánticas sin semilla (tiempo verbal, rasgo declarado, línea roja)— en
+`bookwright-roadmap.md` § 5, **no** promovida a deuda ni a iteración por ser sondeo plantado, no
+señal real perdida (la barra de activación, § 20.6.1, exige lo segundo).
 
-- **DEBT-021 (recall de ruptura de 1ª persona)** — "¿esta prosa está en 1ª persona?" en español
-  pro-drop es morfología verbal, conjunto abierto; ningún regex lo captura sin whack-a-mole. El
-  núcleo determinista sólido (`yo`/`nosotros`) se conserva (determinismo añade, no suprime).
-- **El head-hopping real** — `focalization` ya **abstiene** de él (`pending_capability`); su
-  techo de precisión es el mismo juicio semántico.
-
-Ambas siguen el patrón que **051 ya probó** (la skill responde a la `Abstention` del canal
-`not_evaluated`, anclada en el grafo) — cada una es su propio slice/patch en la cadencia `v0.5.x`.
-
-> Cuando el move 3 produzca iteraciones, cada una es un branch `NNN-<short-name>` con su
-> `specs/`, que **borra la(s) entrada(s) de `DEBT.md`** que cierra (§ 0.4). **Pídeme el comando
-> de la que vayas a lanzar y lo regenero verificado contra el código vigente** (§ 0.4).
+> El frente pasa al **horizonte demand-pulled** (`bookwright-roadmap.md` § 5). Cuando una condición
+> de activación se dispare, su iteración es un branch `NNN-<short-name>` con su `specs/`, que **borra
+> la(s) entrada(s) de `DEBT.md`** que cierre (§ 0.4). **Pídeme el comando de la que vayas a lanzar y
+> lo regenero verificado contra el código vigente** (§ 0.4).
 
 ---
 
-## 1.C — Track del move 3 (juicio semántico) — la roca grande, diseño-primero
+## 1.C — Track del move 3 (juicio semántico) — primera ola COMPLETA (registro histórico)
+
+> **Cerrado con `v0.5.13` (2026-06-25).** La primera ola del move 3 entregó sus **tres
+> dimensiones** (051–054); el `DEBT.md` de la issue #1 está vacío. Se conserva esta sección como
+> registro del diseño-primero que guió la ola; la frontera (§ 20.6.1) y el contrato (§ 20.6.2)
+> son canónicos en `bookwright-design.md`, no aquí. Una **2ª ola** sólo arranca con su condición
+> de activación (señal real perdida medida en autoría genuina) — horizonte demand-pulled, banner
+> arriba y `bookwright-roadmap.md` § 5.
 
 El 2º dogfood **cumplió la condición de activación** del move 3 (un heurístico concreto medido
 insuficiente sobre prosa real: 4/4 FP) y el **3er dogfood la reforzó** con señal real **perdida,
 no teórica**: sobre prosa literaria fresca, un personaje usado-pero-no-declarado (`Amelia`) y un
 head-hopping real quedaron **invisibles**, abstenidos en el mismo gesto que (correctamente)
-silencia orgs y topónimos. Es el **norte del track de validación**. La frontera (§ 20.6.1) y el
-**contrato concreto** (§ 20.6.2) están decididos, y el **primer slice ya aterrizó** (051,
-`v0.5.10`, 2026-06-24): el personaje-usado-pero-no-declarado. Siguen las otras dos dimensiones.
+silencia orgs y topónimos. Fue el **norte del track de validación**. La frontera (§ 20.6.1) y el
+**contrato concreto** (§ 20.6.2) quedaron decididos, y la **primera ola completa aterrizó**
+(051–054, `v0.5.10`–`v0.5.13`): las tres dimensiones del techo de conjunto abierto.
 
 - **Qué cura:** el conjunto abierto entero que el track A dejó honesto-pero-en-`not_evaluated` —
   menciones-desconocidas (orgs/topónimos/vocativos/**personaje-sin-declarar**, DEBT-013 incluida),
@@ -240,16 +231,22 @@ silencia orgs y topónimos. Es el **norte del track de validación**. La fronter
   cada slice, cadencia `v0.5.x`) — el veredicto es informativo (no rompe CI); el gate sigue siendo
   `validate` determinista; gatear veredictos LLM (golden-runs/caché por hash) queda **diferido** con
   su propia condición.
-- **Aterrizado — slice 1 (051, `v0.5.10`): personaje-usado-pero-no-declarado.** Probó la tubería
-  entera (`validate` abstiene → `bookwright-continuity` recoge la `Abstention` → juzga anclado en el
-  roster → reporta; `status` añade el nudge `judge_undeclared_characters`), con el grounding más
-  simple (sólo el roster) y la señal más fuerte del 3er dogfood (`Amelia`). Cerró DEBT-013.
-- **Siguiente slice — head-hopping o ruptura de 1ª persona (DEBT-021).** Mismo patrón que 051: la
-  skill responde a la `Abstention` correspondiente de `focalization`, anclada en la voz declarada +
-  el personaje focal del grafo; veredicto informativo, gate intacto. Es su propio patch en la
-  cadencia `v0.5.x`. **Pídeme el `SPEC`/`PLAN_HINT` del siguiente slice y lo regenero verificado
-  contra el código vigente** (§ 0.4). El interim honesto del track A (declarar `not_evaluated`,
-  `kind=pending_capability`) sigue siendo el fallback correcto y permanente si el path LLM no corre.
+- **Aterrizado — la ola completa (051–054), mismo patrón en las tres:** `validate` abstiene
+  (`pending_capability`) → `bookwright-continuity` recoge la `Abstention` del canal `not_evaluated`,
+  anclada en el grafo → juzga → reporta; `status` añade un nudge por dimensión. (051,
+  personaje-sin-declarar, grounding = roster, cierra DEBT-013; 052, head-hopping, grounding = voz
+  declarada + calendario POV + roster, bajo 3ª limitada; 053+054, ruptura de 1ª persona, grounding =
+  voz declarada **solo** —es persona gramatical, no identidad—, bajo cualquier 3ª, cierra DEBT-021.)
+  El interim honesto del track A (declarar `not_evaluated`, `kind=pending_capability`) sigue siendo
+  el fallback correcto y permanente si el path LLM no corre.
+- **Observación del 4º dogfood — dimensiones sin semilla (NO activadas).** El contrato del move 3
+  sólo escala dimensiones que **ya** tienen un heurístico determinista que abstiene y siembra el
+  canal `not_evaluated`. Una dimensión semántica **sin semilla** (deriva de tiempo verbal vs. el
+  declarado, contradicción de rasgo declarado, ruptura de línea roja) nunca llega al canal → no hay
+  nudge → es invisible. Es una verdad estructural real, pero su urgencia está **sin probar**: salió
+  de un sondeo plantado, no de señal real perdida. Queda como dirección en `bookwright-roadmap.md`
+  § 5; una 2ª ola (p. ej. un eje de tiempo verbal sembrado al estilo `focalization`) **espera un
+  dogfood real que la dispare**, no se adelanta.
 
 ---
 
