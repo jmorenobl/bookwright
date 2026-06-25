@@ -4,6 +4,68 @@ All notable changes to Bookwright are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project aims to follow semantic versioning.
 
+## [0.5.13] — 2026-06-25
+
+Iteration **054** — issue #1 **track C** (move 3, semantic judgment): the third
+move-3 dimension, **second half (judgment)** — the exact mirror of iteration 052
+(head-hopping) over `focalization`'s *other* abstention. 053 made `focalization`
+**honest** (it already emits `Abstention(_FIRST_PERSON_RECALL_PENDING,
+pending_capability, code="first_person_recall")` under **both** third-person
+branches, and the `code` discriminator + `_judges(validator, code)` keying
+already ship); this patch makes `bookwright-continuity` **judge** that dimension
+— the pro-drop verbal morphology (`Caminé`, `Me senté`) the explicit-pronoun
+check is blind to. **Zero diff under `validation/`**: `focalization`, the `code`
+contract, and `_judges` are **byte-identical** — this is a **skill + status**
+slice riding entirely on the 053 contract. A first-person break is **grammatical
+person, not character identity**, so the new axis grounds **only** in the
+declared voice (`bible/constitution.md`) — **no** roster, **no** POV calendar —
+and applies under **any** declared third person (limited **or** non-limited),
+unlike the limited-only head-hopping axis. **Judgment, not gate**: the CLI stays
+deterministic, no LLM in CI, the 044 green predicate **byte-identical**, no
+`error` born. This **closes DEBT-021** and **completes the first move-3 wave**
+(051 undeclared characters + 052 head-hopping + 053/054 first-person).
+
+### Added
+
+- **Sixth `bookwright-continuity` axis** (`resources/commands/bookwright-continuity.md`)
+  — "ruptura de voz / de persona narrativa": under any declared third-person
+  voice, judge per passage whether the prose slides into first person —
+  **including** the pro-drop verbal morphology the deterministic
+  explicit-pronoun check (`yo`/`nosotros`) cannot see — and report each slip as
+  one more continuity deviation (quote + "first-person voice under a narration
+  declared in third person" + a suggestion). Grounded **only** in the declared
+  voice; **adds on top of**, never suppresses, `focalization`'s explicit-pronoun
+  `warning`s. The «Revisa **cinco** ejes» intro becomes «**seis**».
+- **`judge_first_person_recall` nudge** (`src/bookwright/status/rules.py`) — a
+  new `_judge_first_person_recall` builder + `Rule`, keyed via the existing
+  (053) `_judges("focalization", "first_person_recall")`, inserted **after**
+  `judge_head_hopping` and **before** `define_focus`. One fixed, byte-identical
+  action distinct from the undeclared-character and head-hopping nudges (its
+  prompt names the declared voice **only** — no POV calendar, no roster). Keys
+  **precisely**: it never fires on `head_hopping`, and head-hopping never fires
+  on first-person.
+
+### Changed
+
+- **`bookwright-continuity` description folded, not grown**
+  (`src/bookwright/integrations/descriptions.py`) — the first-person trigger is
+  folded into the existing 5th-axis voice/focalization phrase
+  («head-hopping / **rupturas de voz o de persona narrativa**», EN twin
+  «head-hopping / **voice or narrative-person breaks**») **without** crossing the
+  1024-char lint cap (1000 → **1019**/1024), mirrored **verbatim** into
+  `SKILL_DESCRIPTIONS["bookwright-continuity"]`.
+- **Records reconciled** — **DEBT-021 closed**: its open `### DEBT-021` section
+  is removed and a struck-through `~~DEBT-021~~ (cerrada en la iteración 054 …)`
+  record kept in the issue-#1 re-disposición summary (closed-debt convention).
+  `bookwright-design.md` §§ 20.6.2 / 13.5 mark the third dimension **landed** and
+  the first move-3 wave **complete**, recording the 1st-person axis grounds on
+  the **declared voice only** (superseding the older "voz + roster + POV"
+  phrasing). The `tiny-historical/expected-status.md` oracle advances
+  `next_actions` **5 → 6** (a 4th `bookwright-continuity` action) with its
+  co-located prose, inline comments, and counts all reconciled in the same edit.
+  **No new dependency, no new validator, no ontology change, no `src/` logic
+  beyond the status rule** — pure judgment + discoverability.
+
 ## [0.5.12] — 2026-06-25
 
 Iteration **053** — issue #1 **track C** (move 3, semantic judgment): the third
