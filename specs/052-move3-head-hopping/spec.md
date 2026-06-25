@@ -64,6 +64,37 @@ resolve: the **declared voice** (`bible/constitution.md`), the **focal POV per c
   in the same run (a limited-third project carries both the `character_unknown_mentions`
   and the `focalization` head-hopping abstentions), so each emits its own coherent
   continuity action.
+- Q: The `status/rules.py` table is `one Rule → one Action` (`Rule.build` returns a single
+  `Action`) and 051 keyed via a `_JUDGE_SOURCES` frozenset feeding one rule. With two
+  *distinct* move-3 actions that may both fire (FR-011), what mechanism shape? → A: Add a
+  **second peer `Rule`** (`judge_head_hopping`); do **not** reshape `Rule.build` to return a
+  list, nor merge the two judge nudges into one rule. Replace the now-ill-fitting
+  `_JUDGE_SOURCES` frozenset with a shared predicate helper requiring `validator == <name>
+  AND kind is NotEvaluatedKind.pending_capability`; the 051 `judge_undeclared_characters`
+  predicate adopts the same helper (byte-identical behavior — `character_unknown_mentions`
+  always abstains `pending_capability`). Rationale: preserves the one-Rule-one-Action
+  contract and the explicit-row table style with zero ripple — the lowest-debt fit (doctrine
+  §3: delete the ill-fitting frozenset rather than guard it).
+- Q: Where does the new `judge_head_hopping` rule sit in the priority-ordered `RULES`
+  table? → A: **Immediately after `judge_undeclared_characters` and before `define_focus`**,
+  so the two move-3 judge nudges are adjacent and the emitted `next_actions` order stays
+  deterministic (FR-017 asserts order); `tiny-historical`'s `next_actions` goes 4 → 5.
+  Rationale: deterministic, byte-identical output for the asserted oracle.
+- Q: Which fixture exercises the e2e green-preserving head-hopping nudge, and where does the
+  negative (`missing_input`-only) case live? → A: **Reuse `tiny-historical`** — it already
+  declares third-person *limited* and already carries the `(focalization,
+  pending_capability)` abstention in `expected-status.md`; this slice flips its
+  `next_actions` 4 → 5 while green stays. **No new fixture.** The negative case (a
+  focalization-`missing_input`-only project gains no head-hopping nudge) is covered at the
+  pure `test_rules.py` synthetic-state level (the rules module is `state → actions`, no
+  disk). Rationale: no speculative fixture (scope discipline); pure-unit coverage for the
+  negative path.
+- Q: Does the focal-POV grounding (FR-016) warrant a new `references/` file? → A: **No.**
+  Document it **inline in the skill body** (the `## Procedimiento` 5th axis + a new
+  "Archivos a leer" entry for `bible/pov-structure.md`); do **not** create
+  `references/golem-focalization.md` (none exists today, and `bible/pov-structure.md` is
+  itself the authored source the agent reads directly). Rationale: avoids a speculative new
+  file (zero-debt / scope discipline).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -224,12 +255,20 @@ head-hopping nudge; (b) green is preserved in all cases.
   `bookwright-continuity` (for the head-hopping judgment) when the validation report carries
   a `not_evaluated` entry whose **source validator** is `focalization` **and** whose **kind
   is `pending_capability`**. The rule MUST NOT fire on `focalization`'s `missing_input`
-  abstentions.
+  abstentions. The `judge_head_hopping` rule MUST sit **immediately after
+  `judge_undeclared_characters` and before `define_focus`** in the priority-ordered table,
+  so the emitted `next_actions` order is deterministic (Clarifications 2026-06-25).
 - **FR-010**: The status keying mechanism MUST be **generalized** to require
   `kind is pending_capability` in addition to matching the abstaining source validator. This
   generalization MUST be **byte-identical in behavior** for the iteration-051
   `character_unknown_mentions` nudge (which always abstains `pending_capability`), which MUST
-  remain intact.
+  remain intact. **Concrete shape** (Clarifications 2026-06-25): the new dimension is a
+  **second peer `Rule`** (`judge_head_hopping`) in the `RULES` table — `Rule.build` is NOT
+  reshaped to return a list, and the two judge nudges are NOT merged into one rule. The
+  ill-fitting `_JUDGE_SOURCES` frozenset is **deleted** and replaced by a shared predicate
+  helper requiring `validator == <name> AND kind is NotEvaluatedKind.pending_capability`,
+  adopted by **both** `judge_undeclared_characters` and `judge_head_hopping` (preserving the
+  one-Rule-one-Action contract; doctrine §3 — delete the cause, don't guard it).
 - **FR-011**: The new head-hopping `next_action` MUST have its **own** `prompt`/`reason`,
   **distinct** from the iteration-051 undeclared-character action. When both move-3
   abstentions are present, `status` MUST emit **both** actions, each coherent and distinct.
@@ -249,14 +288,22 @@ head-hopping nudge; (b) green is preserved in all cases.
   equality gate `tests/integrations/test_descriptions.py`. The mirror edit MUST be made
   together with the FR-006 widening.
 - **FR-016**: The grounding documentation for the focal-POV-per-chapter source
-  (`bible/pov-structure.md`, its "Calendario de POV" section) MUST be documented in the
-  skill (and/or a `references/` file) so the agent knows where the focal POV comes from.
+  (`bible/pov-structure.md`, its "Calendario de POV" section) MUST be documented **inline in
+  the skill body** (the 5th axis in `## Procedimiento` + a new "Archivos a leer" entry for
+  `bible/pov-structure.md`) so the agent knows where the focal POV comes from. A **new
+  `references/` file MUST NOT be created** (none exists for focalization today, and
+  `bible/pov-structure.md` is itself the authored source the agent reads directly) —
+  Clarifications 2026-06-25, scope discipline.
 - **FR-017**: The oracles that assert the skill body / materialization, the activation
   (bilingual trigger) oracle, the description equality gate, and the `status` rule oracles
   MUST be updated. The *quality* of the LLM judgment MUST NOT be asserted in unit tests. All
   behavior MUST be verified empirically with `uv run pytest`, **including the negative
   cases**: (a) a focalization-`missing_input`-only project does not receive the head-hopping
-  nudge; (b) green is preserved.
+  nudge; (b) green is preserved. The e2e green-preserving fixture is the **existing
+  `tiny-historical`** (it already declares third-person *limited* and already carries the
+  `(focalization, pending_capability)` abstention; its `expected-status.md` `next_actions`
+  goes 4 → 5) — **no new fixture is added**; the negative case (a) is covered at the pure
+  `test_rules.py` synthetic-state level, no disk (Clarifications 2026-06-25).
 - **FR-018**: The design record MUST be reconciled: `bookwright-design.md` § 20.6.2 marks
   the second vertical slice (head-hopping) as landed, and any milestone / iteration index
   reflecting shipped work is updated. **No `DEBT.md` entry is removed** — head-hopping has
