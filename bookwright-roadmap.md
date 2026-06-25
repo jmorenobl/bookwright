@@ -319,7 +319,22 @@ de diferidos (iteración 024) a escala de subsistema:
   ruptura de una línea roja como deus ex machina) que, al no tener heurístico que abstenga, **no
   llegan al canal `not_evaluated`** y son invisibles —peor que una abstención honesta—. **Es
   observación, no compromiso:** salió de un sondeo plantado, no de señal real perdida en autoría
-  genuina; la barra de activación de abajo exige lo segundo. Una 2ª ola (p. ej. un eje de tiempo
+  genuina; la barra de activación de abajo exige lo segundo.
+  Un **dogfood de autoría genuina** (`el-precio-de-la-casa`, novela corta de 3ª limitada,
+  2026-06-25) reejecutó la prueba **sin plantar defectos**: sobre ~2.200 palabras que estresaron
+  a propósito las tres superficies (retrospección emotiva para el tiempo verbal, una focal coja
+  y con cicatriz que actúa mucho para el rasgo, una deuda sin salida fácil para la línea roja),
+  las tres dimensiones salieron **limpias** —tiempo verbal y rasgo sin desviación (auditoría a
+  ciegas PASS), y el conflicto se cerró por elección costosa (vender la casa), con el «deus ex
+  machina» del cuaderno de deudas *sembrado y rechazado*, no usado—; la ola sembrada, en cambio,
+  nudgeó bien (head-hopping y 1ª persona limpios; el 4º eje afloró a los deudores del pueblo sin
+  ficha). **Las tres dimensiones quedan en (b): hueco real pero no mordió** → la hipótesis se
+  **debilita**, no se promueve. **Caveat decisivo:** la prosa la escribió un LLM, sesgado hacia la
+  consistencia local por defecto; el escritor humano no técnico es mucho más propenso a esas
+  derivas, así que «limpio en prosa-LLM» es evidencia débil sobre el caso humano. El disparador
+  que la barra exige no es otro dogfood-LLM sino una **deriva medida sobre prosa humana real**
+  (FP/recall, al estilo del 2º dogfood con menciones-desconocidas).
+  Una 2ª ola (p. ej. un eje de tiempo
   verbal sembrado al estilo `focalization`→`first_person_recall`) espera ese disparador real. El
   **registro histórico de la primera ola** (frontera, contrato, los cuatro slices) sigue abajo. ▼
 
