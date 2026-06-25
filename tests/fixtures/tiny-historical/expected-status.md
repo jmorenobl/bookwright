@@ -45,6 +45,14 @@
 # (the entry stays `pending_capability`), and `validation.counts` / the `not_evaluated`
 # entries stay byte-identical. `activate_dormant_validators` is untouched — still
 # `missing_input`-only. DEBT-013 closed; § 20.6.2 first slice LANDED.)
+# (Iteration 052, move 3 second slice: a SECOND peer rule `judge_head_hopping` — keyed on
+# the abstaining SOURCE `focalization` AND `kind: pending_capability` — now fires a THIRD
+# INFORMATIVE `bookwright-continuity` nudge pointing at the head-hopping judgment the skill
+# performs over the `focalization` head-hopping abstention. `next_actions` goes 4 → 5. The
+# name-only `_JUDGE_SOURCES` frozenset was generalized to a shared `_judges(validator)`
+# predicate (validator + `pending_capability`), so `judge_undeclared_characters` stays
+# byte-identical. Green, `validation.counts` and the `not_evaluated` entries are byte-
+# identical. § 20.6.2 second slice LANDED; DEBT-021 (1st-person pro-drop) stays open.)
 
 # The authored focus the E2E (re)stamps via `bookwright focus set` at the loop's start.
 focus:
@@ -107,9 +115,10 @@ validation:
     # from the WHOLE run rather than running the near-dormant head-hopping heuristic.
     # Its `kind` is `pending_capability` too: like the open-set abstainer it stays
     # VISIBLE here, does NOT fire `activate_dormant_validators`, and does NOT deny green.
-    # It is NOT in the iteration-051 judge source-set either, so it fires no judge nudge.
-    # `validation.counts` is byte-identical (head-hopping emitted nothing here today) and
-    # `next_actions` stays length 4 (the judge nudge keyed on `character_unknown_mentions`).
+    # Since iteration 052 (move 3 second slice) it DOES fire the peer `judge_head_hopping`
+    # nudge — keyed on the SOURCE `focalization` AND `kind: pending_capability` — so
+    # `next_actions` grows length 4 → 5 (the third `bookwright-continuity`).
+    # `validation.counts` is byte-identical (head-hopping emitted nothing here today).
     # Sorted by validator name (after `character_unknown_mentions`). DEBT-014 (honesty
     # half) closed; DEBT-019 recorded.
     - validator: focalization
@@ -118,21 +127,24 @@ validation:
         deterministic heuristic was measured nearly dormant on real prose
       kind: pending_capability
 
-# The four firing rules, in priority order (research D2 / data-model § 3). `research_queue`
+# The five firing rules, in priority order (research D2 / data-model § 3). `research_queue`
 # fires while ANY open question OR anchor gap remains; `review_continuity` fires on the
 # `error: 1` count. `activate_dormant_validators` does NOT fire (iteration 044): both
 # `not_evaluated` entries are `pending_capability`, and that rule nudges only on
-# `missing_input` gaps. `judge_undeclared_characters` (iteration 051, move 3 first slice)
-# DOES fire — keyed on the abstaining SOURCE `character_unknown_mentions` (present) — adding
-# a SECOND `bookwright-continuity` after `review_continuity`: the informative pointer to the
-# semantic-judgment skill. It NEVER degrades green (the entry is `pending_capability`, not
+# `missing_input` gaps. BOTH move-3 judge rules fire, each keyed on its abstaining SOURCE +
+# `pending_capability` (iteration 052 generalized the keying to `_judges(validator)`):
+# `judge_undeclared_characters` (iteration 051, source `character_unknown_mentions`) adds a
+# SECOND `bookwright-continuity` after `review_continuity`, and `judge_head_hopping`
+# (iteration 052, source `focalization`) adds a THIRD — both informative pointers to the
+# semantic-judgment skill. Neither degrades green (both entries are `pending_capability`, not
 # `missing_input`); `validation.counts` and the `not_evaluated` entries stay byte-identical.
-# The LENGTH stays 4 across both runs (NOT N-1) — only the research-queue prompt/reason
+# The LENGTH stays 5 across both runs (NOT N-1) — only the research-queue prompt/reason
 # converge.
 next_actions:
   skills:
     - bookwright-research
     - bookwright-verify
+    - bookwright-continuity
     - bookwright-continuity
     - bookwright-continuity
 ---
@@ -150,27 +162,31 @@ un *anchor* infrasostenido permanente y un hallazgo de fiabilidad baja permanent
 1. **Primer `status`.** Dos preguntas abiertas (`q-libro-de-jornales`, `q-origen-telares`),
    un *anchor gap* (`rumor-incendio → El almacén viejo`), un hallazgo de baja fiabilidad
    (`rumor-incendio`) y la cuenta de validación `{error: 1, warning: 1, info: 0}`.
-   `next_actions` enumera **cuatro** workstreams: `bookwright-research`, `bookwright-verify`,
-   `bookwright-continuity` (los errores de continuidad) y un **segundo**
-   `bookwright-continuity` (el *nudge* de juicio semántico de move 3). El *nudge* de
-   validadores dormidos ya **no** dispara: las entradas `not_evaluated`
-   (`character_unknown_mentions`, `focalization`) son ambas `kind: pending_capability`
-   (huecos de capacidad permanentes, no accionables para `activate_dormant_validators`,
-   que —refinada en la iteración 044— solo dispara ante huecos `missing_input`). Pero la
-   regla `judge_undeclared_characters` (iteración 051) **sí** dispara, anclada a la fuente
-   abstinente `character_unknown_mentions`: el segundo `bookwright-continuity`. Es
-   **informativo** —la entrada sigue `pending_capability`, así que no deniega verde— y la
-   entrada permanece **visible** en `not_evaluated` (issue #1 track A: move 3 contesta el
-   hueco que la 044 dejó visible).
+   `next_actions` enumera **cinco** workstreams: `bookwright-research`, `bookwright-verify`,
+   `bookwright-continuity` (los errores de continuidad), un **segundo**
+   `bookwright-continuity` (el *nudge* de juicio de personajes sin declarar, move 3 primera
+   rebanada) y un **tercer** `bookwright-continuity` (el *nudge* de juicio de head-hopping,
+   move 3 segunda rebanada). El *nudge* de validadores dormidos ya **no** dispara: las
+   entradas `not_evaluated` (`character_unknown_mentions`, `focalization`) son ambas
+   `kind: pending_capability` (huecos de capacidad permanentes, no accionables para
+   `activate_dormant_validators`, que —refinada en la iteración 044— solo dispara ante
+   huecos `missing_input`). Pero las dos reglas de juicio de move 3 **sí** disparan, cada
+   una anclada a su fuente abstinente más `pending_capability` (la iteración 052 generalizó
+   la clave de la frozenset por-nombre a un predicado compartido `_judges(validator)`):
+   `judge_undeclared_characters` (iteración 051, fuente `character_unknown_mentions`) y
+   `judge_head_hopping` (iteración 052, fuente `focalization`). Son **informativos** —las
+   entradas siguen `pending_capability`, así que no deniegan verde— y permanecen
+   **visibles** en `not_evaluated` (issue #1 track C: move 3 contesta los huecos que la 044
+   dejó visibles).
 
 2. **Tras aplicar la resolución pre-cocinada** (`_resolution/q-libro-de-jornales.md` →
    `bible/research/`, y se elimina `q-libro-de-jornales` de `_index.md`) y reconstruir:
    queda **una** pregunta abierta (`q-origen-telares`). La acción `bookwright-research`
    deja de nombrar la pregunta cerrada y su `reason` baja a *«1 open research question»*;
    **todo lo demás es byte-idéntico** —`focus`, `phase`, `unresolved_anchors`,
-   `low_reliability_findings`, `validation` (incluida la entrada `not_evaluated` del
-   abstainer, con su `kind: pending_capability`), y las acciones `verify`/`continuity` (las
-   dos)— y `len(next_actions)` **sigue siendo 4** (agregación por workstream, no `N−1`).
+   `low_reliability_findings`, `validation` (incluidas las entradas `not_evaluated` de los
+   abstainers, con su `kind: pending_capability`), y las acciones `verify`/`continuity` (las
+   tres)— y `len(next_actions)` **sigue siendo 5** (agregación por workstream, no `N−1`).
 
 `state.graph` (entidades/triples) se asevera *presente* en cada corrida pero se **excluye**
 de la igualdad byte cross-run: cerrar un hallazgo emite triples distintos de forma

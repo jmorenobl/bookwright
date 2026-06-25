@@ -119,3 +119,37 @@ def test_continuity_carries_the_fourth_undeclared_character_axis() -> None:
     assert "no entry in `bible/characters/`" in body, (
         "continuity: ## Output does not report the undeclared mention as a deviation"
     )
+
+
+def test_continuity_carries_the_fifth_head_hopping_axis() -> None:
+    # Iteration 052 (move 3, second slice): the 5th axis ("head-hopping / broken
+    # focalization") rides inside `## Procedimiento`/`## Output` — no new required
+    # heading, the section gate still passes. The LLM judgment quality is NOT asserted
+    # (FR-013, § 20.6.2 decision 4); only the body contract C1-C5.
+    body = _continuity_body()
+    lowered = body.lower()
+    # C1 — the axis itself, in the procedure, named for head-hopping / POV breaks.
+    assert "quinto eje" in lowered, "continuity: no fifth axis in the procedure"
+    assert "head-hopping" in lowered, "continuity: 5th axis does not name head-hopping"
+    # C1(a) — scoped to third-person limited; omniscient/first-person → nothing.
+    assert "tercera persona limitada" in lowered, "continuity: 5th axis not scoped to limited-third"
+    assert "omnisciente" in lowered and "primera persona" in lowered, (
+        "continuity: 5th axis does not exclude omniscient / first person"
+    )
+    # C2 — grounding cited: voice + POV calendar + roster.
+    assert "voz narrativa" in lowered, "continuity: 5th axis does not cite the declared voice"
+    assert "bible/pov-structure.md" in body, "continuity: 5th axis does not cite the POV calendar"
+    assert "calendario de pov" in lowered, "continuity: 5th axis does not name the POV calendar"
+    assert "roster" in lowered, "continuity: 5th axis does not cite the roster"
+    # C1(e) — grounding-gap clause: absent / [PENDING] calendar → report the gap, no guess.
+    assert "[pending:" in lowered, "continuity: 5th axis does not handle a [PENDING] POV calendar"
+    assert "no adivines" in lowered or "no adivina" in lowered, (
+        "continuity: 5th axis does not document 'do not guess' on a missing anchor"
+    )
+    # C3 — ## Output reports each head-hop as one more deviation (judgment, not error).
+    assert "interiority of" in body and "POV of" in body, (
+        "continuity: ## Output does not report the head-hop deviation phrasing"
+    )
+    assert "una desviación\nmás" in body or "una desviación más" in body, (
+        "continuity: ## Output does not frame the head-hop as one more deviation"
+    )

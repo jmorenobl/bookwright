@@ -61,9 +61,10 @@ _DORMANT_CAP = NotEvaluatedResult(
     "open-set proper-noun discovery requires semantic judgment (move 3)",
     NotEvaluatedKind.pending_capability,
 )
-#: The focalization head-hopping capability-gap (iteration 045): also
-#: `pending_capability`, but NOT in the judge source-set — it must not fire the
-#: iteration-051 `judge_undeclared_characters` nudge (FR-009, keyed on the source).
+#: The focalization head-hopping capability-gap (iteration 045): `pending_capability`.
+#: It must NOT fire the iteration-051 `judge_undeclared_characters` nudge (keyed on
+#: `character_unknown_mentions`), but — since iteration 052 — it DOES fire the peer
+#: `judge_head_hopping` nudge (keyed on `focalization` + `pending_capability`, FR-009).
 _DORMANT_FOCAL_CAP = NotEvaluatedResult(
     "focalization",
     "head-hopping / interiority attribution requires semantic judgment (move 3)",
@@ -78,6 +79,7 @@ _TRIGGER: dict[str, StatusState] = {
     "review_continuity": make_state(errors=2),
     "activate_dormant_validators": make_state(not_evaluated=(_DORMANT_FOCAL,)),
     "judge_undeclared_characters": make_state(not_evaluated=(_DORMANT_CAP,)),
+    "judge_head_hopping": make_state(not_evaluated=(_DORMANT_FOCAL_CAP,)),
     "define_focus": make_state(focus_defined=False),
 }
 
@@ -268,13 +270,45 @@ def test_judge_undeclared_characters_action_exact_match() -> None:
     )
 
 
-def test_focalization_capability_gap_does_not_fire_the_judge_nudge() -> None:
-    # FR-009: the judge nudge keys on the SOURCE validator, not the
-    # `pending_capability` KIND — so `focalization`'s head-hopping abstention (also
-    # `pending_capability`, but a judgment the skill does not yet perform) fires NO
-    # `bookwright-continuity` judge action in this slice.
+def test_focalization_capability_gap_fires_the_head_hopping_judge_nudge() -> None:
+    # Iteration 052 (move 3, second slice): a `(focalization, pending_capability)`
+    # head-hopping abstention now fires EXACTLY ONE `bookwright-continuity` head-hopping
+    # action (the whole point of this slice) — and NOT the iteration-051
+    # `judge_undeclared_characters` nudge (which keys on `character_unknown_mentions`).
     actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_CAP,)))
-    assert [a.skill for a in actions] == []
+    assert [a.skill for a in actions] == ["bookwright-continuity"]
+    [action] = actions
+    assert action.reason.startswith("focalization abstained on head-hopping")
+    # It is the head-hop nudge, not the undeclared-character nudge.
+    assert not action.reason.startswith("character_unknown_mentions abstained")
+
+
+def test_judge_head_hopping_action_exact_match() -> None:
+    # The head-hopping judge action is a fixed, byte-identical template (SC-002),
+    # distinct from the iteration-051 undeclared-character action (FR-011).
+    [action] = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL_CAP,)))
+    assert action.skill == "bookwright-continuity"
+    assert action.prompt == (
+        "Read the declared narrative voice (bible/constitution.md), the POV calendar "
+        "(bible/pov-structure.md), and the roster; under a third-person-limited voice, "
+        "judge per chapter whether the prose attributes interiority to a non-focal POV "
+        "character, and report each head-hop as a continuity deviation."
+    )
+    assert action.reason == (
+        "focalization abstained on head-hopping under limited-third — interiority "
+        "attribution is a capability gap; the skill provides the semantic judgment"
+    )
+
+
+def test_focalization_missing_input_does_not_fire_the_head_hopping_judge() -> None:
+    # Negative case (SC-004, contract C5): a `(focalization, missing_input)` gap fires
+    # `activate_dormant_validators` (it is input-conditional) and NOT `judge_head_hopping`
+    # (which keys on `pending_capability`). The two kinds are kept distinct.
+    actions = next_actions(make_state(not_evaluated=(_DORMANT_FOCAL,)))
+    assert [a.skill for a in actions] == ["bookwright-continuity"]
+    [action] = actions
+    assert action.prompt.startswith("Activate the dormant validators")
+    assert not action.reason.startswith("focalization abstained on head-hopping")
 
 
 def test_removed_character_unknown_mentions_remedy_clause_is_gone() -> None:
@@ -301,6 +335,22 @@ def test_both_kinds_at_once_nudges_only_the_missing_input_validator() -> None:
     # The judge nudge is the second action (keyed on the abstaining source).
     assert judge.skill == "bookwright-continuity"
     assert judge.reason.startswith("character_unknown_mentions abstained")
+
+
+def test_both_move3_judge_nudges_co_fire_in_table_order() -> None:
+    # Contract C7 (iteration 052): a report carrying BOTH `(character_unknown_mentions,
+    # pending_capability)` AND `(focalization, pending_capability)` emits BOTH judge
+    # actions — the undeclared-character nudge then the head-hopping nudge, in table
+    # order — each a distinct, coherent `bookwright-continuity` action. No
+    # `activate_dormant_validators` fires (both entries are `pending_capability`).
+    state = make_state(not_evaluated=(_DORMANT_CAP, _DORMANT_FOCAL_CAP))
+    actions = next_actions(state)
+    assert [a.skill for a in actions] == ["bookwright-continuity", "bookwright-continuity"]
+    undeclared, head_hop = actions
+    assert undeclared.reason.startswith("character_unknown_mentions abstained")
+    assert head_hop.reason.startswith("focalization abstained on head-hopping")
+    assert undeclared.prompt != head_hop.prompt  # distinct, not merged (FR-011)
+    assert all(not a.prompt.startswith("Activate the dormant validators") for a in actions)
 
 
 def test_activation_sits_between_continuity_and_focus() -> None:

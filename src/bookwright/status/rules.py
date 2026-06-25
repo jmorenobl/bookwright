@@ -152,13 +152,21 @@ def _activate_dormant_validators(state: StatusState) -> Action:
     )
 
 
-#: The set of abstaining source validators whose `pending_capability` gap
-#: `bookwright-continuity` can now answer with semantic judgment (iteration 051,
-#: move 3 first slice). Keyed on the SOURCE validator, never on the
-#: `pending_capability` kind — so `focalization`'s head-hopping abstention (also
-#: `pending_capability`, but a judgment the skill does not yet perform) does NOT fire
-#: this nudge. Future move-3 dimensions join by adding their source validator name.
-_JUDGE_SOURCES: frozenset[str] = frozenset({"character_unknown_mentions"})
+def _judges(validator: str) -> Callable[[StatusState], bool]:
+    """A predicate for a move-3 judge nudge over one abstaining source (iteration 052).
+
+    Fires only when ``validator`` abstained with ``kind is pending_capability`` — the
+    `not_evaluated` channel is the data contract between the deterministic validator and
+    the semantic-judgment skill. The kind clause matters because `focalization` emits
+    BOTH `missing_input` (covered by `activate_dormant_validators`) and
+    `pending_capability` (head-hopping): only the latter is a judgment the skill answers.
+    For `character_unknown_mentions` (always `pending_capability`) this is byte-identical
+    to the iteration-051 name-only `_JUDGE_SOURCES` keying it replaces.
+    """
+    return lambda s: any(
+        r.validator == validator and r.kind is NotEvaluatedKind.pending_capability
+        for r in s.validation.not_evaluated
+    )
 
 
 def _judge_undeclared_characters(_state: StatusState) -> Action:
@@ -175,6 +183,27 @@ def _judge_undeclared_characters(_state: StatusState) -> Action:
         reason=(
             "character_unknown_mentions abstained — open-set proper-noun discovery is a "
             "capability gap; the skill provides the semantic judgment"
+        ),
+    )
+
+
+def _judge_head_hopping(_state: StatusState) -> Action:
+    # The second move-3 judge nudge (iteration 052). `focalization` abstained on
+    # head-hopping under limited-third (a `pending_capability` gap); the skill closes it
+    # with the declared voice + the POV calendar + the roster as grounding. One fixed,
+    # byte-identical action (no minted data) — distinct from the undeclared-character
+    # nudge above. Informative only: it never degrades green (FR-011/FR-012).
+    return Action(
+        skill="bookwright-continuity",
+        prompt=(
+            "Read the declared narrative voice (bible/constitution.md), the POV calendar "
+            "(bible/pov-structure.md), and the roster; under a third-person-limited voice, "
+            "judge per chapter whether the prose attributes interiority to a non-focal POV "
+            "character, and report each head-hop as a continuity deviation."
+        ),
+        reason=(
+            "focalization abstained on head-hopping under limited-third — interiority "
+            "attribution is a capability gap; the skill provides the semantic judgment"
         ),
     )
 
@@ -221,8 +250,13 @@ RULES: tuple[Rule, ...] = (
     ),
     Rule(
         name="judge_undeclared_characters",
-        applies=lambda s: any(r.validator in _JUDGE_SOURCES for r in s.validation.not_evaluated),
+        applies=_judges("character_unknown_mentions"),
         build=_judge_undeclared_characters,
+    ),
+    Rule(
+        name="judge_head_hopping",
+        applies=_judges("focalization"),
+        build=_judge_head_hopping,
     ),
     Rule(
         name="define_focus",

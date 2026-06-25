@@ -1532,8 +1532,16 @@ de naturaleza opuesta** que conviven en ese validador:
    `Abstention` de `character_unknown_mentions` y la juzga anclada en el roster de las
    fichas, y `status` la hace descubrible con un *next_action* informativo
    (`judge_undeclared_characters`) — sin tocar el gate ni el predicado verde (juicio,
-   no gate). **DEBT-013 cerrada.** Las dimensiones de focalización (head-hopping /
-   ruptura de 1ª persona, DEBT-021) siguen el mismo patrón en rebanadas posteriores.
+   no gate). **DEBT-013 cerrada.** *La **segunda rebanada vertical aterrizó en la
+   iteración 052**:* `bookwright-continuity` gana el **quinto eje** «head-hopping /
+   focalización rota» que recoge la `Abstention(pending_capability)` de `focalization`
+   (iter 050) y la juzga anclada en la voz declarada + el calendario de POV
+   (`bible/pov-structure.md`) + el roster, y `status` la hace descubrible con un peer
+   *next_action* informativo (`judge_head_hopping`) — la clave se generalizó a
+   `_judges(validator)` (fuente **+** `pending_capability`) porque `focalization` emite
+   ambos `kind`s; gate y predicado verde byte-idénticos. La tercera dimensión (ruptura de
+   1ª persona / recall pro-drop, **DEBT-021 — sigue abierta**, necesita una abstención
+   nueva en `focalization`) sigue el mismo patrón en una rebanada posterior.
 3. **Vocabularios cerrados, trato consistente** (DEBT-016, capa narrativa, no
    `character_presence`) — **entregado en la iteración 047**: un término Propp/Greimas
    no reconocido —antes ingerido **en silencio** como nodo sin `crm:P2_has_type`—
@@ -2203,6 +2211,26 @@ vs. organización/topónimo/vocativo; y `bookwright status` emite un *next_actio
 (`judge_undeclared_characters`) anclado en la fuente abstinente `character_unknown_mentions` — el
 gate determinista y el predicado verde quedan byte-idénticos (decisión 4). Las otras dos dimensiones
 (focalización / head-hopping / 1ª persona, DEBT-021) siguen el mismo patrón en rebanadas posteriores.
+
+**Segundo vertical slice — LANDED (iteración 052, track v0.5.x):** el **head-hopping / focalización
+rota** — la segunda señal real que midió el 3er dogfood (la interioridad de `Irene` dentro de un
+capítulo focalizado en `Teo`, hoy invisible: `focalization` abstiene honestamente
+(`Abstention(pending_capability)`, iter 050) bajo 3ª limitada en vez de fingirla). Mismo patrón que el
+primer slice; sólo cambia la dimensión juzgada. **Aterrizado:** `bookwright-continuity` gana un
+**quinto eje** ("head-hopping / saltos de punto de vista / focalización rota") que lee la **voz
+declarada** (`constitution.md`, procede sólo bajo 3ª limitada; omnisciente/1ª → nada), el **POV focal
+por capítulo** (`bible/pov-structure.md`, sección "Calendario de POV", prosa no indexada) y el
+**roster**, y juzga por capítulo si la prosa atribuye interioridad a un personaje no focal — reportando
+cada head-hop como una desviación más (cuando el calendario falta o es `[PENDING]`, reporta el hueco,
+no adivina). Y `bookwright status` emite un *next_action* informativo (`judge_head_hopping`) anclado en
+la fuente abstinente `focalization` **+ `kind: pending_capability`** — la clave del 051 (frozenset
+por-nombre) se **generalizó** a un predicado compartido `_judges(validator)` porque `focalization`
+emite a la vez `missing_input` (cubierto por `activate_dormant_validators`) y `pending_capability` (el
+head-hopping). El validador `focalization` **no se toca** (ya declaraba la abstención, iter 050); el
+gate determinista y el predicado verde quedan byte-idénticos (decisión 4). **DEBT-013 no se reabre;
+DEBT-021 (ruptura de 1ª persona / recall pro-drop) sigue abierta** — necesita una abstención NUEVA en
+`focalization` que este slice no añade. La tercera dimensión (1ª persona / pro-drop) sigue el patrón en
+una rebanada posterior.
 
 **Lo que NO cambia:** la ontología congelada (Principio X); el gate determinista; el contrato
 `not_evaluated` / `EvalResult` / `kind` (§ 13.1, se **consume**, no se altera); y el conjunto de
