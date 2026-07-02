@@ -221,6 +221,48 @@ El recorrido completo está en el
 
 ---
 
+## Escrito con Bookwright
+
+La herramienta se prueba a sí misma (*dogfooding*) sobre libros reales de
+extensión completa, no sobre fixtures de juguete. Dos libros escritos con
+ella, ambos en español, en texto plano bajo git, con el mismo loop de
+investigación → estructura → borrador → validación de arriba — ya publicados:
+
+<table>
+<tr>
+<td width="140" valign="top">
+  <a href="https://www.amazon.es/dp/B0GXR59J3Q"><img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/covers/kola-coca.jpg" width="120" alt="Portada de The Kola-Coca Company"></a>
+</td>
+<td valign="top">
+
+**[The Kola-Coca Company](https://www.amazon.es/dp/B0GXR59J3Q)** — *La historia endulzada que el mundo se tragó*<br>
+Novela histórica sobre los orígenes paralelos de la Kola-Coca fabricada en
+vasijas de arcilla en un pueblo valenciano y la Coca-Cola de Atlanta: la
+misma fórmula, dos continentes, y el único hombre que construyó un imperio
+con ella —ninguno de los dos que la inventaron—.<br>
+📖 [Cómpralo en Amazon →](https://www.amazon.es/dp/B0GXR59J3Q)
+
+</td>
+</tr>
+<tr>
+<td width="140" valign="top">
+  <a href="https://www.amazon.es/dp/B0GWMJNKQC"><img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/covers/la-pasion.jpg" width="120" alt="Portada de De la Pasión de Jesús a la Resurrección de Cristo"></a>
+</td>
+<td valign="top">
+
+**[De la Pasión de Jesús a la Resurrección de Cristo](https://www.amazon.es/dp/B0GWMJNKQC)** — *Un ensayo sobre el origen psicológico del cristianismo*<br>
+Ensayo narrativo que lee el nacimiento del cristianismo como un análisis de
+sistemas: cómo un grupo de testigos, psicológicamente incapaces de aceptar
+la ejecución de su maestro, produjo la certeza compartida de su
+resurrección.<br>
+📖 [Cómpralo en Amazon →](https://www.amazon.es/dp/B0GWMJNKQC)
+
+</td>
+</tr>
+</table>
+
+---
+
 ## Principios de diseño
 
 - **El texto plano es la fuente de verdad.** Manuscrito, biblia,

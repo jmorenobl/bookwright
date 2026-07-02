@@ -224,6 +224,47 @@ The full walkthrough is in the
 
 ---
 
+## Written with Bookwright
+
+The toolkit is dogfooded on real, book-length work — not toy fixtures. Two
+books written with it, both in Spanish, in plain text under git, using the
+same research → structure → draft → validate loop above — now published:
+
+<table>
+<tr>
+<td width="140" valign="top">
+  <a href="https://www.amazon.es/dp/B0GXR59J3Q"><img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/covers/kola-coca.jpg" width="120" alt="The Kola-Coca Company cover"></a>
+</td>
+<td valign="top">
+
+**[The Kola-Coca Company](https://www.amazon.es/dp/B0GXR59J3Q)** — *La historia endulzada que el mundo se tragó*<br>
+A historical novel on the parallel origins of the Kola-Coca brewed in clay
+vessels in a Valencian village and the Coca-Cola of Atlanta: the same
+formula, two continents, and the one man who built an empire from it — none
+of the two who invented it.<br>
+📖 [Buy on Amazon →](https://www.amazon.es/dp/B0GXR59J3Q)
+
+</td>
+</tr>
+<tr>
+<td width="140" valign="top">
+  <a href="https://www.amazon.es/dp/B0GWMJNKQC"><img src="https://raw.githubusercontent.com/jmorenobl/bookwright/main/assets/covers/la-pasion.jpg" width="120" alt="De la Pasión de Jesús a la Resurrección de Cristo cover"></a>
+</td>
+<td valign="top">
+
+**[De la Pasión de Jesús a la Resurrección de Cristo](https://www.amazon.es/dp/B0GWMJNKQC)** — *Un ensayo sobre el origen psicológico del cristianismo*<br>
+A narrative essay that reads the birth of Christianity as a systems
+analysis: how a group of witnesses, psychologically unable to accept the
+execution of their teacher, produced the shared certainty of his
+resurrection.<br>
+📖 [Buy on Amazon →](https://www.amazon.es/dp/B0GWMJNKQC)
+
+</td>
+</tr>
+</table>
+
+---
+
 ## Design principles
 
 - **Plain text is the source of truth.** Manuscript, bible, constitution
