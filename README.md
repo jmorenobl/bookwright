@@ -101,6 +101,40 @@ uv run bookwright --help
 
 ---
 
+## Upgrading
+
+Two steps: update the CLI, then refresh each book project you already have.
+
+```bash
+uv tool upgrade bookwright-cli    # with uv
+pipx upgrade bookwright-cli       # or with pipx
+bookwright version                # confirm the new version
+```
+
+If you installed straight from the repository, reinstall with `--force`:
+
+```bash
+uv tool install --force "git+https://github.com/jmorenobl/bookwright"
+```
+
+Then, **inside every existing project**, re-materialize the skills and rebuild
+the derived graph:
+
+```bash
+cd my-novel
+bookwright integration use claude   # rewrites .claude/skills/ from the new version
+bookwright graph build
+bookwright validate
+```
+
+The skills are shipped by the CLI and written into your project at `init` time,
+so a new version doesn't reach an old project until you re-run `integration
+use`. The graph in `bible/graph.ttl` is only a cache — rebuilding it is always
+safe, and `validate` tells you right away if a new check has something to say
+about prose you already wrote.
+
+---
+
 ## Quickstart: your first validated scene
 
 ### 1 · Create the project · `[in your terminal]`

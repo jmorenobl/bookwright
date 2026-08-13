@@ -101,6 +101,40 @@ uv run bookwright --help
 
 ---
 
+## Actualización
+
+Dos pasos: actualizar el CLI y después refrescar cada libro que ya tengas.
+
+```bash
+uv tool upgrade bookwright-cli    # con uv
+pipx upgrade bookwright-cli       # o con pipx
+bookwright version                # confirma la versión nueva
+```
+
+Si lo instalaste directamente desde el repositorio, reinstala con `--force`:
+
+```bash
+uv tool install --force "git+https://github.com/jmorenobl/bookwright"
+```
+
+Después, **dentro de cada proyecto que ya tengas**, rematerializa las skills y
+reconstruye el grafo derivado:
+
+```bash
+cd mi-novela
+bookwright integration use claude   # reescribe .claude/skills/ con la versión nueva
+bookwright graph build
+bookwright validate
+```
+
+Las skills las trae el CLI y se escriben en tu proyecto en el `init`, así que una
+versión nueva no llega a un proyecto viejo hasta que vuelves a lanzar
+`integration use`. El grafo de `bible/graph.ttl` es solo caché — reconstruirlo es
+siempre seguro, y `validate` te dice enseguida si algún control nuevo tiene algo
+que decir sobre prosa que ya habías escrito.
+
+---
+
 ## Quickstart: tu primera escena validada
 
 ### 1 · Crea el proyecto · `[en tu terminal]`
